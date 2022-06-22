@@ -1,4 +1,5 @@
 # Assume this only works on windows.
+# TODO make this use the SDL distribution inside of the repository.
 
 CC=gcc
 CFLAGS=-Wall -std=c99
