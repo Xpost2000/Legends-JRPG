@@ -18,6 +18,8 @@
 #define Gigabyte(x)         (uint64_t)(x * 1024LL * 1024LL * 1024LL)
 #define Terabyte(x)         (uint64_t)(x * 1024LL * 1024LL * 1024LL * 1024LL)
 
+#define unused(x) (void)(x)
+
 typedef char* cstring;
 
 typedef uint64_t u64;
@@ -171,7 +173,10 @@ int main(int argc, char** argv) {
     const u32 SCREEN_HEIGHT = 480;
 
     global_game_window         = SDL_CreateWindow("RPG", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
-    global_default_framebuffer = software_framebuffer_create(&game_arena, SCREEN_WIDTH, SCREEN_HEIGHT);
+
+    global_game_sdl_renderer    = SDL_CreateRenderer(global_game_window, -1, SDL_RENDERER_ACCELERATED);
+    global_default_framebuffer  = software_framebuffer_create(&game_arena, SCREEN_WIDTH, SCREEN_HEIGHT);
+    global_game_texture_surface = SDL_CreateTexture(global_game_sdl_renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STREAMING, global_default_framebuffer.width, global_default_framebuffer.height);
 
     while (global_game_running) {
         {
@@ -200,6 +205,17 @@ int main(int argc, char** argv) {
                 }
             }
         }
+
+        {
+            void* locked_pixel_region;
+            u32   _pitch; unused(_pitch);
+            SDL_LockTexture(global_game_texture_surface, 0, &locked_pixel_region, &_pitch);
+
+            memory_copy(global_default_framebuffer.pixels, locked_pixel_region, global_default_framebuffer.width * global_default_framebuffer.height * sizeof(u32), 0);
+        }
+
+        SDL_RenderCopy(global_game_sdl_renderer, global_game_texture_surface, 0, 0);
+        SDL_RenderPresent(global_game_sdl_renderer);
     }
 
     memory_arena_finish(&game_arena);
