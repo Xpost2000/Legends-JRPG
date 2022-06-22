@@ -39,7 +39,7 @@ struct tracked_memory_allocation_header {
 };
 
 /* use 0 for destination_size if I don't care. Ideally I should know both though. */
-void memory_copy(void* source, void* destination, size_t amount_from_source, size_t destination_size) {
+static inline void memory_copy(void* source, void* destination, size_t amount_from_source, size_t destination_size) {
     if (destination_size != 0) {
         if (amount_from_source > destination_size)
             amount_from_source = destination_size;
@@ -50,9 +50,34 @@ void memory_copy(void* source, void* destination, size_t amount_from_source, siz
     }
 }
 
-void zero_memory(void* memory, size_t amount) {
+static inline void zero_memory(void* memory, size_t amount) {
     for (u64 index = 0; index < amount; ++index) {
         ((u8*)memory)[index] = 0;
+    }
+}
+
+static inline void memory_set8(void* memory, size_t amount, u8 value) {
+    u8* memory_u8 = memory;
+    for (u64 index = 0; index < amount; ++index) {
+        memory_u8[index] = value;
+    }
+}
+static inline void memory_set16(void* memory, size_t amount, u16 value) {
+    u16* memory_u16 = memory;
+    for (u64 index = 0; index < amount/2; ++index) {
+        memory_u16[index] = value;
+    }
+}
+static inline void memory_set32(void* memory, size_t amount, u32 value) {
+    u32* memory_u32 = memory;
+    for (u64 index = 0; index < amount/4; ++index) {
+        memory_u32[index] = value;
+    }
+}
+static inline void memory_set64(void* memory, size_t amount, u64 value) {
+    u64* memory_u64 = memory;
+    for (u64 index = 0; index < amount/8; ++index) {
+        memory_u64[index] = value;
     }
 }
 
@@ -162,6 +187,17 @@ struct software_framebuffer software_framebuffer_create(struct memory_arena* are
     };
 }
 
+union color32u8 {
+    struct { u8 r, g, b, a; };
+    u8  rgba[4];
+    u32 rgba_packed;
+};
+#define color32u8(R,G,B,A) (union color32u8){.r=R,.g=G,.b=B,.a=A}
+
+void software_framebuffer_clear_buffer(struct software_framebuffer* framebuffer, union color32u8 rgba) {
+    memory_set32(framebuffer->pixels, framebuffer->width * framebuffer->height * sizeof(u32), rgba.rgba_packed);
+}
+
 static struct software_framebuffer global_default_framebuffer;
 
 int main(int argc, char** argv) {
@@ -207,11 +243,15 @@ int main(int argc, char** argv) {
         }
 
         {
+            software_framebuffer_clear_buffer(&global_default_framebuffer, color32u8(0, 255, 0, 255));
+        }
+
+        {
             void* locked_pixel_region;
             u32   _pitch; unused(_pitch);
             SDL_LockTexture(global_game_texture_surface, 0, &locked_pixel_region, &_pitch);
-
             memory_copy(global_default_framebuffer.pixels, locked_pixel_region, global_default_framebuffer.width * global_default_framebuffer.height * sizeof(u32), 0);
+            SDL_UnlockTexture(global_game_texture_surface);
         }
 
         SDL_RenderCopy(global_game_sdl_renderer, global_game_texture_surface, 0, 0);
