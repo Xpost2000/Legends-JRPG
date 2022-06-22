@@ -1,3 +1,5 @@
+/* NOTE no alpha blending yet. */
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -22,6 +24,9 @@
 
 typedef char* cstring;
 
+typedef float  f32;
+typedef double f64;
+
 typedef uint64_t u64;
 typedef uint32_t u32;
 typedef uint16_t u16;
@@ -31,6 +36,19 @@ typedef int64_t s64;
 typedef int32_t s32;
 typedef int16_t s16;
 typedef int8_t  s8;
+
+#define Swap(a, b, type)                        \
+    do {                                        \
+        type tmp = a;                           \
+        a = b;                                  \
+        b = tmp;                                \
+    } while (0)
+
+s32 clamp_s32(s32 x, s32 min, s32 max) {
+    if (x < min) x = min;
+    if (x > max) x = max;
+    return x;
+}
 
 static size_t _globally_tracked_memory_allocation_counter = 0;
 
@@ -187,6 +205,14 @@ struct software_framebuffer software_framebuffer_create(struct memory_arena* are
     };
 }
 
+struct rectangle {
+    f32 x;
+    f32 y;
+    f32 w;
+    f32 h;
+};
+#define rectangle(X,Y,W,H) (struct rectangle){.x=X,.y=Y,.w=W,.h=H}
+
 union color32u8 {
     struct { u8 r, g, b, a; };
     u8  rgba[4];
@@ -196,6 +222,29 @@ union color32u8 {
 
 void software_framebuffer_clear_buffer(struct software_framebuffer* framebuffer, union color32u8 rgba) {
     memory_set32(framebuffer->pixels, framebuffer->width * framebuffer->height * sizeof(u32), rgba.rgba_packed);
+}
+
+void software_framebuffer_draw_quad(struct software_framebuffer* framebuffer, struct rectangle destination, union color32u8 rgba) {
+    s32 start_x = (s32)destination.x;
+    s32 start_y = (s32)destination.y;
+    s32 end_x   = (s32)(destination.x + destination.w);
+    s32 end_y   = (s32)(destination.y + destination.h);
+
+    if (start_x > end_x) Swap(start_x, end_x, s32);
+    if (start_y > end_y) Swap(start_y, end_y, s32);
+
+    start_x = clamp_s32(start_x, 0, framebuffer->width);
+    start_y = clamp_s32(start_y, 0, framebuffer->height);
+    end_x   = clamp_s32(end_x, 0, framebuffer->width);
+    end_y   = clamp_s32(end_y, 0, framebuffer->height);
+
+    u32* framebuffer_pixels_as_32 = framebuffer->pixels;
+    for (u32 y_cursor = start_y; y_cursor < end_y; ++y_cursor) {
+        for (u32 x_cursor = start_x; x_cursor < end_x; ++x_cursor) {
+            u32 stride = framebuffer->width;
+            framebuffer_pixels_as_32[y_cursor * stride + x_cursor] = rgba.rgba_packed;
+        }
+    }
 }
 
 static struct software_framebuffer global_default_framebuffer;
@@ -244,6 +293,7 @@ int main(int argc, char** argv) {
 
         {
             software_framebuffer_clear_buffer(&global_default_framebuffer, color32u8(0, 255, 0, 255));
+            software_framebuffer_draw_quad(&global_default_framebuffer, rectangle(100, 100, 100, 100), color32u8(255, 0, 0, 255));
         }
 
         {
