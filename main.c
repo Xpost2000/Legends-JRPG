@@ -5,6 +5,9 @@
 #include <stdbool.h>
 
 #include <assert.h>
+
+#include <SDL2/SDL.h>
+
 #define assertion(x) assert(x)
 
 #define Byte(x)             (x << 1)
@@ -113,8 +116,44 @@ void* memory_arena_push_top_unaligned(struct memory_arena* arena, u64 amount) {
 
 #define memory_arena_push(arena, amount) memory_arena_push_bottom_unaligned(arena, amount)
 
-int main(int argc, char** argv) {
+static SDL_Window* global_game_window  = NULL;
+static bool        global_game_running = true;
 
+int main(int argc, char** argv) {
+    SDL_Init(SDL_INIT_VIDEO);
+
+    global_game_window = SDL_CreateWindow("RPG", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 640, 480, SDL_WINDOW_SHOWN);
+
+    while (global_game_running) {
+        {
+            SDL_Event current_event;
+            while (SDL_PollEvent(&current_event)) {
+                switch (current_event.type) {
+                    case SDL_QUIT: {
+                        global_game_running = false;
+                    } break;
+                        
+                    case SDL_KEYUP:
+                    case SDL_KEYDOWN: {
+                        bool is_keydown = (current_event.type == SDL_KEYDOWN);
+                    } break;
+
+                    case SDL_MOUSEWHEEL:
+                    case SDL_MOUSEMOTION:
+                    case SDL_MOUSEBUTTONDOWN:
+                    case SDL_MOUSEBUTTONUP: {
+                        
+                    } break;
+
+                    default: {
+                        
+                    } break;
+                }
+            }
+        }
+    }
+
+    SDL_Quit();
     assertion(system_heap_memory_leak_check());
     return 0;
 }
