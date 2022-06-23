@@ -37,8 +37,10 @@ void update_and_render_game(struct software_framebuffer* framebuffer, float dt) 
     }
 
     struct render_commands commands = render_commands(
-        camera_centered(v2f32(0, 0),
-                        ((sinf(global_elapsed_time)+1)/2.0)+0.4));
+        /* camera_centered(v2f32(0, 0), */
+        /*                 ((sinf(global_elapsed_time)+1)/2.0)+0.4) */
+        camera_centered(v2f32(0, 0), 2)
+    );
     {
         commands.should_clear_buffer = true;
         commands.clear_buffer_color  = color32u8(0, 128, 0, 255);
@@ -60,10 +62,20 @@ void update_and_render_game(struct software_framebuffer* framebuffer, float dt) 
 
     if (blur)
     {
+        /* f32 box_blur[] = { */
+        /*     1.0/16, 2.0/16, 1.0/16, */
+        /*     2.0 /16, 4.0/16, 2.0/16, */
+        /*     1.0/16, 2.0/16, 1.0/16 */
+        /* }; */
+        /* f32 box_blur[] = { */
+        /*     1,2,1, */
+        /*     2,4,2, */
+        /*     1,2,1 */
+        /* }; */
         f32 box_blur[] = {
-            1.0/16, 2.0/16, 1.0/16,
-            2.0 /16, 4.0/16, 2.0/16,
-            1.0/16, 2.0/16, 1.0/16
+            1,1,1,
+            1,-8,1,
+            1,1,1
         };
 
         software_framebuffer_kernel_convolution(&scratch_arena, framebuffer, box_blur, 3, 3);

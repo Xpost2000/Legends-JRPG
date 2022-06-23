@@ -468,9 +468,9 @@ void software_framebuffer_kernel_convolution(struct memory_arena* arena, struct 
                 accumulation[1] = clamp_f32(accumulation[1], 0, 255.0f);
                 accumulation[2] = clamp_f32(accumulation[2], 0, 255.0f);
 
-                framebuffer->pixels[y_cursor * framebuffer_width * 4 + x_cursor * 4 + 0] = (u8)accumulation[0];
-                framebuffer->pixels[y_cursor * framebuffer_width * 4 + x_cursor * 4 + 1] = (u8)accumulation[1];
-                framebuffer->pixels[y_cursor * framebuffer_width * 4 + x_cursor * 4 + 2] = (u8)accumulation[2];
+                framebuffer->pixels[y_cursor * framebuffer_width * 4 + x_cursor * 4 + 0] = accumulation[0];
+                framebuffer->pixels[y_cursor * framebuffer_width * 4 + x_cursor * 4 + 1] = accumulation[1];
+                framebuffer->pixels[y_cursor * framebuffer_width * 4 + x_cursor * 4 + 2] = accumulation[2];
             }
         }
     }
