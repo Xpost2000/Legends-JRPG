@@ -57,6 +57,7 @@ f32 lerp_f32(f32 a, f32 b, f32 normalized_t) {
 }
 
 static size_t _globally_tracked_memory_allocation_counter = 0;
+static size_t _globally_tracked_memory_allocation_peak    = 0;
 
 struct tracked_memory_allocation_header {
     size_t amount;
@@ -109,6 +110,9 @@ void* system_heap_memory_allocate(size_t amount) {
     amount += sizeof(struct tracked_memory_allocation_header);
     _globally_tracked_memory_allocation_counter += amount;
 
+    if (_globally_tracked_memory_allocation_counter > _globally_tracked_memory_allocation_peak)
+        _globally_tracked_memory_allocation_peak = _globally_tracked_memory_allocation_counter;
+
     void* memory = malloc(amount);
 
     zero_memory(memory, amount);
@@ -148,6 +152,10 @@ bool system_heap_memory_leak_check(void) {
 
 size_t system_heap_currently_allocated_amount(void) {
     return _globally_tracked_memory_allocation_counter;
+}
+
+size_t system_heap_peak_allocated_amount(void) {
+    return _globally_tracked_memory_allocation_peak;
 }
 
 struct file_buffer {
@@ -208,13 +216,5 @@ struct rectangle_f32 {
 };
 #define rectangle_f32(X,Y,W,H) (struct rectangle_f32){.x=X,.y=Y,.w=W,.h=H}
 #define RECTANGLE_F32_NULL rectangle_f32(0,0,0,0)
-struct rectangle_f32 rectangle_f32_clamp(struct rectangle_f32 input, struct rectangle_f32 region) {
-    input.x = clamp_f32(input.x, region.x, region.x + region.w);
-    input.w = clamp_f32(input.w, 0, region.w);
-    input.y = clamp_f32(input.y, region.y, region.y + region.h);
-    input.h = clamp_f32(input.h, 0, region.h);
-
-    return input;
-}
 
 #include "prng.c"

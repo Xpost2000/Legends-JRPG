@@ -37,9 +37,13 @@ void update_and_render_game(struct software_framebuffer* framebuffer, float dt) 
     static f32 dir = 1;
     software_framebuffer_clear_buffer(framebuffer, color32u8(0, 255, 0, 255));
     software_framebuffer_draw_quad(framebuffer, rectangle_f32(-50, 450, 100, 100), color32u8(255, 0, 0, 255));
-    software_framebuffer_draw_image_ex(framebuffer, test_image, rectangle_f32(x, 5, 96, 96), RECTANGLE_F32_NULL, color32f32(1,1,1,1), 0); 
-    software_framebuffer_draw_image_ex(framebuffer, test_image, rectangle_f32(x, 100, 96, 96), RECTANGLE_F32_NULL, color32f32(1,1,1,1), 0); 
-    software_framebuffer_draw_image_ex(framebuffer, test_image, rectangle_f32(x, 200, 96, 96), RECTANGLE_F32_NULL, color32f32(1,1,1,1), 0); 
+    for (int i = 0; i < 30; ++i) {
+        software_framebuffer_draw_image_ex(framebuffer, test_image, rectangle_f32(x, 5 + 30 * i, 30, 30), RECTANGLE_F32_NULL, color32f32(1,1,1,1), 0);
+        software_framebuffer_draw_image_ex(framebuffer, test_image, rectangle_f32(x+30, 5 + 30 * i, 30, 30), RECTANGLE_F32_NULL, color32f32(1,1,1,1), 0);
+        software_framebuffer_draw_image_ex(framebuffer, test_image, rectangle_f32(x+60, 5 + 30 * i, 30, 30), RECTANGLE_F32_NULL, color32f32(1,1,1,1), 0);
+        software_framebuffer_draw_image_ex(framebuffer, test_image, rectangle_f32(x+90, 5 + 30 * i, 30, 30), RECTANGLE_F32_NULL, color32f32(1,1,1,1), 0);
+        software_framebuffer_draw_image_ex(framebuffer, test_image, rectangle_f32(x+120, 5 + 30 * i, 30, 30), RECTANGLE_F32_NULL, color32f32(1,1,1,1), 0);
+    }
     software_framebuffer_draw_quad(framebuffer, rectangle_f32(100, 0, 400, 400), color32u8(0, 0, 255, 128));
     software_framebuffer_draw_quad(framebuffer, rectangle_f32(40, 0, 200, 200), color32u8(255, 0, 255, 128));
 
@@ -48,12 +52,12 @@ void update_and_render_game(struct software_framebuffer* framebuffer, float dt) 
 }
 
 int main(int argc, char** argv) {
-    struct memory_arena game_arena = memory_arena_create_from_heap("Game Memory", Megabyte(256));
+    struct memory_arena game_arena = memory_arena_create_from_heap("Game Memory", Megabyte(16));
 
     SDL_Init(SDL_INIT_VIDEO);
 
-    const u32 SCREEN_WIDTH  = 320;
-    const u32 SCREEN_HEIGHT = 200;
+    const u32 SCREEN_WIDTH  = 640;
+    const u32 SCREEN_HEIGHT = 480;
 
     global_game_window          = SDL_CreateWindow("RPG", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
     global_game_sdl_renderer    = SDL_CreateRenderer(global_game_window, -1, SDL_RENDERER_ACCELERATED);
@@ -104,6 +108,7 @@ int main(int argc, char** argv) {
     memory_arena_finish(&game_arena);
 
     SDL_Quit();
+    printf("Peak allocations at: %d bytes\n", system_heap_peak_allocated_amount());
     assertion(system_heap_memory_leak_check());
     return 0;
 }

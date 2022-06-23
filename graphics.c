@@ -1,6 +1,5 @@
 /* 
    TODO:
-   Alpha Blending
    Actual Renderer System (render layers and drawing text, with a camera)
 */
 #define STBI_MALLOC(x)       system_heap_memory_allocate(x)
@@ -77,31 +76,31 @@ void software_framebuffer_clear_buffer(struct software_framebuffer* framebuffer,
 }
 
 void software_framebuffer_draw_quad(struct software_framebuffer* framebuffer, struct rectangle_f32 destination, union color32u8 rgba) {
-    struct rectangle_f32 draw_region = rectangle_f32_clamp(
-        destination, rectangle_f32(0, 0, framebuffer->width, framebuffer->height)
-    );
-    s32 start_x = (s32)draw_region.x;
-    s32 start_y = (s32)draw_region.y;
-    s32 end_x   = (s32)(destination.x + draw_region.w);
-    s32 end_y   = (s32)(destination.y + draw_region.h);
+    s32 start_x = (s32)destination.x;
+    s32 start_y = (s32)destination.y;
+    s32 end_x   = (s32)(destination.x + destination.w);
+    s32 end_y   = (s32)(destination.y + destination.h);
 
 
     u32* framebuffer_pixels_as_32 = (u32*)framebuffer->pixels;
     for (u32 y_cursor = start_y; y_cursor < end_y; ++y_cursor) {
-        for (u32 x_cursor = start_x; x_cursor < end_x; ++x_cursor) {
-            u32 stride = framebuffer->width;
+        if (y_cursor >= 0 && y_cursor < framebuffer->height)
+            for (u32 x_cursor = start_x; x_cursor < end_x; ++x_cursor) {
+                if (x_cursor >= 0 && x_cursor < framebuffer->width) {
+                    u32 stride = framebuffer->width;
 #if 0
-            framebuffer_pixels_as_32[y_cursor * stride + x_cursor] = rgba.rgba_packed;
+                    framebuffer_pixels_as_32[y_cursor * stride + x_cursor] = rgba.rgba_packed;
 #else
-            {
-                float alpha = rgba.a / 255.0f;
-                framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 0] = (framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 0] * (1 - alpha)) + (rgba.r * alpha);
-                framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 1] = (framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 1] * (1 - alpha)) + (rgba.g * alpha);
-                framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 2] = (framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 2] * (1 - alpha)) + (rgba.b * alpha);
-            }
-            framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 3] = 255;
+                    {
+                        float alpha = rgba.a / 255.0f;
+                        framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 0] = (framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 0] * (1 - alpha)) + (rgba.r * alpha);
+                        framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 1] = (framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 1] * (1 - alpha)) + (rgba.g * alpha);
+                        framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 2] = (framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 2] * (1 - alpha)) + (rgba.b * alpha);
+                    }
+                    framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 3] = 255;
 #endif
-        }
+                }
+            }
     }
 }
 
@@ -119,49 +118,48 @@ void software_framebuffer_draw_image_ex(struct software_framebuffer* framebuffer
     f32 scale_ratio_w = (f32)src.w  / destination.w;
     f32 scale_ratio_h = (f32)src.h  / destination.h;
 
-    struct rectangle_f32 draw_region = rectangle_f32_clamp(
-        destination, rectangle_f32(0, 0, framebuffer->width, framebuffer->height)
-    );
-
-    s32 start_x = (s32)draw_region.x;
-    s32 start_y = (s32)draw_region.y;
-    s32 end_x   = (s32)(destination.x + draw_region.w);
-    s32 end_y   = (s32)(destination.y + draw_region.h);
+    s32 start_x = (s32)destination.x;
+    s32 start_y = (s32)destination.y;
+    s32 end_x   = (s32)(destination.x + destination.w);
+    s32 end_y   = (s32)(destination.y + destination.h);
 
     u32* framebuffer_pixels_as_32 = (u32*)framebuffer->pixels;
     for (u32 y_cursor = start_y; y_cursor < end_y; ++y_cursor) {
-        for (u32 x_cursor = start_x; x_cursor < end_x; ++x_cursor) {
-            u32 stride       = framebuffer->width;
-            u32 image_stride = image.width;
+        if (y_cursor >= 0 && y_cursor < framebuffer->height)
+            for (u32 x_cursor = start_x; x_cursor < end_x; ++x_cursor) {
+                if (x_cursor >= 0 && x_cursor < framebuffer->width) {
+                    u32 stride       = framebuffer->width;
+                    u32 image_stride = image.width;
 
-            s32 image_sample_x = floor((src.x + src.w) - ((end_x - x_cursor) * scale_ratio_w));
-            s32 image_sample_y = floor((src.y + src.h) - ((end_y - y_cursor) * scale_ratio_h));
+                    s32 image_sample_x = floor((src.x + src.w) - ((end_x - x_cursor) * scale_ratio_w));
+                    s32 image_sample_y = floor((src.y + src.h) - ((end_y - y_cursor) * scale_ratio_h));
 
-            if ((flags & SOFTWARE_FRAMEBUFFER_DRAW_IMAGE_FLIP_HORIZONTALLY))
-                image_sample_x = floor(((end_x - x_cursor) * scale_ratio_w) + src.x);
+                    if ((flags & SOFTWARE_FRAMEBUFFER_DRAW_IMAGE_FLIP_HORIZONTALLY))
+                        image_sample_x = floor(((end_x - x_cursor) * scale_ratio_w) + src.x);
 
-            if ((flags & SOFTWARE_FRAMEBUFFER_DRAW_IMAGE_FLIP_VERTICALLY))
-                image_sample_y = floor(((end_y - y_cursor) * scale_ratio_h) + src.y);
+                    if ((flags & SOFTWARE_FRAMEBUFFER_DRAW_IMAGE_FLIP_VERTICALLY))
+                        image_sample_y = floor(((end_y - y_cursor) * scale_ratio_h) + src.y);
 
-            union color32u8 sampled_pixel = (union color32u8) { .rgba_packed = image.pixels_u32[image_sample_y * image_stride + image_sample_x] };
+                    union color32u8 sampled_pixel = (union color32u8) { .rgba_packed = image.pixels_u32[image_sample_y * image_stride + image_sample_x] };
 
-            sampled_pixel.r *= modulation.r;
-            sampled_pixel.g *= modulation.g;
-            sampled_pixel.b *= modulation.b;
-            sampled_pixel.a *= modulation.a;
+                    sampled_pixel.r *= modulation.r;
+                    sampled_pixel.g *= modulation.g;
+                    sampled_pixel.b *= modulation.b;
+                    sampled_pixel.a *= modulation.a;
 
 #if 0
-            framebuffer_pixels_as_32[y_cursor * stride + x_cursor] = sampled_pixel.rgba_packed;
+                    framebuffer_pixels_as_32[y_cursor * stride + x_cursor] = sampled_pixel.rgba_packed;
 #else
-            {
-                float alpha = sampled_pixel.a / 255.0f;
-                framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 0] = (framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 0] * (1 - alpha)) + (sampled_pixel.r * alpha);
-                framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 1] = (framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 1] * (1 - alpha)) + (sampled_pixel.g * alpha);
-                framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 2] = (framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 2] * (1 - alpha)) + (sampled_pixel.b * alpha);
-            }
-            framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 3] = 255;
+                    {
+                        float alpha = sampled_pixel.a / 255.0f;
+                        framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 0] = (framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 0] * (1 - alpha)) + (sampled_pixel.r * alpha);
+                        framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 1] = (framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 1] * (1 - alpha)) + (sampled_pixel.g * alpha);
+                        framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 2] = (framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 2] * (1 - alpha)) + (sampled_pixel.b * alpha);
+                    }
+                    framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 3] = 255;
 #endif
-        }
+                }
+            }
     }
 
 }
