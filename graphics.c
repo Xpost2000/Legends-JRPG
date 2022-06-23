@@ -4,6 +4,7 @@
 */
 #include "graphics_def.c"
 
+/* doesn't take an allocator because of the way stb image works... */
 struct image_buffer image_buffer_load_from_file(const char* file_path) {
     s32 width;
     s32 height;

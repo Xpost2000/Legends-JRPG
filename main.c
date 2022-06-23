@@ -7,7 +7,6 @@
 #include <SDL2/SDL.h>
 
 #include "common.c"
-#include "memory_arena.c"
 #include "input.c"
 #include "sdl_scancode_table.c"
 #include "graphics.c"

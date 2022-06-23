@@ -15,12 +15,13 @@ struct memory_arena memory_arena_create_from_heap(cstring name, u64 capacity) {
     };
 }
 
+#if 0
 struct memory_arena memory_arena_create_from_heap_growable(cstring name, u64 capacity) {
     struct memory_arena arena = memory_arena_create_from_heap(name, capacity);
     arena.flags |= MEMORY_ARENA_GROWABLE;
     return arena;
 }
-
+#endif
 
 void memory_arena_finish(struct memory_arena* arena) {
     system_heap_memory_deallocate(arena->memory);
@@ -39,11 +40,15 @@ void _memory_arena_usage_bounds_check(struct memory_arena* arena) {
     /* arenas with capacity 0 are temporary arenas. */
     if (arena->capacity != 0) {
         if ((arena->used+arena->used_top) >= arena->capacity) {
+#if 0
             if (arena->flags & MEMORY_ARENA_GROWABLE) {
                 /* arena */
             } else {
                 assertion((arena->used+arena->used_top) <= arena->capacity);
             }
+#else
+            assertion((arena->used+arena->used_top) <= arena->capacity);
+#endif
         }
     } else {
         struct temporary_memory* temporary_arena = (struct temporary_memory*) arena;

@@ -202,7 +202,47 @@ size_t system_heap_peak_allocated_amount(void) {
     return _globally_tracked_memory_allocation_peak;
 }
 
+struct rectangle_f32 {
+    f32 x;
+    f32 y;
+    f32 w;
+    f32 h;
+};
+#define rectangle_f32(X,Y,W,H) (struct rectangle_f32){.x=X,.y=Y,.w=W,.h=H}
+#define RECTANGLE_F32_NULL rectangle_f32(0,0,0,0)
+
+#define FRAMETIME_SAMPLE_MAX (32)
+struct {
+    u16 index;
+    u16 length;
+    f32 data[FRAMETIME_SAMPLE_MAX];
+} global_frametime_sample_array = {};
+
+void add_frametime_sample(f32 data) {
+    global_frametime_sample_array.data[global_frametime_sample_array.index++] = data;
+    if (global_frametime_sample_array.length <  FRAMETIME_SAMPLE_MAX) global_frametime_sample_array.length++;
+    if (global_frametime_sample_array.index  >= FRAMETIME_SAMPLE_MAX) global_frametime_sample_array.index = 0;
+}
+
+f32 get_average_frametime(void) {
+    f32 sum = 0.0;
+
+    for (unsigned index = 0; index < global_frametime_sample_array.length; ++index) {
+        sum += global_frametime_sample_array.data[index];
+    }
+
+    return sum / global_frametime_sample_array.length;
+}
+
+#define NO_FLAGS (0)
+
+#include "memory_arena.c"
+#include "allocators.c"
+#include "prng.c"
+#include "v2.c"
+
 struct file_buffer {
+    IAllocator allocator;
     u8* buffer;
     u64 length;
 };
@@ -239,19 +279,20 @@ void read_entire_file_into_buffer(char* path, u8* buffer, size_t buffer_length) 
     fclose(file);
 }
 
-struct file_buffer read_entire_file(char* path) {
+struct file_buffer read_entire_file(IAllocator allocator, char* path) {
     size_t file_size   = file_length(path);
-    u8*    file_buffer = system_heap_memory_allocate(file_size+1);
+    u8*    file_buffer = allocator.alloc(&allocator, file_size+1);
     read_entire_file_into_buffer(path, file_buffer, file_size);
     file_buffer[file_size] = 0;
     return (struct file_buffer) {
+        .allocator = allocator,
         .buffer = file_buffer,
         .length = file_size,
     };
 }
 
 void file_buffer_free(struct file_buffer* file) {
-    system_heap_memory_deallocate(file->buffer);
+    file->allocator.free(&file->allocator, file->buffer);
 }
 
 u64 cstring_length(const char* cstring) {
@@ -272,39 +313,6 @@ void cstring_copy(cstring source, cstring destination, u64 destination_length) {
     }
 }
 
-struct rectangle_f32 {
-    f32 x;
-    f32 y;
-    f32 w;
-    f32 h;
-};
-#define rectangle_f32(X,Y,W,H) (struct rectangle_f32){.x=X,.y=Y,.w=W,.h=H}
-#define RECTANGLE_F32_NULL rectangle_f32(0,0,0,0)
 
-#define FRAMETIME_SAMPLE_MAX (32)
-struct {
-    u16 index;
-    u16 length;
-    f32 data[FRAMETIME_SAMPLE_MAX];
-} global_frametime_sample_array = {};
 
-void add_frametime_sample(f32 data) {
-    global_frametime_sample_array.data[global_frametime_sample_array.index++] = data;
-    if (global_frametime_sample_array.length <  FRAMETIME_SAMPLE_MAX) global_frametime_sample_array.length++;
-    if (global_frametime_sample_array.index  >= FRAMETIME_SAMPLE_MAX) global_frametime_sample_array.index = 0;
-}
-
-f32 get_average_frametime(void) {
-    f32 sum = 0.0;
-
-    for (unsigned index = 0; index < global_frametime_sample_array.length; ++index) {
-        sum += global_frametime_sample_array.data[index];
-    }
-
-    return sum / global_frametime_sample_array.length;
-}
-#define NO_FLAGS (0)
-
-#include "prng.c"
-#include "v2.c"
 #endif
