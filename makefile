@@ -3,7 +3,7 @@
 
 CC=gcc
 CFLAGS=-Wall -std=c99
-CLIBS=`pkg-config --libs --cflags sdl2`
+CLIBS=`pkg-config --libs --cflags sdl2` -I./dependencies/
 SOURCE_FILE_MODULES= main.c
 
 .PHONY: all clean

@@ -10,6 +10,9 @@
 
 #include <SDL2/SDL.h>
 
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
+
 #define assertion(x) assert(x)
 
 #define BIT(x)             (x << 1)
@@ -278,9 +281,40 @@ struct image_buffer {
     u32 width;
     u32 height;
 };
+
+struct image_buffer image_buffer_load_from_file(const char* file_path) {
+    u32 width;
+    u32 height;
+    u32 components;
+
+    u8* image_buffer = stbi_load(file_path, &width, &height, &components, 4);
+    struct image_buffer result = (struct image_buffer) {
+        .pixels = image_buffer,
+        .width  = width,
+        .height = height,
+    };
+    return result;
+}
+
+void image_buffer_free(struct image_buffer* image) {
+    assertion(image->pixels);
+    system_heap_memory_deallocate(image->pixels);
+}
+
+struct file_buffer {
+    char name[260];
+    u8*  data;
+    u64  length;
+};
+
 void software_framebuffer_draw_image_ex(struct software_framebuffer* framebuffer, struct image_buffer image, struct rectangle_f32 destination, struct rectangle_f32 src, union color32f32 modulation, u32 flags) {
-    f32 scale_ratio_w = (f32)image.width  / destination.w;
-    f32 scale_ratio_h = (f32)image.height / destination.h;
+    if ((src.x == 0) && (src.y == 0) && (src.w == 0) && (src.h == 0)) {
+        src.w = image.width;
+        src.h = image.height;
+    }
+
+    f32 scale_ratio_w = (f32)src.w  / destination.w;
+    f32 scale_ratio_h = (f32)src.h  / destination.h;
 
     struct rectangle_f32 draw_region = rectangle_f32_clamp(
         destination, rectangle_f32(0, 0, framebuffer->width, framebuffer->height)
@@ -334,6 +368,8 @@ int main(int argc, char** argv) {
     global_default_framebuffer  = software_framebuffer_create(&game_arena, SCREEN_WIDTH, SCREEN_HEIGHT);
     global_game_texture_surface = SDL_CreateTexture(global_game_sdl_renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STREAMING, global_default_framebuffer.width, global_default_framebuffer.height);
 
+    struct image_buffer test_image = image_buffer_load_from_file("./res/a.png");
+
     while (global_game_running) {
         {
             SDL_Event current_event;
@@ -365,6 +401,8 @@ int main(int argc, char** argv) {
         {
             software_framebuffer_clear_buffer(&global_default_framebuffer, color32u8(0, 255, 0, 255));
             software_framebuffer_draw_quad(&global_default_framebuffer, rectangle_f32(-50, 450, 100, 100), color32u8(255, 0, 0, 255));
+            software_framebuffer_draw_image_ex(&global_default_framebuffer, test_image,
+                                               rectangle_f32(100, 100, 96, 96), RECTANGLE_F32_NULL, color32f32(1,1,1,1), 0); 
         }
 
         {
@@ -378,6 +416,8 @@ int main(int argc, char** argv) {
         SDL_RenderCopy(global_game_sdl_renderer, global_game_texture_surface, 0, 0);
         SDL_RenderPresent(global_game_sdl_renderer);
     }
+
+    image_buffer_free(&test_image);
 
     memory_arena_finish(&game_arena);
     SDL_Quit();
