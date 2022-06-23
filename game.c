@@ -32,6 +32,20 @@ void game_postprocess_blur(struct software_framebuffer* framebuffer, s32 quality
     }
 }
 
+void game_postprocess_grayscale(struct software_framebuffer* framebuffer, f32 t) {
+    for (s32 y_cursor = 0; y_cursor < framebuffer->height; ++y_cursor) {
+        for (s32 x_cursor = 0; x_cursor < framebuffer->width; ++x_cursor) {
+            u8 r = framebuffer->pixels[y_cursor * framebuffer->width * 4 + x_cursor * 4 + 0];
+            u8 g = framebuffer->pixels[y_cursor * framebuffer->width * 4 + x_cursor * 4 + 1];
+            u8 b = framebuffer->pixels[y_cursor * framebuffer->width * 4 + x_cursor * 4 + 2];
+            f32 average = (r + g + b) / 3.0f;
+            framebuffer->pixels[y_cursor * framebuffer->width * 4 + x_cursor * 4 + 0] = framebuffer->pixels[y_cursor * framebuffer->width * 4 + x_cursor * 4 + 0] * (1 - t) + average * t;
+            framebuffer->pixels[y_cursor * framebuffer->width * 4 + x_cursor * 4 + 1] = framebuffer->pixels[y_cursor * framebuffer->width * 4 + x_cursor * 4 + 1] * (1 - t) + average * t;
+            framebuffer->pixels[y_cursor * framebuffer->width * 4 + x_cursor * 4 + 2] = framebuffer->pixels[y_cursor * framebuffer->width * 4 + x_cursor * 4 + 2] * (1 - t) + average * t;
+        }
+    }
+}
+
 void update_and_render_game(struct software_framebuffer* framebuffer, float dt) {
     static f32 x = 0;
     static f32 y = 0;
@@ -85,6 +99,7 @@ void update_and_render_game(struct software_framebuffer* framebuffer, float dt) 
     }
 
     if (blur) {
-        game_postprocess_blur(framebuffer, 4, test_t);
+        game_postprocess_blur(framebuffer, 8, test_t);
+        game_postprocess_grayscale(framebuffer, test_t);
     }
 }
