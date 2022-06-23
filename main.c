@@ -331,11 +331,11 @@ void software_framebuffer_draw_image_ex(struct software_framebuffer* framebuffer
             u32 stride       = framebuffer->width;
             u32 image_stride = image.width;
 
-            s32 image_sample_x = floor((x_cursor * scale_ratio_w) + src.x);
+            s32 image_sample_x = floor(((end_x - x_cursor) * scale_ratio_w) + src.x);
             if (flags & SOFTWARE_FRAMEBUFFER_DRAW_IMAGE_FLIP_HORIZONTALLY)
                 image_sample_x = floor((src.x + src.w) - (x_cursor * scale_ratio_w));
 
-            s32 image_sample_y = floor((y_cursor * scale_ratio_h) + src.y);
+            s32 image_sample_y = floor(((end_y - y_cursor) * scale_ratio_h) + src.y);
             if (flags & SOFTWARE_FRAMEBUFFER_DRAW_IMAGE_FLIP_VERTICALLY)
                 image_sample_y = floor((src.y + src.h) - (x_cursor * scale_ratio_h));
 
@@ -402,7 +402,7 @@ int main(int argc, char** argv) {
             software_framebuffer_clear_buffer(&global_default_framebuffer, color32u8(0, 255, 0, 255));
             software_framebuffer_draw_quad(&global_default_framebuffer, rectangle_f32(-50, 450, 100, 100), color32u8(255, 0, 0, 255));
             software_framebuffer_draw_image_ex(&global_default_framebuffer, test_image,
-                                               rectangle_f32(100, 100, 96, 96), RECTANGLE_F32_NULL, color32f32(1,1,1,1), 0); 
+                                               rectangle_f32(100, 100, 150, 96), RECTANGLE_F32_NULL, color32f32(1,1,1,1), 0); 
         }
 
         {
