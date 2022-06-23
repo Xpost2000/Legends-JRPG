@@ -297,6 +297,7 @@ f32 get_average_frametime(void) {
 
     return sum / global_frametime_sample_array.length;
 }
+#define NO_FLAGS (0)
 
 #include "prng.c"
 #include "v2.c"

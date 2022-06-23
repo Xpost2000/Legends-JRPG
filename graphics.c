@@ -18,6 +18,13 @@ struct image_buffer image_buffer_load_from_file(const char* file_path) {
     return result;
 }
 
+void image_buffer_write_to_disk(struct image_buffer* image, const char* as) {
+    char filename[256] = {};
+    snprintf(filename, 256, "%s.bmp", as);
+    stbi_write_bmp(filename, image->width, image->height, 4, image->pixels);
+    _debugprintf("screenshot produced.");
+}
+
 void image_buffer_free(struct image_buffer* image) {
     assertion(image->pixels);
     system_heap_memory_deallocate(image->pixels);
@@ -68,10 +75,15 @@ void software_framebuffer_draw_quad(struct software_framebuffer* framebuffer, st
     }
 }
 
-void software_framebuffer_draw_image_ex(struct software_framebuffer* framebuffer, struct image_buffer image, struct rectangle_f32 destination, struct rectangle_f32 src, union color32f32 modulation, u32 flags) {
+void software_framebuffer_draw_image_ex(struct software_framebuffer* framebuffer, struct image_buffer* image, struct rectangle_f32 destination, struct rectangle_f32 src, union color32f32 modulation, u32 flags) {
+    if ((destination.x == 0) && (destination.y == 0) && (destination.w == 0) && (destination.h == 0)) {
+        destination.w = framebuffer->width;
+        destination.h = framebuffer->height;
+    }
+
     if ((src.x == 0) && (src.y == 0) && (src.w == 0) && (src.h == 0)) {
-        src.w = image.width;
-        src.h = image.height;
+        src.w = image->width;
+        src.h = image->height;
     }
 
     f32 scale_ratio_w = (f32)src.w  / destination.w;
@@ -89,7 +101,7 @@ void software_framebuffer_draw_image_ex(struct software_framebuffer* framebuffer
             for (s32 x_cursor = start_x; x_cursor < end_x; ++x_cursor) {
                 if (x_cursor >= 0 && x_cursor < framebuffer->width) {
                     s32 stride       = framebuffer->width;
-                    s32 image_stride = image.width;
+                    s32 image_stride = image->width;
 
                     s32 image_sample_x = floor((src.x + src.w) - ((end_x - x_cursor) * scale_ratio_w));
                     s32 image_sample_y = floor((src.y + src.h) - ((end_y - y_cursor) * scale_ratio_h));
@@ -100,7 +112,7 @@ void software_framebuffer_draw_image_ex(struct software_framebuffer* framebuffer
                     if ((flags & SOFTWARE_FRAMEBUFFER_DRAW_IMAGE_FLIP_VERTICALLY))
                         image_sample_y = floor(((end_y - y_cursor) * scale_ratio_h) + src.y);
 
-                    union color32u8 sampled_pixel = (union color32u8) { .rgba_packed = image.pixels_u32[image_sample_y * image_stride + image_sample_x] };
+                    union color32u8 sampled_pixel = (union color32u8) { .rgba_packed = image->pixels_u32[image_sample_y * image_stride + image_sample_x] };
 
                     sampled_pixel.r *= modulation.r;
                     sampled_pixel.g *= modulation.g;
@@ -121,5 +133,13 @@ void software_framebuffer_draw_image_ex(struct software_framebuffer* framebuffer
                 }
             }
     }
-
 }
+
+void software_framebuffer_copy_into(struct software_framebuffer* target, struct software_framebuffer* source) {
+    if (target->width == source->width && target->height == source->height) {
+        memory_copy(source->pixels, target->pixels, target->width * target->height * sizeof(u32));
+    } else {
+        software_framebuffer_draw_image_ex(target, source, RECTANGLE_F32_NULL, RECTANGLE_F32_NULL, color32f32(1,1,1,1), NO_FLAGS);
+    }
+}
+
