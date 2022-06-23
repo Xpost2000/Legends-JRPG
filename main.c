@@ -20,6 +20,7 @@ static SDL_GameController*         global_controller_devices[4] = {};
 static SDL_Haptic*                 global_haptic_devices[4]     = {};
 static struct software_framebuffer global_default_framebuffer;
 static f32                         global_elapsed_time          = 0.0f;
+static struct memory_arena         scratch_arena                = {};
 
 local void close_all_controllers(void) {
     for (unsigned controller_index = 0; controller_index < array_count(global_controller_devices); ++controller_index) {
@@ -265,6 +266,9 @@ int main(int argc, char** argv) {
             SDL_SetWindowTitle(global_game_window, window_name_title_buffer);
         }
         #endif
+
+        memory_arena_clear_top(&scratch_arena);
+        memory_arena_clear_bottom(&scratch_arena);
     }
 
     deinitialize();

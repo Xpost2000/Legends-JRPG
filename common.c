@@ -11,6 +11,7 @@
 #include <time.h>
 
 #define assertion(x) assert(x)
+#define unimplemented(x) assertion(false && x);
 #define array_count(x) (sizeof(x)/sizeof(x[0]))
 #define local    static
 #define internal static
@@ -203,13 +204,21 @@ size_t system_heap_peak_allocated_amount(void) {
 }
 
 struct rectangle_f32 {
-    f32 x;
-    f32 y;
-    f32 w;
-    f32 h;
+    f32 x; f32 y; f32 w; f32 h;
 };
+struct rectangle_s32 {
+    s32 x; s32 y; s32 w; s32 h;
+};
+struct rectangle_s16 {
+    s16 x; s16 y; s16 w; s16 h;
+};
+
 #define rectangle_f32(X,Y,W,H) (struct rectangle_f32){.x=X,.y=Y,.w=W,.h=H}
+#define rectangle_s32(X,Y,W,H) (struct rectangle_s32){.x=X,.y=Y,.w=W,.h=H}
+#define rectangle_s16(X,Y,W,H) (struct rectangle_s32){.x=X,.y=Y,.w=W,.h=H}
 #define RECTANGLE_F32_NULL rectangle_f32(0,0,0,0)
+#define RECTANGLE_S32_NULL rectangle_s32(0,0,0,0)
+#define RECTANGLE_S16_NULL rectangle_s16(0,0,0,0)
 
 #define FRAMETIME_SAMPLE_MAX (32)
 struct {

@@ -64,6 +64,34 @@ union color32f32 {
 #define color32u8(R,G,B,A)  (union color32u8){.r  = R,.g=G,.b=B,.a=A}
 #define color32f32(R,G,B,A) (union color32f32){.r = R,.g=G,.b=B,.a=A}
 
+/* Structured to work for both ttf and raster fonts, as they are both cached here */
+/* Built as a texture atlas. Should work with hardware acceleration if I'm feeling it */
+
+/* TODO These atlases only support ASCII for now. */
+/* Maybe forever? I don't plan on this thing having a long life cycle past this summer :/ */
+enum font_cache_type {
+    FONT_CACHE_ATLAS_FIXED_ASCII,
+    FONT_CACHE_ATLAS_VARIABLE,
+};
+struct font_cache {
+    /* atlas */
+    Image_Buffer_Base;
+
+    s8 type;
+    union {
+        struct {
+            s32 tile_width;
+            s32 tile_height;
+            s32 atlas_rows;
+            s32 atlas_cols;
+        };
+        struct rectangle_s16 glyphs[128];
+    };
+};
+
+struct font_cache font_cache_load_bitmap_font(char* filepath, s32 tile_width, s32 tile_height, s32 atlas_rows, s32 atlas_columns);
+void              font_cache_free(struct font_cache* font_cache);
+
 struct image_buffer image_buffer_load_from_file(const char* file_path);
 void                image_buffer_write_to_disk(struct image_buffer* image, const char* as);
 void                image_buffer_free(struct image_buffer* image);
@@ -79,6 +107,8 @@ enum software_framebuffer_draw_image_ex_flags {
 void software_framebuffer_clear_buffer(struct software_framebuffer* framebuffer, union color32u8 rgba);
 void software_framebuffer_draw_quad(struct software_framebuffer* framebuffer, struct rectangle_f32 destination, union color32u8 rgba);
 void software_framebuffer_draw_image_ex(struct software_framebuffer* framebuffer, struct image_buffer* image, struct rectangle_f32 destination, struct rectangle_f32 src, union color32f32 modulation, u32 flags);
+/* we do not have a draw glyph */
+void software_framebuffer_draw_text(struct software_framebuffer* framebuffer, struct font_cache* font, float scale, v2f32 xy, char* cstring, union color32f32 modulation);
 /* only thin lines */
 void software_framebuffer_draw_line(struct software_framebuffer* framebuffer, v2f32 start, v2f32 end, union color32u8 rgba);
 

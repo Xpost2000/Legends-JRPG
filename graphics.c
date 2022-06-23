@@ -31,6 +31,28 @@ void image_buffer_free(struct image_buffer* image) {
     system_heap_memory_deallocate(image->pixels);
 }
 
+struct font_cache font_cache_load_bitmap_font(char* filepath, s32 tile_width, s32 tile_height, s32 atlas_rows, s32 atlas_columns) {
+    struct font_cache result = {
+        .type = FONT_CACHE_ATLAS_FIXED_ASCII,
+        .tile_width = tile_width,
+        .tile_height = tile_height,
+        .atlas_rows = atlas_rows,
+        .atlas_cols = atlas_columns
+    };
+
+    struct image_buffer atlas_image = image_buffer_load_from_file(filepath);
+
+    result.width  = atlas_image.width;
+    result.height = atlas_image.height;
+    result.pixels = atlas_image.pixels;
+
+    return result;
+}
+
+void font_cache_free(struct font_cache* font_cache) {
+    image_buffer_free((struct image_buffer*) font_cache); 
+}
+
 /* we would like temporary arenas yes... */
 struct software_framebuffer software_framebuffer_create(struct memory_arena* arena, u32 width, u32 height) {
     u8* pixels = memory_arena_push(arena, width * height * sizeof(u32));
@@ -224,6 +246,41 @@ void software_framebuffer_draw_line(struct software_framebuffer* framebuffer, v2
                     y1 += sign_y;
                 }
             }
+        }
+    }
+}
+
+/* we do not have a draw glyph */
+void software_framebuffer_draw_text(struct software_framebuffer* framebuffer, struct font_cache* font, float scale, v2f32 xy, char* cstring, union color32f32 modulation) {
+    f32 x_cursor = xy.x;
+    f32 y_cursor = xy.y;
+
+    char* text_cursor = cstring;
+
+    for (; (*text_cursor); ++text_cursor) {
+        if ((*text_cursor) == '\n') {
+            y_cursor += font->tile_height * scale;
+            x_cursor =  xy.x;
+        } else {
+            s32 character_index = *text_cursor - 32;
+
+            software_framebuffer_draw_image_ex(
+                framebuffer, font,
+                rectangle_f32(
+                    x_cursor, y_cursor,
+                    font->tile_width * scale,
+                    font->tile_height * scale
+                ),
+                rectangle_f32(
+                    (character_index % font->atlas_cols) * font->tile_width,
+                    (character_index / font->atlas_cols) * font->tile_height,
+                    font->tile_width, font->tile_height
+                ),
+                modulation,
+                NO_FLAGS
+            );
+
+            x_cursor += font->tile_width * scale;
         }
     }
 }
