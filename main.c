@@ -49,6 +49,11 @@ s32 clamp_s32(s32 x, s32 min, s32 max) {
     if (x > max) x = max;
     return x;
 }
+f32 clamp_f32(f32 x, f32 min, f32 max) {
+    if (x < min) x = min;
+    if (x > max) x = max;
+    return x;
+}
 
 static size_t _globally_tracked_memory_allocation_counter = 0;
 
@@ -205,17 +210,21 @@ struct software_framebuffer software_framebuffer_create(struct memory_arena* are
     };
 }
 
-struct rectangle {
+struct rectangle_f32 {
     f32 x;
     f32 y;
     f32 w;
     f32 h;
 };
-#define rectangle(X,Y,W,H) (struct rectangle){.x=X,.y=Y,.w=W,.h=H}
-#define RECTANGLE_NULL rectangle(0,0,0,0)
+#define rectangle_f32(X,Y,W,H) (struct rectangle_f32){.x=X,.y=Y,.w=W,.h=H}
+#define RECTANGLE_F32_NULL rectangle_f32(0,0,0,0)
+struct rectangle_f32 rectangle_f32_clamp(struct rectangle_f32 input, struct rectangle_f32 region) {
+    input.x = clamp_f32(input.x, region.x, region.x + region.w);
+    input.w = clamp_f32(input.w, 0, region.w);
+    input.y = clamp_f32(input.y, region.y, region.y + region.h);
+    input.h = clamp_f32(input.h, 0, region.h);
 
-bool rectangle_equal(struct rectangle a, struct rectangle b) {
-    return (a.x == b.x && a.y == b.y && a.w == b.w && a.h == b.h);
+    return input;
 }
 
 union color32u8 {
@@ -235,19 +244,15 @@ void software_framebuffer_clear_buffer(struct software_framebuffer* framebuffer,
     memory_set32(framebuffer->pixels, framebuffer->width * framebuffer->height * sizeof(u32), rgba.rgba_packed);
 }
 
-void software_framebuffer_draw_quad(struct software_framebuffer* framebuffer, struct rectangle destination, union color32u8 rgba) {
-    s32 start_x = (s32)destination.x;
-    s32 start_y = (s32)destination.y;
-    s32 end_x   = (s32)(destination.x + destination.w);
-    s32 end_y   = (s32)(destination.y + destination.h);
+void software_framebuffer_draw_quad(struct software_framebuffer* framebuffer, struct rectangle_f32 destination, union color32u8 rgba) {
+    struct rectangle_f32 draw_region = rectangle_f32_clamp(
+        destination, rectangle_f32(0, 0, framebuffer->width, framebuffer->height)
+    );
+    s32 start_x = (s32)draw_region.x;
+    s32 start_y = (s32)draw_region.y;
+    s32 end_x   = (s32)(destination.x + draw_region.w);
+    s32 end_y   = (s32)(destination.y + draw_region.h);
 
-    if (start_x > end_x) Swap(start_x, end_x, s32);
-    if (start_y > end_y) Swap(start_y, end_y, s32);
-
-    start_x = clamp_s32(start_x, 0, framebuffer->width);
-    start_y = clamp_s32(start_y, 0, framebuffer->height);
-    end_x   = clamp_s32(end_x, 0, framebuffer->width);
-    end_y   = clamp_s32(end_y, 0, framebuffer->height);
 
     u32* framebuffer_pixels_as_32 = (u32*)framebuffer->pixels;
     for (u32 y_cursor = start_y; y_cursor < end_y; ++y_cursor) {
@@ -273,24 +278,18 @@ struct image_buffer {
     u32 width;
     u32 height;
 };
-void software_framebuffer_draw_image_ex(struct software_framebuffer* framebuffer, struct image_buffer image, struct rectangle destination, struct rectangle src, union color32f32 modulation, u32 flags) {
+void software_framebuffer_draw_image_ex(struct software_framebuffer* framebuffer, struct image_buffer image, struct rectangle_f32 destination, struct rectangle_f32 src, union color32f32 modulation, u32 flags) {
     f32 scale_ratio_w = (f32)image.width  / destination.w;
     f32 scale_ratio_h = (f32)image.height / destination.h;
 
-    s32 start_x = (s32)destination.x;
-    s32 start_y = (s32)destination.y;
-    s32 end_x   = (s32)(destination.x + destination.w);
-    s32 end_y   = (s32)(destination.y + destination.h);
+    struct rectangle_f32 draw_region = rectangle_f32_clamp(
+        destination, rectangle_f32(0, 0, framebuffer->width, framebuffer->height)
+    );
 
-    /* bad behavior */
-    if (start_x > end_x) Swap(start_x, end_x, s32);
-    if (start_y > end_y) Swap(start_y, end_y, s32);
-
-    start_x = clamp_s32(start_x, 0, framebuffer->width);
-    start_y = clamp_s32(start_y, 0, framebuffer->height);
-    end_x   = clamp_s32(end_x, 0, framebuffer->width);
-    end_y   = clamp_s32(end_y, 0, framebuffer->height);
-
+    s32 start_x = (s32)draw_region.x;
+    s32 start_y = (s32)draw_region.y;
+    s32 end_x   = (s32)(destination.x + draw_region.w);
+    s32 end_y   = (s32)(destination.y + draw_region.h);
 
     u32* framebuffer_pixels_as_32 = (u32*)framebuffer->pixels;
     for (u32 y_cursor = start_y; y_cursor < end_y; ++y_cursor) {
@@ -299,7 +298,12 @@ void software_framebuffer_draw_image_ex(struct software_framebuffer* framebuffer
             u32 image_stride = image.width;
 
             s32 image_sample_x = floor((x_cursor * scale_ratio_w) + src.x);
+            if (flags & SOFTWARE_FRAMEBUFFER_DRAW_IMAGE_FLIP_HORIZONTALLY)
+                image_sample_x = floor((src.x + src.w) - (x_cursor * scale_ratio_w));
+
             s32 image_sample_y = floor((y_cursor * scale_ratio_h) + src.y);
+            if (flags & SOFTWARE_FRAMEBUFFER_DRAW_IMAGE_FLIP_VERTICALLY)
+                image_sample_y = floor((src.y + src.h) - (x_cursor * scale_ratio_h));
 
             framebuffer_pixels_as_32[y_cursor * stride + x_cursor] = image.pixels_u32[image_sample_y * image_stride + image_sample_x];
         }
@@ -353,7 +357,7 @@ int main(int argc, char** argv) {
 
         {
             software_framebuffer_clear_buffer(&global_default_framebuffer, color32u8(0, 255, 0, 255));
-            software_framebuffer_draw_quad(&global_default_framebuffer, rectangle(100, 100, 100, 100), color32u8(255, 0, 0, 255));
+            software_framebuffer_draw_quad(&global_default_framebuffer, rectangle_f32(-50, 450, 100, 100), color32u8(255, 0, 0, 255));
         }
 
         {
