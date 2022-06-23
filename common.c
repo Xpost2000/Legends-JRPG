@@ -5,6 +5,7 @@
 #include <stdbool.h>
 
 #include <assert.h>
+#include <time.h>
 
 #define assertion(x) assert(x)
 
@@ -161,3 +162,5 @@ struct rectangle_f32 rectangle_f32_clamp(struct rectangle_f32 input, struct rect
 
     return input;
 }
+
+#include "prng.c"

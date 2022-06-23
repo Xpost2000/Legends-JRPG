@@ -1,3 +1,9 @@
+/*
+  TODO
+  Key input,
+  and basic world collision detection
+*/
+
 #include <SDL2/SDL.h>
 
 #include "common.c"
@@ -40,6 +46,12 @@ void update_and_render_game(struct software_framebuffer* framebuffer, float dt) 
 }
 
 int main(int argc, char** argv) {
+    {
+        struct random_state rng = random_state();
+        for (int i = 0; i < 20; ++i)
+        printf("%f\n", random_float(&rng));
+        return 0; 
+    }
     struct memory_arena game_arena = memory_arena_create_from_heap("Game Memory", Megabyte(256));
 
     SDL_Init(SDL_INIT_VIDEO);

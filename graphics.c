@@ -1,3 +1,8 @@
+/* 
+   TODO:
+   Alpha Blending
+   Actual Renderer System (render layers and drawing text, with a camera)
+*/
 #define STBI_MALLOC(x)       system_heap_memory_allocate(x)
 #define STBI_REALLOC(x, nsz) system_heap_memory_reallocate(x, nsz)
 #define STBI_FREE(x)         system_heap_memory_deallocate(x)
