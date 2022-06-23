@@ -373,6 +373,20 @@ void software_framebuffer_draw_image_ex(struct software_framebuffer* framebuffer
 }
 
 static struct software_framebuffer global_default_framebuffer;
+struct image_buffer test_image;
+
+void update_and_render_game(struct software_framebuffer* framebuffer, float dt) {
+    static f32 x = 0;
+    static f32 dir = 1;
+    software_framebuffer_clear_buffer(framebuffer, color32u8(0, 255, 0, 255));
+    software_framebuffer_draw_quad(framebuffer, rectangle_f32(-50, 450, 100, 100), color32u8(255, 0, 0, 255));
+    software_framebuffer_draw_image_ex(framebuffer, test_image, rectangle_f32(x, 5, 96, 96), RECTANGLE_F32_NULL, color32f32(1,1,1,1), 0); 
+    software_framebuffer_draw_image_ex(framebuffer, test_image, rectangle_f32(x, 100, 96, 96), RECTANGLE_F32_NULL, color32f32(1,1,1,1), 0); 
+    software_framebuffer_draw_image_ex(framebuffer, test_image, rectangle_f32(x, 200, 96, 96), RECTANGLE_F32_NULL, color32f32(1,1,1,1), 0); 
+
+    x += 100 * dir * dt;
+    if (x + 96 > 640 || x < 0) dir *= -1;
+}
 
 int main(int argc, char** argv) {
     struct memory_arena game_arena = memory_arena_create_from_heap("Game Memory", Megabyte(256));
@@ -388,9 +402,12 @@ int main(int argc, char** argv) {
     global_default_framebuffer  = software_framebuffer_create(&game_arena, SCREEN_WIDTH, SCREEN_HEIGHT);
     global_game_texture_surface = SDL_CreateTexture(global_game_sdl_renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STREAMING, global_default_framebuffer.width, global_default_framebuffer.height);
 
-    struct image_buffer test_image = image_buffer_load_from_file("./res/a.png");
+    test_image = image_buffer_load_from_file("./res/a.png");
 
+    f32 last_elapsed_delta_time = (1.0 / 60.0f);
     while (global_game_running) {
+        u32 start_frame_time = SDL_GetTicks();
+
         {
             SDL_Event current_event;
             while (SDL_PollEvent(&current_event)) {
@@ -418,12 +435,8 @@ int main(int argc, char** argv) {
             }
         }
 
-        {
-            software_framebuffer_clear_buffer(&global_default_framebuffer, color32u8(0, 255, 0, 255));
-            software_framebuffer_draw_quad(&global_default_framebuffer, rectangle_f32(-50, 450, 100, 100), color32u8(255, 0, 0, 255));
-            software_framebuffer_draw_image_ex(&global_default_framebuffer, test_image,
-                                               rectangle_f32(0, 5, 96, 96), RECTANGLE_F32_NULL, color32f32(1,1,1,1), 0); 
-        }
+
+        update_and_render_game(&global_default_framebuffer, last_elapsed_delta_time);
 
         {
             void* locked_pixel_region;
@@ -435,6 +448,8 @@ int main(int argc, char** argv) {
 
         SDL_RenderCopy(global_game_sdl_renderer, global_game_texture_surface, 0, 0);
         SDL_RenderPresent(global_game_sdl_renderer);
+
+        last_elapsed_delta_time = (SDL_GetTicks() - start_frame_time) / 1000.0f;
     }
 
     image_buffer_free(&test_image);
