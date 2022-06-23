@@ -233,14 +233,16 @@ size_t file_length(char* path) {
     return result;
 }
 
+void read_entire_file_into_buffer(char* path, u8* buffer, size_t buffer_length) {
+    FILE* file = fopen(path, "rb+");
+    fread(buffer, 1, buffer_length, file);
+    fclose(file);
+}
+
 struct file_buffer read_entire_file(char* path) {
     size_t file_size   = file_length(path);
     u8*    file_buffer = system_heap_memory_allocate(file_size+1);
-
-    FILE* file = fopen(path, "rb+");
-    fread(file_buffer, 1, file_size, file);
-    fclose(file);
-
+    read_entire_file_into_buffer(path, file_buffer, file_size);
     file_buffer[file_size] = 0;
     return (struct file_buffer) {
         .buffer = file_buffer,
