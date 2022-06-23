@@ -52,4 +52,20 @@ void update_and_render_game(struct software_framebuffer* framebuffer, float dt) 
         render_commands_push_text(&commands, &game_font, 8, v2f32(0, 0), "Hello World\nSad", color32f32(1,1,1,1));
     }
     software_framebuffer_render_commands(framebuffer, &commands);
+    static bool blur = true;
+
+    if (is_key_pressed(KEY_E)) {
+        blur ^= 1;
+    }
+
+    if (blur)
+    {
+        f32 box_blur[] = {
+            1.0/16, 2.0/16, 1.0/16,
+            2.0 /16, 4.0/16, 2.0/16,
+            1.0/16, 2.0/16, 1.0/16
+        };
+
+        software_framebuffer_kernel_convolution(&scratch_arena, framebuffer, box_blur, 3, 3);
+    }
 }

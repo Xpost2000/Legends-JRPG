@@ -432,3 +432,46 @@ void software_framebuffer_render_commands(struct software_framebuffer* framebuff
         }
     }
 }
+
+/* requires an arena because we need an original copy of our framebuffer. */
+/* NOTE technically a test of performance to see if this is doomed */
+void software_framebuffer_kernel_convolution(struct memory_arena* arena, struct software_framebuffer* framebuffer, f32* kernel, s16 width, s16 height) {
+    struct software_framebuffer unaltered_copy = software_framebuffer_create(arena, framebuffer->width, framebuffer->height);
+    software_framebuffer_copy_into(&unaltered_copy, framebuffer);
+
+    s32 framebuffer_width  = framebuffer->width;
+    s32 framebuffer_height = framebuffer->height;
+
+    s32 kernel_half_width = width/2;
+    s32 kernel_half_height = height/2;
+
+    for (s32 y_cursor = 0; y_cursor < framebuffer_height; ++y_cursor) {
+        for (s32 x_cursor = 0; x_cursor < framebuffer_width; ++x_cursor) {
+            {
+                f32 accumulation[3] = {};
+                for (s32 y_cursor_kernel = -kernel_half_height; y_cursor_kernel < kernel_half_height; ++y_cursor_kernel) {
+                    for (s32 x_cursor_kernel = -kernel_half_width; x_cursor_kernel < kernel_half_width; ++x_cursor_kernel) {
+                        s32 sample_x = x_cursor_kernel + x_cursor;
+                        s32 sample_y = y_cursor_kernel + y_cursor;
+
+                        if (sample_x >= 0 && sample_x < framebuffer_width &&
+                            sample_y >= 0 && sample_y < framebuffer_height) {
+
+                            accumulation[0] += unaltered_copy.pixels[sample_y * framebuffer_width * 4 + sample_x * 4 + 0] * kernel[(y_cursor_kernel+1) * width + (x_cursor_kernel+1)];
+                            accumulation[1] += unaltered_copy.pixels[sample_y * framebuffer_width * 4 + sample_x * 4 + 1] * kernel[(y_cursor_kernel+1) * width + (x_cursor_kernel+1)];
+                            accumulation[2] += unaltered_copy.pixels[sample_y * framebuffer_width * 4 + sample_x * 4 + 2] * kernel[(y_cursor_kernel+1) * width + (x_cursor_kernel+1)];
+                        }
+                    }
+                }
+
+                accumulation[0] = clamp_f32(accumulation[0], 0, 255.0f);
+                accumulation[1] = clamp_f32(accumulation[1], 0, 255.0f);
+                accumulation[2] = clamp_f32(accumulation[2], 0, 255.0f);
+
+                framebuffer->pixels[y_cursor * framebuffer_width * 4 + x_cursor * 4 + 0] = (u8)accumulation[0];
+                framebuffer->pixels[y_cursor * framebuffer_width * 4 + x_cursor * 4 + 1] = (u8)accumulation[1];
+                framebuffer->pixels[y_cursor * framebuffer_width * 4 + x_cursor * 4 + 2] = (u8)accumulation[2];
+            }
+        }
+    }
+}
