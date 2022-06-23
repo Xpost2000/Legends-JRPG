@@ -356,6 +356,20 @@ void software_framebuffer_render_commands(struct software_framebuffer* framebuff
     for (unsigned index = 0; index < commands->command_count; ++index) {
         struct render_command* command = &commands->commands[index];
 
+        {
+            command->start.x       *= commands->camera.zoom;
+            command->start.y       *= commands->camera.zoom;
+            command->end.x         *= commands->camera.zoom;
+            command->end.y         *= commands->camera.zoom;
+            command->destination.x *= commands->camera.zoom;
+            command->destination.y *= commands->camera.zoom;
+            command->destination.w *= commands->camera.zoom;
+            command->destination.h *= commands->camera.zoom;
+            command->xy.x          *= commands->camera.zoom;
+            command->xy.y          *= commands->camera.zoom;
+            command->scale         *= commands->camera.zoom;
+        }
+
         if (commands->camera.centered) {
             command->start.x       += half_screen_width;
             command->start.y       += half_screen_height;
@@ -370,13 +384,14 @@ void software_framebuffer_render_commands(struct software_framebuffer* framebuff
         {
             command->start.x       -= commands->camera.xy.x;
             command->start.y       -= commands->camera.xy.y;
-            command->end.x         += commands->camera.xy.x;
-            command->end.y         += commands->camera.xy.y;
-            command->destination.x += commands->camera.xy.x;
-            command->destination.y += commands->camera.xy.y;
-            command->xy.x          += commands->camera.xy.x;
-            command->xy.y          += commands->camera.xy.y;
+            command->end.x         -= commands->camera.xy.x;
+            command->end.y         -= commands->camera.xy.y;
+            command->destination.x -= commands->camera.xy.x;
+            command->destination.y -= commands->camera.xy.y;
+            command->xy.x          -= commands->camera.xy.x;
+            command->xy.y          -= commands->camera.xy.y;
         }
+
 
         switch (command->type) {
             case RENDER_COMMAND_DRAW_QUAD: {

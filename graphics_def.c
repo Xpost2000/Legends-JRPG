@@ -113,16 +113,7 @@ void software_framebuffer_draw_text(struct software_framebuffer* framebuffer, st
 /* only thin lines */
 void software_framebuffer_draw_line(struct software_framebuffer* framebuffer, v2f32 start, v2f32 end, union color32u8 rgba);
 
-/* NOTE/TODO For now our camera isn't really intelligent */
-struct camera {
-    v2f32 xy;
-    u8    centered;
-#if 0
-    f32   zoom;
-#endif
-};
-#define camera(XY) (struct camera) { .xy=XY, }
-#define camera_centered(XY) (struct camera) { .xy=XY, .centered=true }
+#include "camera_def.c"
 
 /* This is a pretty generous number, pretty sure only particles would hit this...  */
 /* should match the operations found above */
