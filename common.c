@@ -12,10 +12,11 @@
 #define BIT(x)             (x << 1)
 #define BIT64(x) (uint64_t)(x << 1LL)
 
-#define Kilobyte(x)         (uint64_t)(x * 1024LL)
-#define Megabyte(x)         (uint64_t)(x * 1024LL * 1024LL)
-#define Gigabyte(x)         (uint64_t)(x * 1024LL * 1024LL * 1024LL)
-#define Terabyte(x)         (uint64_t)(x * 1024LL * 1024LL * 1024LL * 1024LL)
+#define Kilobyte(x)                 (uint64_t)(x * 1024LL)
+#define Megabyte(x)                 (uint64_t)(x * 1024LL * 1024LL)
+#define Gigabyte(x)                 (uint64_t)(x * 1024LL * 1024LL * 1024LL)
+#define Terabyte(x)                 (uint64_t)(x * 1024LL * 1024LL * 1024LL * 1024LL)
+#define _debugprintf(fmt, args...)  fprintf(stderr, "[%s:%d:%s()]: " fmt "\n", __FILE__, __LINE__, __func__, ##args)
 
 #define unused(x) (void)(x)
 
@@ -64,14 +65,45 @@ struct tracked_memory_allocation_header {
 };
 
 /* use 0 for destination_size if I don't care. Ideally I should know both though. */
-static inline void memory_copy(void* source, void* destination, size_t amount_from_source, size_t destination_size) {
-    if (destination_size != 0) {
-        if (amount_from_source > destination_size)
-            amount_from_source = destination_size;
-    }
 
-    for (u64 index = 0; index < amount_from_source; ++index) {
+/* Minorly faster implementations without stosb. */
+static inline void memory_copy64(void* source, void* destination, size_t amount) {
+    for (u64 index = 0; index < amount >> 3; ++index) {
+        ((u64*)destination)[index] = ((u64*)source)[index];
+    }
+}
+
+static inline void memory_copy32(void* source, void* destination, size_t amount) {
+    for (u64 index = 0; index < amount >> 2; ++index) {
+        ((u32*)destination)[index] = ((u32*)source)[index];
+    }
+}
+
+static inline void memory_copy16(void* source, void* destination, size_t amount) {
+    for (u64 index = 0; index < amount >> 1; ++index) {
+        ((u16*)destination)[index] = ((u16*)source)[index];
+    }
+}
+
+static inline void memory_copy8(void* source, void* destination, size_t amount) {
+    for (u64 index = 0; index < amount; ++index) {
         ((u8*)destination)[index] = ((u8*)source)[index];
+    }
+}
+
+static inline void memory_copy(void* source, void* destination, size_t amount) {
+    if (amount & ~(63)) {
+        memory_copy64(source, destination, amount);
+        /* _debugprintf("memory copy 64bit"); */
+    } else if (amount & ~(31)) {
+        memory_copy32(source, destination, amount);
+        /* _debugprintf("memory copy 32bit"); */
+    } else if (amount & ~(15)) {
+        memory_copy16(source, destination, amount);
+        /* _debugprintf("memory copy 16bit"); */
+    } else {
+        memory_copy8(source, destination, amount);
+        /* _debugprintf("memory copy default"); */
     }
 }
 
@@ -206,6 +238,16 @@ struct file_buffer read_entire_file(char* path) {
 
 void file_buffer_free(struct file_buffer* file) {
     system_heap_memory_deallocate(file->buffer);
+}
+
+u64 cstring_length(const char* cstring) {
+    char* cursor = (char*)cstring;
+
+    while (*cursor) {
+        cursor++;
+    }
+
+    return (cstring - cursor);
 }
 
 struct rectangle_f32 {

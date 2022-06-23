@@ -1,12 +1,26 @@
 /* 
    TODO:
-   Actual Renderer System (render layers and drawing text, with a camera)
+   Actual Renderer System (render layers and drawing text, with a camera) (Maybe, maybe not)
 */
-#define STBI_MALLOC(x)       system_heap_memory_allocate(x)
-#define STBI_REALLOC(x, nsz) system_heap_memory_reallocate(x, nsz)
-#define STBI_FREE(x)         system_heap_memory_deallocate(x)
+#define STBI_MALLOC(x)        system_heap_memory_allocate(x)
+#define STBI_REALLOC(x, nsz)  system_heap_memory_reallocate(x, nsz)
+#define STBI_FREE(x)          system_heap_memory_deallocate(x)
+
+#define STBTT_malloc(x, u)       ((void)(u), system_heap_memory_allocate(x))
+#define STBTT_free(x, u)         ((void)(u), system_heap_memory_deallocate(x))
+
+#define STBTT_memcpy(a, b, s)      memory_copy(b, a, s)
+#define STBTT_memset(a, v, b)      memory_set8(a, b, v)
+#define STBTT_assert(x)            assertion(x)
+
+#define STBTT_strlen(x)            cstring_length(x)
+
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
+
+#define STB_TRUETYPE_IMPLEMENTATION
+#include <stb_truetype.h>
+
 
 /* (I do recognize the intent of the engine is to eventually support paletted rendering but that comes later.) */
 /* the image is expected to be rgba32, and must be converted to as such before rendering. */
