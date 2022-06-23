@@ -12,8 +12,8 @@
 
 #define assertion(x) assert(x)
 
-#define Byte(x)             (x << 1)
-#define Byte64(x) (uint64_t)(x << 1LL)
+#define BIT(x)             (x << 1)
+#define BIT64(x) (uint64_t)(x << 1LL)
 
 #define Kilobyte(x)         (uint64_t)(x * 1024LL)
 #define Megabyte(x)         (uint64_t)(x * 1024LL * 1024LL)
@@ -212,13 +212,24 @@ struct rectangle {
     f32 h;
 };
 #define rectangle(X,Y,W,H) (struct rectangle){.x=X,.y=Y,.w=W,.h=H}
+#define RECTANGLE_NULL rectangle(0,0,0,0)
+
+bool rectangle_equal(struct rectangle a, struct rectangle b) {
+    return (a.x == b.x && a.y == b.y && a.w == b.w && a.h == b.h);
+}
 
 union color32u8 {
     struct { u8 r, g, b, a; };
     u8  rgba[4];
     u32 rgba_packed;
 };
-#define color32u8(R,G,B,A) (union color32u8){.r=R,.g=G,.b=B,.a=A}
+/* for percentage and modulations */
+union color32f32 {
+    struct { f32 r, g, b, a; };
+    f32  rgba[4];
+};
+#define color32u8(R,G,B,A)  (union color32u8){.r  = R,.g=G,.b=B,.a=A}
+#define color32f32(R,G,B,A) (union color32f32){.r = R,.g=G,.b=B,.a=A}
 
 void software_framebuffer_clear_buffer(struct software_framebuffer* framebuffer, union color32u8 rgba) {
     memory_set32(framebuffer->pixels, framebuffer->width * framebuffer->height * sizeof(u32), rgba.rgba_packed);
@@ -238,13 +249,62 @@ void software_framebuffer_draw_quad(struct software_framebuffer* framebuffer, st
     end_x   = clamp_s32(end_x, 0, framebuffer->width);
     end_y   = clamp_s32(end_y, 0, framebuffer->height);
 
-    u32* framebuffer_pixels_as_32 = framebuffer->pixels;
+    u32* framebuffer_pixels_as_32 = (u32*)framebuffer->pixels;
     for (u32 y_cursor = start_y; y_cursor < end_y; ++y_cursor) {
         for (u32 x_cursor = start_x; x_cursor < end_x; ++x_cursor) {
             u32 stride = framebuffer->width;
             framebuffer_pixels_as_32[y_cursor * stride + x_cursor] = rgba.rgba_packed;
         }
     }
+}
+
+enum software_framebuffer_draw_image_ex_flags {
+    SOFTWARE_FRAMEBUFFER_DRAW_IMAGE_FLIP_HORIZONTALLY = BIT(0),
+    SOFTWARE_FRAMEBUFFER_DRAW_IMAGE_FLIP_VERTICALLY   = BIT(1),
+};
+
+/* (I do recognize the intent of the engine is to eventually support paletted rendering but that comes later.) */
+/* the image is expected to be rgba32, and must be converted to as such before rendering. */
+struct image_buffer {
+    union {
+        u8* pixels;
+        u32* pixels_u32;
+    };
+    u32 width;
+    u32 height;
+};
+void software_framebuffer_draw_image_ex(struct software_framebuffer* framebuffer, struct image_buffer image, struct rectangle destination, struct rectangle src, union color32f32 modulation, u32 flags) {
+    f32 scale_ratio_w = (f32)image.width  / destination.w;
+    f32 scale_ratio_h = (f32)image.height / destination.h;
+
+    s32 start_x = (s32)destination.x;
+    s32 start_y = (s32)destination.y;
+    s32 end_x   = (s32)(destination.x + destination.w);
+    s32 end_y   = (s32)(destination.y + destination.h);
+
+    /* bad behavior */
+    if (start_x > end_x) Swap(start_x, end_x, s32);
+    if (start_y > end_y) Swap(start_y, end_y, s32);
+
+    start_x = clamp_s32(start_x, 0, framebuffer->width);
+    start_y = clamp_s32(start_y, 0, framebuffer->height);
+    end_x   = clamp_s32(end_x, 0, framebuffer->width);
+    end_y   = clamp_s32(end_y, 0, framebuffer->height);
+
+
+    u32* framebuffer_pixels_as_32 = (u32*)framebuffer->pixels;
+    for (u32 y_cursor = start_y; y_cursor < end_y; ++y_cursor) {
+        for (u32 x_cursor = start_x; x_cursor < end_x; ++x_cursor) {
+            u32 stride       = framebuffer->width;
+            u32 image_stride = image.width;
+
+            s32 image_sample_x = floor((x_cursor * scale_ratio_w) + src.x);
+            s32 image_sample_y = floor((y_cursor * scale_ratio_h) + src.y);
+
+            framebuffer_pixels_as_32[y_cursor * stride + x_cursor] = image.pixels_u32[image_sample_y * image_stride + image_sample_x];
+        }
+    }
+
 }
 
 static struct software_framebuffer global_default_framebuffer;
