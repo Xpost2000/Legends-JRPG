@@ -249,10 +249,10 @@ int main(int argc, char** argv) {
         {
             handle_sdl_events();
             update_all_controller_inputs();
+            update_and_render_game(&global_default_framebuffer, last_elapsed_delta_time);
         }
         end_input_frame();
 
-        update_and_render_game(&global_default_framebuffer, last_elapsed_delta_time);
         swap_framebuffers_onto_screen();
 
         last_elapsed_delta_time = (SDL_GetTicks() - start_frame_time) / 1000.0f;

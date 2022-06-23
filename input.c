@@ -3,6 +3,8 @@
 struct {
     struct input_state current_state;
     struct input_state last_state;
+
+    bool keys_receiving_events[KEY_COUNT];
 } global_input = {};
 local struct game_controller global_controllers[4];
 
@@ -16,7 +18,8 @@ void register_key_down(s32 keyid) {
             global_input.current_state.text[--global_input.current_state.text_edit_cursor] = 0;
         }
     }
-    global_input.current_state.keys[keyid] = true;
+    global_input.current_state.keys[keyid]    = true;
+    global_input.keys_receiving_events[keyid] = true;
 }
 
 void register_key_up(s32 keyid) {
@@ -29,7 +32,7 @@ void register_mouse_position(s32 x, s32 y) {
 }
 
 void register_mouse_button(s32 button_id, bool state) {
-    assert((button_id >= 0 && button_id < MOUSE_BUTTON_COUNT) && "wtf?");
+    assertion((button_id >= 0 && button_id < MOUSE_BUTTON_COUNT) && "wtf?");
     global_input.current_state.mouse_buttons[button_id] = state;
 }
 
@@ -44,8 +47,13 @@ void get_mouse_buttons(bool* left, bool* middle, bool* right) {
     safe_assignment(right)  = global_input.current_state.mouse_buttons[MOUSE_BUTTON_RIGHT];
 }
 
+bool is_key_down_with_repeat(s32 keyid) {
+    assertion(keyid < KEY_COUNT && "invalid key id?");
+    return global_input.keys_receiving_events[keyid];
+}
+
 bool is_key_down(s32 keyid) {
-    assert(keyid < KEY_COUNT && "invalid key id?");
+    assertion(keyid < KEY_COUNT && "invalid key id?");
     return global_input.current_state.keys[keyid];
 }
 
@@ -78,7 +86,7 @@ bool controller_button_pressed(struct game_controller* controller, u8 button_id)
 }
 
 struct game_controller* get_gamepad(s32 index) {
-    assert(index >= 0 && index < array_count(global_controllers) && "Bad controller index");
+    assertion(index >= 0 && index < array_count(global_controllers) && "Bad controller index");
     return global_controllers + index;
 }
 
@@ -98,7 +106,8 @@ void end_input_frame(void) {
             memcpy(controller->last_buttons, controller->buttons, sizeof(controller->buttons));
         }
     }
-    /* zero_array(global_input.current_state.keys); */
+
+    zero_array(global_input.keys_receiving_events);
 }
 
 void start_text_edit(char* target, size_t length) {
