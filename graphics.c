@@ -97,6 +97,7 @@ void software_framebuffer_draw_quad(struct software_framebuffer* framebuffer, st
 
 
     u32* framebuffer_pixels_as_32 = (u32*)framebuffer->pixels;
+    unused(framebuffer_pixels_as_32);
     for (u32 y_cursor = start_y; y_cursor < end_y; ++y_cursor) {
         if (y_cursor >= 0 && y_cursor < framebuffer->height)
             for (u32 x_cursor = start_x; x_cursor < end_x; ++x_cursor) {
@@ -138,6 +139,7 @@ void software_framebuffer_draw_image_ex(struct software_framebuffer* framebuffer
     s32 end_y   = (s32)(destination.y + destination.h);
 
     u32* framebuffer_pixels_as_32 = (u32*)framebuffer->pixels;
+    unused(framebuffer_pixels_as_32);
     for (u32 y_cursor = start_y; y_cursor < end_y; ++y_cursor) {
         if (y_cursor >= 0 && y_cursor < framebuffer->height)
             for (u32 x_cursor = start_x; x_cursor < end_x; ++x_cursor) {

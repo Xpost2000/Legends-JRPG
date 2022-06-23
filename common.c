@@ -8,6 +8,10 @@
 #include <time.h>
 
 #define assertion(x) assert(x)
+#define array_count(x) (sizeof(x)/sizeof(x[0]))
+#define local    static
+#define internal static
+#define safe_assignment(x) if(x) *x
 
 #define BIT(x)             (x << 1)
 #define BIT64(x) (uint64_t)(x << 1LL)
@@ -112,6 +116,7 @@ static inline void zero_memory(void* memory, size_t amount) {
         ((u8*)memory)[index] = 0;
     }
 }
+#define zero_array(x) zero_memory(x, array_count(x))
 
 static inline void memory_set8(void* memory, size_t amount, u8 value) {
     u8* memory_u8 = memory;

@@ -1,0 +1,234 @@
+#ifndef INPUT_H
+#define INPUT_H
+
+enum mouse_button {
+    MOUSE_BUTTON_LEFT,
+    MOUSE_BUTTON_MIDDLE,
+    MOUSE_BUTTON_RIGHT,
+    MOUSE_BUTTON_COUNT,
+};
+
+enum keyboard_button {
+    KEY_UNKNOWN,
+    KEY_A, KEY_B, KEY_C, KEY_D, KEY_E, KEY_F, KEY_G,
+    KEY_H, KEY_I, KEY_J, KEY_K, KEY_L, KEY_M, KEY_N,
+    KEY_O, KEY_P, KEY_Q, KEY_R, KEY_S, KEY_T, KEY_U,
+    KEY_V, KEY_W, KEY_X, KEY_Y, KEY_Z,
+    KEY_F1, KEY_F2, KEY_F3, KEY_F4, KEY_F5,
+    KEY_F6, KEY_F7, KEY_F8, KEY_F9, KEY_F10,
+    KEY_F11, KEY_F12, KEY_UP, KEY_DOWN, KEY_RIGHT, KEY_LEFT,
+    KEY_0, KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9,
+    KEY_MINUS, KEY_BACKQUOTE, KEY_EQUALS,
+    KEY_SEMICOLON, KEY_QUOTE, KEY_COMMA,
+    KEY_PERIOD, KEY_RETURN, KEY_BACKSPACE, KEY_ESCAPE,
+
+    KEY_INSERT, KEY_HOME, KEY_PAGEUP, KEY_PAGEDOWN, KEY_DELETE, KEY_END,
+    KEY_PRINTSCREEN,
+
+    /*
+      I probably don't actually care about mapping these keys.
+    */
+    KEY_PAUSE, KEY_SCROLL_LOCK, KEY_NUMBER_LOCK,
+    KEYPAD_0, KEYPAD_1, KEYPAD_2, KEYPAD_3, KEYPAD_4,
+    KEYPAD_5, KEYPAD_6, KEYPAD_7, KEYPAD_8, KEYPAD_9,
+
+    KEYPAD_LEFT, KEYPAD_RIGHT, KEYPAD_UP, KEYPAD_DOWN,
+    KEYPAD_ASTERISK, KEYPAD_BACKSLASH,
+    KEYPAD_MINUS, KEYPAD_PLUS, KEYPAD_PERIOD,
+
+    KEY_LEFT_BRACKET, KEY_RIGHT_BRACKET,
+    KEY_FORWARDSLASH, KEY_BACKSLASH,
+
+    KEY_TAB, KEY_SHIFT,
+    KEY_META, KEY_SUPER, KEY_SPACE,
+
+    KEY_CTRL, KEY_ALT,
+
+    KEY_COUNT
+};
+
+enum controller_button {
+    BUTTON_A, BUTTON_B, BUTTON_X, BUTTON_Y,
+    BUTTON_RS, BUTTON_LS,
+    BUTTON_RB, BUTTON_LB,
+    BUTTON_START, BUTTON_BACK,
+    DPAD_UP,DPAD_DOWN,DPAD_LEFT,DPAD_RIGHT,
+    BUTTON_COUNT,
+};
+
+struct game_controller_triggers {
+    f32 left;
+    f32 right;
+};
+struct game_controller_joystick {
+    f32 axes[2];
+};
+struct game_controller {
+    struct game_controller_triggers triggers;
+    u8                              buttons[BUTTON_COUNT];
+    struct game_controller_joystick left_stick;
+    struct game_controller_joystick right_stick;
+
+    struct game_controller_triggers last_triggers;
+    u8                              last_buttons[BUTTON_COUNT];
+    struct game_controller_joystick last_left_stick;
+    struct game_controller_joystick last_right_stick;
+
+    void* _internal_controller_handle;
+};
+
+/* 1.0 - 0.0 */
+void controller_rumble(struct game_controller* controller, f32 x_magnitude, f32 y_magnitude, u32 ms);
+bool controller_button_pressed(struct game_controller* controller, u8 button_id);
+
+/* KEYPAD keys are left out because I have not mapped them yet. */
+internal char* keyboard_key_strings[] = {
+    [KEY_UNKNOWN] = "Unknown Key?",
+
+    [KEY_A] = "A",
+    [KEY_B] = "B",
+    [KEY_C] = "C",
+    [KEY_D] = "D",
+    [KEY_E] = "E",
+    [KEY_F] = "F",
+    [KEY_G] = "G",
+    [KEY_H] = "H",
+    [KEY_I] = "I",
+    [KEY_J] = "J",
+    [KEY_K] = "K",
+    [KEY_L] = "L",
+    [KEY_M] = "M",
+    [KEY_N] = "N",
+    [KEY_O] = "O",
+    [KEY_P] = "P",
+    [KEY_Q] = "Q",
+    [KEY_R] = "R",
+    [KEY_S] = "S",
+    [KEY_T] = "T",
+    [KEY_U] = "U",
+    [KEY_V] = "V",
+    [KEY_W] = "W",
+    [KEY_X] = "X",
+    [KEY_Y] = "Y",
+    [KEY_Z] = "Z",
+
+    [KEY_F1]  = "F1",
+    [KEY_F2]  = "F2",
+    [KEY_F3]  = "F3",
+    [KEY_F4]  = "F4",
+    [KEY_F5]  = "F5",
+    [KEY_F6]  = "F6",
+    [KEY_F7]  = "F7",
+    [KEY_F8]  = "F8",
+    [KEY_F9]  = "F9",
+    [KEY_F10] = "F10",
+    [KEY_F11] = "F11",
+    [KEY_F12] = "F12",
+
+    [KEY_1]  = "1",
+    [KEY_2]  = "2",
+    [KEY_3]  = "3",
+    [KEY_4]  = "4",
+    [KEY_5]  = "5",
+    [KEY_6]  = "6",
+    [KEY_7]  = "7",
+    [KEY_8]  = "8",
+    [KEY_9]  = "9",
+    [KEY_0]  = "0",
+
+    [KEY_MINUS]     = "-",
+    [KEY_BACKQUOTE] = "`",
+    [KEY_EQUALS]    = "=",
+    [KEY_SEMICOLON] = ";",
+    [KEY_QUOTE]     = "\'",
+    [KEY_COMMA]     = ",",
+    [KEY_PERIOD]    = ".",
+
+    [KEY_RETURN]    = "Return",
+    [KEY_BACKSPACE] = "Backspace",
+    [KEY_ESCAPE]    = "Escape",
+
+    [KEY_INSERT]   = "Insert",
+    [KEY_HOME]     = "Home",
+    [KEY_PAGEUP]   = "Page Up",
+    [KEY_PAGEDOWN] = "Page Down",
+    [KEY_DELETE]   = "Delete",
+    [KEY_END]      = "End",
+
+    [KEY_PRINTSCREEN] = "Print Screen",
+    [KEY_PAUSE]       = "Pause",
+    
+    [KEY_SCROLL_LOCK] = "Scroll Lock",
+    [KEY_NUMBER_LOCK] = "Number Lock",
+
+    [KEY_LEFT_BRACKET]  = "[",
+    [KEY_RIGHT_BRACKET] = "]",
+
+    [KEY_FORWARDSLASH] = "/",
+    [KEY_BACKSLASH]    = "\\",
+
+    [KEY_TAB]   = "Tab",
+    [KEY_SHIFT] = "Shift",
+    [KEY_CTRL]  = "Control",
+    [KEY_ALT]   = "Alt",
+
+    [KEY_SPACE] = "Space",
+};
+
+struct input_state {
+    bool keys[KEY_COUNT];
+    s32  mouse_x;
+    s32  mouse_y;
+    bool mouse_buttons[MOUSE_BUTTON_COUNT];
+
+    bool editing_text;
+    s32  text_edit_cursor;
+    char text[1024];
+};
+
+struct game_controller* get_gamepad(s32 index);
+
+enum {
+    CONTROLLER_JOYSTICK_LEFT,
+    CONTROLLER_JOYSTICK_RIGHT,
+};
+local float angle_formed_by_joystick(struct game_controller* controller, s32 which) {
+    struct game_controller_joystick target;
+    switch (which) {
+        case CONTROLLER_JOYSTICK_LEFT: {
+            target = controller->left_stick;
+        } break;
+        case CONTROLLER_JOYSTICK_RIGHT: {
+            target = controller->right_stick;
+        } break;
+    }
+
+    f32 angle = atan2(target.axes[1], target.axes[0]);
+    return angle;
+}
+
+void register_key_down(s32 keyid);
+void register_key_up(s32 keyid);
+
+void register_mouse_position(s32 x, s32 y);
+void register_mouse_button(s32 button_id, bool state);
+
+bool is_key_down(s32 keyid);
+bool is_key_pressed(s32 keyid);
+bool any_key_down(void);
+bool controller_any_button_down(struct game_controller* controller);
+
+void get_mouse_location(s32* mx, s32* my);
+void get_mouse_buttons(bool* left, bool* middle, bool* right);
+
+void begin_input_frame(void);
+void end_input_frame(void);
+
+void start_text_edit(char* target, size_t length);
+void end_text_edit(char* target, size_t amount); /*copies all text input s32o target buffer. Not necessarily unicode aware. whoops!*/
+
+void send_text_input(char* text, size_t text_length);
+bool is_editing_text(void);
+char* current_text_buffer(void);
+
+#endif
