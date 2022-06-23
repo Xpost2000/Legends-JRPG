@@ -64,6 +64,10 @@ f32 lerp_f32(f32 a, f32 b, f32 normalized_t) {
     return a * (1 - normalized_t) + (b * normalized_t);
 }
 
+f32 fractional_f32(f32 x) {
+    return x - floor(x);
+}
+
 static size_t _globally_tracked_memory_allocation_counter = 0;
 static size_t _globally_tracked_memory_allocation_peak    = 0;
 
