@@ -68,6 +68,8 @@ enum software_framebuffer_draw_image_ex_flags {
 void software_framebuffer_clear_buffer(struct software_framebuffer* framebuffer, union color32u8 rgba);
 void software_framebuffer_draw_quad(struct software_framebuffer* framebuffer, struct rectangle_f32 destination, union color32u8 rgba);
 void software_framebuffer_draw_image_ex(struct software_framebuffer* framebuffer, struct image_buffer image, struct rectangle_f32 destination, struct rectangle_f32 src, union color32f32 modulation, u32 flags);
+/* only thin lines */
+void software_framebuffer_draw_line(struct software_framebuffer* framebuffer, v2f32 start, v2f32 end, union color32u8 rgba);
 
 
 #endif

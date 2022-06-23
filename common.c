@@ -258,6 +258,14 @@ u64 cstring_length(const char* cstring) {
     return (cstring - cursor);
 }
 
+void cstring_copy(cstring source, cstring destination, u64 destination_length) {
+    u64 source_length = cstring_length(source);
+
+    for (u64 index = 0; index < destination_length && index < source_length; ++index) {
+        destination[index] = source[index];
+    }
+}
+
 struct rectangle_f32 {
     f32 x;
     f32 y;
@@ -266,6 +274,29 @@ struct rectangle_f32 {
 };
 #define rectangle_f32(X,Y,W,H) (struct rectangle_f32){.x=X,.y=Y,.w=W,.h=H}
 #define RECTANGLE_F32_NULL rectangle_f32(0,0,0,0)
+
+#define FRAMETIME_SAMPLE_MAX (32)
+struct {
+    u16 index;
+    u16 length;
+    f32 data[FRAMETIME_SAMPLE_MAX];
+} global_frametime_sample_array = {};
+
+void add_frametime_sample(f32 data) {
+    global_frametime_sample_array.data[global_frametime_sample_array.index++] = data;
+    if (global_frametime_sample_array.length <  FRAMETIME_SAMPLE_MAX) global_frametime_sample_array.length++;
+    if (global_frametime_sample_array.index  >= FRAMETIME_SAMPLE_MAX) global_frametime_sample_array.index = 0;
+}
+
+f32 get_average_frametime(void) {
+    f32 sum = 0.0;
+
+    for (unsigned index = 0; index < global_frametime_sample_array.length; ++index) {
+        sum += global_frametime_sample_array.data[index];
+    }
+
+    return sum / global_frametime_sample_array.length;
+}
 
 #include "prng.c"
 #include "v2.c"

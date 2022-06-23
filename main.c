@@ -219,7 +219,7 @@ void initialize(void) {
     const u32 SCREEN_HEIGHT = 480;
 
     global_game_window          = SDL_CreateWindow("RPG", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
-    global_game_sdl_renderer    = SDL_CreateRenderer(global_game_window, -1, SDL_RENDERER_ACCELERATED);
+    global_game_sdl_renderer    = SDL_CreateRenderer(global_game_window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 
     game_initialize();
 
@@ -241,6 +241,7 @@ int main(int argc, char** argv) {
     f32 last_elapsed_delta_time = (1.0 / 60.0f);
     initialize();
 
+    char window_name_title_buffer[256] = {};
     while (global_game_running) {
         u32 start_frame_time = SDL_GetTicks();
 
@@ -256,6 +257,15 @@ int main(int argc, char** argv) {
 
         last_elapsed_delta_time = (SDL_GetTicks() - start_frame_time) / 1000.0f;
         global_elapsed_time    += last_elapsed_delta_time;
+        add_frametime_sample(last_elapsed_delta_time);
+
+        #if 1
+        {
+            f32 average_frametime = get_average_frametime();
+            snprintf(window_name_title_buffer, 256, "RPG - instant fps: %d, (%f ms)", (int)(1.0/(f32)average_frametime), average_frametime);
+            SDL_SetWindowTitle(global_game_window, window_name_title_buffer);
+        }
+        #endif
     }
 
     deinitialize();
