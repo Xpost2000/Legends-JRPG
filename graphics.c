@@ -135,6 +135,98 @@ void software_framebuffer_draw_image_ex(struct software_framebuffer* framebuffer
     }
 }
 
+void software_framebuffer_draw_line(struct software_framebuffer* framebuffer, v2f32 start, v2f32 end, union color32u8 rgba) {
+    u32 stride = framebuffer->width;
+
+    if (start.y == end.y) {
+        if (start.x > end.x) {
+            Swap(start.x, end.x, f32);
+        }
+
+        for (s32 x_cursor = start.x; x_cursor < end.x; x_cursor++) {
+#if 0
+            framebuffer->pixels_u32[(s32)floor(start.y) * framebuffer->width + x_cursor] = rgba.rgba_packed;
+#else
+            {
+                float alpha = rgba.a / 255.0f;
+                framebuffer->pixels[(s32)(floor(start.y)) * stride * 4 + x_cursor * 4 + 0] = (framebuffer->pixels[(s32)(floor(start.y)) * stride * 4 + x_cursor * 4 + 0] * (1 - alpha)) + (rgba.r * alpha);
+                framebuffer->pixels[(s32)(floor(start.y)) * stride * 4 + x_cursor * 4 + 1] = (framebuffer->pixels[(s32)(floor(start.y)) * stride * 4 + x_cursor * 4 + 1] * (1 - alpha)) + (rgba.g * alpha);
+                framebuffer->pixels[(s32)(floor(start.y)) * stride * 4 + x_cursor * 4 + 2] = (framebuffer->pixels[(s32)(floor(start.y)) * stride * 4 + x_cursor * 4 + 2] * (1 - alpha)) + (rgba.b * alpha);
+            }
+            framebuffer->pixels[(s32)(floor(start.y)) * stride * 4 + x_cursor * 4 + 3] = 255;
+#endif
+        }
+    } else if (start.x == end.x) {
+        if (start.y > end.y) {
+            Swap(start.y, end.y, f32);
+        }
+        
+        for (s32 y_cursor = start.y; y_cursor < end.y; y_cursor++) {
+#if 0
+            framebuffer->pixels_u32[y_cursor * framebuffer->width + (s32)floor(start.x)] = rgba.rgba_packed;
+#else
+            {
+                float alpha = rgba.a / 255.0f;
+                framebuffer->pixels[y_cursor * stride * 4 + (s32)floor(start.x) * 4 + 0] = (framebuffer->pixels[y_cursor * stride * 4 + (s32)floor(start.x) * 4 + 0] * (1 - alpha)) + (rgba.r * alpha);
+                framebuffer->pixels[y_cursor * stride * 4 + (s32)floor(start.x) * 4 + 1] = (framebuffer->pixels[y_cursor * stride * 4 + (s32)floor(start.x) * 4 + 1] * (1 - alpha)) + (rgba.g * alpha);
+                framebuffer->pixels[y_cursor * stride * 4 + (s32)floor(start.x) * 4 + 2] = (framebuffer->pixels[y_cursor * stride * 4 + (s32)floor(start.x) * 4 + 2] * (1 - alpha)) + (rgba.b * alpha);
+            }
+            framebuffer->pixels[y_cursor * stride * 4 + (s32)floor(start.x) * 4 + 3] = 255;
+#endif
+        }
+    } else {
+        s32 x1 = start.x;
+        s32 x2 = end.x;
+        s32 y1 = start.y;
+        s32 y2 = end.y;
+
+        s32 delta_x = abs(x2 - x1);
+        s32 delta_y = -abs(y2 - y1);
+        s32 sign_x  = 0;
+        s32 sign_y  = 0;
+
+        if (x1 < x2) sign_x = 1;
+        else         sign_x = -1;
+
+        if (y1 < y2) sign_y = 1;
+        else         sign_y = -1;
+
+        s32 error_accumulator = delta_x + delta_y;
+
+        for (;;) {
+#if 0
+            framebuffer->pixels_u32[y1 * framebuffer->width + x1] = rgba.rgba_packed;
+#else
+            {
+                float alpha = rgba.a / 255.0f;
+                framebuffer->pixels[y1 * stride * 4 + x1 * 4 + 0] = (framebuffer->pixels[y1 * stride * 4 + x1 * 4 + 0] * (1 - alpha)) + (rgba.r * alpha);
+                framebuffer->pixels[y1 * stride * 4 + x1 * 4 + 1] = (framebuffer->pixels[y1 * stride * 4 + x1 * 4 + 1] * (1 - alpha)) + (rgba.g * alpha);
+                framebuffer->pixels[y1 * stride * 4 + x1 * 4 + 2] = (framebuffer->pixels[y1 * stride * 4 + x1 * 4 + 2] * (1 - alpha)) + (rgba.b * alpha);
+            }
+            framebuffer->pixels[y1 * stride * 4 + x1 * 4 + 3] = 255;
+#endif
+
+            if (x1 == x2 && y1 == y2) return;
+
+            s32 old_error_x2 = 2 * error_accumulator;
+
+            if (old_error_x2 >= delta_y) {
+                if (x1 != x2) {
+                    error_accumulator += delta_y;
+                    x1 += sign_x;
+                }
+            }
+
+            if (old_error_x2 <= delta_x) {
+                if (y1 != y2) {
+                    error_accumulator += delta_x;
+                    y1 += sign_y;
+                }
+            }
+        }
+    }
+}
+
 void software_framebuffer_copy_into(struct software_framebuffer* target, struct software_framebuffer* source) {
     if (target->width == source->width && target->height == source->height) {
         memory_copy(source->pixels, target->pixels, target->width * target->height * sizeof(u32));
