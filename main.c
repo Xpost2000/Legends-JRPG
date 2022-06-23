@@ -10,9 +10,6 @@
 
 #include <SDL2/SDL.h>
 
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
-
 #define assertion(x) assert(x)
 
 #define BIT(x)             (x << 1)
@@ -119,10 +116,29 @@ void* system_heap_memory_allocate(size_t amount) {
     return memory + sizeof(struct tracked_memory_allocation_header);
 }
 
+void* system_heap_memory_reallocate(void* original_pointer, size_t new_amount) {
+    if (original_pointer) {
+        void* header = original_pointer - sizeof(struct tracked_memory_allocation_header);
+        _globally_tracked_memory_allocation_counter -= ((struct tracked_memory_allocation_header*)(header))->amount;
+
+        header = realloc(header, new_amount);
+        zero_memory(header, new_amount);
+        ((struct tracked_memory_allocation_header*)(header))->amount = new_amount;
+
+        _globally_tracked_memory_allocation_counter += ((struct tracked_memory_allocation_header*)(header))->amount;
+
+        return header + sizeof(struct tracked_memory_allocation_header);
+    }
+
+    return system_heap_memory_allocate(new_amount);
+}
+
 void system_heap_memory_deallocate(void* pointer) {
-    void* header = pointer - sizeof(struct tracked_memory_allocation_header);
-    _globally_tracked_memory_allocation_counter -= ((struct tracked_memory_allocation_header*)(header))->amount;
-    free(header);
+    if (pointer) {
+        void* header = pointer - sizeof(struct tracked_memory_allocation_header);
+        _globally_tracked_memory_allocation_counter -= ((struct tracked_memory_allocation_header*)(header))->amount;
+        free(header);
+    }
 }
 
 bool system_heap_memory_leak_check(void) {
@@ -134,8 +150,11 @@ size_t system_heap_currently_allocated_amount(void) {
 }
 
 /* so I can track everything, and so I don't accidently misuse them. */
-#define malloc(x) system_heap_memory_allocate(x)
-#define free(x)   system_heap_memory_deallocate(x)
+#define STBI_MALLOC(x)       system_heap_memory_allocate(x)
+#define STBI_REALLOC(x, nsz) system_heap_memory_reallocate(x, nsz)
+#define STBI_FREE(x)         system_heap_memory_deallocate(x)
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
 
 /* double ended stack memory arena, does not grow */
 /* TODO: memory allocator interface for seamless usage. */
@@ -331,13 +350,14 @@ void software_framebuffer_draw_image_ex(struct software_framebuffer* framebuffer
             u32 stride       = framebuffer->width;
             u32 image_stride = image.width;
 
-            s32 image_sample_x = floor(((end_x - x_cursor) * scale_ratio_w) + src.x);
-            if (flags & SOFTWARE_FRAMEBUFFER_DRAW_IMAGE_FLIP_HORIZONTALLY)
-                image_sample_x = floor((src.x + src.w) - (x_cursor * scale_ratio_w));
+            s32 image_sample_x = floor((src.x + src.w) - ((end_x - x_cursor) * scale_ratio_w));
+            s32 image_sample_y = floor((src.y + src.h) - ((end_y - y_cursor) * scale_ratio_h));
 
-            s32 image_sample_y = floor(((end_y - y_cursor) * scale_ratio_h) + src.y);
-            if (flags & SOFTWARE_FRAMEBUFFER_DRAW_IMAGE_FLIP_VERTICALLY)
-                image_sample_y = floor((src.y + src.h) - (x_cursor * scale_ratio_h));
+            if ((flags & SOFTWARE_FRAMEBUFFER_DRAW_IMAGE_FLIP_HORIZONTALLY))
+                image_sample_x = floor(((end_x - x_cursor) * scale_ratio_w) + src.x);
+
+            if ((flags & SOFTWARE_FRAMEBUFFER_DRAW_IMAGE_FLIP_VERTICALLY))
+                image_sample_y = floor(((end_y - y_cursor) * scale_ratio_h) + src.y);
 
             union color32u8 sampled_pixel = (union color32u8) { .rgba_packed = image.pixels_u32[image_sample_y * image_stride + image_sample_x] };
 
@@ -402,7 +422,7 @@ int main(int argc, char** argv) {
             software_framebuffer_clear_buffer(&global_default_framebuffer, color32u8(0, 255, 0, 255));
             software_framebuffer_draw_quad(&global_default_framebuffer, rectangle_f32(-50, 450, 100, 100), color32u8(255, 0, 0, 255));
             software_framebuffer_draw_image_ex(&global_default_framebuffer, test_image,
-                                               rectangle_f32(100, 100, 150, 96), RECTANGLE_F32_NULL, color32f32(1,1,1,1), 0); 
+                                               rectangle_f32(0, 5, 96, 96), RECTANGLE_F32_NULL, color32f32(1,1,1,1), 0); 
         }
 
         {
@@ -418,8 +438,8 @@ int main(int argc, char** argv) {
     }
 
     image_buffer_free(&test_image);
-
     memory_arena_finish(&game_arena);
+
     SDL_Quit();
     assertion(system_heap_memory_leak_check());
     return 0;
