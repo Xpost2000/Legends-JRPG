@@ -305,7 +305,14 @@ void software_framebuffer_draw_image_ex(struct software_framebuffer* framebuffer
             if (flags & SOFTWARE_FRAMEBUFFER_DRAW_IMAGE_FLIP_VERTICALLY)
                 image_sample_y = floor((src.y + src.h) - (x_cursor * scale_ratio_h));
 
-            framebuffer_pixels_as_32[y_cursor * stride + x_cursor] = image.pixels_u32[image_sample_y * image_stride + image_sample_x];
+            union color32u8 sampled_pixel = (union color32u8) { .rgba_packed = image.pixels_u32[image_sample_y * image_stride + image_sample_x] };
+
+            sampled_pixel.r *= modulation.r;
+            sampled_pixel.g *= modulation.g;
+            sampled_pixel.b *= modulation.b;
+            sampled_pixel.a *= modulation.a;
+
+            framebuffer_pixels_as_32[y_cursor * stride + x_cursor] = sampled_pixel.rgba_packed;
         }
     }
 
