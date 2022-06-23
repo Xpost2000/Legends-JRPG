@@ -146,6 +146,56 @@ size_t system_heap_currently_allocated_amount(void) {
     return _globally_tracked_memory_allocation_counter;
 }
 
+struct file_buffer {
+    u8* buffer;
+    u64 length;
+};
+
+/* TODO should be using a memory arena, although this means we can't really have this here lol */
+/* TODO We should also be using a length string... */
+bool   file_exists(char* path) {
+    FILE* f = fopen(path, "r");
+
+    if (f) {
+        fclose(f);
+        return true;
+    }
+
+    return false;
+}
+
+size_t file_length(char* path) {
+    size_t result = 0;
+    FILE*  file   = fopen(path, "rb+");
+
+    if (file) {
+        fseek(file, 0, SEEK_END);
+        result = ftell(file);
+        fclose(file);
+    }
+
+    return result;
+}
+
+struct file_buffer read_entire_file(char* path) {
+    size_t file_size   = file_length(path);
+    u8*    file_buffer = system_heap_memory_allocate(file_size+1);
+
+    FILE* file = fopen(path, "rb+");
+    fread(file_buffer, 1, file_size, file);
+    fclose(file);
+
+    file_buffer[file_size] = 0;
+    return (struct file_buffer) {
+        .buffer = file_buffer,
+        .length = file_size,
+    };
+}
+
+void file_buffer_free(struct file_buffer* file) {
+    system_heap_memory_deallocate(file->buffer);
+}
+
 struct rectangle_f32 {
     f32 x;
     f32 y;
