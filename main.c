@@ -151,6 +151,7 @@ void swap_framebuffers_onto_screen(void) {
 void handle_sdl_events(void) {
     {
         SDL_Event current_event;
+
         while (SDL_PollEvent(&current_event)) {
             switch (current_event.type) {
                 case SDL_QUIT: {
@@ -212,7 +213,7 @@ void handle_sdl_events(void) {
 #include "game.c"
 
 void initialize(void) {
-    SDL_Init(SDL_INIT_VIDEO);
+    SDL_Init(SDL_INIT_EVERYTHING);
 
     const u32 SCREEN_WIDTH  = 640;
     const u32 SCREEN_HEIGHT = 480;
