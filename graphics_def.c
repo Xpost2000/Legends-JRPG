@@ -171,6 +171,6 @@ void render_commands_push_line(struct render_commands* commands, v2f32 start, v2
 void render_commands_push_text(struct render_commands* commands, struct font_cache* font, f32 scale, v2f32 xy, char* cstring, union color32f32 rgba);
 void software_framebuffer_render_commands(struct software_framebuffer* framebuffer, struct render_commands* commands);
 
-void software_framebuffer_kernel_convolution(struct memory_arena* arena, struct software_framebuffer* framebuffer, f32* kernel, s16 width, s16 height);
+void software_framebuffer_kernel_convolution_ex(struct memory_arena* arena, struct software_framebuffer* framebuffer, f32* kernel, s16 width, s16 height, f32 divisor, f32 blend_t, s32 passes);
 
 #endif
