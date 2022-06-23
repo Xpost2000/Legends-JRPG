@@ -20,7 +20,6 @@ static SDL_Texture*                global_game_texture_surface  = NULL;
 static SDL_GameController*         global_controller_devices[4] = {};
 static SDL_Haptic*                 global_haptic_devices[4]     = {};
 static struct software_framebuffer global_default_framebuffer;
-struct image_buffer                test_image;
 static f32                         global_elapsed_time          = 0.0f;
 
 local void close_all_controllers(void) {
@@ -149,19 +148,6 @@ void swap_framebuffers_onto_screen(void) {
     SDL_RenderPresent(global_game_sdl_renderer);
 }
 
-void update_and_render_game(struct software_framebuffer* framebuffer, float dt) {
-    static f32 x = 0;
-    static f32 dir = 1;
-    software_framebuffer_clear_buffer(framebuffer, color32u8(0, 255, 0, 255));
-    software_framebuffer_draw_quad(framebuffer, rectangle_f32(-50, 450, 100, 100), color32u8(255, 0, 0, 255));
-    software_framebuffer_draw_image_ex(framebuffer, test_image, rectangle_f32(x, 5 + 30, 96, 96), RECTANGLE_F32_NULL, color32f32(1,1,1,1), 0);
-    software_framebuffer_draw_quad(framebuffer, rectangle_f32(100, 0, 400, 400), color32u8(0, 0, 255, 128));
-    software_framebuffer_draw_quad(framebuffer, rectangle_f32(40, 0, 200, 200), color32u8(255, 0, 255, 128));
-
-    x += 100 * dir * dt;
-    if (x + 96 > 640 || x < 0) dir *= -1;
-}
-
 void handle_sdl_events(void) {
     {
         SDL_Event current_event;
@@ -223,7 +209,7 @@ void handle_sdl_events(void) {
     }
 }
 
-static struct memory_arena game_arena = {};
+#include "game.c"
 
 void initialize(void) {
     SDL_Init(SDL_INIT_VIDEO);
@@ -233,18 +219,17 @@ void initialize(void) {
 
     global_game_window          = SDL_CreateWindow("RPG", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
     global_game_sdl_renderer    = SDL_CreateRenderer(global_game_window, -1, SDL_RENDERER_ACCELERATED);
+
+    game_initialize();
+
     global_default_framebuffer  = software_framebuffer_create(&game_arena, SCREEN_WIDTH, SCREEN_HEIGHT);
     global_game_texture_surface = SDL_CreateTexture(global_game_sdl_renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STREAMING, global_default_framebuffer.width, global_default_framebuffer.height);
-
-    test_image = image_buffer_load_from_file("./res/a.png");
-    game_arena = memory_arena_create_from_heap("Game Memory", Megabyte(16));
 }
 
 void deinitialize(void) {
-    image_buffer_free(&test_image);
+    game_deinitialize();
 
     close_all_controllers();
-    memory_arena_finish(&game_arena);
 
     SDL_Quit();
     _debugprintf("Peak allocations at: %d bytes", system_heap_peak_allocated_amount());

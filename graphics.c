@@ -47,9 +47,9 @@ void software_framebuffer_draw_quad(struct software_framebuffer* framebuffer, st
 
     u32* framebuffer_pixels_as_32 = (u32*)framebuffer->pixels;
     unused(framebuffer_pixels_as_32);
-    for (u32 y_cursor = start_y; y_cursor < end_y; ++y_cursor) {
+    for (s32 y_cursor = start_y; y_cursor < end_y; ++y_cursor) {
         if (y_cursor >= 0 && y_cursor < framebuffer->height)
-            for (u32 x_cursor = start_x; x_cursor < end_x; ++x_cursor) {
+            for (s32 x_cursor = start_x; x_cursor < end_x; ++x_cursor) {
                 if (x_cursor >= 0 && x_cursor < framebuffer->width) {
                     u32 stride = framebuffer->width;
 #if 0
@@ -84,12 +84,12 @@ void software_framebuffer_draw_image_ex(struct software_framebuffer* framebuffer
 
     u32* framebuffer_pixels_as_32 = (u32*)framebuffer->pixels;
     unused(framebuffer_pixels_as_32);
-    for (u32 y_cursor = start_y; y_cursor < end_y; ++y_cursor) {
+    for (s32 y_cursor = start_y; y_cursor < end_y; ++y_cursor) {
         if (y_cursor >= 0 && y_cursor < framebuffer->height)
-            for (u32 x_cursor = start_x; x_cursor < end_x; ++x_cursor) {
+            for (s32 x_cursor = start_x; x_cursor < end_x; ++x_cursor) {
                 if (x_cursor >= 0 && x_cursor < framebuffer->width) {
-                    u32 stride       = framebuffer->width;
-                    u32 image_stride = image.width;
+                    s32 stride       = framebuffer->width;
+                    s32 image_stride = image.width;
 
                     s32 image_sample_x = floor((src.x + src.w) - ((end_x - x_cursor) * scale_ratio_w));
                     s32 image_sample_y = floor((src.y + src.h) - ((end_y - y_cursor) * scale_ratio_h));
