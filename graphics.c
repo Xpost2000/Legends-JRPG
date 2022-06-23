@@ -90,7 +90,17 @@ void software_framebuffer_draw_quad(struct software_framebuffer* framebuffer, st
     for (u32 y_cursor = start_y; y_cursor < end_y; ++y_cursor) {
         for (u32 x_cursor = start_x; x_cursor < end_x; ++x_cursor) {
             u32 stride = framebuffer->width;
+#if 0
             framebuffer_pixels_as_32[y_cursor * stride + x_cursor] = rgba.rgba_packed;
+#else
+            {
+                float alpha = rgba.a / 255.0f;
+                framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 0] = (framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 0] * (1 - alpha)) + (rgba.r * alpha);
+                framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 1] = (framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 1] * (1 - alpha)) + (rgba.g * alpha);
+                framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 2] = (framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 2] * (1 - alpha)) + (rgba.b * alpha);
+            }
+            framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 3] = 255;
+#endif
         }
     }
 }
@@ -140,7 +150,17 @@ void software_framebuffer_draw_image_ex(struct software_framebuffer* framebuffer
             sampled_pixel.b *= modulation.b;
             sampled_pixel.a *= modulation.a;
 
+#if 0
             framebuffer_pixels_as_32[y_cursor * stride + x_cursor] = sampled_pixel.rgba_packed;
+#else
+            {
+                float alpha = sampled_pixel.a / 255.0f;
+                framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 0] = (framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 0] * (1 - alpha)) + (sampled_pixel.r * alpha);
+                framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 1] = (framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 1] * (1 - alpha)) + (sampled_pixel.g * alpha);
+                framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 2] = (framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 2] * (1 - alpha)) + (sampled_pixel.b * alpha);
+            }
+            framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 3] = 255;
+#endif
         }
     }
 

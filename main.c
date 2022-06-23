@@ -40,6 +40,8 @@ void update_and_render_game(struct software_framebuffer* framebuffer, float dt) 
     software_framebuffer_draw_image_ex(framebuffer, test_image, rectangle_f32(x, 5, 96, 96), RECTANGLE_F32_NULL, color32f32(1,1,1,1), 0); 
     software_framebuffer_draw_image_ex(framebuffer, test_image, rectangle_f32(x, 100, 96, 96), RECTANGLE_F32_NULL, color32f32(1,1,1,1), 0); 
     software_framebuffer_draw_image_ex(framebuffer, test_image, rectangle_f32(x, 200, 96, 96), RECTANGLE_F32_NULL, color32f32(1,1,1,1), 0); 
+    software_framebuffer_draw_quad(framebuffer, rectangle_f32(100, 0, 400, 400), color32u8(0, 0, 255, 128));
+    software_framebuffer_draw_quad(framebuffer, rectangle_f32(40, 0, 200, 200), color32u8(255, 0, 255, 128));
 
     x += 100 * dir * dt;
     if (x + 96 > 640 || x < 0) dir *= -1;
@@ -50,8 +52,8 @@ int main(int argc, char** argv) {
 
     SDL_Init(SDL_INIT_VIDEO);
 
-    const u32 SCREEN_WIDTH  = 640;
-    const u32 SCREEN_HEIGHT = 480;
+    const u32 SCREEN_WIDTH  = 320;
+    const u32 SCREEN_HEIGHT = 200;
 
     global_game_window          = SDL_CreateWindow("RPG", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
     global_game_sdl_renderer    = SDL_CreateRenderer(global_game_window, -1, SDL_RENDERER_ACCELERATED);
