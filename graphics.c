@@ -293,3 +293,102 @@ void software_framebuffer_copy_into(struct software_framebuffer* target, struct 
     }
 }
 
+struct render_commands render_commands(struct camera camera) {
+    return (struct render_commands) {
+        .camera = camera 
+    };
+}
+
+struct render_command* render_commands_new_command(struct render_commands* commands, s16 type) {
+    struct render_command* command = &commands->commands[commands->command_count++];
+    command->type = type;
+    return command;
+}
+
+void render_commands_push_quad(struct render_commands* commands, struct rectangle_f32 destination, union color32u8 rgba) {
+    struct render_command* command = render_commands_new_command(commands, RENDER_COMMAND_DRAW_QUAD);
+    command->destination   = destination;
+    command->flags         = 0;
+    command->modulation_u8 = rgba;
+}
+
+void render_commands_push_image(struct render_commands* commands, struct image_buffer* image, struct rectangle_f32 destination, struct rectangle_f32 source, union color32f32 rgba, u32 flags ){
+    struct render_command* command = render_commands_new_command(commands, RENDER_COMMAND_DRAW_IMAGE);
+    command->destination = destination;
+    command->image       = image;
+    command->source      = source;
+    command->flags       = flags;
+    command->modulation  = rgba;
+}
+
+void render_commands_push_line(struct render_commands* commands, v2f32 start, v2f32 end, union color32u8 rgba) {
+    struct render_command* command = render_commands_new_command(commands, RENDER_COMMAND_DRAW_LINE);
+    command->start         = start;
+    command->end           = end;
+    command->flags         = 0;
+    command->modulation_u8 = rgba;
+}
+
+void render_commands_push_text(struct render_commands* commands, struct font_cache* font, f32 scale, v2f32 xy, char* cstring, union color32f32 rgba) {
+    struct render_command* command = render_commands_new_command(commands, RENDER_COMMAND_DRAW_TEXT);
+    command->font       = font;
+    command->xy         = xy;
+    command->scale      = scale;
+    command->text       = cstring;
+    command->modulation = rgba;
+    command->flags      = 0;
+}
+
+void sort_render_commands(struct render_commands* commands) {
+    /* TODO */
+}
+
+void software_framebuffer_render_commands(struct software_framebuffer* framebuffer, struct render_commands* commands) {
+    if (commands->should_clear_buffer) {
+        software_framebuffer_clear_buffer(framebuffer, commands->clear_buffer_color);
+    }
+
+    sort_render_commands(commands);
+    /* TODO scale */
+    for (unsigned index = 0; index < commands->command_count; ++index) {
+        struct render_command* command = &commands->commands[index];
+
+        switch (command->type) {
+            case RENDER_COMMAND_DRAW_QUAD: {
+                software_framebuffer_draw_quad(
+                    framebuffer,
+                    command->destination,
+                    command->modulation_u8
+                );
+            } break;
+            case RENDER_COMMAND_DRAW_IMAGE: {
+                software_framebuffer_draw_image_ex(
+                    framebuffer,
+                    command->image,
+                    command->destination,
+                    command->source,
+                    command->modulation,
+                    command->flags
+                );
+            } break;
+            case RENDER_COMMAND_DRAW_TEXT: {
+                software_framebuffer_draw_text(
+                    framebuffer,
+                    command->font,
+                    command->scale,
+                    command->xy,
+                    command->text,
+                    command->modulation
+                );
+            } break;
+            case RENDER_COMMAND_DRAW_LINE: {
+                software_framebuffer_draw_line(
+                    framebuffer,
+                    command->start,
+                    command->end,
+                    command->modulation_u8
+                );
+            } break;
+        }
+    }
+}

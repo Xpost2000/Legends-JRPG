@@ -36,12 +36,18 @@ void update_and_render_game(struct software_framebuffer* framebuffer, float dt) 
         image_buffer_write_to_disk(framebuffer, "scr");
     }
 
-    software_framebuffer_clear_buffer(framebuffer, color32u8(0, 255, 0, 255));
-    software_framebuffer_draw_quad(framebuffer, rectangle_f32(-50, 450, 100, 100), color32u8(255, 0, 0, 255));
-    software_framebuffer_draw_image_ex(framebuffer, &test_image, rectangle_f32(x, y, 96, 96), RECTANGLE_F32_NULL, color32f32(1,1,1,1), 0);
-    software_framebuffer_draw_quad(framebuffer, rectangle_f32(100, 0, 400, 400), color32u8(0, 0, 255, 128));
-    software_framebuffer_draw_quad(framebuffer, rectangle_f32(40, 0, 200, 200), color32u8(255, 0, 255, 128));
-    software_framebuffer_draw_line(framebuffer, v2f32(200, 200), v2f32(400, 400), color32u8(0, 0, 255, 255));
+    struct render_commands commands = render_commands(camera(v2f32(0, 0)));
+    {
+        commands.should_clear_buffer = true;
+        commands.clear_buffer_color  = color32u8(0, 128, 0, 255);
 
-    software_framebuffer_draw_text(framebuffer, &game_font, 8, v2f32(0, 0), "Hello World\nsad", color32f32(1,1,1,1));
+        render_commands_push_quad(&commands, rectangle_f32(-50, 450, 100, 100), color32u8(255, 0, 0, 255));
+        render_commands_push_image(&commands, &test_image, rectangle_f32(x, y, 96, 96), RECTANGLE_F32_NULL, color32f32(1,1,1,1), 0);
+        render_commands_push_quad(&commands, rectangle_f32(100, 0, 400, 400), color32u8(0, 0, 255, 128));
+        render_commands_push_quad(&commands, rectangle_f32(40, 0, 200, 200), color32u8(255, 0, 255, 128));
+        render_commands_push_line(&commands, v2f32(200, 200), v2f32(400, 400), color32u8(0, 0, 255, 255));
+
+        render_commands_push_text(&commands, &game_font, 8, v2f32(0, 0), "Hello World\nSad", color32f32(1,1,1,1));
+    }
+    software_framebuffer_render_commands(framebuffer, &commands);
 }
