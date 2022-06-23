@@ -36,7 +36,7 @@ void update_and_render_game(struct software_framebuffer* framebuffer, float dt) 
         image_buffer_write_to_disk(framebuffer, "scr");
     }
 
-    struct render_commands commands = render_commands(camera(v2f32(0, 0)));
+    struct render_commands commands = render_commands(camera_centered(v2f32(0, 0)));
     {
         commands.should_clear_buffer = true;
         commands.clear_buffer_color  = color32u8(0, 128, 0, 255);

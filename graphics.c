@@ -349,9 +349,34 @@ void software_framebuffer_render_commands(struct software_framebuffer* framebuff
     }
 
     sort_render_commands(commands);
+
+    f32 half_screen_width  = framebuffer->width/2;
+    f32 half_screen_height = framebuffer->height/2;
     /* TODO scale */
     for (unsigned index = 0; index < commands->command_count; ++index) {
         struct render_command* command = &commands->commands[index];
+
+        if (commands->camera.centered) {
+            command->start.x       += half_screen_width;
+            command->start.y       += half_screen_height;
+            command->end.x         += half_screen_width;
+            command->end.y         += half_screen_height;
+            command->destination.x += half_screen_width;
+            command->destination.y += half_screen_height;
+            command->xy.x          += half_screen_width;
+            command->xy.y          += half_screen_height;
+        }
+
+        {
+            command->start.x       -= commands->camera.xy.x;
+            command->start.y       -= commands->camera.xy.y;
+            command->end.x         += commands->camera.xy.x;
+            command->end.y         += commands->camera.xy.y;
+            command->destination.x += commands->camera.xy.x;
+            command->destination.y += commands->camera.xy.y;
+            command->xy.x          += commands->camera.xy.x;
+            command->xy.y          += commands->camera.xy.y;
+        }
 
         switch (command->type) {
             case RENDER_COMMAND_DRAW_QUAD: {

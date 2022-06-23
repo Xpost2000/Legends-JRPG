@@ -138,23 +138,20 @@ struct render_command {
     s16 type;
     /* easier to mix using a floating point value. */
     f32 sort_key;
-    union color32f32 modulation;
-    union color32u8  modulation_u8;
 
     union {
-        struct {
-            struct rectangle_f32 destination;
-            struct rectangle_f32 source;
-        };
-        struct {
-            v2f32 start;
-            v2f32 end;
-        };
-        struct {
-            v2f32 xy;
-            f32 scale;
-        };
+        union color32f32 modulation;
+        union color32u8  modulation_u8;
     };
+
+    struct rectangle_f32 destination;
+    struct rectangle_f32 source;
+
+    v2f32 start;
+    v2f32 end;
+
+    v2f32 xy;
+    f32 scale;
 
     union {
         struct {
