@@ -1,3 +1,6 @@
+#ifndef COMMON_C
+#define COMMON_C
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -265,3 +268,4 @@ struct rectangle_f32 {
 #define RECTANGLE_F32_NULL rectangle_f32(0,0,0,0)
 
 #include "prng.c"
+#endif

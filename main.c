@@ -8,12 +8,8 @@
 
 #include "common.c"
 #include "memory_arena.c"
-
-#include "input.h"
 #include "input.c"
-
 #include "sdl_scancode_table.c"
-
 #include "graphics.c"
 
 /* While this is *software* rendered, we still blit using a hardware method since it's still faster than manual texture blits. */

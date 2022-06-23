@@ -1,5 +1,7 @@
-#ifndef INPUT_H
-#define INPUT_H
+#ifndef INPUT_DEF_C
+#define INPUT_DEF_C
+
+#include "common.c"
 
 enum mouse_button {
     MOUSE_BUTTON_LEFT,

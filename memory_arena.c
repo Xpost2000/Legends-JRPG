@@ -1,14 +1,5 @@
-/* double ended stack memory arena, does not grow */
-/* TODO: memory allocator interface for seamless usage. */
-struct memory_arena {
-    const cstring name;
-    u8*           memory;
-    u64           capacity;
-    u64           used;
-    u64           used_top;
-};
+#include "memory_arena_def.c"
 
-#define MEMORY_ARENA_DEFAULT_NAME ("(no-name)")
 struct memory_arena memory_arena_create_from_heap(cstring name, u64 capacity) {
     if (!name)
         name = MEMORY_ARENA_DEFAULT_NAME;
@@ -48,4 +39,19 @@ void* memory_arena_push_top_unaligned(struct memory_arena* arena, u64 amount) {
     return base_pointer;
 }
 
-#define memory_arena_push(arena, amount) memory_arena_push_bottom_unaligned(arena, amount)
+struct temporary_memory memory_arena_begin_temporary_memory(cstring name, struct memory_arena* arena, u64 amount) {
+    struct temporary_memory result = { .name = name };
+    
+    result.parent = arena;
+    result.parent_bottom_marker = arena->used;
+    result.parent_top_marker = arena->used_top;
+    result.memory = memory_arena_push(arena, amount);
+
+    return result;
+}
+
+void memory_arena_end_temporary_memory(struct temporary_memory* temporary_arena) {
+    temporary_arena->parent->used     = temporary_arena->parent_bottom_marker;
+    temporary_arena->parent->used_top = temporary_arena->parent_top_marker;
+    temporary_arena->memory           = 0;
+}

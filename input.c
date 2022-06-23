@@ -1,3 +1,5 @@
+#include "input_def.c"
+
 struct {
     struct input_state current_state;
     struct input_state last_state;
