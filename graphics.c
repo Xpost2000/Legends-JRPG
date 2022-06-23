@@ -477,8 +477,8 @@ start:
         }
     }
 
-    if (current_pass < passes) {
-        current_pass += 1;
+    current_pass += 1;
+    if (current_pass <= passes) {
         goto start;   
     }
 }

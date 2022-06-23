@@ -17,6 +17,21 @@ void game_deinitialize(void) {
     memory_arena_finish(&scratch_arena);
 }
 
+void game_postprocess_blur(struct software_framebuffer* framebuffer, s32 quality_scale, f32 t) {
+    f32 box_blur[] = {
+        1,1,1,
+        1,1,1,
+        1,1,1,
+    };
+
+    if (t > 0.0) {
+        struct software_framebuffer scaled_down = software_framebuffer_create(&scratch_arena, framebuffer->width/quality_scale, framebuffer->height/quality_scale);
+        software_framebuffer_copy_into(&scaled_down, framebuffer);
+        software_framebuffer_kernel_convolution_ex(&scratch_arena, &scaled_down, box_blur, 3, 3, 9, t, 1);
+        software_framebuffer_draw_image_ex(framebuffer, &scaled_down, RECTANGLE_F32_NULL, RECTANGLE_F32_NULL, color32f32(1,1,1,1), 0);
+    }
+}
+
 void update_and_render_game(struct software_framebuffer* framebuffer, float dt) {
     static f32 x = 0;
     static f32 y = 0;
@@ -39,7 +54,7 @@ void update_and_render_game(struct software_framebuffer* framebuffer, float dt) 
     struct render_commands commands = render_commands(
         /* camera_centered(v2f32(0, 0), */
         /*                 ((sinf(global_elapsed_time)+1)/2.0)+0.4) */
-        camera_centered(v2f32(0, 0), 4)
+        camera_centered(v2f32(0, 0), 2)
     );
     {
         commands.should_clear_buffer = true;
@@ -60,14 +75,16 @@ void update_and_render_game(struct software_framebuffer* framebuffer, float dt) 
         blur ^= 1;
     }
 
-    if (blur)
-    {
-        f32 box_blur[] = {
-            0.05, 0.11, 0.05,
-            0.11, 0.25, 0.11,
-            0.05, 0.11, 0.05
-        };
+    static f32 test_t = 0;
+    if (is_key_down(KEY_LEFT)) {
+        test_t -= dt;
+        if (test_t < 0) test_t = 0;
+    } else if (is_key_down(KEY_RIGHT)) {
+        test_t += dt;
+        if (test_t > 1) test_t = 1;
+    }
 
-        software_framebuffer_kernel_convolution_ex(&scratch_arena, framebuffer, box_blur, 3, 3, 1, (sinf(global_elapsed_time)+1)/2.0f, 8);
+    if (blur) {
+        game_postprocess_blur(framebuffer, 4, test_t);
     }
 }
