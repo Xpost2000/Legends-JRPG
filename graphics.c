@@ -109,7 +109,7 @@ void software_framebuffer_draw_quad(struct software_framebuffer* framebuffer, st
 }
 
 int std = 0;
-/* #define SIMD_TEST */
+#define SIMD_TEST
 #ifndef SIMD_TEST
 void software_framebuffer_draw_image_ex(struct software_framebuffer* framebuffer, struct image_buffer* image, struct rectangle_f32 destination, struct rectangle_f32 src, union color32f32 modulation, u32 flags) {
     if ((destination.x == 0) && (destination.y == 0) && (destination.w == 0) && (destination.h == 0)) {
@@ -211,33 +211,38 @@ void software_framebuffer_draw_image_ex(struct software_framebuffer* framebuffer
 
     /* TODO flipping */
     for (s32 y_cursor = start_y; y_cursor < end_y; ++y_cursor) {
-        for (s32 x_cursor = start_x; x_cursor <= end_x; x_cursor += 4) {
+        for (s32 x_cursor = start_x; x_cursor < end_x; x_cursor += 4) {
             /* s32 image_sample_y = (s32)(src_end_y - ((unclamped_end_y - y_cursor) * scale_ratio_h)); */
             s32 image_sample_y = (s32)((src.y + src.h) - ((unclamped_end_y - y_cursor) * scale_ratio_h));
 
+            s32 image_sample_x  = (s32)((src.x + src.w) - ((unclamped_end_x - (x_cursor))   * scale_ratio_w));
+            s32 image_sample_x1 = (s32)((src.x + src.w) - ((unclamped_end_x - (x_cursor+1)) * scale_ratio_w));
+            s32 image_sample_x2 = (s32)((src.x + src.w) - ((unclamped_end_x - (x_cursor+2)) * scale_ratio_w));
+            s32 image_sample_x3 = (s32)((src.x + src.w) - ((unclamped_end_x - (x_cursor+3)) * scale_ratio_w));
+
             __m128 red_channels = _mm_set_ps(
-                image->pixels[image_sample_y * image_stride * 4 + (s32)(src_end_x - (unclamped_end_x - (x_cursor+3)) * scale_ratio_w) * 4 + 0],
-                image->pixels[image_sample_y * image_stride * 4 + (s32)(src_end_x - (unclamped_end_x - (x_cursor+2)) * scale_ratio_w) * 4 + 0],
-                image->pixels[image_sample_y * image_stride * 4 + (s32)(src_end_x - (unclamped_end_x - (x_cursor+1)) * scale_ratio_w) * 4 + 0],
-                image->pixels[image_sample_y * image_stride * 4 + (s32)(src_end_x - (unclamped_end_x - (x_cursor+0)) * scale_ratio_w) * 4 + 0]
+                image->pixels[image_sample_y * image_stride * 4 + image_sample_x3 * 4 + 0],
+                image->pixels[image_sample_y * image_stride * 4 + image_sample_x2 * 4 + 0],
+                image->pixels[image_sample_y * image_stride * 4 + image_sample_x1 * 4 + 0],
+                image->pixels[image_sample_y * image_stride * 4 + image_sample_x  * 4 + 0]
             );
             __m128 green_channels = _mm_set_ps(
-                image->pixels[image_sample_y * image_stride * 4 + (s32)(src_end_x - (unclamped_end_x - (x_cursor+3)) * scale_ratio_w) * 4 + 1],
-                image->pixels[image_sample_y * image_stride * 4 + (s32)(src_end_x - (unclamped_end_x - (x_cursor+2)) * scale_ratio_w) * 4 + 1],
-                image->pixels[image_sample_y * image_stride * 4 + (s32)(src_end_x - (unclamped_end_x - (x_cursor+1)) * scale_ratio_w) * 4 + 1],
-                image->pixels[image_sample_y * image_stride * 4 + (s32)(src_end_x - (unclamped_end_x - (x_cursor+0)) * scale_ratio_w) * 4 + 1]
+                image->pixels[image_sample_y * image_stride * 4 + image_sample_x3 * 4 + 1],
+                image->pixels[image_sample_y * image_stride * 4 + image_sample_x2 * 4 + 1],
+                image->pixels[image_sample_y * image_stride * 4 + image_sample_x1 * 4 + 1],
+                image->pixels[image_sample_y * image_stride * 4 + image_sample_x  * 4 + 1]
             );
             __m128 blue_channels = _mm_set_ps(
-                image->pixels[image_sample_y * image_stride * 4 + (s32)(src_end_x - (unclamped_end_x - (x_cursor+3)) * scale_ratio_w) * 4 + 2],
-                image->pixels[image_sample_y * image_stride * 4 + (s32)(src_end_x - (unclamped_end_x - (x_cursor+2)) * scale_ratio_w) * 4 + 2],
-                image->pixels[image_sample_y * image_stride * 4 + (s32)(src_end_x - (unclamped_end_x - (x_cursor+1)) * scale_ratio_w) * 4 + 2],
-                image->pixels[image_sample_y * image_stride * 4 + (s32)(src_end_x - (unclamped_end_x - (x_cursor+0)) * scale_ratio_w) * 4 + 2]
+                image->pixels[image_sample_y * image_stride * 4 + image_sample_x3 * 4 + 2],
+                image->pixels[image_sample_y * image_stride * 4 + image_sample_x2 * 4 + 2],
+                image->pixels[image_sample_y * image_stride * 4 + image_sample_x1 * 4 + 2],
+                image->pixels[image_sample_y * image_stride * 4 + image_sample_x  * 4 + 2]
             );
             __m128 alpha_channels  = _mm_set_ps(
-                image->pixels[image_sample_y * image_stride * 4 + (s32)(src_end_x - (unclamped_end_x - (x_cursor+3)) * scale_ratio_w) * 4 + 3],
-                image->pixels[image_sample_y * image_stride * 4 + (s32)(src_end_x - (unclamped_end_x - (x_cursor+2)) * scale_ratio_w) * 4 + 3],
-                image->pixels[image_sample_y * image_stride * 4 + (s32)(src_end_x - (unclamped_end_x - (x_cursor+1)) * scale_ratio_w) * 4 + 3],
-                image->pixels[image_sample_y * image_stride * 4 + (s32)(src_end_x - (unclamped_end_x - (x_cursor+0)) * scale_ratio_w) * 4 + 3]
+                image->pixels[image_sample_y * image_stride * 4 + image_sample_x3 * 4 + 3],
+                image->pixels[image_sample_y * image_stride * 4 + image_sample_x2 * 4 + 3],
+                image->pixels[image_sample_y * image_stride * 4 + image_sample_x1 * 4 + 3],
+                image->pixels[image_sample_y * image_stride * 4 + image_sample_x  * 4 + 3]
             );
 
             __m128 red_destination_channels = _mm_set_ps(
