@@ -1,6 +1,8 @@
 #ifndef COMMON_C
 #define COMMON_C
 
+#include <x86intrin.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -68,7 +70,7 @@ s32 clamp_s32(s32 x, s32 min, s32 max) {
     return x;
 #else
     s32 i = (x < min) ? min : x;
-    return (x > max) ? max : x;
+    return (i > max) ? max : i;
 #endif
 }
 f32 clamp_f32(f32 x, f32 min, f32 max) {
@@ -78,16 +80,34 @@ f32 clamp_f32(f32 x, f32 min, f32 max) {
     return x;
 #else
     f32 i = (x < min) ? min : x;
-    return (x > max) ? max : x;
+    return (i > max) ? max : i;
 #endif
 }
 
+s32 lerp_s32(s32 a, s32 b, f32 normalized_t) {
+    return a * (1 - normalized_t) + (b * normalized_t);
+}
 f32 lerp_f32(f32 a, f32 b, f32 normalized_t) {
     return a * (1 - normalized_t) + (b * normalized_t);
 }
 
 f32 fractional_f32(f32 x) {
     return x - floor(x);
+}
+
+f32 step_f32(f32 x, f32 edge) {
+    return (x < edge) ? 0 : 1;
+}
+s32 step_s32(s32 x, s32 edge) {
+    return (x < edge) ? 0 : 1;
+}
+
+f32 pick_f32(f32 a, f32 b, s32 v) {
+    return (v == 0) ? a : b;
+}
+
+s32 pick_s32(s32 a, s32 b, s32 v) {
+    return (v == 0) ? a : b;
 }
 
 static size_t _globally_tracked_memory_allocation_counter = 0;
