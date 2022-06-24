@@ -106,7 +106,7 @@ void update_and_render_game(struct software_framebuffer* framebuffer, float dt) 
     {
         struct render_commands commands = render_commands(camera(v2f32(0,0), 1));
         /* render_commands_push_text(&commands, &game_font, 4, v2f32(0, 16), string_literal("In the beginning.\nThere was nothing.\n"), color32f32(1,1,1,1)); */
-        render_commands_push_text(&commands, &game_font, 3, v2f32(0, 16), string_literal("In the beginning.\nThere was nothing.\n"), color32f32(1,1,1,1));
+        render_commands_push_text(&commands, &game_font, 2, v2f32(0, 16), string_literal("In the beginning.\nThere was nothing.\n"), color32f32(1,1,1,1));
         software_framebuffer_render_commands(framebuffer, &commands);
     }
 }

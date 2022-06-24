@@ -109,7 +109,7 @@ void software_framebuffer_draw_quad(struct software_framebuffer* framebuffer, st
 }
 
 int std = 0;
-#define SIMD_TEST
+/* #define SIMD_TEST */
 #ifndef SIMD_TEST
 void software_framebuffer_draw_image_ex(struct software_framebuffer* framebuffer, struct image_buffer* image, struct rectangle_f32 destination, struct rectangle_f32 src, union color32f32 modulation, u32 flags) {
     if ((destination.x == 0) && (destination.y == 0) && (destination.w == 0) && (destination.h == 0)) {
@@ -144,11 +144,11 @@ void software_framebuffer_draw_image_ex(struct software_framebuffer* framebuffer
             s32 image_sample_x = (s32)((src.x + src.w) - ((unclamped_end_x - x_cursor) * scale_ratio_w));
             s32 image_sample_y = (s32)((src.y + src.h) - ((unclamped_end_y - y_cursor) * scale_ratio_h));
 
-            if ((flags & SOFTWARE_FRAMEBUFFER_DRAW_IMAGE_FLIP_HORIZONTALLY))
-                image_sample_x = (s32)(((unclamped_end_x - x_cursor) * scale_ratio_w) + src.x);
+            /* if ((flags & SOFTWARE_FRAMEBUFFER_DRAW_IMAGE_FLIP_HORIZONTALLY)) */
+            /*     image_sample_x = (s32)(((unclamped_end_x - x_cursor) * scale_ratio_w) + src.x); */
 
-            if ((flags & SOFTWARE_FRAMEBUFFER_DRAW_IMAGE_FLIP_VERTICALLY))
-                image_sample_y = (s32)(((unclamped_end_y - y_cursor) * scale_ratio_h) + src.y);
+            /* if ((flags & SOFTWARE_FRAMEBUFFER_DRAW_IMAGE_FLIP_VERTICALLY)) */
+            /*     image_sample_y = (s32)(((unclamped_end_y - y_cursor) * scale_ratio_h) + src.y); */
 
             union color32f32 sampled_pixel = color32f32(image->pixels[image_sample_y * image_stride * 4 + image_sample_x * 4 + 0],
                                                         image->pixels[image_sample_y * image_stride * 4 + image_sample_x * 4 + 1],
@@ -181,8 +181,8 @@ void software_framebuffer_draw_image_ex(struct software_framebuffer* framebuffer
         src.h = image->height;
     }
 
-    f32 scale_ratio_w = (f32)src.w  / destination.w;
-    f32 scale_ratio_h = (f32)src.h  / destination.h;
+    f32 scale_ratio_w = (f32)src.w / destination.w;
+    f32 scale_ratio_h = (f32)src.h / destination.h;
 
     s32 start_x = clamp_s32((s32)destination.x, 0, framebuffer->width);
     s32 start_y = clamp_s32((s32)destination.y, 0, framebuffer->height);
@@ -198,13 +198,10 @@ void software_framebuffer_draw_image_ex(struct software_framebuffer* framebuffer
     s32 stride       = framebuffer->width;
     s32 image_stride = image->width;
 
-    __m128* modulation_v = (__m128*) &modulation;
-
     __m128 modulation_r = _mm_load1_ps(&modulation.r);
     __m128 modulation_g = _mm_load1_ps(&modulation.g);
     __m128 modulation_b = _mm_load1_ps(&modulation.b);
     __m128 modulation_a = _mm_load1_ps(&modulation.a);
-
 
     f32 inverse_255_singular = 1/255.0f;
     __m128 inverse_255  = _mm_load1_ps(&inverse_255_singular);
@@ -212,9 +209,11 @@ void software_framebuffer_draw_image_ex(struct software_framebuffer* framebuffer
     s32 src_end_x = src.x + src.w;
     s32 src_end_y = src.y + src.h;
 
+    /* TODO flipping */
     for (s32 y_cursor = start_y; y_cursor < end_y; ++y_cursor) {
-        for (s32 x_cursor = start_x; x_cursor < end_x; x_cursor += 4) {
-            s32 image_sample_y = floorf(src_end_y - ((unclamped_end_y - y_cursor) * scale_ratio_h));
+        for (s32 x_cursor = start_x; x_cursor <= end_x; x_cursor += 4) {
+            /* s32 image_sample_y = (s32)(src_end_y - ((unclamped_end_y - y_cursor) * scale_ratio_h)); */
+            s32 image_sample_y = (s32)((src.y + src.h) - ((unclamped_end_y - y_cursor) * scale_ratio_h));
 
             __m128 red_channels = _mm_set_ps(
                 image->pixels[image_sample_y * image_stride * 4 + (s32)(src_end_x - (unclamped_end_x - (x_cursor+3)) * scale_ratio_w) * 4 + 0],
@@ -272,11 +271,12 @@ void software_framebuffer_draw_image_ex(struct software_framebuffer* framebuffer
 
 #define castF32_M128(X) ((f32*)(&X))
             for (int i = 0; i < 4; ++i) {
-                if (x_cursor + i > framebuffer->width) break;
                 framebuffer->pixels_u32[y_cursor * framebuffer->width + (x_cursor+i)] = packu32(255,
-                                                                                                castF32_M128(green_destination_channels)[i],
                                                                                                 castF32_M128(blue_destination_channels)[i],
-                                                                                                castF32_M128(red_destination_channels)[i]);
+                                                                                                castF32_M128(green_destination_channels)[i],
+                                                                                                castF32_M128(red_destination_channels)[i]
+                );
+                if (x_cursor + i >= framebuffer->width) break;
             }
 #undef castF32_M128
         }
