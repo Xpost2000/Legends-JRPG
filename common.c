@@ -57,15 +57,26 @@ static inline f32 normalized_cosf(f32 t) {
         b = tmp;                                \
     } while (0)
 
+/* hopefully these are branchless, I can optimize on sunday? */
 s32 clamp_s32(s32 x, s32 min, s32 max) {
+#if 0
     if (x < min) x = min;
     if (x > max) x = max;
     return x;
+#else
+    s32 i = (x < min) ? min : x;
+    return (x > max) ? max : x;
+#endif
 }
 f32 clamp_f32(f32 x, f32 min, f32 max) {
+#if 0
     if (x < min) x = min;
     if (x > max) x = max;
     return x;
+#else
+    f32 i = (x < min) ? min : x;
+    return (x > max) ? max : x;
+#endif
 }
 
 f32 lerp_f32(f32 a, f32 b, f32 normalized_t) {

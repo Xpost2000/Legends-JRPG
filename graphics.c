@@ -122,71 +122,69 @@ void software_framebuffer_draw_image_ex(struct software_framebuffer* framebuffer
     f32 scale_ratio_w = (f32)src.w  / destination.w;
     f32 scale_ratio_h = (f32)src.h  / destination.h;
 
-    s32 start_x = (s32)destination.x;
-    s32 start_y = (s32)destination.y;
-    s32 end_x   = (s32)(destination.x + destination.w);
-    s32 end_y   = (s32)(destination.y + destination.h);
+    s32 start_x = clamp_s32((s32)destination.x, 0, framebuffer->width);
+    s32 start_y = clamp_s32((s32)destination.y, 0, framebuffer->height);
+    s32 end_x   = clamp_s32((s32)(destination.x + destination.w), 0, framebuffer->width);
+    s32 end_y   = clamp_s32((s32)(destination.y + destination.h), 0, framebuffer->height);
 
     u32* framebuffer_pixels_as_32 = (u32*)framebuffer->pixels;
     unused(framebuffer_pixels_as_32);
+
     for (s32 y_cursor = start_y; y_cursor < end_y; ++y_cursor) {
-        if (y_cursor >= 0 && y_cursor < framebuffer->height)
-            for (s32 x_cursor = start_x; x_cursor < end_x; ++x_cursor) {
-                if (x_cursor >= 0 && x_cursor < framebuffer->width) {
-                    s32 stride       = framebuffer->width;
-                    s32 image_stride = image->width;
+        for (s32 x_cursor = start_x; x_cursor < end_x; ++x_cursor) {
+            s32 stride       = framebuffer->width;
+            s32 image_stride = image->width;
 
-                    s32 image_sample_x = floor((src.x + src.w) - ((end_x - (x_cursor)) * scale_ratio_w));
-                    s32 image_sample_y = floor((src.y + src.h) - ((end_y - (y_cursor)) * scale_ratio_h));
+            s32 image_sample_x = floor((src.x + src.w) - ((end_x - (x_cursor)) * scale_ratio_w));
+            s32 image_sample_y = floor((src.y + src.h) - ((end_y - (y_cursor)) * scale_ratio_h));
 
-                    if ((flags & SOFTWARE_FRAMEBUFFER_DRAW_IMAGE_FLIP_HORIZONTALLY))
-                        image_sample_x = floor(((end_x - (x_cursor)) * scale_ratio_w) + src.x);
+            if ((flags & SOFTWARE_FRAMEBUFFER_DRAW_IMAGE_FLIP_HORIZONTALLY))
+                image_sample_x = floor(((end_x - (x_cursor)) * scale_ratio_w) + src.x);
 
-                    if ((flags & SOFTWARE_FRAMEBUFFER_DRAW_IMAGE_FLIP_VERTICALLY))
-                        image_sample_y = floor(((end_y - (y_cursor)) * scale_ratio_h) + src.y);
+            if ((flags & SOFTWARE_FRAMEBUFFER_DRAW_IMAGE_FLIP_VERTICALLY))
+                image_sample_y = floor(((end_y - (y_cursor)) * scale_ratio_h) + src.y);
 
-                    if (image_sample_x >= image->width)  image_sample_x = image->width;
-                    if (image_sample_y >= image->height) image_sample_y = image->height;
-                    if (image_sample_x < 0)              image_sample_x = 0;
-                    if (image_sample_y < 0)              image_sample_y = 0;
+            if (image_sample_x >= image->width)  image_sample_x = image->width;
+            if (image_sample_y >= image->height) image_sample_y = image->height;
+            if (image_sample_x < 0)              image_sample_x = 0;
+            if (image_sample_y < 0)              image_sample_y = 0;
 
-                    union color32u8 sampled_pixel = (union color32u8) { .rgba_packed = image->pixels_u32[image_sample_y * image_stride + image_sample_x] };
+            union color32u8 sampled_pixel = (union color32u8) { .rgba_packed = image->pixels_u32[image_sample_y * image_stride + image_sample_x] };
 
-                    sampled_pixel.r *= modulation.r;
-                    sampled_pixel.g *= modulation.g;
-                    sampled_pixel.b *= modulation.b;
-                    sampled_pixel.a *= modulation.a;
+            sampled_pixel.r *= modulation.r;
+            sampled_pixel.g *= modulation.g;
+            sampled_pixel.b *= modulation.b;
+            sampled_pixel.a *= modulation.a;
 
 #if 0
-                    framebuffer_pixels_as_32[y_cursor * stride + x_cursor] = sampled_pixel.rgba_packed;
+            framebuffer_pixels_as_32[y_cursor * stride + x_cursor] = sampled_pixel.rgba_packed;
 #else
 #if 1
-                    if (std == 1) {
-                        float alpha = sampled_pixel.a / 255.0f;
-                        s32 new_r = (framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 0]) + (sampled_pixel.r * alpha);;
-                        s32 new_g = (framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 1]) + (sampled_pixel.g * alpha);;
-                        s32 new_b = (framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 2]) + (sampled_pixel.b * alpha);;
-                        if (new_r > 255) new_r = 255;
-                        if (new_g > 255) new_g = 255;
-                        if (new_b > 255) new_b = 255;
-                        framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 0] = new_r;
-                        framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 1] = new_g;
-                        framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 2] = new_b;
-                        /* framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 0] = (framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 0]) + (sampled_pixel.r * alpha); */
-                        /* framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 1] = (framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 1]) + (sampled_pixel.g * alpha); */
-                        /* framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 2] = (framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 2]) + (sampled_pixel.b * alpha); */
-                    } else 
+            if (std == 1) {
+                float alpha = sampled_pixel.a / 255.0f;
+                s32 new_r = (framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 0]) + (sampled_pixel.r * alpha);;
+                s32 new_g = (framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 1]) + (sampled_pixel.g * alpha);;
+                s32 new_b = (framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 2]) + (sampled_pixel.b * alpha);;
+                if (new_r > 255) new_r = 255;
+                if (new_g > 255) new_g = 255;
+                if (new_b > 255) new_b = 255;
+                framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 0] = new_r;
+                framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 1] = new_g;
+                framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 2] = new_b;
+                /* framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 0] = (framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 0]) + (sampled_pixel.r * alpha); */
+                /* framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 1] = (framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 1]) + (sampled_pixel.g * alpha); */
+                /* framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 2] = (framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 2]) + (sampled_pixel.b * alpha); */
+            } else 
 #endif
-                    {
-                        f32 alpha = sampled_pixel.a / 255.0f;
-                        framebuffer->pixels_u32[y_cursor * framebuffer->width + x_cursor] = packu32(255,
-                                                                                                    (framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 2] * (1 - alpha)) + (sampled_pixel.b * alpha),
-                                                                                                    (framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 1] * (1 - alpha)) + (sampled_pixel.g * alpha),
-                                                                                                    (framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 0] * (1 - alpha)) + (sampled_pixel.r * alpha));
-                    }
-#endif
-                }
+            {
+                f32 alpha = sampled_pixel.a / 255.0f;
+                framebuffer->pixels_u32[y_cursor * framebuffer->width + x_cursor] = packu32(255,
+                                                                                            (framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 2] * (1 - alpha)) + (sampled_pixel.b * alpha),
+                                                                                            (framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 1] * (1 - alpha)) + (sampled_pixel.g * alpha),
+                                                                                            (framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 0] * (1 - alpha)) + (sampled_pixel.r * alpha));
             }
+#endif
+        }
     }
 }
 
