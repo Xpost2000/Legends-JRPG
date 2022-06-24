@@ -1,6 +1,15 @@
 /* 
    TODO:
-   Actual Renderer System (render layers and drawing text, with a camera) (Maybe, maybe not)
+   
+   Resources system? Probably not strictly necessary.
+   
+   CLEANUP:
+   Allow for more fine grained blending modes. We default to alpha blending always.
+
+   NOTE:
+   
+   consider making this easier for multithreading by allowing things to blit in tiled sets which
+   allows for multithreading.
 */
 #include "graphics_def.c"
 
@@ -98,6 +107,7 @@ void software_framebuffer_draw_quad(struct software_framebuffer* framebuffer, st
     }
 }
 
+int std = 0;
 void software_framebuffer_draw_image_ex(struct software_framebuffer* framebuffer, struct image_buffer* image, struct rectangle_f32 destination, struct rectangle_f32 src, union color32f32 modulation, u32 flags) {
     if ((destination.x == 0) && (destination.y == 0) && (destination.w == 0) && (destination.h == 0)) {
         destination.w = framebuffer->width;
@@ -126,14 +136,19 @@ void software_framebuffer_draw_image_ex(struct software_framebuffer* framebuffer
                     s32 stride       = framebuffer->width;
                     s32 image_stride = image->width;
 
-                    s32 image_sample_x = floor((src.x + src.w) - ((end_x - x_cursor) * scale_ratio_w));
-                    s32 image_sample_y = floor((src.y + src.h) - ((end_y - y_cursor) * scale_ratio_h));
+                    s32 image_sample_x = floor((src.x + src.w) - ((end_x - (x_cursor)) * scale_ratio_w));
+                    s32 image_sample_y = floor((src.y + src.h) - ((end_y - (y_cursor)) * scale_ratio_h));
 
                     if ((flags & SOFTWARE_FRAMEBUFFER_DRAW_IMAGE_FLIP_HORIZONTALLY))
-                        image_sample_x = floor(((end_x - x_cursor) * scale_ratio_w) + src.x);
+                        image_sample_x = floor(((end_x - (x_cursor)) * scale_ratio_w) + src.x);
 
                     if ((flags & SOFTWARE_FRAMEBUFFER_DRAW_IMAGE_FLIP_VERTICALLY))
-                        image_sample_y = floor(((end_y - y_cursor) * scale_ratio_h) + src.y);
+                        image_sample_y = floor(((end_y - (y_cursor)) * scale_ratio_h) + src.y);
+
+                    if (image_sample_x >= image->width)  image_sample_x = image->width;
+                    if (image_sample_y >= image->height) image_sample_y = image->height;
+                    if (image_sample_x < 0)              image_sample_x = 0;
+                    if (image_sample_y < 0)              image_sample_y = 0;
 
                     union color32u8 sampled_pixel = (union color32u8) { .rgba_packed = image->pixels_u32[image_sample_y * image_stride + image_sample_x] };
 
@@ -145,6 +160,23 @@ void software_framebuffer_draw_image_ex(struct software_framebuffer* framebuffer
 #if 0
                     framebuffer_pixels_as_32[y_cursor * stride + x_cursor] = sampled_pixel.rgba_packed;
 #else
+#if 1
+                    if (std == 1) {
+                        float alpha = sampled_pixel.a / 255.0f;
+                        s32 new_r = (framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 0]) + (sampled_pixel.r * alpha);;
+                        s32 new_g = (framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 1]) + (sampled_pixel.g * alpha);;
+                        s32 new_b = (framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 2]) + (sampled_pixel.b * alpha);;
+                        if (new_r > 255) new_r = 255;
+                        if (new_g > 255) new_g = 255;
+                        if (new_b > 255) new_b = 255;
+                        framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 0] = new_r;
+                        framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 1] = new_g;
+                        framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 2] = new_b;
+                        /* framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 0] = (framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 0]) + (sampled_pixel.r * alpha); */
+                        /* framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 1] = (framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 1]) + (sampled_pixel.g * alpha); */
+                        /* framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 2] = (framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 2]) + (sampled_pixel.b * alpha); */
+                    } else 
+#endif
                     {
                         float alpha = sampled_pixel.a / 255.0f;
                         framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 0] = (framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 0] * (1 - alpha)) + (sampled_pixel.r * alpha);
@@ -433,6 +465,13 @@ void software_framebuffer_render_commands(struct software_framebuffer* framebuff
 
 /* requires an arena because we need an original copy of our framebuffer. */
 /* NOTE technically a test of performance to see if this is doomed */
+
+/*
+  As expected this is the single most expensive operation.
+  
+  I don't want to have to force so many copies with this when I multithread though... It might be safe to always store a double buffer of the framebuffer
+  itself? Will think about later.
+*/
 void software_framebuffer_kernel_convolution_ex(struct memory_arena* arena, struct software_framebuffer* framebuffer, f32* kernel, s16 width, s16 height, f32 divisor, f32 blend_t, s32 passes) {
     if (divisor == 0.0) divisor = 1;
     struct software_framebuffer unaltered_copy = software_framebuffer_create(arena, framebuffer->width, framebuffer->height);
@@ -450,6 +489,7 @@ start:
     for (s32 y_cursor = 0; y_cursor < framebuffer_height; ++y_cursor) {
         for (s32 x_cursor = 0; x_cursor < framebuffer_width; ++x_cursor) {
             f32 accumulation[3] = {};
+
             for (s32 y_cursor_kernel = -kernel_half_height; y_cursor_kernel <= kernel_half_height; ++y_cursor_kernel) {
                 for (s32 x_cursor_kernel = -kernel_half_width; x_cursor_kernel <= kernel_half_width; ++x_cursor_kernel) {
                     s32 sample_x = x_cursor_kernel + x_cursor;

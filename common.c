@@ -43,6 +43,13 @@ typedef int32_t s32;
 typedef int16_t s16;
 typedef int8_t  s8;
 
+static inline f32 normalized_sinf(f32 t) {
+    return (sinf(t)+1)/2.0;
+}
+static inline f32 normalized_cosf(f32 t) {
+    return (cosf(t)+1)/2.0;
+}
+
 #define Swap(a, b, type)                        \
     do {                                        \
         type tmp = a;                           \
