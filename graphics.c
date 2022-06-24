@@ -213,12 +213,12 @@ void software_framebuffer_draw_image_ex(struct software_framebuffer* framebuffer
     for (s32 y_cursor = start_y; y_cursor < end_y; ++y_cursor) {
         for (s32 x_cursor = start_x; x_cursor < end_x; x_cursor += 4) {
             /* s32 image_sample_y = (s32)(src_end_y - ((unclamped_end_y - y_cursor) * scale_ratio_h)); */
-            s32 image_sample_y = (s32)((src.y + src.h) - ((unclamped_end_y - y_cursor) * scale_ratio_h));
+            s32 image_sample_y = floorf((src.y + src.h) - ((unclamped_end_y - y_cursor) * scale_ratio_h));
 
-            s32 image_sample_x  = (s32)((src.x + src.w) - ((unclamped_end_x - (x_cursor))   * scale_ratio_w));
-            s32 image_sample_x1 = (s32)((src.x + src.w) - ((unclamped_end_x - (x_cursor+1)) * scale_ratio_w));
-            s32 image_sample_x2 = (s32)((src.x + src.w) - ((unclamped_end_x - (x_cursor+2)) * scale_ratio_w));
-            s32 image_sample_x3 = (s32)((src.x + src.w) - ((unclamped_end_x - (x_cursor+3)) * scale_ratio_w));
+            s32 image_sample_x  = floorf((src.x + src.w) - ((unclamped_end_x - (x_cursor))   * scale_ratio_w));
+            s32 image_sample_x1 = floorf((src.x + src.w) - ((unclamped_end_x - (x_cursor+1)) * scale_ratio_w));
+            s32 image_sample_x2 = floorf((src.x + src.w) - ((unclamped_end_x - (x_cursor+2)) * scale_ratio_w));
+            s32 image_sample_x3 = floorf((src.x + src.w) - ((unclamped_end_x - (x_cursor+3)) * scale_ratio_w));
 
             __m128 red_channels = _mm_set_ps(
                 image->pixels[image_sample_y * image_stride * 4 + image_sample_x3 * 4 + 0],
@@ -270,18 +270,21 @@ void software_framebuffer_draw_image_ex(struct software_framebuffer* framebuffer
             alpha_channels = _mm_mul_ps(modulation_a, _mm_mul_ps(inverse_255, alpha_channels));
 
             __m128 one_minus_alpha     = _mm_sub_ps(_mm_set1_ps(1), alpha_channels);
-            red_destination_channels   = _mm_add_ps(_mm_mul_ps(red_destination_channels, one_minus_alpha),   _mm_mul_ps(red_channels, alpha_channels));
+            red_destination_channels   = _mm_add_ps(_mm_mul_ps(red_destination_channels,   one_minus_alpha),   _mm_mul_ps(red_channels, alpha_channels));
             green_destination_channels = _mm_add_ps(_mm_mul_ps(green_destination_channels, one_minus_alpha), _mm_mul_ps(green_channels, alpha_channels));
-            blue_destination_channels  = _mm_add_ps(_mm_mul_ps(blue_destination_channels, one_minus_alpha),  _mm_mul_ps(blue_channels, alpha_channels));
+            blue_destination_channels  = _mm_add_ps(_mm_mul_ps(blue_destination_channels,  one_minus_alpha),  _mm_mul_ps(blue_channels, alpha_channels));
 
 #define castF32_M128(X) ((f32*)(&X))
             for (int i = 0; i < 4; ++i) {
+                if ((x_cursor + i >= framebuffer->width) ||
+                    (((src.x + src.w) - ((unclamped_end_x - (x_cursor+i)) * scale_ratio_w))) >= src.x+src.w)
+                    break;
+
                 framebuffer->pixels_u32[y_cursor * framebuffer->width + (x_cursor+i)] = packu32(255,
                                                                                                 castF32_M128(blue_destination_channels)[i],
                                                                                                 castF32_M128(green_destination_channels)[i],
                                                                                                 castF32_M128(red_destination_channels)[i]
                 );
-                if (x_cursor + i >= framebuffer->width) break;
             }
 #undef castF32_M128
         }
