@@ -90,11 +90,11 @@ struct font_cache {
     };
 };
 
-struct font_cache font_cache_load_bitmap_font(char* filepath, s32 tile_width, s32 tile_height, s32 atlas_rows, s32 atlas_columns);
+struct font_cache font_cache_load_bitmap_font(string filepath, s32 tile_width, s32 tile_height, s32 atlas_rows, s32 atlas_columns);
 void              font_cache_free(struct font_cache* font_cache);
 
-struct image_buffer image_buffer_load_from_file(const char* file_path);
-void                image_buffer_write_to_disk(struct image_buffer* image, const char* as);
+struct image_buffer image_buffer_load_from_file(string file_path);
+void                image_buffer_write_to_disk(struct image_buffer* image, string as);
 void                image_buffer_free(struct image_buffer* image);
 
 struct software_framebuffer software_framebuffer_create(struct memory_arena* arena, u32 width, u32 height);
@@ -109,7 +109,7 @@ void software_framebuffer_clear_buffer(struct software_framebuffer* framebuffer,
 void software_framebuffer_draw_quad(struct software_framebuffer* framebuffer, struct rectangle_f32 destination, union color32u8 rgba);
 void software_framebuffer_draw_image_ex(struct software_framebuffer* framebuffer, struct image_buffer* image, struct rectangle_f32 destination, struct rectangle_f32 src, union color32f32 modulation, u32 flags);
 /* we do not have a draw glyph */
-void software_framebuffer_draw_text(struct software_framebuffer* framebuffer, struct font_cache* font, f32 scale, v2f32 xy, char* cstring, union color32f32 modulation);
+void software_framebuffer_draw_text(struct software_framebuffer* framebuffer, struct font_cache* font, f32 scale, v2f32 xy, string cstring, union color32f32 modulation);
 /* only thin lines */
 void software_framebuffer_draw_line(struct software_framebuffer* framebuffer, v2f32 start, v2f32 end, union color32u8 rgba);
 
@@ -147,7 +147,7 @@ struct render_command {
     union {
         struct {
             struct font_cache*   font;
-            char*                text;
+            string               text;
         };
         struct image_buffer* image;
     };
@@ -168,7 +168,7 @@ struct render_commands render_commands(struct camera camera);
 void render_commands_push_quad(struct render_commands* commands, struct rectangle_f32 destination, union color32u8 rgba);
 void render_commands_push_image(struct render_commands* commands, struct image_buffer* image, struct rectangle_f32 destination, struct rectangle_f32 source, union color32f32 rgba, u32 flags);
 void render_commands_push_line(struct render_commands* commands, v2f32 start, v2f32 end, union color32u8 rgba);
-void render_commands_push_text(struct render_commands* commands, struct font_cache* font, f32 scale, v2f32 xy, char* cstring, union color32f32 rgba);
+void render_commands_push_text(struct render_commands* commands, struct font_cache* font, f32 scale, v2f32 xy, string cstring, union color32f32 rgba);
 void software_framebuffer_render_commands(struct software_framebuffer* framebuffer, struct render_commands* commands);
 
 void software_framebuffer_kernel_convolution_ex(struct memory_arena* arena, struct software_framebuffer* framebuffer, f32* kernel, s16 width, s16 height, f32 divisor, f32 blend_t, s32 passes);

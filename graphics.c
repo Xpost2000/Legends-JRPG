@@ -5,12 +5,12 @@
 #include "graphics_def.c"
 
 /* doesn't take an allocator because of the way stb image works... */
-struct image_buffer image_buffer_load_from_file(const char* file_path) {
+struct image_buffer image_buffer_load_from_file(string filepath) {
     s32 width;
     s32 height;
     s32 components;
 
-    u8* image_buffer = stbi_load(file_path, &width, &height, &components, 4);
+    u8* image_buffer = stbi_load(filepath.data, &width, &height, &components, 4);
     struct image_buffer result = (struct image_buffer) {
         .pixels = image_buffer,
         .width  = width,
@@ -19,9 +19,9 @@ struct image_buffer image_buffer_load_from_file(const char* file_path) {
     return result;
 }
 
-void image_buffer_write_to_disk(struct image_buffer* image, const char* as) {
+void image_buffer_write_to_disk(struct image_buffer* image, string as) {
     char filename[256] = {};
-    snprintf(filename, 256, "%s.bmp", as);
+    snprintf(filename, 256, "%s.bmp", as.data);
     stbi_write_bmp(filename, image->width, image->height, 4, image->pixels);
     _debugprintf("screenshot produced.");
 }
@@ -31,7 +31,7 @@ void image_buffer_free(struct image_buffer* image) {
     system_heap_memory_deallocate(image->pixels);
 }
 
-struct font_cache font_cache_load_bitmap_font(char* filepath, s32 tile_width, s32 tile_height, s32 atlas_rows, s32 atlas_columns) {
+struct font_cache font_cache_load_bitmap_font(string filepath, s32 tile_width, s32 tile_height, s32 atlas_rows, s32 atlas_columns) {
     struct font_cache result = {
         .type = FONT_CACHE_ATLAS_FIXED_ASCII,
         .tile_width = tile_width,
@@ -251,18 +251,16 @@ void software_framebuffer_draw_line(struct software_framebuffer* framebuffer, v2
 }
 
 /* we do not have a draw glyph */
-void software_framebuffer_draw_text(struct software_framebuffer* framebuffer, struct font_cache* font, float scale, v2f32 xy, char* cstring, union color32f32 modulation) {
+void software_framebuffer_draw_text(struct software_framebuffer* framebuffer, struct font_cache* font, float scale, v2f32 xy, string text, union color32f32 modulation) {
     f32 x_cursor = xy.x;
     f32 y_cursor = xy.y;
 
-    char* text_cursor = cstring;
-
-    for (; (*text_cursor); ++text_cursor) {
-        if ((*text_cursor) == '\n') {
+    for (unsigned index = 0; index < text.length; ++index) {
+        if (text.data[index] == '\n') {
             y_cursor += font->tile_height * scale;
             x_cursor =  xy.x;
         } else {
-            s32 character_index = *text_cursor - 32;
+            s32 character_index = text.data[index] - 32;
 
             software_framebuffer_draw_image_ex(
                 framebuffer, font,
@@ -329,12 +327,12 @@ void render_commands_push_line(struct render_commands* commands, v2f32 start, v2
     command->modulation_u8 = rgba;
 }
 
-void render_commands_push_text(struct render_commands* commands, struct font_cache* font, f32 scale, v2f32 xy, char* cstring, union color32f32 rgba) {
+void render_commands_push_text(struct render_commands* commands, struct font_cache* font, f32 scale, v2f32 xy, string text, union color32f32 rgba) {
     struct render_command* command = render_commands_new_command(commands, RENDER_COMMAND_DRAW_TEXT);
     command->font       = font;
     command->xy         = xy;
     command->scale      = scale;
-    command->text       = cstring;
+    command->text       = text;
     command->modulation = rgba;
     command->flags      = 0;
 }

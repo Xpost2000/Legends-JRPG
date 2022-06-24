@@ -6,8 +6,8 @@ struct font_cache          game_font;
 void game_initialize(void) {
     game_arena = memory_arena_create_from_heap("Game Memory", Megabyte(8));
     scratch_arena = memory_arena_create_from_heap("Scratch Buffer", Megabyte(4));
-    test_image = image_buffer_load_from_file("./res/a.png");
-    game_font  = font_cache_load_bitmap_font("./res/gnshbmpfonts/gnsh-bitmapfont-colour1.png", 5, 12, 5, 20);
+    test_image = image_buffer_load_from_file(string_literal("./res/a.png"));
+    game_font  = font_cache_load_bitmap_font(string_literal("./res/gnshbmpfonts/gnsh-bitmapfont-colour1.png"), 5, 12, 5, 20);
 }
 
 void game_deinitialize(void) {
@@ -62,7 +62,7 @@ void update_and_render_game(struct software_framebuffer* framebuffer, float dt) 
     }
 
     if (is_key_pressed(KEY_F12)) {
-        image_buffer_write_to_disk(framebuffer, "scr");
+        image_buffer_write_to_disk(framebuffer, string_literal("scr"));
     }
 
     struct render_commands commands = render_commands(
@@ -80,7 +80,7 @@ void update_and_render_game(struct software_framebuffer* framebuffer, float dt) 
         render_commands_push_quad(&commands, rectangle_f32(40, 0, 200, 200), color32u8(255, 0, 255, 128));
         render_commands_push_line(&commands, v2f32(200, 200), v2f32(400, 400), color32u8(0, 0, 255, 255));
 
-        render_commands_push_text(&commands, &game_font, 8, v2f32(0, 0), "Hello World\nSad", color32f32(1,1,1,1));
+        render_commands_push_text(&commands, &game_font, 8, v2f32(0, 0), string_literal("Hello World\nSad"), color32f32(1,1,1,1));
     }
     software_framebuffer_render_commands(framebuffer, &commands);
     static bool blur = true;

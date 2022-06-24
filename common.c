@@ -249,6 +249,7 @@ f32 get_average_frametime(void) {
 #include "allocators.c"
 #include "prng.c"
 #include "v2.c"
+#include "string.c"
 
 struct file_buffer {
     IAllocator allocator;
@@ -258,8 +259,8 @@ struct file_buffer {
 
 /* TODO should be using a memory arena, although this means we can't really have this here lol */
 /* TODO We should also be using a length string... */
-bool   file_exists(char* path) {
-    FILE* f = fopen(path, "r");
+bool   file_exists(string path) {
+    FILE* f = fopen(path.data, "r");
 
     if (f) {
         fclose(f);
@@ -269,9 +270,9 @@ bool   file_exists(char* path) {
     return false;
 }
 
-size_t file_length(char* path) {
+size_t file_length(string path) {
     size_t result = 0;
-    FILE*  file   = fopen(path, "rb+");
+    FILE*  file   = fopen(path.data, "rb+");
 
     if (file) {
         fseek(file, 0, SEEK_END);
@@ -282,13 +283,13 @@ size_t file_length(char* path) {
     return result;
 }
 
-void read_entire_file_into_buffer(char* path, u8* buffer, size_t buffer_length) {
-    FILE* file = fopen(path, "rb+");
+void read_entire_file_into_buffer(string path, u8* buffer, size_t buffer_length) {
+    FILE* file = fopen(path.data, "rb+");
     fread(buffer, 1, buffer_length, file);
     fclose(file);
 }
 
-struct file_buffer read_entire_file(IAllocator allocator, char* path) {
+struct file_buffer read_entire_file(IAllocator allocator, string path) {
     size_t file_size   = file_length(path);
     u8*    file_buffer = allocator.alloc(&allocator, file_size+1);
     read_entire_file_into_buffer(path, file_buffer, file_size);
@@ -303,25 +304,5 @@ struct file_buffer read_entire_file(IAllocator allocator, char* path) {
 void file_buffer_free(struct file_buffer* file) {
     file->allocator.free(&file->allocator, file->buffer);
 }
-
-u64 cstring_length(const char* cstring) {
-    char* cursor = (char*)cstring;
-
-    while (*cursor) {
-        cursor++;
-    }
-
-    return (cstring - cursor);
-}
-
-void cstring_copy(cstring source, cstring destination, u64 destination_length) {
-    u64 source_length = cstring_length(source);
-
-    for (u64 index = 0; index < destination_length && index < source_length; ++index) {
-        destination[index] = source[index];
-    }
-}
-
-
 
 #endif
