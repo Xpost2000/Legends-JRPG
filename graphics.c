@@ -178,12 +178,12 @@ void software_framebuffer_draw_image_ex(struct software_framebuffer* framebuffer
                     } else 
 #endif
                     {
-                        float alpha = sampled_pixel.a / 255.0f;
-                        framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 0] = (framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 0] * (1 - alpha)) + (sampled_pixel.r * alpha);
-                        framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 1] = (framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 1] * (1 - alpha)) + (sampled_pixel.g * alpha);
-                        framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 2] = (framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 2] * (1 - alpha)) + (sampled_pixel.b * alpha);
+                        f32 alpha = sampled_pixel.a / 255.0f;
+                        framebuffer->pixels_u32[y_cursor * framebuffer->width + x_cursor] = packu32(255,
+                                                                                                    (framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 2] * (1 - alpha)) + (sampled_pixel.b * alpha),
+                                                                                                    (framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 1] * (1 - alpha)) + (sampled_pixel.g * alpha),
+                                                                                                    (framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 0] * (1 - alpha)) + (sampled_pixel.r * alpha));
                     }
-                    framebuffer->pixels[y_cursor * stride * 4 + x_cursor * 4 + 3] = 255;
 #endif
                 }
             }
@@ -247,18 +247,16 @@ void software_framebuffer_draw_line(struct software_framebuffer* framebuffer, v2
         else         sign_y = -1;
 
         s32 error_accumulator = delta_x + delta_y;
+        float alpha = rgba.a / 255.0f;
 
         for (;;) {
 #if 0
             framebuffer->pixels_u32[y1 * framebuffer->width + x1] = rgba.rgba_packed;
 #else
-            {
-                float alpha = rgba.a / 255.0f;
-                framebuffer->pixels[y1 * stride * 4 + x1 * 4 + 0] = (framebuffer->pixels[y1 * stride * 4 + x1 * 4 + 0] * (1 - alpha)) + (rgba.r * alpha);
-                framebuffer->pixels[y1 * stride * 4 + x1 * 4 + 1] = (framebuffer->pixels[y1 * stride * 4 + x1 * 4 + 1] * (1 - alpha)) + (rgba.g * alpha);
-                framebuffer->pixels[y1 * stride * 4 + x1 * 4 + 2] = (framebuffer->pixels[y1 * stride * 4 + x1 * 4 + 2] * (1 - alpha)) + (rgba.b * alpha);
-            }
-            framebuffer->pixels[y1 * stride * 4 + x1 * 4 + 3] = 255;
+            framebuffer->pixels_u32[y1 * framebuffer->width + x1] = packu32(255,
+                                                                            (framebuffer->pixels[y1 * stride * 4 + x1 * 4 + 2] * (1 - alpha)) + (rgba.b * alpha),
+                                                                            (framebuffer->pixels[y1 * stride * 4 + x1 * 4 + 1] * (1 - alpha)) + (rgba.g * alpha),
+                                                                            (framebuffer->pixels[y1 * stride * 4 + x1 * 4 + 0] * (1 - alpha)) + (rgba.r * alpha));
 #endif
 
             if (x1 == x2 && y1 == y2) return;
@@ -369,6 +367,10 @@ void render_commands_push_text(struct render_commands* commands, struct font_cac
     command->flags      = 0;
 }
 
+void render_commands_clear(struct render_commands* commands) {
+    commands->command_count = 0;
+}
+
 void sort_render_commands(struct render_commands* commands) {
     /* TODO */
 }
@@ -382,7 +384,7 @@ void software_framebuffer_render_commands(struct software_framebuffer* framebuff
 
     f32 half_screen_width  = framebuffer->width/2;
     f32 half_screen_height = framebuffer->height/2;
-    /* TODO scale */
+
     for (unsigned index = 0; index < commands->command_count; ++index) {
         struct render_command* command = &commands->commands[index];
 
@@ -473,50 +475,45 @@ void software_framebuffer_render_commands(struct software_framebuffer* framebuff
   itself? Will think about later.
 */
 void software_framebuffer_kernel_convolution_ex(struct memory_arena* arena, struct software_framebuffer* framebuffer, f32* kernel, s16 width, s16 height, f32 divisor, f32 blend_t, s32 passes) {
-    if (divisor == 0.0) divisor = 1;
     struct software_framebuffer unaltered_copy = software_framebuffer_create(arena, framebuffer->width, framebuffer->height);
+    if (divisor == 0.0) divisor = 1;
 
-    s32 current_pass = 0;
-start:
-    software_framebuffer_copy_into(&unaltered_copy, framebuffer);
+    for (s32 pass = 0; pass < passes; pass++) {
+        software_framebuffer_copy_into(&unaltered_copy, framebuffer);
 
-    s32 framebuffer_width  = framebuffer->width;
-    s32 framebuffer_height = framebuffer->height;
+        s32 framebuffer_width  = framebuffer->width;
+        s32 framebuffer_height = framebuffer->height;
 
-    s32 kernel_half_width = width/2;
-    s32 kernel_half_height = height/2;
+        s32 kernel_half_width = width/2;
+        s32 kernel_half_height = height/2;
 
-    for (s32 y_cursor = 0; y_cursor < framebuffer_height; ++y_cursor) {
-        for (s32 x_cursor = 0; x_cursor < framebuffer_width; ++x_cursor) {
-            f32 accumulation[3] = {};
+        for (s32 y_cursor = 0; y_cursor < framebuffer_height; ++y_cursor) {
+            for (s32 x_cursor = 0; x_cursor < framebuffer_width; ++x_cursor) {
+                f32 accumulation[3] = {};
 
-            for (s32 y_cursor_kernel = -kernel_half_height; y_cursor_kernel <= kernel_half_height; ++y_cursor_kernel) {
-                for (s32 x_cursor_kernel = -kernel_half_width; x_cursor_kernel <= kernel_half_width; ++x_cursor_kernel) {
-                    s32 sample_x = x_cursor_kernel + x_cursor;
-                    s32 sample_y = y_cursor_kernel + y_cursor;
+                for (s32 y_cursor_kernel = -kernel_half_height; y_cursor_kernel <= kernel_half_height; ++y_cursor_kernel) {
+                    for (s32 x_cursor_kernel = -kernel_half_width; x_cursor_kernel <= kernel_half_width; ++x_cursor_kernel) {
+                        s32 sample_x = x_cursor_kernel + x_cursor;
+                        s32 sample_y = y_cursor_kernel + y_cursor;
 
-                    if (sample_x >= 0 && sample_x < framebuffer_width &&
-                        sample_y >= 0 && sample_y < framebuffer_height) {
+                        if (sample_x >= 0 && sample_x < framebuffer_width &&
+                            sample_y >= 0 && sample_y < framebuffer_height) {
 
-                        accumulation[0] += unaltered_copy.pixels[sample_y * framebuffer_width * 4 + sample_x * 4 + 0] * kernel[(y_cursor_kernel+1) * width + (x_cursor_kernel+1)];
-                        accumulation[1] += unaltered_copy.pixels[sample_y * framebuffer_width * 4 + sample_x * 4 + 1] * kernel[(y_cursor_kernel+1) * width + (x_cursor_kernel+1)];
-                        accumulation[2] += unaltered_copy.pixels[sample_y * framebuffer_width * 4 + sample_x * 4 + 2] * kernel[(y_cursor_kernel+1) * width + (x_cursor_kernel+1)];
+                            accumulation[0] += unaltered_copy.pixels[sample_y * framebuffer_width * 4 + sample_x * 4 + 0] * kernel[(y_cursor_kernel+1) * width + (x_cursor_kernel+1)];
+                            accumulation[1] += unaltered_copy.pixels[sample_y * framebuffer_width * 4 + sample_x * 4 + 1] * kernel[(y_cursor_kernel+1) * width + (x_cursor_kernel+1)];
+                            accumulation[2] += unaltered_copy.pixels[sample_y * framebuffer_width * 4 + sample_x * 4 + 2] * kernel[(y_cursor_kernel+1) * width + (x_cursor_kernel+1)];
+                        }
                     }
                 }
+
+                accumulation[0] = clamp_f32(accumulation[0] / divisor, 0, 255.0f);
+                accumulation[1] = clamp_f32(accumulation[1] / divisor, 0, 255.0f);
+                accumulation[2] = clamp_f32(accumulation[2] / divisor, 0, 255.0f);
+
+                framebuffer->pixels[y_cursor * framebuffer_width * 4 + x_cursor * 4 + 0] = framebuffer->pixels[y_cursor * framebuffer_width * 4 + x_cursor * 4 + 0] * (1 - blend_t) + (blend_t * accumulation[0]);
+                framebuffer->pixels[y_cursor * framebuffer_width * 4 + x_cursor * 4 + 1] = framebuffer->pixels[y_cursor * framebuffer_width * 4 + x_cursor * 4 + 1] * (1 - blend_t) + (blend_t * accumulation[1]);
+                framebuffer->pixels[y_cursor * framebuffer_width * 4 + x_cursor * 4 + 2] = framebuffer->pixels[y_cursor * framebuffer_width * 4 + x_cursor * 4 + 2] * (1 - blend_t) + (blend_t * accumulation[2]);
             }
-
-            accumulation[0] = clamp_f32(accumulation[0] / divisor, 0, 255.0f);
-            accumulation[1] = clamp_f32(accumulation[1] / divisor, 0, 255.0f);
-            accumulation[2] = clamp_f32(accumulation[2] / divisor, 0, 255.0f);
-
-            framebuffer->pixels[y_cursor * framebuffer_width * 4 + x_cursor * 4 + 0] = framebuffer->pixels[y_cursor * framebuffer_width * 4 + x_cursor * 4 + 0] * (1 - blend_t) + (blend_t * accumulation[0]);
-            framebuffer->pixels[y_cursor * framebuffer_width * 4 + x_cursor * 4 + 1] = framebuffer->pixels[y_cursor * framebuffer_width * 4 + x_cursor * 4 + 1] * (1 - blend_t) + (blend_t * accumulation[1]);
-            framebuffer->pixels[y_cursor * framebuffer_width * 4 + x_cursor * 4 + 2] = framebuffer->pixels[y_cursor * framebuffer_width * 4 + x_cursor * 4 + 2] * (1 - blend_t) + (blend_t * accumulation[2]);
         }
-    }
-
-    current_pass += 1;
-    if (current_pass <= passes) {
-        goto start;   
     }
 }

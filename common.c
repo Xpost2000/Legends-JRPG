@@ -312,4 +312,16 @@ void file_buffer_free(struct file_buffer* file) {
     file->allocator.free(&file->allocator, file->buffer);
 }
 
+/* if the order is confusing, most significant bit is first. */
+static inline u16 packu16(u8 b0, u8 b1) {
+    return ((u32)(b0) << 4) | ((u32)(b1));
+}
+
+static inline u32 packu32(u8 b0, u8 b1, u8 b2, u8 b3) {
+    return ((u32)(b0) << 24) |
+        ((u32)(b1) << 16)    |
+        ((u32)(b2) << 8)     |
+        ((u32)b3);
+}
+
 #endif

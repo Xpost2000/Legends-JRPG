@@ -220,8 +220,8 @@ void initialize(void) {
     const u32 REAL_SCREEN_WIDTH  = 640;
     const u32 REAL_SCREEN_HEIGHT = 480;
 
-    /* global_game_window          = SDL_CreateWindow("RPG", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH * 2, SCREEN_HEIGHT * 2, SDL_WINDOW_SHOWN); */
-    global_game_window          = SDL_CreateWindow("RPG", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, REAL_SCREEN_WIDTH, REAL_SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
+    global_game_window          = SDL_CreateWindow("RPG", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
+    /* global_game_window          = SDL_CreateWindow("RPG", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, REAL_SCREEN_WIDTH, REAL_SCREEN_HEIGHT, SDL_WINDOW_FULLSCREEN); */
     global_game_sdl_renderer    = SDL_CreateRenderer(global_game_window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 
     game_initialize();
