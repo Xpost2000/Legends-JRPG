@@ -32,6 +32,7 @@ static SDL_Haptic*                 global_haptic_devices[4]     = {};
 static struct software_framebuffer global_default_framebuffer;
 static f32                         global_elapsed_time          = 0.0f;
 static struct memory_arena         scratch_arena                = {};
+static struct graphics_assets      graphics_assets              = {};
 
 local void close_all_controllers(void) {
     for (unsigned controller_index = 0; controller_index < array_count(global_controller_devices); ++controller_index) {

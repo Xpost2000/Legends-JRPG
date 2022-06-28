@@ -97,6 +97,29 @@ struct image_buffer image_buffer_load_from_file(string file_path);
 void                image_buffer_write_to_disk(struct image_buffer* image, string as);
 void                image_buffer_free(struct image_buffer* image);
 
+/* For now to keep sanity, you have to dereference these handles yourself, and none of the
+   existing API understands these apis, that comes a bit later. */
+typedef struct image_id { s32 index; } image_id;
+typedef struct font_id  { s32 index; } font_id;
+/* todo make this a hashmap or something? */
+struct graphics_assets {
+    u32                 font_capacity;
+    u32                 font_count;
+    u32                 image_count;
+    u32                 image_capacity;
+    struct image_buffer* images;
+    struct font_cache*   fonts;
+};
+
+struct graphics_assets graphics_assets_create(struct memory_arena* arena, u32 font_limit, u32 image_limit);
+void                   graphics_assets_finish(struct graphics_assets* assets);
+
+image_id               graphics_assets_load_image(struct graphics_assets* assets, string path);
+font_id                graphics_assets_load_bitmap_font(struct graphics_assets* assets, string path, s32 tile_width, s32 tile_height, s32 atlas_rows, s32 atlas_columns);
+struct font_cache*     graphics_assets_get_font_by_id(struct graphics_assets* assets, font_id font);
+struct image_buffer*   graphics_assets_get_image_by_id(struct graphics_assets* assets, image_id image);
+
+
 struct software_framebuffer software_framebuffer_create(struct memory_arena* arena, u32 width, u32 height);
 void                        software_framebuffer_copy_into(struct software_framebuffer* target, struct software_framebuffer* source);
 

@@ -660,3 +660,58 @@ void software_framebuffer_kernel_convolution_ex(struct memory_arena* arena, stru
 }
 
 #undef _BlendPixel_Scalar
+
+struct graphics_assets graphics_assets_create(struct memory_arena* arena, u32 font_limit, u32 image_limit) {
+    struct graphics_assets assets = {
+        .font_capacity  = font_limit,
+        .image_capacity = image_limit,
+    };
+
+    assets.images = memory_arena_push(arena, sizeof(*assets.images) * image_limit);
+    assets.fonts  = memory_arena_push(arena, sizeof(*assets.fonts)  * font_limit);
+
+    return assets;
+}
+
+void graphics_assets_finish(struct graphics_assets* assets) {
+    for (unsigned font_index = 0; font_index < assets->font_count; ++font_index) {
+        struct font_cache* font = assets->fonts + font_index;
+        font_cache_free(font);
+    }
+
+    for (unsigned image_index = 0; image_index < assets->image_count; ++image_index) {
+        struct image_buffer* image = assets->images + image_index;
+        image_buffer_free(image);
+    }
+}
+
+/* TODO */
+/* NOTE: does not check for duplicates, since I don't hash yet */
+image_id graphics_assets_load_image(struct graphics_assets* assets, string path) {
+    image_id new_id = (image_id) { .index = assets->image_count + 1 };
+
+    struct image_buffer* new_image = &assets->images[assets->image_count++];
+    *new_image                     = image_buffer_load_from_file(path);
+
+    return new_id;
+}
+
+font_id graphics_assets_load_bitmap_font(struct graphics_assets* assets, string path, s32 tile_width, s32 tile_height, s32 atlas_rows, s32 atlas_columns) {
+    font_id new_id = (font_id) { .index = assets->font_count + 1 };
+
+    struct font_cache* new_font   = &assets->fonts[assets->font_count++];
+    *new_font                     = font_cache_load_bitmap_font(path, tile_width, tile_height, atlas_rows, atlas_columns);
+
+    return new_id;
+}
+
+struct font_cache* graphics_assets_get_font_by_id(struct graphics_assets* assets, font_id font) {
+    assertion(font.index > 0 && font.index <= assets->font_count);
+    return &assets->fonts[font.index-1];
+}
+
+struct image_buffer* graphics_assets_get_image_by_id(struct graphics_assets* assets, image_id image) {
+    assertion(image.index > 0 && image.index <= assets->image_count);
+    return &assets->images[image.index-1];
+    
+}
