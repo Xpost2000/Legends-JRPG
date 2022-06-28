@@ -1,4 +1,4 @@
-/* #define USE_SIMD_OPTIMIZATIONS */
+#define USE_SIMD_OPTIMIZATIONS
 /*
   TODO
   basic world collision detection

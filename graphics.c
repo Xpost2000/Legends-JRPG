@@ -80,11 +80,14 @@ void software_framebuffer_clear_buffer(struct software_framebuffer* framebuffer,
 
 /* this is a macro because I don't know if this will be inlined... */
 #define _BlendPixel_Scalar(FRAMEBUFFER, X, Y, RGBA, BLEND_MODE) do {    \
-        u32* framebuffer_pixels_as_32 = (u32*)FRAMEBUFFER->pixels;      \
         u32  stride                   = FRAMEBUFFER->width;             \
         switch (BLEND_MODE) {                                           \
             case BLEND_MODE_NONE: {                                     \
-                framebuffer_pixels_as_32[Y * stride * 4 + X] = RGBA.rgba_packed; \
+                float alpha = RGBA.a / 255.0f;                          \
+                FRAMEBUFFER->pixels[Y * stride * 4 + X * 4 + 0] =  (RGBA.r * alpha); \
+                FRAMEBUFFER->pixels[Y * stride * 4 + X * 4 + 1] =  (RGBA.g * alpha); \
+                FRAMEBUFFER->pixels[Y * stride * 4 + X * 4 + 2] =  (RGBA.b * alpha); \
+                FRAMEBUFFER->pixels[Y * stride * 4 + X * 4 + 3] =  (RGBA.a); \
             } break;                                                    \
             case BLEND_MODE_ALPHA: {                                    \
                 {                                                       \
@@ -112,6 +115,7 @@ void software_framebuffer_clear_buffer(struct software_framebuffer* framebuffer,
                     FRAMEBUFFER->pixels[Y * stride * 4 + X * 4 + 3] = 255; \
                 }                                                       \
             } break;                                                    \
+                bad_case;                                               \
         }                                                               \
     } while(0)
 
@@ -181,13 +185,12 @@ void software_framebuffer_draw_image_ex(struct software_framebuffer* framebuffer
             sampled_pixel.b *= modulation.b;
             sampled_pixel.a *= modulation.a;
 
-            union color32u8 sampled_pixel_u8 = color32u8(sampled_pixel.r, sampled_pixel.g, sampled_pixel.b, sampled_pixel.a);
-            _BlendPixel_Scalar(framebuffer, x_cursor, y_cursor, sampled_pixel_u8, blend_mode);
+            _BlendPixel_Scalar(framebuffer, x_cursor, y_cursor, sampled_pixel, blend_mode);
         }
     }
 }
 #else
-void software_framebuffer_draw_image_ex(struct software_framebuffer* framebuffer, struct image_buffer* image, struct rectangle_f32 destination, struct rectangle_f32 src, union color32f32 modulation, u32 flags) {
+void software_framebuffer_draw_image_ex(struct software_framebuffer* framebuffer, struct image_buffer* image, struct rectangle_f32 destination, struct rectangle_f32 src, union color32f32 modulation, u32 flags, u8 blend_mode) {
     if ((destination.x == 0) && (destination.y == 0) && (destination.w == 0) && (destination.h == 0)) {
         destination.w = framebuffer->width;
         destination.h = framebuffer->height;
@@ -290,11 +293,28 @@ void software_framebuffer_draw_image_ex(struct software_framebuffer* framebuffer
             blue_channels  = _mm_mul_ps(modulation_b, blue_channels);
             alpha_channels = _mm_mul_ps(modulation_a, _mm_mul_ps(inverse_255, alpha_channels));
 
-            /* NOTE alpha blending */
-            __m128 one_minus_alpha     = _mm_sub_ps(_mm_set1_ps(1), alpha_channels);
-            red_destination_channels   = _mm_add_ps(_mm_mul_ps(red_destination_channels,   one_minus_alpha),   _mm_mul_ps(red_channels, alpha_channels));
-            green_destination_channels = _mm_add_ps(_mm_mul_ps(green_destination_channels, one_minus_alpha), _mm_mul_ps(green_channels, alpha_channels));
-            blue_destination_channels  = _mm_add_ps(_mm_mul_ps(blue_destination_channels,  one_minus_alpha),  _mm_mul_ps(blue_channels, alpha_channels));
+            /* NOTE this is the only simd optimized procedure since it's the most expensive one */
+            /* might not be able to macro the blend modes anyway */
+
+            switch (blend_mode) {
+                case BLEND_MODE_NONE: {
+                    red_destination_channels   = _mm_mul_ps(red_channels,   alpha_channels);
+                    green_destination_channels = _mm_mul_ps(green_channels, alpha_channels);
+                    blue_destination_channels  = _mm_mul_ps(blue_channels,  alpha_channels);
+                } break;
+                case BLEND_MODE_ALPHA: {
+                    __m128 one_minus_alpha     = _mm_sub_ps(_mm_set1_ps(1), alpha_channels);
+                    red_destination_channels   = _mm_add_ps(_mm_mul_ps(red_destination_channels,   one_minus_alpha),   _mm_mul_ps(red_channels, alpha_channels));
+                    green_destination_channels = _mm_add_ps(_mm_mul_ps(green_destination_channels, one_minus_alpha),   _mm_mul_ps(green_channels, alpha_channels));
+                    blue_destination_channels  = _mm_add_ps(_mm_mul_ps(blue_destination_channels,  one_minus_alpha),   _mm_mul_ps(blue_channels, alpha_channels));
+                } break;
+                case BLEND_MODE_ADDITIVE: {
+                    red_destination_channels   = _mm_add_ps(red_destination_channels,   _mm_mul_ps(red_channels, alpha_channels));
+                    green_destination_channels = _mm_add_ps(green_destination_channels, _mm_mul_ps(green_channels, alpha_channels));
+                    blue_destination_channels  = _mm_add_ps(blue_destination_channels,  _mm_mul_ps(blue_channels,  alpha_channels));
+                } break;
+                    bad_case;
+            }
 
 #define castF32_M128(X) ((f32*)(&X))
             for (int i = 0; i < 4; ++i) {
@@ -304,9 +324,9 @@ void software_framebuffer_draw_image_ex(struct software_framebuffer* framebuffer
 
                 framebuffer->pixels_u32[y_cursor * framebuffer->width + (x_cursor+i)] = packu32(
                     255,
-                    castF32_M128(blue_destination_channels)[i],
-                    castF32_M128(green_destination_channels)[i],
-                    castF32_M128(red_destination_channels)[i]
+                    clamp_f32(castF32_M128(blue_destination_channels)[i],  0, 255),
+                    clamp_f32(castF32_M128(green_destination_channels)[i], 0, 255),
+                    clamp_f32(castF32_M128(red_destination_channels)[i],   0, 255)
                 );
             }
 #undef castF32_M128
@@ -334,17 +354,7 @@ void software_framebuffer_draw_line(struct software_framebuffer* framebuffer, v2
         }
 
         for (s32 x_cursor = start.x; x_cursor < end.x; x_cursor++) {
-#if 0
-            framebuffer->pixels_u32[(s32)floor(start.y) * framebuffer->width + x_cursor] = rgba.rgba_packed;
-#else
-            {
-                float alpha = rgba.a / 255.0f;
-                framebuffer->pixels[(s32)(floor(start.y)) * stride * 4 + x_cursor * 4 + 0] = (framebuffer->pixels[(s32)(floor(start.y)) * stride * 4 + x_cursor * 4 + 0] * (1 - alpha)) + (rgba.r * alpha);
-                framebuffer->pixels[(s32)(floor(start.y)) * stride * 4 + x_cursor * 4 + 1] = (framebuffer->pixels[(s32)(floor(start.y)) * stride * 4 + x_cursor * 4 + 1] * (1 - alpha)) + (rgba.g * alpha);
-                framebuffer->pixels[(s32)(floor(start.y)) * stride * 4 + x_cursor * 4 + 2] = (framebuffer->pixels[(s32)(floor(start.y)) * stride * 4 + x_cursor * 4 + 2] * (1 - alpha)) + (rgba.b * alpha);
-            }
-            framebuffer->pixels[(s32)(floor(start.y)) * stride * 4 + x_cursor * 4 + 3] = 255;
-#endif
+            _BlendPixel_Scalar(framebuffer, x_cursor, (s32)floor(start.y), rgba, blend_mode);
         }
     } else if (start.x == end.x) {
         if (start.y > end.y) {
@@ -352,17 +362,7 @@ void software_framebuffer_draw_line(struct software_framebuffer* framebuffer, v2
         }
         
         for (s32 y_cursor = start.y; y_cursor < end.y; y_cursor++) {
-#if 0
-            framebuffer->pixels_u32[y_cursor * framebuffer->width + (s32)floor(start.x)] = rgba.rgba_packed;
-#else
-            {
-                float alpha = rgba.a / 255.0f;
-                framebuffer->pixels[y_cursor * stride * 4 + (s32)floor(start.x) * 4 + 0] = (framebuffer->pixels[y_cursor * stride * 4 + (s32)floor(start.x) * 4 + 0] * (1 - alpha)) + (rgba.r * alpha);
-                framebuffer->pixels[y_cursor * stride * 4 + (s32)floor(start.x) * 4 + 1] = (framebuffer->pixels[y_cursor * stride * 4 + (s32)floor(start.x) * 4 + 1] * (1 - alpha)) + (rgba.g * alpha);
-                framebuffer->pixels[y_cursor * stride * 4 + (s32)floor(start.x) * 4 + 2] = (framebuffer->pixels[y_cursor * stride * 4 + (s32)floor(start.x) * 4 + 2] * (1 - alpha)) + (rgba.b * alpha);
-            }
-            framebuffer->pixels[y_cursor * stride * 4 + (s32)floor(start.x) * 4 + 3] = 255;
-#endif
+            _BlendPixel_Scalar(framebuffer, (s32)floor(start.x), y_cursor, rgba, blend_mode);
         }
     } else {
         s32 x1 = start.x;
@@ -385,14 +385,7 @@ void software_framebuffer_draw_line(struct software_framebuffer* framebuffer, v2
         float alpha = rgba.a / 255.0f;
 
         for (;;) {
-#if 0
-            framebuffer->pixels_u32[y1 * framebuffer->width + x1] = rgba.rgba_packed;
-#else
-            framebuffer->pixels_u32[y1 * framebuffer->width + x1] = packu32(255,
-                                                                            (framebuffer->pixels[y1 * stride * 4 + x1 * 4 + 2] * (1 - alpha)) + (rgba.b * alpha),
-                                                                            (framebuffer->pixels[y1 * stride * 4 + x1 * 4 + 1] * (1 - alpha)) + (rgba.g * alpha),
-                                                                            (framebuffer->pixels[y1 * stride * 4 + x1 * 4 + 0] * (1 - alpha)) + (rgba.r * alpha));
-#endif
+            _BlendPixel_Scalar(framebuffer, x1, y1, rgba, blend_mode);
 
             if (x1 == x2 && y1 == y2) return;
 

@@ -14,6 +14,7 @@
 
 #define assertion(x) assert(x)
 #define unimplemented(x) assertion(false && x);
+#define bad_case         default: { unimplemented ("no case"); } break
 #define array_count(x) (sizeof(x)/sizeof(x[0]))
 #define local    static
 #define internal static
@@ -70,7 +71,7 @@ s32 clamp_s32(s32 x, s32 min, s32 max) {
     return x;
 #else
     s32 i = (x < min) ? min : x;
-    return (i > max) ? max : i;
+    return (i > max)  ? max : i;
 #endif
 }
 f32 clamp_f32(f32 x, f32 min, f32 max) {
@@ -80,7 +81,7 @@ f32 clamp_f32(f32 x, f32 min, f32 max) {
     return x;
 #else
     f32 i = (x < min) ? min : x;
-    return (i > max) ? max : i;
+    return (i > max)  ? max : i;
 #endif
 }
 
