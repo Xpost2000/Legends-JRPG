@@ -53,3 +53,10 @@ bool cstring_equal(cstring a, cstring b) {
     
     return false;
 }
+
+string string_slice(string a, s32 start, s32 end) {
+    return (string) {
+        .length = end - start,
+        .data   = a.data + start
+    };
+}

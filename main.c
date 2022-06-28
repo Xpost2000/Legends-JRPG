@@ -228,8 +228,8 @@ void handle_sdl_events(void) {
 void initialize(void) {
     SDL_Init(SDL_INIT_EVERYTHING);
 
-    const u32 SCREEN_WIDTH  = 1024;
-    const u32 SCREEN_HEIGHT = 768;
+    const u32 SCREEN_WIDTH  = 640;
+    const u32 SCREEN_HEIGHT = 480;
     const u32 REAL_SCREEN_WIDTH  = SCREEN_WIDTH;
     const u32 REAL_SCREEN_HEIGHT = SCREEN_HEIGHT;
 

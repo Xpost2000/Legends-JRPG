@@ -221,6 +221,7 @@ bool is_key_down(s32 keyid);
   to write an event catcher.
 */
 bool is_key_down_with_repeat(s32 keyid);
+
 bool is_key_pressed(s32 keyid);
 bool any_key_down(void);
 bool controller_any_button_down(struct game_controller* controller);
