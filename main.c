@@ -1,7 +1,7 @@
+/* #define USE_SIMD_OPTIMIZATIONS */
 /*
   TODO
-  Key input,
-  and basic world collision detection
+  basic world collision detection
 */
 
 #include <SDL2/SDL.h>
@@ -10,6 +10,17 @@
 #include "input.c"
 #include "sdl_scancode_table.c"
 #include "graphics.c"
+
+const char* _build_flags =
+#ifdef USE_SIMD_OPTIMIZATIONS
+    "using simd,"
+#endif
+#ifdef RELEASE
+    "release,"
+#else
+    "debug,"
+#endif
+    ;
 
 /* While this is *software* rendered, we still blit using a hardware method since it's still faster than manual texture blits. */
 static SDL_Window*                 global_game_window           = NULL;
@@ -215,10 +226,12 @@ void handle_sdl_events(void) {
 void initialize(void) {
     SDL_Init(SDL_INIT_EVERYTHING);
 
-    const u32 SCREEN_WIDTH  = 640;
-    const u32 SCREEN_HEIGHT = 480;
-    const u32 REAL_SCREEN_WIDTH  = 1024;
-    const u32 REAL_SCREEN_HEIGHT = 768;
+    const u32 SCREEN_WIDTH  = 1024;
+    const u32 SCREEN_HEIGHT = 768;
+    const u32 REAL_SCREEN_WIDTH  = SCREEN_WIDTH;
+    const u32 REAL_SCREEN_HEIGHT = SCREEN_HEIGHT;
+
+    SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, 0);
 
     /* global_game_window          = SDL_CreateWindow("RPG", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN); */
     global_game_window          = SDL_CreateWindow("RPG", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, REAL_SCREEN_WIDTH, REAL_SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
@@ -269,7 +282,7 @@ int main(int argc, char** argv) {
         #if 1
         {
             f32 average_frametime = get_average_frametime();
-            snprintf(window_name_title_buffer, 256, "RPG - instant fps: %d, (%f ms)", (int)(1.0/(f32)average_frametime), average_frametime);
+            snprintf(window_name_title_buffer, 256, "RPG(%s) - instant fps: %d, (%f ms)", _build_flags, (int)(1.0/(f32)average_frametime), average_frametime);
             SDL_SetWindowTitle(global_game_window, window_name_title_buffer);
         }
         #endif

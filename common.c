@@ -298,8 +298,6 @@ struct file_buffer {
     u64 length;
 };
 
-/* TODO should be using a memory arena, although this means we can't really have this here lol */
-/* TODO We should also be using a length string... */
 bool   file_exists(string path) {
     FILE* f = fopen(path.data, "r");
 

@@ -10,7 +10,7 @@ SOURCE_FILE_MODULES= main.c
 all: game.exe game-debug.exe
 
 game.exe: $(wildcard *.c *.h)
-	$(CC) $(SOURCE_FILE_MODULES) -o $@ $(CFLAGS) $(CLIBS) -O2
+	$(CC) $(SOURCE_FILE_MODULES) -DRELEASE -o $@ $(CFLAGS) $(CLIBS) -O2
 game-debug.exe: $(wildcard *.c *.h)
 	$(CC) $(SOURCE_FILE_MODULES) -o $@ $(CFLAGS) $(CLIBS) -ggdb3
 run: game.exe

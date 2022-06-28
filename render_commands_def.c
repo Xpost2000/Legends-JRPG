@@ -41,6 +41,7 @@ struct render_command {
     };
 
     u32 flags;
+    u8  blend_mode;
 };
 
 struct render_commands {
@@ -53,10 +54,10 @@ struct render_commands {
 
 struct render_commands render_commands(struct camera camera);
 
-void render_commands_push_quad(struct render_commands* commands, struct rectangle_f32 destination, union color32u8 rgba);
-void render_commands_push_image(struct render_commands* commands, struct image_buffer* image, struct rectangle_f32 destination, struct rectangle_f32 source, union color32f32 rgba, u32 flags);
-void render_commands_push_line(struct render_commands* commands, v2f32 start, v2f32 end, union color32u8 rgba);
-void render_commands_push_text(struct render_commands* commands, struct font_cache* font, f32 scale, v2f32 xy, string cstring, union color32f32 rgba);
+void render_commands_push_quad(struct render_commands* commands, struct rectangle_f32 destination, union color32u8 rgba, u8 blend_mode);
+void render_commands_push_image(struct render_commands* commands, struct image_buffer* image, struct rectangle_f32 destination, struct rectangle_f32 source, union color32f32 rgba, u32 flags, u8 blend_mode);
+void render_commands_push_line(struct render_commands* commands, v2f32 start, v2f32 end, union color32u8 rgba, u8 blend_mode);
+void render_commands_push_text(struct render_commands* commands, struct font_cache* font, f32 scale, v2f32 xy, string cstring, union color32f32 rgba, u8 blend_mode);
 void render_commands_clear(struct render_commands* commands);
 
 #endif
