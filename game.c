@@ -1,7 +1,10 @@
+/* TODO clean this up after this session. */
 /* virtual pixels */
 #define TILE_UNIT_SIZE (64)
 
-static struct memory_arena game_arena = {};
+static struct memory_arena game_arena   = {};
+/* compile out */
+static struct memory_arena editor_arena = {};
 
 image_id test_image;
 
@@ -105,6 +108,22 @@ entity_id entity_list_create_player(struct entity_list* entities, v2f32 position
     return result;
 }
 
+struct tile {
+    s32 id;
+    s32 flags; /* acts as a XOR against it's parent? (tile definitions elsewhere.) */
+    s16 x;
+    s16 y;
+};
+struct editor_state {
+    struct memory_arena* arena;
+
+    s32           painting_tile_id;
+    s32           tile_count;
+    s32           tile_capacity;
+    struct tile*  tiles;
+    struct camera camera;
+};
+
 struct game_state {
     struct memory_arena* arena;
 
@@ -143,10 +162,14 @@ bool game_state_set_ui_state(struct game_state* state, u32 new_ui_state) {
     return false;
 }
 
-struct game_state* game_state = 0;
+struct game_state*   game_state = 0;
+struct editor_state* editor_state = 0;
+void editor_initialize(struct editor_state* state);
+#include "editor.c"
 
 void game_initialize(void) {
-    game_arena = memory_arena_create_from_heap("Game Memory", Megabyte(16));
+    game_arena   = memory_arena_create_from_heap("Game Memory", Megabyte(16));
+    editor_arena = memory_arena_create_from_heap("Editor Memory", Megabyte(32));
 
     game_state = memory_arena_push(&game_arena, sizeof(*game_state));
     game_state->arena = &game_arena;
@@ -167,10 +190,14 @@ void game_initialize(void) {
 
     game_state->entities = entity_list_create(&game_arena, 1024);
     player_id = entity_list_create_player(&game_state->entities, v2f32(500, 300));
+
+    editor_state                = memory_arena_push(&editor_arena, sizeof(*editor_state));
+    editor_initialize(editor_state);
 }
 
 void game_deinitialize(void) {
     graphics_assets_finish(&graphics_assets);
+    memory_arena_finish(&editor_arena);
     memory_arena_finish(&game_arena);
     memory_arena_finish(&scratch_arena);
 }
@@ -215,7 +242,20 @@ local void update_and_render_ingame_game_menu_ui(struct game_state* state, struc
     }
 }
 
+/* Editor code will always be a little nasty lol */
 local void update_and_render_editor_game_menu_ui(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
+    s32 mouse_location[2];
+    get_mouse_location(mouse_location, mouse_location+1);
+
+    v2f32 world_space_mouse_location =
+        camera_project(&editor_state->camera, v2f32(mouse_location[0], mouse_location[1]), framebuffer->width, framebuffer->height);
+
+    /* for tiles */
+    v2f32 tile_space_mouse_location = world_space_mouse_location; {
+        tile_space_mouse_location.x = floorf(world_space_mouse_location.x / TILE_UNIT_SIZE);
+        tile_space_mouse_location.y = floorf(world_space_mouse_location.y / TILE_UNIT_SIZE);
+    }
+
     if (is_key_pressed(KEY_ESCAPE)) {
         game_state_set_ui_state(game_state, UI_STATE_PAUSE);
         /* ready pause menu */
@@ -226,6 +266,58 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
             zero_array(game_state->ui_pause.shift_t);
         }
     }
+
+    if (is_key_down(KEY_W)) {
+        editor_state->camera.xy.y -= 160 * dt;
+    } else if (is_key_down(KEY_S)) {
+        editor_state->camera.xy.y += 160 * dt;
+    }
+    if (is_key_down(KEY_A)) {
+        editor_state->camera.xy.x -= 160 * dt;
+    } else if (is_key_down(KEY_D)) {
+        editor_state->camera.xy.x += 160 * dt;
+    }
+
+    if (is_key_pressed(KEY_LEFT)) {
+        editor_state->painting_tile_id -= 1;
+        if (editor_state->painting_tile_id < 0) editor_state->painting_tile_id = 1;
+    } else if (is_key_pressed(KEY_RIGHT)) {
+        editor_state->painting_tile_id += 1;
+        if (editor_state->painting_tile_id > 1) editor_state->painting_tile_id = 0;
+    }
+
+    bool left_clicked = 0;
+    bool right_clicked = 0;
+    get_mouse_buttons(&left_clicked, 0, &right_clicked);
+    if (left_clicked) {
+        editor_place_tile_at(tile_space_mouse_location);
+    } else if (right_clicked) {
+        editor_remove_tile_at(tile_space_mouse_location);
+    }
+    
+    f32 y_cursor = 0;
+    {
+        software_framebuffer_draw_text(framebuffer,
+                                       graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_GOLD]),
+                                       2, v2f32(0,y_cursor), string_literal("EDITOR"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+        y_cursor += 12 * 2;
+        {
+            char tmp_text[1024]={};
+            snprintf(tmp_text, 1024, "current tile id: %d", editor_state->painting_tile_id);
+            software_framebuffer_draw_text(framebuffer,
+                                           graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_GOLD]),
+                                           2, v2f32(0,y_cursor), string_from_cstring(tmp_text), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+        }
+        y_cursor += 12 * 2;
+        {
+            char tmp_text[1024]={};
+            snprintf(tmp_text, 1024, "mouse(tx: %d, ty: %d, wx: %d, wy: %d, rx: %d, ry: %d)", (s32)tile_space_mouse_location.x, (s32)tile_space_mouse_location.y, (s32)world_space_mouse_location.x, (s32)world_space_mouse_location.y, mouse_location[0], mouse_location[1]);
+            software_framebuffer_draw_text(framebuffer,
+                                           graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_GOLD]),
+                                           2, v2f32(0,y_cursor), string_from_cstring(tmp_text), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+        }
+    }
+    /* not using render commands here. I can trivially figure out what order most things should be... */
 }
 
 
@@ -516,7 +608,9 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
         image_buffer_write_to_disk(framebuffer, string_literal("scr"));
     }
 
-    {
+    if (game_state->in_editor) {
+        update_and_render_editor(framebuffer, dt);
+    } else {
         struct entity* player_entity = entity_list_dereference_entity(&game_state->entities, player_id);
         struct render_commands commands = render_commands(camera_centered(player_entity->position, 1));
         commands.should_clear_buffer = true;
@@ -530,5 +624,6 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
         entity_list_render_entities(&game_state->entities, &graphics_assets, &commands, dt);
         software_framebuffer_render_commands(framebuffer, &commands);
     }
+
     update_and_render_game_menu_ui(game_state, framebuffer, dt);
 }

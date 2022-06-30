@@ -27,7 +27,7 @@ u64 cstring_length(const char* cstring) {
         cursor++;
     }
 
-    return (cstring - cursor);
+    return (cursor - cstring);
 }
 
 void cstring_copy(cstring source, cstring destination, u64 destination_length) {

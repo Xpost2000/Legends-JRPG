@@ -713,5 +713,4 @@ struct font_cache* graphics_assets_get_font_by_id(struct graphics_assets* assets
 struct image_buffer* graphics_assets_get_image_by_id(struct graphics_assets* assets, image_id image) {
     assertion(image.index > 0 && image.index <= assets->image_count);
     return &assets->images[image.index-1];
-    
 }
