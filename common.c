@@ -20,8 +20,8 @@
 #define internal static
 #define safe_assignment(x) if(x) *x
 
-#define BIT(x)             (x << 1)
-#define BIT64(x) (uint64_t)(x << 1LL)
+#define BIT(x)             (1 << x)
+#define BIT64(x) (uint64_t)(1LL << x)
 
 #define Kilobyte(x)                 (uint64_t)(x * 1024LL)
 #define Megabyte(x)                 (uint64_t)(x * 1024LL * 1024LL)
@@ -109,6 +109,55 @@ f32 pick_f32(f32 a, f32 b, s32 v) {
 
 s32 pick_s32(s32 a, s32 b, s32 v) {
     return (v == 0) ? a : b;
+}
+
+typedef struct s32_range {
+    s32 min; s32 max;
+    s32 value;
+} s32_range;
+typedef struct f32_range {
+    f32 min; f32 max;
+    f32 value;
+} f32_range;
+s32_range s32_range_add(s32_range range, s32 value) {
+    s32 new_value = range.value;
+    range.value = clamp_s32(new_value+value, range.min, range.max);
+    return range;
+}
+s32_range s32_range_sub(s32_range range, s32 value) {
+    s32 new_value = range.value;
+    range.value = clamp_s32(new_value-value, range.min, range.max);
+    return range;
+}
+s32_range s32_range_mul(s32_range range, s32 value) {
+    s32 new_value = range.value;
+    range.value = clamp_s32(new_value*value, range.min, range.max);
+    return range;
+}
+s32_range s32_range_div(s32_range range, s32 value) {
+    s32 new_value = range.value;
+    range.value = clamp_s32(new_value/value, range.min, range.max);
+    return range;
+}
+f32_range f32_range_add(f32_range range, f32 value) {
+    f32 new_value = range.value;
+    range.value = clamp_f32(new_value+value, range.min, range.max);
+    return range;
+}
+f32_range f32_range_sub(f32_range range, f32 value) {
+    f32 new_value = range.value;
+    range.value = clamp_f32(new_value-value, range.min, range.max);
+    return range;
+}
+f32_range f32_range_mul(f32_range range, f32 value) {
+    f32 new_value = range.value;
+    range.value = clamp_f32(new_value*value, range.min, range.max);
+    return range;
+}
+f32_range f32_range_div(f32_range range, f32 value) {
+    f32 new_value = range.value;
+    range.value = clamp_f32(new_value/value, range.min, range.max);
+    return range;
 }
 
 static size_t _globally_tracked_memory_allocation_counter = 0;

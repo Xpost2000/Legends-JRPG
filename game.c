@@ -30,6 +30,11 @@ static string menu_font_variation_string_names[] = {
 };
 font_id menu_fonts[9];
 
+image_id brick_img;
+image_id grass_img;
+image_id guy_img;
+image_id selection_sword_img;
+
 enum ui_state {
     UI_STATE_INGAME,
     UI_STATE_PAUSE,
@@ -48,6 +53,21 @@ static string ui_pause_menu_strings[] = {
     string_literal("QUIT"),
 };
 
+#include "entity.c"
+entity_id entity_list_create_player(struct entity_list* entities, v2f32 position) {
+    entity_id result = entity_list_create_entity(entities);
+    struct entity* player = entity_list_dereference_entity(entities, result);
+
+    assertion(player->flags & ENTITY_FLAGS_ACTIVE);
+    player->flags    |= ENTITY_FLAGS_ALIVE;
+    player->flags    |= ENTITY_FLAGS_PLAYER_CONTROLLED;
+    player->position  = position;
+    player->scale.x = 16*2;
+    player->scale.y = 32*2;
+
+    return result;
+}
+
 struct game_state {
     struct memory_arena* arena;
 
@@ -65,6 +85,8 @@ struct game_state {
         f32 shift_t[array_count(ui_pause_menu_strings)];
         s16 selection;
     } ui_pause;
+
+    struct entity_list entities;
 };
 /* true - changed, false - same */
 bool game_state_set_ui_state(struct game_state* state, u32 new_ui_state) {
@@ -88,12 +110,21 @@ void game_initialize(void) {
 
     graphics_assets = graphics_assets_create(&game_arena, 64, 512);
     scratch_arena = memory_arena_create_from_heap("Scratch Buffer", Megabyte(16));
-    test_image = graphics_assets_load_image(&graphics_assets, string_literal("./res/a.png"));
+
+    test_image          = graphics_assets_load_image(&graphics_assets, string_literal("./res/a.png"));
+    brick_img           = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/brick.png"));
+    grass_img           = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/grass.png"));
+    guy_img             = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/guy.png"));
+    selection_sword_img = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/selection_sword.png"));
 
     for (unsigned index = 0; index < array_count(menu_font_variation_string_names); ++index) {
         string current = menu_font_variation_string_names[index];
         menu_fonts[index] = graphics_assets_load_bitmap_font(&graphics_assets, current, 5, 12, 5, 20);
     }
+
+    game_state->entities = entity_list_create(&game_arena, 1024);
+
+    entity_list_create_player(&game_state->entities, v2f32(100, 100));
 }
 
 void game_deinitialize(void) {
@@ -109,12 +140,10 @@ void game_postprocess_blur(struct software_framebuffer* framebuffer, s32 quality
         1,1,1,
     };
 
-    if (t > 0.0) {
-        struct software_framebuffer blur_buffer = software_framebuffer_create(&scratch_arena, framebuffer->width/quality_scale, framebuffer->height/quality_scale);
-        software_framebuffer_copy_into(&blur_buffer, framebuffer);
-        software_framebuffer_kernel_convolution_ex(&scratch_arena, &blur_buffer, box_blur, 3, 3, 12, t, 3);
-        software_framebuffer_draw_image_ex(framebuffer, &blur_buffer, RECTANGLE_F32_NULL, RECTANGLE_F32_NULL, color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
-    }
+    struct software_framebuffer blur_buffer = software_framebuffer_create(&scratch_arena, framebuffer->width/quality_scale, framebuffer->height/quality_scale);
+    software_framebuffer_copy_into(&blur_buffer, framebuffer);
+    software_framebuffer_kernel_convolution_ex(&scratch_arena, &blur_buffer, box_blur, 3, 3, 12, t, 3);
+    software_framebuffer_draw_image_ex(framebuffer, &blur_buffer, RECTANGLE_F32_NULL, RECTANGLE_F32_NULL, color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
 }
 
 void game_postprocess_grayscale(struct software_framebuffer* framebuffer, f32 t) {
@@ -260,7 +289,7 @@ local void update_and_render_pause_game_menu_ui(struct game_state* state, struct
             }
 
             for (unsigned character_index = 0; character_index < ui_pause_menu_strings[index].length; ++character_index) {
-                f32 character_displacement_y = sinf((global_elapsed_time*3.5) + ((character_index+index) * 2381.2318)) * 10;
+                f32 character_displacement_y = sinf((global_elapsed_time*2) + ((character_index+index) * 2381.2318)) * 3;
 
                 v2f32 glyph_position = draw_position;
                 glyph_position.y += character_displacement_y;
@@ -304,6 +333,7 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
     }
 
     {
+#if 0
         struct render_commands commands = render_commands(
             camera_centered(v2f32(sinf(global_elapsed_time) * 100, cosf(global_elapsed_time) * 100),
                             1)
@@ -320,6 +350,11 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
 
         }
         software_framebuffer_render_commands(framebuffer, &commands);
+#else
+        software_framebuffer_clear_buffer(framebuffer, color32u8(255, 0, 0, 255));
+        entity_list_update_entities(&game_state->entities, dt);
+        entity_list_render_entities(&game_state->entities, &graphics_assets, framebuffer);
+#endif
     }
     static bool blur = false;
 

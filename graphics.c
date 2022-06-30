@@ -339,22 +339,16 @@ void software_framebuffer_draw_image_ex(struct software_framebuffer* framebuffer
 void software_framebuffer_draw_line(struct software_framebuffer* framebuffer, v2f32 start, v2f32 end, union color32u8 rgba, u8 blend_mode) {
     u32 stride = framebuffer->width;
 
-    if (start.x < 0)                   start.x = 0;
-    if (end.x < 0)                     end.x   = 0;
-    if (start.x > framebuffer->width)  start.x = framebuffer->width-1;
-    if (end.x > framebuffer->width)    end.x   = framebuffer->width-1;
-    if (start.y < 0)                   start.y = 0;
-    if (end.y < 0)                     end.y   = 0;
-    if (end.y > framebuffer->height)   end.y   = framebuffer->height-1;
-    if (start.y > framebuffer->height) start.y = framebuffer->height-1;
-
     if (start.y == end.y) {
         if (start.x > end.x) {
             Swap(start.x, end.x, f32);
         }
 
         for (s32 x_cursor = start.x; x_cursor < end.x; x_cursor++) {
-            _BlendPixel_Scalar(framebuffer, x_cursor, (s32)floor(start.y), rgba, blend_mode);
+            if (x_cursor < framebuffer->width && x_cursor >= 0 &&
+                start.y  < framebuffer->height && start.y >= 0) {
+                _BlendPixel_Scalar(framebuffer, x_cursor, (s32)floor(start.y), rgba, blend_mode);
+            }
         }
     } else if (start.x == end.x) {
         if (start.y > end.y) {
@@ -362,7 +356,10 @@ void software_framebuffer_draw_line(struct software_framebuffer* framebuffer, v2
         }
         
         for (s32 y_cursor = start.y; y_cursor < end.y; y_cursor++) {
-            _BlendPixel_Scalar(framebuffer, (s32)floor(start.x), y_cursor, rgba, blend_mode);
+            if (start.x < framebuffer->width && start.x >= 0 &&
+                y_cursor  < framebuffer->height && y_cursor >= 0) {
+                _BlendPixel_Scalar(framebuffer, (s32)floor(start.x), y_cursor, rgba, blend_mode);
+            }
         }
     } else {
         s32 x1 = start.x;
@@ -385,7 +382,10 @@ void software_framebuffer_draw_line(struct software_framebuffer* framebuffer, v2
         float alpha = rgba.a / 255.0f;
 
         for (;;) {
-            _BlendPixel_Scalar(framebuffer, x1, y1, rgba, blend_mode);
+            if (x1 < framebuffer->width   && x1 >= 0 &&
+                y1  < framebuffer->height && y1 >= 0) {
+                _BlendPixel_Scalar(framebuffer, x1, y1, rgba, blend_mode);
+            }
 
             if (x1 == x2 && y1 == y2) return;
 
