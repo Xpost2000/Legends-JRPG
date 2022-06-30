@@ -93,6 +93,37 @@ static string ui_pause_editor_menu_strings[] = {
     string_literal("QUIT"),
 };
 
+struct tile {
+    s32 id;
+    s32 flags; /* acts as a XOR against it's parent? (tile definitions elsewhere.) */
+    s16 x;
+    s16 y;
+};
+#define CURRENT_LEVEL_AREA_VERSION (0)
+struct level_area {
+    u32          version;
+    v2f32        default_player_spawn;
+
+    s32          tile_count;
+    struct tile* tiles;
+};
+
+void render_area(struct render_commands* commands, struct level_area* area) {
+    for (s32 index = 0; index < area->tile_count; ++index) {
+        image_id tex = brick_img;
+
+        if (area->tiles[index].id == 0) tex = grass_img;
+        render_commands_push_image(commands,
+                                   graphics_assets_get_image_by_id(&graphics_assets, tex),
+                                   rectangle_f32(area->tiles[index].x * TILE_UNIT_SIZE,
+                                                 area->tiles[index].y * TILE_UNIT_SIZE,
+                                                 TILE_UNIT_SIZE,
+                                                 TILE_UNIT_SIZE),
+                                   RECTANGLE_F32_NULL, color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
+
+    }
+}
+
 #include "entity.c"
 entity_id player_id;
 entity_id entity_list_create_player(struct entity_list* entities, v2f32 position) {
@@ -108,21 +139,6 @@ entity_id entity_list_create_player(struct entity_list* entities, v2f32 position
 
     return result;
 }
-
-struct tile {
-    s32 id;
-    s32 flags; /* acts as a XOR against it's parent? (tile definitions elsewhere.) */
-    s16 x;
-    s16 y;
-};
-#define CURRENT_LEVEL_AREA_VERSION (0)
-struct level_area {
-    u32          version;
-    v2f32        default_player_spawn;
-
-    s32          tile_count;
-    struct tile* tiles;
-};
 void serialize_level_area(struct memory_arena* arena, struct binary_serializer* serializer, struct level_area* level) {
     serialize_u32(serializer, &level->version);
     serialize_f32(serializer, &level->default_player_spawn.x);
@@ -157,6 +173,8 @@ struct game_state {
     u32 ui_state;
 
     s32 in_editor;
+
+    /* in "open" regions, allow for regions to be streamed in... Have to set game mode state flag. */
     struct level_area loaded_area;
 
     enum ui_pause_menu_animation_state{
@@ -581,9 +599,10 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
         commands.should_clear_buffer = true;
         commands.clear_buffer_color  = color32u8(100, 128, 148, 255);
 
-        DEBUG_render_tilemap(&commands, DEBUG_tilemap, 6, 6);
+        /* DEBUG_render_tilemap(&commands, DEBUG_tilemap, 6, 6); */
+        render_area(&commands, &game_state->loaded_area);
         if (game_state->ui_state != UI_STATE_PAUSE) {
-            entity_list_update_entities(&game_state->entities, dt, DEBUG_tilemap, 6, 6);
+            entity_list_update_entities(&game_state->entities, dt, &game_state->loaded_area);
         }
 
         entity_list_render_entities(&game_state->entities, &graphics_assets, &commands, dt);
