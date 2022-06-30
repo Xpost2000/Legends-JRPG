@@ -47,18 +47,18 @@ image_id grass_img;
 image_id guy_img;
 image_id selection_sword_img;
 
-void DEBUG_render_tilemap(struct software_framebuffer* framebuffer, int* tilemap, s32 w, s32 h) {
+void DEBUG_render_tilemap(struct render_commands* commands, int* tilemap, s32 w, s32 h) {
     for (s32 y =0; y < h; ++y) {
         for (s32 x = 0; x < w; ++x) {
             image_id tex = brick_img;
             if (tilemap[y * w + x] == 0) tex = grass_img;
-            software_framebuffer_draw_image_ex(framebuffer,
-                                               graphics_assets_get_image_by_id(&graphics_assets, tex),
-                                               rectangle_f32(x * TILE_UNIT_SIZE,
-                                                             y * TILE_UNIT_SIZE,
-                                                             TILE_UNIT_SIZE,
-                                                             TILE_UNIT_SIZE),
-                                               RECTANGLE_F32_NULL, color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
+            render_commands_push_image(commands,
+                                       graphics_assets_get_image_by_id(&graphics_assets, tex),
+                                       rectangle_f32(x * TILE_UNIT_SIZE,
+                                                     y * TILE_UNIT_SIZE,
+                                                     TILE_UNIT_SIZE,
+                                                     TILE_UNIT_SIZE),
+                                       RECTANGLE_F32_NULL, color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
 
         }
     }
@@ -83,6 +83,7 @@ static string ui_pause_menu_strings[] = {
 };
 
 #include "entity.c"
+entity_id player_id;
 entity_id entity_list_create_player(struct entity_list* entities, v2f32 position) {
     entity_id result = entity_list_create_entity(entities);
     struct entity* player = entity_list_dereference_entity(entities, result);
@@ -152,8 +153,7 @@ void game_initialize(void) {
     }
 
     game_state->entities = entity_list_create(&game_arena, 1024);
-
-    entity_list_create_player(&game_state->entities, v2f32(500, 300));
+    player_id = entity_list_create_player(&game_state->entities, v2f32(500, 300));
 }
 
 void game_deinitialize(void) {
@@ -343,30 +343,12 @@ void update_and_render_game_menu_ui(struct game_state* state, struct software_fr
 }
 
 void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
-    static f32 x = 0;
-    static f32 y = 0;
-
-    if (is_key_down(KEY_W)) {
-        y -= 80 * dt;
-    } else if (is_key_down(KEY_S)) {
-        y += 80 * dt;
-    }
-    if (is_key_down(KEY_A)) {
-        x -= 80 * dt;
-    } else if (is_key_down(KEY_D)) {
-        x += 80 * dt;
-    }
-
     if (is_key_pressed(KEY_F12)) {
         image_buffer_write_to_disk(framebuffer, string_literal("scr"));
     }
 
     {
 #if 0
-        struct render_commands commands = render_commands(
-            camera_centered(v2f32(sinf(global_elapsed_time) * 100, cosf(global_elapsed_time) * 100),
-                            1)
-        );
         {
             commands.should_clear_buffer = true;
             commands.clear_buffer_color  = color32u8(0, 128, 0, 255);
@@ -378,33 +360,20 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
             render_commands_push_line(&commands,  v2f32(200, 200), v2f32(400, 400), color32u8(0, 0, 255, 255), BLEND_MODE_ALPHA);
 
         }
-        software_framebuffer_render_commands(framebuffer, &commands);
 #else
-        software_framebuffer_clear_buffer(framebuffer, color32u8(255, 0, 0, 255));
-        DEBUG_render_tilemap(framebuffer, DEBUG_tilemap, 6, 6);
-        entity_list_update_entities(&game_state->entities, dt, DEBUG_tilemap, 6, 6);
-        entity_list_render_entities(&game_state->entities, &graphics_assets, framebuffer);
+        struct entity* player_entity = entity_list_dereference_entity(&game_state->entities, player_id);
+        struct render_commands commands = render_commands(camera_centered(player_entity->position, 1));
+        commands.should_clear_buffer = true;
+        commands.clear_buffer_color  = color32u8(100, 128, 148, 255);
+
+        DEBUG_render_tilemap(&commands, DEBUG_tilemap, 6, 6);
+        if (game_state->ui_state != UI_STATE_PAUSE) {
+            entity_list_update_entities(&game_state->entities, dt, DEBUG_tilemap, 6, 6);
+        }
+
+        entity_list_render_entities(&game_state->entities, &graphics_assets, &commands, dt);
 #endif
+        software_framebuffer_render_commands(framebuffer, &commands);
     }
-    static bool blur = false;
-
-    if (is_key_pressed(KEY_E)) {
-        blur ^= 1;
-    }
-
-    static f32 test_t = 0.5;
-    if (is_key_down(KEY_LEFT)) {
-        test_t -= dt * 2;
-        if (test_t < 0) test_t = 0;
-    } else if (is_key_down(KEY_RIGHT)) {
-        test_t += dt * 2;
-        if (test_t > 1) test_t = 1;
-    }
-
-    if (blur) {
-        game_postprocess_blur(framebuffer, 4, test_t);
-        game_postprocess_grayscale(framebuffer, 0.35);
-    }
-
     update_and_render_game_menu_ui(game_state, framebuffer, dt);
 }

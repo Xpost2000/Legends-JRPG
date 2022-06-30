@@ -143,7 +143,7 @@ void entity_list_update_entities(struct entity_list* entities, f32 dt, s32* tile
     }
 }
 
-void entity_list_render_entities(struct entity_list* entities, struct graphics_assets* graphics_assets, struct software_framebuffer* framebuffer) {
+void entity_list_render_entities(struct entity_list* entities, struct graphics_assets* graphics_assets, struct render_commands* commands, f32 dt) {
     for (s32 index = 0; index < entities->capacity; ++index) {
         struct entity* current_entity = entities->entities + index;
 
@@ -151,12 +151,12 @@ void entity_list_render_entities(struct entity_list* entities, struct graphics_a
             continue;
         }
 
-        software_framebuffer_draw_image_ex(framebuffer,
-                                           graphics_assets_get_image_by_id(graphics_assets, guy_img),
-                                           rectangle_f32(current_entity->position.x,
-                                                         current_entity->position.y,
-                                                         current_entity->scale.x,
-                                                         current_entity->scale.y),
-                                           RECTANGLE_F32_NULL, color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
+        render_commands_push_image(commands,
+                                   graphics_assets_get_image_by_id(graphics_assets, guy_img),
+                                   rectangle_f32(current_entity->position.x,
+                                                 current_entity->position.y,
+                                                 current_entity->scale.x,
+                                                 current_entity->scale.y),
+                                   RECTANGLE_F32_NULL, color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
     }
 }
