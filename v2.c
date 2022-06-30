@@ -19,6 +19,10 @@ v2f32 v2f32_lerp_scalar(v2f32 a, v2f32 b, f32 t) {
     return v2f32_lerp(a, b, v2f32(t, t));
 }
 
+v2f32 v2f32_scale(v2f32 a, f32 k) {
+    return v2f32(a.x * k, a.y * k); 
+}
+
 f32 v2f32_dot(v2f32 a, v2f32 b) {
     return (a.x * b.x) + (a.y * b.y);
 }

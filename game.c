@@ -1,6 +1,18 @@
+/* virtual pixels */
+#define TILE_UNIT_SIZE (64)
+
 static struct memory_arena game_arena = {};
 
 image_id test_image;
+
+int DEBUG_tilemap[6][6] = {
+    1,1,1,1,1,1,
+    1,0,1,0,1,1,
+    1,0,0,0,0,1,
+    1,0,1,0,1,1,
+    1,0,1,0,0,1,
+    1,1,1,1,1,1,
+};
 
 /* using GNSH fonts, which are public domain, but credits to open game art, this font looks cool */
 enum menu_font_variation {
@@ -34,6 +46,23 @@ image_id brick_img;
 image_id grass_img;
 image_id guy_img;
 image_id selection_sword_img;
+
+void DEBUG_render_tilemap(struct software_framebuffer* framebuffer, int* tilemap, s32 w, s32 h) {
+    for (s32 y =0; y < h; ++y) {
+        for (s32 x = 0; x < w; ++x) {
+            image_id tex = brick_img;
+            if (tilemap[y * w + x] == 0) tex = grass_img;
+            software_framebuffer_draw_image_ex(framebuffer,
+                                               graphics_assets_get_image_by_id(&graphics_assets, tex),
+                                               rectangle_f32(x * TILE_UNIT_SIZE,
+                                                             y * TILE_UNIT_SIZE,
+                                                             TILE_UNIT_SIZE,
+                                                             TILE_UNIT_SIZE),
+                                               RECTANGLE_F32_NULL, color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
+
+        }
+    }
+}
 
 enum ui_state {
     UI_STATE_INGAME,
@@ -124,7 +153,7 @@ void game_initialize(void) {
 
     game_state->entities = entity_list_create(&game_arena, 1024);
 
-    entity_list_create_player(&game_state->entities, v2f32(100, 100));
+    entity_list_create_player(&game_state->entities, v2f32(500, 300));
 }
 
 void game_deinitialize(void) {
@@ -352,7 +381,8 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
         software_framebuffer_render_commands(framebuffer, &commands);
 #else
         software_framebuffer_clear_buffer(framebuffer, color32u8(255, 0, 0, 255));
-        entity_list_update_entities(&game_state->entities, dt);
+        DEBUG_render_tilemap(framebuffer, DEBUG_tilemap, 6, 6);
+        entity_list_update_entities(&game_state->entities, dt, DEBUG_tilemap, 6, 6);
         entity_list_render_entities(&game_state->entities, &graphics_assets, framebuffer);
 #endif
     }

@@ -10,8 +10,10 @@ enum entity_flags {
 
     ENTITY_FLAGS_ALIVE             = BIT(1),
 
+    ENTITY_FLAGS_NOCLIP            = BIT(2),
+
     /* no multiplayer, only default player bindings */
-    ENTITY_FLAGS_PLAYER_CONTROLLED = BIT(2),
+    ENTITY_FLAGS_PLAYER_CONTROLLED = BIT(3),
 };
 
 /* assume only player/npc style entity for now */
@@ -22,6 +24,7 @@ struct entity {
     /* TODO make this centered */
     v2f32 position;
     v2f32 scale;
+    v2f32 velocity;
     u32   flags;
 
     s32_range health;
@@ -43,7 +46,7 @@ struct entity_list entity_list_create(struct memory_arena* arena, s32 capacity);
 entity_id          entity_list_create_entity(struct entity_list* entities);
 struct entity*     entity_list_dereference_entity(struct entity_list* entities, entity_id id);
 
-void               entity_list_update_entities(struct entity_list* entities, f32 dt);
+void               entity_list_update_entities(struct entity_list* entities, f32 dt, int* tilemap, s32 w, s32 h);
 void               entity_list_render_entities(struct entity_list* entities, struct graphics_assets* graphics_assets, struct software_framebuffer* framebuffer);
 
 #endif

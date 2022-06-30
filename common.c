@@ -307,9 +307,19 @@ struct rectangle_s16 {
 #define rectangle_f32(X,Y,W,H) (struct rectangle_f32){.x=X,.y=Y,.w=W,.h=H}
 #define rectangle_s32(X,Y,W,H) (struct rectangle_s32){.x=X,.y=Y,.w=W,.h=H}
 #define rectangle_s16(X,Y,W,H) (struct rectangle_s32){.x=X,.y=Y,.w=W,.h=H}
+
 #define RECTANGLE_F32_NULL rectangle_f32(0,0,0,0)
 #define RECTANGLE_S32_NULL rectangle_s32(0,0,0,0)
 #define RECTANGLE_S16_NULL rectangle_s16(0,0,0,0)
+
+bool rectangle_f32_intersect(struct rectangle_f32 a, struct rectangle_f32 b) {
+    if (a.x >= b.x && a.x + a.w <= b.x + b.w &&
+        a.y >= b.y && a.y + a.h <= b.y + b.h) {
+        return true;
+    }
+
+    return false;
+}
 
 #define FRAMETIME_SAMPLE_MAX (32)
 struct {
