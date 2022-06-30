@@ -123,6 +123,12 @@ struct level_area {
     s32          tile_count;
     struct tile* tiles;
 };
+void serialize_level_area(struct memory_arena* arena, struct binary_serializer* serializer, struct level_area* level) {
+    serialize_u32(serializer, &level->version);
+    serialize_f32(serializer, &level->default_player_spawn.x);
+    serialize_f32(serializer, &level->default_player_spawn.y);
+    Serialize_Fixed_Array_And_Allocate_From_Arena_Top(serializer, arena, s32, level->tile_count, level->tiles);
+}
 
 static string editor_tool_mode_strings[]=  {
     string_literal("Tile"),
@@ -151,6 +157,7 @@ struct game_state {
     u32 ui_state;
 
     s32 in_editor;
+    struct level_area loaded_area;
 
     enum ui_pause_menu_animation_state{
         UI_PAUSE_MENU_TRANSITION_IN,
@@ -260,7 +267,6 @@ local void update_and_render_ingame_game_menu_ui(struct game_state* state, struc
         }
     }
 }
-
 
 local void update_and_render_pause_game_menu_ui(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
     /* needs a bit of cleanup */
@@ -467,6 +473,17 @@ local void update_and_render_pause_editor_menu_ui(struct game_state* state, stru
                     } break;
                     case 1: {
                         /* who knows about this one */ 
+                        u8* data;
+                        u64 amount;
+
+                        struct binary_serializer serializer = open_write_memory_serializer();
+                        editor_serialize_area(&serializer);
+                        data = serializer_flatten_memory(&serializer, &amount);
+                        struct binary_serializer serializer1 = open_read_memory_serializer(data, amount);
+                        serialize_level_area(&game_arena, &serializer1, &game_state->loaded_area);
+                        serializer_finish(&serializer1);
+                        serializer_finish(&serializer);
+                        system_heap_memory_deallocate(data);
                     } break;
                     case 2: {
                         struct binary_serializer serializer = open_write_file_serializer(string_literal("edit.area"));
