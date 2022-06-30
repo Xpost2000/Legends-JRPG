@@ -18,7 +18,6 @@ entity_id entity_list_create_entity(struct entity_list* entities) {
         if (!(current_entity->flags & ENTITY_FLAGS_ACTIVE)) {
             current_entity->flags |= ENTITY_FLAGS_ACTIVE;
             entities->generation_count[index] += 1;
-            printf("new entity(%d, handle id %d)\n", index, index+1);
 
             return (entity_id){
                 .generation = entities->generation_count[index],
@@ -37,11 +36,8 @@ struct entity* entity_list_dereference_entity(struct entity_list* entities, enti
     }
 
     struct entity* target = entities->entities + (id.index-1);
-    printf("%d, (real id %d)(%d flags)\n", id.index, id.index-1, target->flags);
 
-    /* FIXME */
-    if (
-        //entities->generation_count[id.index-1] != id.generation ||
+    if (entities->generation_count[id.index-1] != id.generation ||
         !(target->flags & ENTITY_FLAGS_ACTIVE)) {
         return &_entity_sentinel;
     }
