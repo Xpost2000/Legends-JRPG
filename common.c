@@ -313,8 +313,8 @@ struct rectangle_s16 {
 #define RECTANGLE_S16_NULL rectangle_s16(0,0,0,0)
 
 bool rectangle_f32_intersect(struct rectangle_f32 a, struct rectangle_f32 b) {
-    if (a.x >= b.x && a.x + a.w <= b.x + b.w &&
-        a.y >= b.y && a.y + a.h <= b.y + b.h) {
+    if (a.x < b.x + b.w && a.x + a.w > b.x &&
+        a.y < b.y + b.h && a.y + a.h > b.y) {
         return true;
     }
 

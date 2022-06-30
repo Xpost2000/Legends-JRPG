@@ -79,6 +79,7 @@ void entity_list_update_entities(struct entity_list* entities, f32 dt, s32* tile
         {
             /* tile intersection */
             {
+                current_entity->position.x += current_entity->velocity.x * dt;
                 for (s32 tile_y = 0; tile_y < h; ++tile_y) {
                     for (s32 tile_x = 0; tile_x < w; ++tile_x) {
                         s32 tile = tilemap[tile_y * h + tile_x];
@@ -94,52 +95,49 @@ void entity_list_update_entities(struct entity_list* entities, f32 dt, s32* tile
                             f32 entity_bottom_edge = current_entity->position.y + current_entity->scale.y;
 
                             /* x */
-                            if (entity_left_edge < tile_right_edge && entity_right_edge > tile_left_edge && entity_top_edge < tile_bottom_edge && entity_bottom_edge > tile_top_edge)
-                            {
-                                if (entity_bottom_edge > tile_top_edge) {
-                                    current_entity->position.y = tile_top_edge - current_entity->scale.y;
-                                    current_entity->velocity.y = 0;
-                                } else if (entity_top_edge < tile_bottom_edge) {
-                                    current_entity->position.y = tile_bottom_edge;
-                                    current_entity->velocity.y = 0;
-                                }
-                            }
-                        }
-                    }
-                }
-                current_entity->position.y += current_entity->velocity.y * dt;
-                
-                for (s32 tile_y = 0; tile_y < h; ++tile_y) {
-                    for (s32 tile_x = 0; tile_x < w; ++tile_x) {
-                        s32 tile = tilemap[tile_y * h + tile_x];
-                        if (tile == 1) {
-                            f32 tile_right_edge  = (tile_x + 1) * TILE_UNIT_SIZE;
-                            f32 tile_left_edge   = (tile_x) * TILE_UNIT_SIZE;
-                            f32 tile_top_edge    = (tile_y) * TILE_UNIT_SIZE;
-                            f32 tile_bottom_edge = (tile_y + 1) * TILE_UNIT_SIZE;
-
-                            f32 entity_left_edge   = current_entity->position.x;
-                            f32 entity_right_edge  = current_entity->position.x + current_entity->scale.x;
-                            f32 entity_top_edge    = current_entity->position.y;
-                            f32 entity_bottom_edge = current_entity->position.y + current_entity->scale.y;
-
-                            /* x */
-                            if (entity_left_edge < tile_right_edge && entity_right_edge > tile_left_edge && entity_top_edge < tile_bottom_edge && entity_bottom_edge > tile_top_edge)
+                            if (rectangle_f32_intersect(rectangle_f32(current_entity->position.x, current_entity->position.y, current_entity->scale.x, current_entity->scale.y),
+                                                        rectangle_f32(tile_left_edge, tile_top_edge, tile_right_edge - tile_left_edge, tile_bottom_edge - tile_top_edge)))
                             {
                                     if (entity_right_edge > tile_right_edge) {
                                         current_entity->position.x = tile_right_edge;
-                                        current_entity->velocity.x = 0;
                                     } else if (entity_right_edge > tile_left_edge) {
                                         current_entity->position.x = tile_left_edge - current_entity->scale.x;
-                                        current_entity->velocity.x = 0;
                                     }
-
+                                    current_entity->velocity.x = 0;
                             }
                         }
                     }
                 }
 
-                current_entity->position.x += current_entity->velocity.x * dt;
+                current_entity->position.y += current_entity->velocity.y * dt;
+                for (s32 tile_y = 0; tile_y < h; ++tile_y) {
+                    for (s32 tile_x = 0; tile_x < w; ++tile_x) {
+                        s32 tile = tilemap[tile_y * h + tile_x];
+                        if (tile == 1) {
+                            f32 tile_right_edge  = (tile_x + 1) * TILE_UNIT_SIZE;
+                            f32 tile_left_edge   = (tile_x) * TILE_UNIT_SIZE;
+                            f32 tile_top_edge    = (tile_y) * TILE_UNIT_SIZE;
+                            f32 tile_bottom_edge = (tile_y + 1) * TILE_UNIT_SIZE;
+
+                            f32 entity_left_edge   = current_entity->position.x;
+                            f32 entity_right_edge  = current_entity->position.x + current_entity->scale.x;
+                            f32 entity_top_edge    = current_entity->position.y;
+                            f32 entity_bottom_edge = current_entity->position.y + current_entity->scale.y;
+
+                            /* x */
+                            if (rectangle_f32_intersect(rectangle_f32(current_entity->position.x, current_entity->position.y, current_entity->scale.x, current_entity->scale.y),
+                                                        rectangle_f32(tile_left_edge, tile_top_edge, tile_right_edge - tile_left_edge, tile_bottom_edge - tile_top_edge)))
+                            {
+                                if (entity_bottom_edge > tile_top_edge && entity_bottom_edge < tile_bottom_edge) {
+                                    current_entity->position.y = tile_top_edge - current_entity->scale.y;
+                                } else if (entity_top_edge < tile_bottom_edge && entity_bottom_edge > tile_bottom_edge) {
+                                    current_entity->position.y = tile_bottom_edge;
+                                }
+                                current_entity->velocity.y = 0;
+                            }
+                        }
+                    }
+                }
             }
         }
     }
