@@ -88,6 +88,7 @@ static string ui_pause_editor_menu_strings[] = {
     string_literal("RESUME"),
     string_literal("TEST"),
     string_literal("SAVE"),
+    string_literal("LOAD"),
     string_literal("OPTIONS"),
     string_literal("QUIT"),
 };
@@ -102,8 +103,8 @@ entity_id entity_list_create_player(struct entity_list* entities, v2f32 position
     player->flags    |= ENTITY_FLAGS_ALIVE;
     player->flags    |= ENTITY_FLAGS_PLAYER_CONTROLLED;
     player->position  = position;
-    player->scale.x = 16*2;
-    player->scale.y = 32*2;
+    player->scale.x = TILE_UNIT_SIZE-2;
+    player->scale.y = TILE_UNIT_SIZE-2;
 
     return result;
 }
@@ -114,6 +115,15 @@ struct tile {
     s16 x;
     s16 y;
 };
+#define CURRENT_LEVEL_AREA_VERSION (0)
+struct level_area {
+    u32          version;
+    v2f32        default_player_spawn;
+
+    s32          tile_count;
+    struct tile* tiles;
+};
+
 struct editor_state {
     struct memory_arena* arena;
 
@@ -122,6 +132,8 @@ struct editor_state {
     s32           tile_capacity;
     struct tile*  tiles;
     struct camera camera;
+
+    v2f32 default_player_spawn;
 };
 
 struct game_state {
@@ -180,7 +192,7 @@ void game_initialize(void) {
     test_image          = graphics_assets_load_image(&graphics_assets, string_literal("./res/a.png"));
     brick_img           = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/brick.png"));
     grass_img           = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/grass.png"));
-    guy_img             = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/guy.png"));
+    guy_img             = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/guy2.png"));
     selection_sword_img = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/selection_sword.png"));
 
     for (unsigned index = 0; index < array_count(menu_font_variation_string_names); ++index) {
@@ -189,7 +201,7 @@ void game_initialize(void) {
     }
 
     game_state->entities = entity_list_create(&game_arena, 1024);
-    player_id = entity_list_create_player(&game_state->entities, v2f32(500, 300));
+    player_id = entity_list_create_player(&game_state->entities, v2f32(70, 70));
 
     editor_state                = memory_arena_push(&editor_arena, sizeof(*editor_state));
     editor_initialize(editor_state);
@@ -525,14 +537,21 @@ local void update_and_render_pause_editor_menu_ui(struct game_state* state, stru
                         menu_state->transition_t = 0;
                     } break;
                     case 1: {
-                        
+                        /* who knows about this one */ 
                     } break;
                     case 2: {
-                        
+                        struct binary_serializer serializer = open_write_file_serializer(string_literal("edit.area"));
+                        editor_serialize_area(&serializer);
+                        serializer_finish(&serializer);
                     } break;
                     case 3: {
+                        struct binary_serializer serializer = open_read_file_serializer(string_literal("edit.area"));
+                        editor_serialize_area(&serializer);
+                        serializer_finish(&serializer);
                     } break;
                     case 4: {
+                    } break;
+                    case 5: {
                         global_game_running = false;
                     } break;
                 }
@@ -559,7 +578,7 @@ local void update_and_render_pause_editor_menu_ui(struct game_state* state, stru
         for (unsigned index = 0; index < array_count(item_positions); ++index) {
             v2f32 draw_position = item_positions[index];
             draw_position.x += lerp_f32(0, 20, menu_state->shift_t[index]);
-            draw_position.y += 255;
+            draw_position.y += 220;
             /* custom string drawing routine */
             struct font_cache* font = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_STEEL]);
             if (index == menu_state->selection) {

@@ -1,3 +1,4 @@
+/* TODO World spawn */
 void editor_clear_all(struct editor_state* state) {
     state->tile_count      = 0;
 
@@ -12,6 +13,15 @@ void editor_initialize(struct editor_state* state) {
     editor_state->tile_capacity = 8192;
     state->tiles = memory_arena_push(state->arena, state->tile_capacity * sizeof(*state->tiles));
     editor_clear_all(state);
+}
+
+/* While I could use one serialization function. In the case the formats deviate slightly... */
+void editor_serialize_area(struct binary_serializer* serializer) {
+    u32 version_id = CURRENT_LEVEL_AREA_VERSION;
+    serialize_u32(serializer, &version_id);
+    serialize_f32(serializer, &editor_state->default_player_spawn.x);
+    serialize_f32(serializer, &editor_state->default_player_spawn.y);
+    Serialize_Fixed_Array(serializer, s32, editor_state->tile_count, editor_state->tiles);
 }
 
 void editor_remove_tile_at(v2f32 point_in_tilespace) {
