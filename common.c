@@ -22,6 +22,9 @@
 
 #define BIT(x)             (1 << x)
 #define BIT64(x) (uint64_t)(1LL << x)
+#define Toggle_Bit(a, x) (a ^= x)
+#define Set_Bit(a, x)    (a |= x)
+#define Get_Bit(a, x)    (a & x)
 
 #define Kilobyte(x)                 (uint64_t)(x * 1024LL)
 #define Megabyte(x)                 (uint64_t)(x * 1024LL * 1024LL)

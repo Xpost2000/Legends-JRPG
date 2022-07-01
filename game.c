@@ -159,6 +159,8 @@ struct editor_state {
     v2f32 default_player_spawn;
 };
 
+#include "weather_def.c"
+
 struct game_state {
     struct memory_arena* arena;
 
@@ -170,6 +172,7 @@ struct game_state {
 
     /* in "open" regions, allow for regions to be streamed in... Have to set game mode state flag. */
     struct level_area loaded_area;
+    struct random_state rng;
 
     enum ui_pause_menu_animation_state{
         UI_PAUSE_MENU_TRANSITION_IN,
@@ -187,7 +190,10 @@ struct game_state {
     } ui_pause;
 
     struct entity_list entities;
+    struct weather     weather;
 };
+
+#include "weather.c"
 
 void serialize_level_area(struct game_state* state, struct binary_serializer* serializer, struct level_area* level) {
     serialize_u32(serializer, &level->version);
@@ -222,6 +228,7 @@ void game_initialize(void) {
     editor_arena = memory_arena_create_from_heap("Editor Memory", Megabyte(32));
 
     game_state = memory_arena_push(&game_arena, sizeof(*game_state));
+    game_state->rng = random_state();
     game_state->arena = &game_arena;
 
     graphics_assets = graphics_assets_create(&game_arena, 64, 512);
@@ -252,7 +259,7 @@ void game_deinitialize(void) {
     memory_arena_finish(&scratch_arena);
 }
 
-void game_postprocess_blur(struct software_framebuffer* framebuffer, s32 quality_scale, f32 t) {
+void game_postprocess_blur(struct software_framebuffer* framebuffer, s32 quality_scale, f32 t, u32 blend_mode) {
     f32 box_blur[] = {
         1,1,1,
         1,1,1,
@@ -261,8 +268,8 @@ void game_postprocess_blur(struct software_framebuffer* framebuffer, s32 quality
 
     struct software_framebuffer blur_buffer = software_framebuffer_create(&scratch_arena, framebuffer->width/quality_scale, framebuffer->height/quality_scale);
     software_framebuffer_copy_into(&blur_buffer, framebuffer);
-    software_framebuffer_kernel_convolution_ex(&scratch_arena, &blur_buffer, box_blur, 3, 3, 12, t, 3);
-    software_framebuffer_draw_image_ex(framebuffer, &blur_buffer, RECTANGLE_F32_NULL, RECTANGLE_F32_NULL, color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
+    software_framebuffer_kernel_convolution_ex(&scratch_arena, &blur_buffer, box_blur, 3, 3, 12, t, 2);
+    software_framebuffer_draw_image_ex(framebuffer, &blur_buffer, RECTANGLE_F32_NULL, RECTANGLE_F32_NULL, color32f32(1,1,1,1), NO_FLAGS, blend_mode);
 }
 
 void game_postprocess_grayscale(struct software_framebuffer* framebuffer, f32 t) {
@@ -321,7 +328,7 @@ local void update_and_render_pause_game_menu_ui(struct game_state* state, struct
                 item_positions[index].x = lerp_f32(offscreen_x, final_x, menu_state->transition_t);
             }
 
-            game_postprocess_blur(framebuffer, blur_samples, max_blur * menu_state->transition_t);
+            game_postprocess_blur(framebuffer, blur_samples, max_blur * menu_state->transition_t, BLEND_MODE_ALPHA);
             game_postprocess_grayscale(framebuffer, max_grayscale * menu_state->transition_t);
 
             if (menu_state->transition_t >= 1.0f) {
@@ -334,7 +341,7 @@ local void update_and_render_pause_game_menu_ui(struct game_state* state, struct
                 item_positions[index].x = final_x;
             }
 
-            game_postprocess_blur(framebuffer, blur_samples, max_blur);
+            game_postprocess_blur(framebuffer, blur_samples, max_blur, BLEND_MODE_ALPHA);
             game_postprocess_grayscale(framebuffer, max_grayscale);
 
             for (unsigned index = 0; index < array_count(item_positions); ++index) {
@@ -386,7 +393,7 @@ local void update_and_render_pause_game_menu_ui(struct game_state* state, struct
                 item_positions[index].x = lerp_f32(final_x, offscreen_x, menu_state->transition_t);
             }
 
-            game_postprocess_blur(framebuffer, blur_samples, max_blur * (1-menu_state->transition_t));
+            game_postprocess_blur(framebuffer, blur_samples, max_blur * (1-menu_state->transition_t), BLEND_MODE_ALPHA);
             game_postprocess_grayscale(framebuffer, max_grayscale * (1-menu_state->transition_t));
 
             if (menu_state->transition_t >= 1.0f) {
@@ -450,7 +457,7 @@ local void update_and_render_pause_editor_menu_ui(struct game_state* state, stru
                 item_positions[index].x = lerp_f32(offscreen_x, final_x, menu_state->transition_t);
             }
 
-            game_postprocess_blur(framebuffer, blur_samples, max_blur * menu_state->transition_t);
+            game_postprocess_blur(framebuffer, blur_samples, max_blur * menu_state->transition_t, BLEND_MODE_ALPHA);
             game_postprocess_grayscale(framebuffer, max_grayscale * menu_state->transition_t);
 
             if (menu_state->transition_t >= 1.0f) {
@@ -463,7 +470,7 @@ local void update_and_render_pause_editor_menu_ui(struct game_state* state, stru
                 item_positions[index].x = final_x;
             }
 
-            game_postprocess_blur(framebuffer, blur_samples, max_blur);
+            game_postprocess_blur(framebuffer, blur_samples, max_blur, BLEND_MODE_ALPHA);
             game_postprocess_grayscale(framebuffer, max_grayscale);
 
             for (unsigned index = 0; index < array_count(item_positions); ++index) {
@@ -535,7 +542,7 @@ local void update_and_render_pause_editor_menu_ui(struct game_state* state, stru
                 item_positions[index].x = lerp_f32(final_x, offscreen_x, menu_state->transition_t);
             }
 
-            game_postprocess_blur(framebuffer, blur_samples, max_blur * (1-menu_state->transition_t));
+            game_postprocess_blur(framebuffer, blur_samples, max_blur * (1-menu_state->transition_t), BLEND_MODE_ALPHA);
             game_postprocess_grayscale(framebuffer, max_grayscale * (1-menu_state->transition_t));
 
             if (menu_state->transition_t >= 1.0f) {
@@ -604,17 +611,68 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
         struct entity* player_entity = entity_list_dereference_entity(&game_state->entities, player_id);
         struct render_commands commands = render_commands(camera_centered(player_entity->position, 1));
         commands.should_clear_buffer = true;
-        commands.clear_buffer_color  = color32u8(100, 128, 148, 255);
+        commands.clear_buffer_color  = color32u8(0, 0, 0, 255);
 
         /* DEBUG_render_tilemap(&commands, DEBUG_tilemap, 6, 6); */
         render_area(&commands, &game_state->loaded_area);
         if (game_state->ui_state != UI_STATE_PAUSE) {
             entity_list_update_entities(&game_state->entities, dt, &game_state->loaded_area);
+            game_state->weather.timer += dt;
         }
 
         entity_list_render_entities(&game_state->entities, &graphics_assets, &commands, dt);
         software_framebuffer_render_commands(framebuffer, &commands);
-    }
 
+        /* Rendering weather atop */
+        /* NOTE
+           While I would like more advanced weather effects, let's not bite off more than
+           I can chew so I can actually have something to play...
+           
+        */
+        if (is_key_pressed(KEY_E)) {
+            if (weather_any_active(game_state)) {
+                weather_clear(game_state);
+            } else {
+                weather_start_rain(game_state);
+            }
+        }
+        if (is_key_pressed(KEY_R)) {
+            if (weather_any_active(game_state)) {
+                weather_clear(game_state);
+            } else {
+                weather_start_snow(game_state);
+            }
+        }
+
+        {
+            if (Get_Bit(game_state->weather.features, WEATHER_RAIN)) {
+                /* 
+                   TODO
+                   falling lines
+                */
+                weather_render_rain(game_state, framebuffer, dt);
+            }
+            if (Get_Bit(game_state->weather.features, WEATHER_SNOW)) {
+                /* 
+                   TODO
+                   falling pixels, that sprinkle.
+                */
+                weather_render_snow(game_state, framebuffer, dt);
+            }
+            if (Get_Bit(game_state->weather.features, WEATHER_FOGGY)) {
+                /*           
+                  TODO
+                  Fog, Too lazy to do stuff for that right now, but I suspect lots of gradients may help
+                */       
+            }
+            if (Get_Bit(game_state->weather.features, WEATHER_STORMY)) {
+                
+                /* 
+                   TODO
+                   requires sound
+                */
+            }
+        }
+    }
     update_and_render_game_menu_ui(game_state, framebuffer, dt);
 }
