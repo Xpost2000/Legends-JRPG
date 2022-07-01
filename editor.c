@@ -1,3 +1,18 @@
+/* 
+   NOTE
+   I am not surrendering the low resolution, that's part of the aesthetic,
+   and also the software renderer may struggle at higher resolutions lol (post processing hurts),
+   
+   I believe on the last project, I wanted to basic "metaprogram" my property editor, which is probably
+   the best way to make a level editor without wanting to shoot myself.
+   
+   I now have the opportunity to try that, although I may have to code specific editors for certain things
+   still. Not a big deal, but maybe I can make a simple property editor and just expand the property
+   editors as we do something else.
+   
+   We'll only have level transitions right now, so I might not really get to show that off...
+*/
+
 /* TODO World spawn */
 void editor_clear_all(struct editor_state* state) {
     state->tile_count      = 0;

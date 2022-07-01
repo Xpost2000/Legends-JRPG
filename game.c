@@ -1,4 +1,3 @@
-/* TODO clean this up after this session. */
 /* virtual pixels */
 #define TILE_UNIT_SIZE (64)
 
@@ -109,23 +108,64 @@ enum activation_mode {
     ACTIVATION_WORLD_ATTACKED, /* attack in the world, for like hidden walls or something */
     ACTIVATION_TOUCH,    /* Actiate on touch */
     ACTIVATION_ACTIVATE, /* Actiate on button activation */
-    ACTIVATION_TYPE,
+    ACTIVATION_TYPE_COUNT,
+};
+static string activation_mode_strings[] = {
+    string_literal("(none)"),
+    string_literal("(world attack)"),
+    string_literal("(touch)"),
+    string_literal("(activate)"),
+    string_literal("(count)"),
 };
 enum activation_action_type {
     ACTIVATION_NONE,
     ACTIVATION_ACTION_MOVE_LEVEL,
     ACTIVATION_ACTION_MOVE_POSITION,
     ACTIVATION_ACTION_OPEN_DIALOGUE,
+    ACTIVATION_ACTION_TYPE_COUNT
     /* NOTE more, but okay for now */
+};
+static string activation_action_type_strings[] = {
+    string_literal("(none)"),
+    string_literal("(level move)"),
+    string_literal("(pos move)"),
+    string_literal("(open conversation)"),
+    string_literal("(count)"),
 };
 #define MAX_ACTIVATION_EVENTS(8)
 struct activation_action {
     /* NOTE, the functions these events call should just accept raw data as doors and levers or what have you may not have these things? */
     u32 event_type;
 };
+#if 0
 struct trigger {
     u8 activation_mode;
     struct activation_action actions[MAX_ACTIVATION_EVENTS];
+};
+/* not needed right now, we'll just be direct */
+#endif
+enum facing_direction {
+    DIRECTION_DOWN,
+    DIRECTION_UP,
+    DIRECTION_LEFT,
+    DIRECTION_RIGHT,
+    DIRECTION_RETAINED,
+    DIRECTION_COUNT,
+};
+static string facing_direction_strings[] = {
+    string_literal("(down)"),
+    string_literal("(up)"),
+    string_literal("(left)"),
+    string_literal("(right)"),
+    string_literal("(retained)"),
+    string_literal("(count)"),
+};
+struct level_transition_trigger {
+    char  target_level[128];
+    /* anchoring to an object, might be very niche... */
+    u8    use_default;
+    u8    new_facing_direction;
+    v2f32 spawn_location;
 };
 struct tile {
     s32 id;
