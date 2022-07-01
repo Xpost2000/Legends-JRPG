@@ -93,12 +93,70 @@ static string ui_pause_editor_menu_strings[] = {
     string_literal("QUIT"),
 };
 
+/* START OF NON-CHECKED CODE*/
+/* TODO level editor for more things, mostly doors as a start. */
+/* TODO door/lever test art for activations */
+
+/* NOTE, all the code written right now has not been tested, I don't actually want to really code anything today, but I should write something... */
+/* I will not offer hierachical objects, which makes things a bit more complicated */
+/* I might have to offer modal selection which can be a bit painful... (sprites and stuff like that) */
+/* Generic triggers can be used to produce levers and doors and the like, however */
+/* Or I might just offer an image property, and allow it to load it's own images, _activated, _inactive mode (there'd have to be a lot of engine data work for this) */
+/* If I'm especially lazy, I can do this and also have a separate "object/prop" type which is just a bunch of hardcoded objects... */
+/* Use this for every generic kind of activatable item? */
+enum activation_mode {
+    ACTIVATION_NONE,
+    ACTIVATION_WORLD_ATTACKED, /* attack in the world, for like hidden walls or something */
+    ACTIVATION_TOUCH,    /* Actiate on touch */
+    ACTIVATION_ACTIVATE, /* Actiate on button activation */
+    ACTIVATION_TYPE,
+};
+enum activation_action_type {
+    ACTIVATION_NONE,
+    ACTIVATION_ACTION_MOVE_LEVEL,
+    ACTIVATION_ACTION_MOVE_POSITION,
+    ACTIVATION_ACTION_OPEN_DIALOGUE,
+    /* NOTE more, but okay for now */
+};
+#define MAX_ACTIVATION_EVENTS(8)
+struct activation_action {
+    /* NOTE, the functions these events call should just accept raw data as doors and levers or what have you may not have these things? */
+    u32 event_type;
+};
+struct trigger {
+    u8 activation_mode;
+    struct activation_action actions[MAX_ACTIVATION_EVENTS];
+};
 struct tile {
     s32 id;
     s32 flags; /* acts as a XOR against it's parent? (tile definitions elsewhere.) */
     s16 x;
     s16 y;
 };
+
+/* allow this to be associated to an actor */
+/* NOTE Does not allow conditional dialogue yet. */
+/* NOTE Does not allow anything to happen other than dialogue... */
+#define MAX_CONVERSATION_CHOICES (16)
+struct conversation_choice {
+    string text;
+    /* does not count bartering */
+    u32    target; /* 0 == END_CONVERSATION */
+};
+struct conversation_node {
+    image_id portrait;
+    string   speaker_name;
+    string   text;
+
+    struct conversation_choice choices[MAX_CONVERSATION_CHOICES];
+};
+/* simple? */
+struct conversation {
+    /* assume 0 is the start of the node always */
+    u16 node_count;
+    struct conversation_node* nodes;
+};
+/* END OF NOT CHECKED CODE */
 #define CURRENT_LEVEL_AREA_VERSION (0)
 struct level_area {
     u32          version;
