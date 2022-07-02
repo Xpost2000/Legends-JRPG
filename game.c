@@ -118,7 +118,7 @@ static string activation_mode_strings[] = {
     string_literal("(count)"),
 };
 enum activation_action_type {
-    ACTIVATION_NONE,
+    ACTIVATION_ACTION_NONE,
     ACTIVATION_ACTION_MOVE_LEVEL,
     ACTIVATION_ACTION_MOVE_POSITION,
     ACTIVATION_ACTION_OPEN_DIALOGUE,
@@ -132,7 +132,7 @@ static string activation_action_type_strings[] = {
     string_literal("(open conversation)"),
     string_literal("(count)"),
 };
-#define MAX_ACTIVATION_EVENTS(8)
+#define MAX_ACTIVATION_EVENTS 8
 struct activation_action {
     /* NOTE, the functions these events call should just accept raw data as doors and levers or what have you may not have these things? */
     u32 event_type;
@@ -167,8 +167,42 @@ struct level_transition_trigger {
     u8    new_facing_direction;
     v2f32 spawn_location;
 };
+/* loaded from a table at runtime or compile time? */
+/* Since this isn't serialized, I can change this pretty often. */
+enum tile_data_flags {
+    TILE_DATA_FLAGS_NONE  = 0,
+    TILE_DATA_FLAGS_SOLID = BIT(0),
+};
+/* index = id, reserve sparse array to allow for random access */
+struct autotile_table {s32 neighbors[256];};
+struct tile_data_definition {
+    string               name;
+    string               image_asset_location;
+    struct rectangle_s32 sub_rectangle; /* if 0 0 0 0 assume entire texture */
+    s32                  flags;
+    /* TODO implement 4 bit marching squares. Useful for graphics */
+    struct autotile_table* autotile_info;
+};
+/* tiles.c */
+struct tile_data_definition* tile_table_data;
+struct autotile_table*       auto_tile_info;
+    /* /\* grass-test *\/ */
+    /* (struct tile_data_definition){ */
+    /*     .name                 = ("(grass test(filled))"), */
+    /*     .image_asset_location = ("./res/img/grass.png"), */
+    /*     .flags                = TILE_DATA_FLAGS_NONE, */
+    /*     /\* .neighbor_ids         = {}, *\/ */
+    /* }, */
+    /* (struct tile_data_definition){ */
+    /*     .name                 = ("(brick test(filled))"), */
+    /*     .image_asset_location = ("./res/img/brick.png"), */
+    /*     .flags                = TILE_DATA_FLAGS_SOLID, */
+    /*     /\* .neighbor_ids         = {}, *\/ */
+    /* }, */
+/* tiles.c */
 struct tile {
     s32 id;
+    /* NOTE, remove? */
     s32 flags; /* acts as a XOR against it's parent? (tile definitions elsewhere.) */
     s16 x;
     s16 y;
@@ -321,6 +355,37 @@ struct editor_state* editor_state = 0;
 void editor_initialize(struct editor_state* state);
 #include "editor.c"
 
+static void initialize_static_table_data(void) {
+    /* a very generous amount of table data... */
+    tile_table_data = memory_arena_push(&game_arena, sizeof(*tile_table_data) * 2048);
+    auto_tile_info  = memory_arena_push(&game_arena, sizeof(*auto_tile_info)  * 1024);
+
+    s32 i = 0;
+    s32 j = 0;
+
+    /* NOTE this table may be subject to change, and a lot of things may explode? */
+#define insert(x)    tile_table_data[i++] = (x)
+#define AT_insert(x) auto_tile_info[j++] = (x)
+#define current_AT   &auto_tile_info[j] 
+    insert(
+        ((struct tile_data_definition){
+            .name                 = ("(grass test(filled))"),
+            .image_asset_location = ("./res/img/grass.png"),
+            .flags                = TILE_DATA_FLAGS_NONE,
+        })
+    );
+    insert(
+        ((struct tile_data_definition){
+            .name                 = ("(brick test(filled))"),
+            .image_asset_location = ("./res/img/brick.png"),
+            .flags                = TILE_DATA_FLAGS_SOLID,
+        })
+    );
+#undef insert 
+#undef AT_insert 
+#undef current_AT 
+}
+
 void game_initialize(void) {
     game_arena   = memory_arena_create_from_heap("Game Memory", Megabyte(16));
     editor_arena = memory_arena_create_from_heap("Editor Memory", Megabyte(32));
@@ -348,6 +413,7 @@ void game_initialize(void) {
 
     editor_state                = memory_arena_push(&editor_arena, sizeof(*editor_state));
     editor_initialize(editor_state);
+    initialize_static_table_data();
 }
 
 void game_deinitialize(void) {
@@ -614,6 +680,8 @@ local void update_and_render_pause_editor_menu_ui(struct game_state* state, stru
                         serializer_finish(&serializer1);
                         serializer_finish(&serializer);
                         system_heap_memory_deallocate(data);
+
+                        game_state->in_editor = false;
                     } break;
                     case 2: {
                         struct binary_serializer serializer = open_write_file_serializer(string_literal("edit.area"));

@@ -62,6 +62,15 @@ void font_cache_free(struct font_cache* font_cache) {
     image_buffer_free((struct image_buffer*) font_cache); 
 }
 
+f32 font_cache_text_height(struct font_cache* font_cache) {
+    return font_cache->tile_height;
+}
+
+f32 font_cache_text_width(struct font_cache* font_cache, string text) {
+    /* NOTE font_caches are monospaced */
+    return font_cache->tile_width * text.length;
+}
+
 /* we would like temporary arenas yes... */
 struct software_framebuffer software_framebuffer_create(struct memory_arena* arena, u32 width, u32 height) {
     u8* pixels = memory_arena_push(arena, width * height * sizeof(u32));

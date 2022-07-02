@@ -111,6 +111,7 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
         editor_state->camera.xy.x += 160 * dt;
     }
 
+    /* Consider using tab + radial/fuzzy menu selection for this */
     if (is_key_down(KEY_SHIFT)) {
         if (is_key_pressed(KEY_LEFT)) {
             editor_state->tool_mode -= 1;
@@ -120,6 +121,9 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
             if (editor_state->tool_mode > 2) editor_state->tool_mode = 0;
         }
     } else {
+        /* Consider making a visual menu for tile selection. Ought to be less painful.  */
+        /* Mouse imo is way faster for level editting tiles than using the keyboard... */
+        /* granted it's more programming, but it'll be worth it. */
         if (editor_state->tool_mode == 0) {
             if (is_key_pressed(KEY_LEFT)) {
                 editor_state->painting_tile_id -= 1;
@@ -151,22 +155,22 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
     {
         software_framebuffer_draw_text(framebuffer,
                                        graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_GOLD]),
-                                       2, v2f32(0,y_cursor), string_literal("EDITOR"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
-        y_cursor += 12 * 2;
+                                       1, v2f32(0,y_cursor), string_literal("EDITOR"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+        y_cursor += 12;
         {
             char tmp_text[1024]={};
             snprintf(tmp_text, 1024, "current tile id: %d", editor_state->painting_tile_id);
             software_framebuffer_draw_text(framebuffer,
                                            graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_GOLD]),
-                                           2, v2f32(0,y_cursor), string_from_cstring(tmp_text), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+                                           1, v2f32(0,y_cursor), string_from_cstring(tmp_text), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
         }
-        y_cursor += 12 * 2;
+        y_cursor += 12;
         {
             char tmp_text[1024]={};
             snprintf(tmp_text, 1024, "mode: %.*s\n", editor_tool_mode_strings[editor_state->tool_mode].length, editor_tool_mode_strings[editor_state->tool_mode].data);
             software_framebuffer_draw_text(framebuffer,
                                            graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_GOLD]),
-                                           2, v2f32(0,y_cursor), string_from_cstring(tmp_text), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+                                           1, v2f32(0,y_cursor), string_from_cstring(tmp_text), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
         }
     }
     /* not using render commands here. I can trivially figure out what order most things should be... */
@@ -196,7 +200,7 @@ void update_and_render_editor(struct software_framebuffer* framebuffer, f32 dt) 
             BLEND_MODE_NONE
         );
     }
-    render_commands_push_quad(&commands, rectangle_f32(editor_state->default_player_spawn.x, editor_state->default_player_spawn.y, TILE_UNIT_SIZE, TILE_UNIT_SIZE),
+    render_commands_push_quad(&commands, rectangle_f32(editor_state->default_player_spawn.x, editor_state->default_player_spawn.y, TILE_UNIT_SIZE/4, TILE_UNIT_SIZE/4),
                               color32u8(0, 255, 0, normalized_sinf(global_elapsed_time*4) * 0.5*255 + 64), BLEND_MODE_ALPHA);
 
     switch (editor_state->tool_mode) {
