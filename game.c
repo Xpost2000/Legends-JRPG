@@ -482,7 +482,7 @@ local void update_and_render_pause_game_menu_ui(struct game_state* state, struct
     f32 offscreen_x = -240;
     f32 final_x     = 40;
 
-    u32 blur_samples = 4;
+    u32 blur_samples = 2;
     f32 max_blur = 1.0;
     f32 max_grayscale = 0.8;
 
