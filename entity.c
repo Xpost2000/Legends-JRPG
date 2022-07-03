@@ -82,8 +82,9 @@ void entity_list_update_entities(struct entity_list* entities, f32 dt, struct le
                 current_entity->position.x += current_entity->velocity.x * dt;
                 for (s32 index = 0; index < area->tile_count; ++index) {
                     struct tile* current_tile = area->tiles + index;
-                    /* This should really be queried elsewhere... */
-                    if (current_tile->id == 1) {
+                    struct tile_data_definition* tile_data = tile_table_data + current_tile->id;
+
+                    if (Get_Bit(tile_data->flags, TILE_DATA_FLAGS_SOLID)) {
                         f32 tile_right_edge  = (current_tile->x + 1) * TILE_UNIT_SIZE;
                         f32 tile_left_edge   = (current_tile->x) * TILE_UNIT_SIZE;
                         f32 tile_top_edge    = (current_tile->y) * TILE_UNIT_SIZE;
@@ -111,8 +112,9 @@ void entity_list_update_entities(struct entity_list* entities, f32 dt, struct le
                 current_entity->position.y += current_entity->velocity.y * dt;
                 for (s32 index = 0; index < area->tile_count; ++index) {
                     struct tile* current_tile = area->tiles + index;
+                    struct tile_data_definition* tile_data = tile_table_data + current_tile->id;
 
-                    if (current_tile->id == 1) {
+                    if (Get_Bit(tile_data->flags, TILE_DATA_FLAGS_SOLID)) {
                         f32 tile_right_edge  = (current_tile->x + 1) * TILE_UNIT_SIZE;
                         f32 tile_left_edge   = (current_tile->x) * TILE_UNIT_SIZE;
                         f32 tile_top_edge    = (current_tile->y) * TILE_UNIT_SIZE;

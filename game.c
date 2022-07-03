@@ -178,7 +178,8 @@ struct autotile_table {s32 neighbors[256];};
 struct tile_data_definition {
     string               name;
     string               image_asset_location;
-    struct rectangle_s32 sub_rectangle; /* if 0 0 0 0 assume entire texture */
+    struct rectangle_f32 sub_rectangle; /* if 0 0 0 0 assume entire texture */
+    /* special flags, like glowing and friends! To allow for multiple render passes */
     s32                  flags;
     /* TODO implement 4 bit marching squares. Useful for graphics */
     struct autotile_table* autotile_info;
@@ -242,16 +243,19 @@ struct level_area {
 
 void render_area(struct render_commands* commands, struct level_area* area) {
     for (s32 index = 0; index < area->tile_count; ++index) {
-        image_id tex = brick_img;
+        s32 tile_id = area->tiles[index].id;
+        struct tile_data_definition* tile_data = tile_table_data + tile_id;
 
-        if (area->tiles[index].id == 0) tex = grass_img;
+        image_id tex = graphics_assets_get_image_by_filepath(&graphics_assets, tile_data->image_asset_location); 
+
         render_commands_push_image(commands,
                                    graphics_assets_get_image_by_id(&graphics_assets, tex),
                                    rectangle_f32(area->tiles[index].x * TILE_UNIT_SIZE,
                                                  area->tiles[index].y * TILE_UNIT_SIZE,
                                                  TILE_UNIT_SIZE,
                                                  TILE_UNIT_SIZE),
-                                   RECTANGLE_F32_NULL, color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
+                                   tile_data->sub_rectangle,
+                                   color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
 
     }
 }
@@ -369,15 +373,15 @@ static void initialize_static_table_data(void) {
 #define current_AT   &auto_tile_info[j] 
     insert(
         ((struct tile_data_definition){
-            .name                 = ("(grass test(filled))"),
-            .image_asset_location = ("./res/img/grass.png"),
+            .name                 = string_literal("(grass test(filled))"),
+            .image_asset_location = string_literal("./res/img/grass.png"),
             .flags                = TILE_DATA_FLAGS_NONE,
         })
     );
     insert(
         ((struct tile_data_definition){
-            .name                 = ("(brick test(filled))"),
-            .image_asset_location = ("./res/img/brick.png"),
+            .name                 = string_literal("(brick test(filled))"),
+            .image_asset_location = string_literal("./res/img/brick.png"),
             .flags                = TILE_DATA_FLAGS_SOLID,
         })
     );

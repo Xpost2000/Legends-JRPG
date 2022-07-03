@@ -349,11 +349,12 @@ f32 get_average_frametime(void) {
 
 #define NO_FLAGS (0)
 
-#include "memory_arena.c"
-#include "allocators.c"
 #include "prng.c"
 #include "v2.c"
 #include "string.c"
+
+#include "memory_arena.c"
+#include "allocators.c"
 
 struct file_buffer {
     IAllocator allocator;

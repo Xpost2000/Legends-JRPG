@@ -1,11 +1,4 @@
 /* 
-   TODO:
-   
-   Resources system? Probably not strictly necessary.
-   
-   CLEANUP:
-   Allow for more fine grained blending modes. We default to alpha blending always.
-
    NOTE:
    
    consider making this easier for multithreading by allowing things to blit in tiled sets which
@@ -676,8 +669,10 @@ struct graphics_assets graphics_assets_create(struct memory_arena* arena, u32 fo
         .image_capacity = image_limit,
     };
 
-    assets.images = memory_arena_push(arena, sizeof(*assets.images) * image_limit);
-    assets.fonts  = memory_arena_push(arena, sizeof(*assets.fonts)  * font_limit);
+    assets.arena              = arena;
+    assets.images             = memory_arena_push(arena, sizeof(*assets.images) * image_limit);
+    assets.image_file_strings = memory_arena_push(arena, sizeof(*assets.image_file_strings) *image_limit);
+    assets.fonts              = memory_arena_push(arena, sizeof(*assets.fonts)  * font_limit);
 
     return assets;
 }
@@ -695,12 +690,14 @@ void graphics_assets_finish(struct graphics_assets* assets) {
 }
 
 /* TODO */
-/* NOTE: does not check for duplicates, since I don't hash yet */
+/* TODO: does not check for duplicates, since I don't hash yet */
 image_id graphics_assets_load_image(struct graphics_assets* assets, string path) {
     image_id new_id = (image_id) { .index = assets->image_count + 1 };
 
-    struct image_buffer* new_image = &assets->images[assets->image_count++];
+    struct image_buffer* new_image = &assets->images[assets->image_count];
+    string*              new_filepath_string = &assets->image_file_strings[assets->image_count++];
     *new_image                     = image_buffer_load_from_file(path);
+    *new_filepath_string           = memory_arena_push_string(assets->arena, path);
 
     return new_id;
 }
@@ -722,4 +719,18 @@ struct font_cache* graphics_assets_get_font_by_id(struct graphics_assets* assets
 struct image_buffer* graphics_assets_get_image_by_id(struct graphics_assets* assets, image_id image) {
     assertion(image.index > 0 && image.index <= assets->image_count);
     return &assets->images[image.index-1];
+}
+
+image_id graphics_assets_get_image_by_filepath(struct graphics_assets* assets, string filepath) {
+    assertion(filepath.data && filepath.length && "Bad string?");
+
+    for (s32 index = 0; index < assets->image_count; ++index) {
+        string current_filepath = assets->image_file_strings[index];
+
+        if (string_equal(filepath, current_filepath)) {
+            return (image_id) { .index = index + 1 };
+        }
+    }
+
+    return (image_id) { .index = 0 };
 }

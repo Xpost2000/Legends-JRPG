@@ -182,23 +182,21 @@ void update_and_render_editor(struct software_framebuffer* framebuffer, f32 dt) 
     commands.should_clear_buffer = true;
     commands.clear_buffer_color  = color32u8(100, 128, 148, 255);
 
+    /* Maybe change the data structures later? */
     for (s32 tile_index = 0; tile_index < editor_state->tile_count; ++tile_index) {
-        struct tile* current_tile = editor_state->tiles + tile_index;
-        image_id tex                     = brick_img;
-        if (current_tile->id == 0) tex = grass_img;
+        struct tile*                 current_tile = editor_state->tiles + tile_index;
+        s32                          tile_id      = current_tile->id;
+        struct tile_data_definition* tile_data    = tile_table_data + tile_id;
+        image_id                     tex          = graphics_assets_get_image_by_filepath(&graphics_assets, tile_data->image_asset_location); 
 
-        render_commands_push_image(
-            &commands, graphics_assets_get_image_by_id(&graphics_assets, tex),
-            rectangle_f32(
-                current_tile->x * TILE_UNIT_SIZE,
-                current_tile->y * TILE_UNIT_SIZE,
-                TILE_UNIT_SIZE, TILE_UNIT_SIZE
-            ),
-            RECTANGLE_F32_NULL,
-            color32f32(1,1,1,1),
-            NO_FLAGS,
-            BLEND_MODE_NONE
-        );
+        render_commands_push_image(&commands,
+                                   graphics_assets_get_image_by_id(&graphics_assets, tex),
+                                   rectangle_f32(current_tile->x * TILE_UNIT_SIZE,
+                                                 current_tile->y * TILE_UNIT_SIZE,
+                                                 TILE_UNIT_SIZE,
+                                                 TILE_UNIT_SIZE),
+                                   tile_data->sub_rectangle,
+                                   color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
     }
     render_commands_push_quad(&commands, rectangle_f32(editor_state->default_player_spawn.x, editor_state->default_player_spawn.y, TILE_UNIT_SIZE/4, TILE_UNIT_SIZE/4),
                               color32u8(0, 255, 0, normalized_sinf(global_elapsed_time*4) * 0.5*255 + 64), BLEND_MODE_ALPHA);

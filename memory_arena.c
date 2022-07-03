@@ -96,3 +96,19 @@ void memory_arena_end_temporary_memory(struct temporary_memory* temporary_arena)
 
     temporary_arena->memory = 0;
 }
+
+string memory_arena_push_string_bottom(struct memory_arena* arena, string to_copy) {
+    string result = {};
+    result.length = to_copy.length;
+    result.data   = memory_arena_push_bottom_unaligned(arena, to_copy.length);
+    cstring_copy(to_copy.data, result.data, result.length);
+    return result;
+}
+
+string memory_arena_push_string_top(struct memory_arena* arena, string to_copy) {
+    string result = {};
+    result.length = to_copy.length;
+    result.data   = memory_arena_push_top_unaligned(arena, to_copy.length);
+    cstring_copy(to_copy.data, result.data, result.length);
+    return result;
+}
