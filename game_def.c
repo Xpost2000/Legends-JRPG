@@ -1,3 +1,10 @@
+/* TODO */
+/*
+  Everything should be represented in terms of virtual tile coordinates.
+
+  Right now there's a weird mishmash, thankfully I have no content so this is not a big deal right now
+  just do this the next time I do things.
+ */
 #ifndef GAME_DEF_C
 #define GAME_DEF_C
 /* shared structure definitions for both editor and game */
@@ -97,6 +104,8 @@ static string facing_direction_strings[] = {
     string_literal("(count)"),
 };
 struct trigger_level_transition {
+    /* assume to be in tile coordinates. */
+    struct rectangle_f32 bounds;
     /* for binary structs, I need cstrings unfortunately. Otherwise they are a little too inconvenient to serialize...*/
     char  target_level[128];
     /* anchoring to an object, might be very niche... */
@@ -197,6 +206,11 @@ struct editor_state {
     s32           tile_count;
     s32           tile_capacity;
     struct tile*  tiles;
+
+    s32                              trigger_level_transition_count;
+    s32                              trigger_level_transition_capacity;
+    struct trigger_level_transition* trigger_level_transitions;
+    
     struct camera camera;
 
     v2f32 default_player_spawn;
@@ -225,6 +239,15 @@ struct editor_state {
         TAB_MENU_ALT_BIT   = BIT(3),
     };
     s32 tab_menu_open;
+
+    /* NOTE I'm aware there is drag data like a few lines above this. */
+    struct {
+        void* context; /* if this pointer is non-zero we are dragging */
+        v2f32 initial_mouse_position;
+        /* context sensitive information to be filled */
+        v2f32 initial_object_position;
+        v2f32 initial_object_dimensions;
+    } drag_data;
 
     /* also a cstring... Ughhhh */
     char current_save_name[128];

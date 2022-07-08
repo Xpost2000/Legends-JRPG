@@ -71,7 +71,8 @@ bool EDITOR_imgui_button(struct software_framebuffer* framebuffer, struct font_c
 /* little IMGUI  */
 
 void editor_clear_all(struct editor_state* state) {
-    state->tile_count      = 0;
+    state->tile_count                     = 0;
+    state->trigger_level_transition_count = 0;
 
     state->camera.xy       = v2f32(0,0);
     state->camera.zoom     = 1;
@@ -80,9 +81,11 @@ void editor_clear_all(struct editor_state* state) {
 }
 
 void editor_initialize(struct editor_state* state) {
-    editor_state->arena         = &editor_arena;
-    editor_state->tile_capacity = 8192;
-    state->tiles = memory_arena_push(state->arena, state->tile_capacity * sizeof(*state->tiles));
+    editor_state->arena                          = &editor_arena;
+    editor_state->tile_capacity                  = 8192;
+    editor_state->trigger_level_transition_count = 1024;
+    state->tiles                                 = memory_arena_push(state->arena, state->tile_capacity * sizeof(*state->tiles));
+    state->trigger_level_transitions             = memory_arena_push(state->arena, state->trigger_level_transition_count * sizeof(*state->trigger_level_transitions));
     editor_clear_all(state);
 }
 
@@ -110,6 +113,19 @@ void editor_remove_tile_at(v2f32 point_in_tilespace) {
         }
     }
 }
+void editor_remove_level_transition_trigger_at(v2f32 point_in_tilespace) {
+    for (s32 index = 0; index < editor_state->trigger_level_transition_count; ++index) {
+        struct trigger_level_transition* current_trigger = editor_state->trigger_level_transitions + index;
+
+        if (rectangle_f32_intersect(
+                current_trigger->bounds,
+                rectangle_f32(point_in_tilespace.x, point_in_tilespace.y, 0.25, 0.25)
+            )) {
+            editor_state->trigger_level_transitions[index] = editor_state->trigger_level_transitions[--editor_state->trigger_level_transition_count];
+            return;
+        }
+    }
+}
 
 void editor_place_tile_at(v2f32 point_in_tilespace) {
     s32 where_x = point_in_tilespace.x;
@@ -129,6 +145,28 @@ void editor_place_tile_at(v2f32 point_in_tilespace) {
     new_tile->id = editor_state->painting_tile_id;
     new_tile->x  = where_x;
     new_tile->y  = where_y;
+}
+
+void editor_place_or_drag_level_transition_trigger(v2f32 point_in_tilespace) {
+    /* SHIFT TO RESIZE, otherwise mouse drag will just drag! Also the shift is applied prior to drag state! */
+    for (s32 index = 0; index < editor_state->trigger_level_transition_count; ++index) {
+        struct trigger_level_transition* current_trigger = editor_state->trigger_level_transitions + index;
+
+        if (rectangle_f32_intersect(
+                current_trigger->bounds,
+                rectangle_f32(point_in_tilespace.x, point_in_tilespace.y, 0.25, 0.25)
+            )) {
+            /* TODO drag candidate */
+            return;
+        }
+    }
+
+    /* otherwise no touch, place a new one at default size 1 1 */
+    struct trigger_level_transition* new_transition_trigger = &editor_state->trigger_level_transitions[editor_state->trigger_level_transition_count++];
+    new_transition_trigger->bounds.x = point_in_tilespace.x;
+    new_transition_trigger->bounds.y = point_in_tilespace.y;
+    new_transition_trigger->bounds.w = 1;
+    new_transition_trigger->bounds.h = 1;
 }
 
 local void handle_editor_tool_mode_input(struct software_framebuffer* framebuffer) {
@@ -193,6 +231,11 @@ local void handle_editor_tool_mode_input(struct software_framebuffer* framebuffe
         } break;
         case EDITOR_TOOL_TRIGGER_PLACEMENT: {
             wrap_around_key_selection(KEY_LEFT, KEY_RIGHT, &editor_state->trigger_placement_type, 0, 2);
+            if (left_clicked) {
+                editor_place_or_drag_level_transition_trigger(tile_space_mouse_location);
+            } else if (right_clicked) {
+                editor_remove_level_transition_trigger_at(tile_space_mouse_location);
+            }
         } break;
         default: {
         } break;
@@ -598,6 +641,17 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
                         draw_cursor_y += 12 * 1.2 * 2;
                     }
                 } break;
+                case EDITOR_TOOL_TRIGGER_PLACEMENT: {
+                    f32 draw_cursor_y = 30;
+                    for (s32 index = 0; index < array_count(trigger_placement_type_strings)-1; ++index) {
+                        if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(16, draw_cursor_y), trigger_placement_type_strings[index])) {
+                            editor_state->tab_menu_open          = 0;
+                            editor_state->trigger_placement_type = index;
+                            break;
+                        }
+                        draw_cursor_y += 12 * 1.2 * 2;
+                    }
+                } break;
             }
         }
     }
@@ -626,6 +680,14 @@ void update_and_render_editor(struct software_framebuffer* framebuffer, f32 dt) 
                                    tile_data->sub_rectangle,
                                    color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
     }
+    struct font_cache* font = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_BLUE]);
+    for (s32 trigger_level_transition_index = 0; trigger_level_transition_index < editor_state->trigger_level_transition_count; ++trigger_level_transition_index) {
+        struct trigger_level_transition* current_trigger = editor_state->trigger_level_transitions + trigger_level_transition_index;
+        render_commands_push_quad(&commands, rectangle_f32(current_trigger->bounds.x * TILE_UNIT_SIZE, current_trigger->bounds.y * TILE_UNIT_SIZE,
+                                                           current_trigger->bounds.w * TILE_UNIT_SIZE, current_trigger->bounds.h * TILE_UNIT_SIZE),
+                                  color32u8(255, 0, 0, normalized_sinf(global_elapsed_time*2) * 0.5*255 + 64), BLEND_MODE_ALPHA);
+        render_commands_push_text(&commands, font, 1, v2f32(current_trigger->bounds.x * TILE_UNIT_SIZE, current_trigger->bounds.y * TILE_UNIT_SIZE), string_literal("(level\ntransition\ntrigger)"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+    }
     render_commands_push_quad(&commands, rectangle_f32(editor_state->default_player_spawn.x, editor_state->default_player_spawn.y, TILE_UNIT_SIZE/4, TILE_UNIT_SIZE/4),
                               color32u8(0, 255, 0, normalized_sinf(global_elapsed_time*4) * 0.5*255 + 64), BLEND_MODE_ALPHA);
 
@@ -653,3 +715,4 @@ void update_and_render_editor(struct software_framebuffer* framebuffer, f32 dt) 
     software_framebuffer_render_commands(framebuffer, &commands);
     _imgui_any_intersection = false;
 }
+
