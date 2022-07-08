@@ -60,3 +60,27 @@ string string_slice(string a, s32 start, s32 end) {
         .data   = a.data + start
     };
 }
+
+string string_concatenate(struct memory_arena* arena, string a, string b) {
+    s32 string_length = a.length + b.length;
+    _debugprintf("string a: \"%.*s\"\n", a.length, a.data);
+    _debugprintf("string b: \"%.*s\"\n", b.length, b.data);
+    string new_string = (string) {
+        .data   = memory_arena_push(arena, string_length+1),
+        .length = string_length
+    };
+
+    s32 write_index = 0;
+
+    for (s32 index = 0; index < a.length; ++index) {
+        new_string.data[write_index++] = a.data[index];
+    }
+
+    for (s32 index = 0; index < b.length; ++index) {
+        new_string.data[write_index++] = b.data[index];
+    }
+
+    /* cstring friendly... */
+    new_string.data[write_index++] = 0;
+    return new_string;
+}

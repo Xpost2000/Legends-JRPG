@@ -20,4 +20,11 @@ bool cstring_equal(cstring a, cstring b);
 u64  cstring_length(const char* cstring);
 void cstring_copy(cstring source, cstring destination, u64 destination_length);
 
+/* obviously this implies you build the string in linear fashion... Not string builder style I hope */
+/* but I can offer a string builder... */
+/* add snprintf with an arena... */
+#include "memory_arena_def.c"
+
+string string_concatenate(struct memory_arena* arena, string a, string b);
+
 #endif

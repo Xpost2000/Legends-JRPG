@@ -5,6 +5,7 @@ struct binary_serializer open_write_file_serializer(string filename) {
     result.mode = BINARY_SERIALIZER_WRITE;
     result.type = BINARY_SERIALIZER_FILE;
 
+    _debugprintf("requested to open: %s\n", filename.data);
     result.file_handle = fopen(filename.data, "wb+");
     return result;
 }
@@ -14,6 +15,7 @@ struct binary_serializer open_read_file_serializer(string filename) {
     result.mode = BINARY_SERIALIZER_READ;
     result.type = BINARY_SERIALIZER_FILE;
 
+    _debugprintf("requested to open: %s\n", filename.data);
     result.file_handle = fopen(filename.data, "rb+");
     return result;
 }

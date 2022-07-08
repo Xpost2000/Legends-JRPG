@@ -122,6 +122,7 @@ void start_text_edit(char* target, size_t length) {
 void end_text_edit(char* target_buffer, size_t target_buffer_size) {
     if (target_buffer && target_buffer_size) {
         memcpy(target_buffer, global_input.current_state.text, target_buffer_size);
+        target_buffer[target_buffer_size] = 0;
     }
 
     zero_array(global_input.current_state.text);

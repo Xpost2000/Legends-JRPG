@@ -1,4 +1,5 @@
 /* TODO Need to clean up  */
+/* NOTE can add more visual flare to the new editting widgets */
 /* 
    NOTE
    I am not surrendering the low resolution, that's part of the aesthetic,
@@ -300,8 +301,26 @@ local void update_and_render_pause_editor_menu_ui(struct game_state* state, stru
                         editor_state->serialize_menu_t += dt;
                     }
 
-                    if (editor_state->serialize_menu_mode == 1) {
+                    /* handle inputs here */
+                    if (editor_state->serialize_menu_t >= 1) {
+                        editor_state->serialize_menu_t = 1;
+
+                        if (editor_state->serialize_menu_mode == 1) {
+                            start_text_edit(editor_state->current_save_name, cstring_length(editor_state->current_save_name));
+
+                            if (is_key_pressed(KEY_RETURN)) {
+                                end_text_edit(editor_state->current_save_name, array_count(editor_state->current_save_name));
+
+                                /* NOTE need to be careful, since it doesn't know where the game path is... */
+                                string to_save_as = string_concatenate(&scratch_arena, string_literal("areas/"), string_from_cstring(editor_state->current_save_name));
+                                _debugprintf("save as: %.*s\n", to_save_as.length, to_save_as.data);
+                                struct binary_serializer serializer = open_write_file_serializer(to_save_as);
+                                editor_serialize_area(&serializer);
+                                serializer_finish(&serializer);
+                            }
+                        } else {
                         
+                        }
                     }
                 } break;
             }
@@ -363,16 +382,18 @@ local void update_and_render_pause_editor_menu_ui(struct game_state* state, stru
         draw_position.x = lerp_f32(-200, 80, editor_state->serialize_menu_t);
         switch (editor_state->serialize_menu_mode) {
             case 1: {
-                software_framebuffer_draw_text(framebuffer, font, font_scale, draw_position, string_literal("SAVE GAME"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+                software_framebuffer_draw_text(framebuffer, font, font_scale, draw_position, string_literal("SAVE LEVEL"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
                 draw_position.y += font_scale * 12 * 3;
                 {
-                    char tmp_text[1024];
-                    snprintf(tmp_text, 1024, "SAVE AS: %s", editor_state->current_save_name);
+                    char tmp_text[1024] = {};
+                    /* snprintf(tmp_text, 1024, "SAVE AS: %s", editor_state->current_save_name); */
+                    snprintf(tmp_text, 1024, "SAVE AS: %s", current_text_buffer());
+                    _debugprintf("\"%s\"\n", current_text_buffer());
                     software_framebuffer_draw_text(framebuffer, font, font_scale, draw_position, string_from_cstring(tmp_text), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
                 }
             } break;
             case 2: {
-                software_framebuffer_draw_text(framebuffer, font, font_scale, draw_position, string_literal("LOAD GAME"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+                software_framebuffer_draw_text(framebuffer, font, font_scale, draw_position, string_literal("LOAD LEVEL"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
             } break;
         }
     }
