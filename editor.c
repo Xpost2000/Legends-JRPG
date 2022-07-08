@@ -1,3 +1,4 @@
+/* TODO Need to clean up  */
 /* 
    NOTE
    I am not surrendering the low resolution, that's part of the aesthetic,
@@ -12,8 +13,18 @@
    
    We'll only have level transitions right now, so I might not really get to show that off...
 */
+local void wrap_around_key_selection(s32 decrease_key, s32 increase_key, s32* pointer, s32 min, s32 max) {
+    if (is_key_pressed(decrease_key)) {
+        *pointer -= 1;
+        if (*pointer < min)
+            *pointer = max-1;
+    } else if (is_key_pressed(increase_key)) {
+        *pointer += 1;
+        if (*pointer >= max)
+            *pointer = min;
+    }
+}
 
-/* TODO World spawn */
 void editor_clear_all(struct editor_state* state) {
     state->tile_count      = 0;
 
@@ -75,6 +86,19 @@ void editor_place_tile_at(v2f32 point_in_tilespace) {
     new_tile->y  = where_y;
 }
 
+local void handle_editor_input(void) {
+    switch (editor_state->tool_mode) {
+        case EDITOR_TOOL_TILE_PAINTING: {
+            /* Consider making a visual menu for tile selection. Ought to be less painful.  */
+            /* Mouse imo is way faster for level editting tiles than using the keyboard... */
+            /* granted it's more programming, but it'll be worth it. */
+            wrap_around_key_selection(KEY_LEFT, KEY_RIGHT, &editor_state->painting_tile_id, 0, 2);
+        } break;
+        default: {
+        } break;
+    }
+}
+
 /* Editor code will always be a little nasty lol */
 local void update_and_render_editor_game_menu_ui(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
     s32 mouse_location[2];
@@ -113,26 +137,9 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
 
     /* Consider using tab + radial/fuzzy menu selection for this */
     if (is_key_down(KEY_SHIFT)) {
-        if (is_key_pressed(KEY_LEFT)) {
-            editor_state->tool_mode -= 1;
-            if (editor_state->tool_mode < 0) editor_state->tool_mode = 2;
-        } else if (is_key_pressed(KEY_RIGHT)) {
-            editor_state->tool_mode += 1;
-            if (editor_state->tool_mode > 2) editor_state->tool_mode = 0;
-        }
+        wrap_around_key_selection(KEY_LEFT, KEY_RIGHT, &editor_state->tool_mode, 0, EDITOR_TOOL_COUNT-1);
     } else {
-        /* Consider making a visual menu for tile selection. Ought to be less painful.  */
-        /* Mouse imo is way faster for level editting tiles than using the keyboard... */
-        /* granted it's more programming, but it'll be worth it. */
-        if (editor_state->tool_mode == 0) {
-            if (is_key_pressed(KEY_LEFT)) {
-                editor_state->painting_tile_id -= 1;
-                if (editor_state->painting_tile_id < 0) editor_state->painting_tile_id = 1;
-            } else if (is_key_pressed(KEY_RIGHT)) {
-                editor_state->painting_tile_id += 1;
-                if (editor_state->painting_tile_id > 1) editor_state->painting_tile_id = 0;
-            }
-        }
+        handle_editor_input();
     }
 
     bool left_clicked = 0;
@@ -155,15 +162,7 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
     {
         software_framebuffer_draw_text(framebuffer,
                                        graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_GOLD]),
-                                       1, v2f32(0,y_cursor), string_literal("EDITOR"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
-        y_cursor += 12;
-        {
-            char tmp_text[1024]={};
-            snprintf(tmp_text, 1024, "current tile id: %d", editor_state->painting_tile_id);
-            software_framebuffer_draw_text(framebuffer,
-                                           graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_GOLD]),
-                                           1, v2f32(0,y_cursor), string_from_cstring(tmp_text), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
-        }
+                                       1, v2f32(0,y_cursor), string_literal("Level Editor"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
         y_cursor += 12;
         {
             char tmp_text[1024]={};
@@ -171,6 +170,21 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
             software_framebuffer_draw_text(framebuffer,
                                            graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_GOLD]),
                                            1, v2f32(0,y_cursor), string_from_cstring(tmp_text), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+        }
+        switch (editor_state->tool_mode) {
+            case EDITOR_TOOL_TILE_PAINTING: {
+                y_cursor += 12;
+                {
+                    char tmp_text[1024]={};
+                    snprintf(tmp_text, 1024, "current tile id: %d", editor_state->painting_tile_id);
+                    software_framebuffer_draw_text(framebuffer,
+                                                   graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_GOLD]),
+                                                   1, v2f32(0,y_cursor), string_from_cstring(tmp_text), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+                }
+            } break;
+            case EDITOR_TOOL_TRIGGER_PLACEMENT: {
+                
+            } break;
         }
     }
     /* not using render commands here. I can trivially figure out what order most things should be... */

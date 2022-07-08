@@ -276,17 +276,35 @@ entity_id entity_list_create_player(struct entity_list* entities, v2f32 position
     return result;
 }
 
+enum editor_tool_mode {
+    EDITOR_TOOL_TILE_PAINTING,
+    EDITOR_TOOL_SPAWN_PLACEMENT,
+    EDITOR_TOOL_ENTITY_PLACEMENT,
+    EDITOR_TOOL_TRIGGER_PLACEMENT,
+    EDITOR_TOOL_COUNT,
+};
 static string editor_tool_mode_strings[]=  {
     string_literal("Tile"),
     string_literal("Default spawn"),
     string_literal("Entity"),
-    string_literal("Trigger")
+    string_literal("Trigger"),
+    string_literal("(count)")
+};
+enum trigger_placement_type {
+    TRIGGER_PLACEMENT_TYPE_LEVEL_TRANSITION,
+    TRIGGER_PLACEMENT_TYPE_COUNT
+};
+static string trigger_placement_type_strings[] = {
+    string_literal("Level Transition"),
+    string_literal("(count)")
 };
 struct editor_state {
     struct memory_arena* arena;
     s32           tool_mode;
 
     s32           painting_tile_id;
+    s32           trigger_placement_type;
+
     s32           tile_count;
     s32           tile_capacity;
     struct tile*  tiles;
