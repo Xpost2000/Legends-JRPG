@@ -1,6 +1,14 @@
 /* TODO Need to clean up  */
 /* NOTE can add more visual flare to the new editting widgets */
-/* NOTE text edit bug visual  */
+
+/*
+  Lots of weird editor visual quirks.
+
+  Does not seem to break anything.
+  
+  (NOTE few weird ergonomics, as the pause menu is not intended to be moused over, yet some editor menus only
+  allow the mouse. It's a bit confusing. Not an issue for me but consider it.)
+*/
 
 /* 
    NOTE
@@ -27,6 +35,33 @@ local void wrap_around_key_selection(s32 decrease_key, s32 increase_key, s32* po
             *pointer = min;
     }
 }
+
+/* little IMGUI */
+/* no layout stuff, mostly just simple widgets to play with */
+bool EDITOR_imgui_button(struct software_framebuffer* framebuffer, struct font_cache* font, struct font_cache* highlighted_font, f32 draw_scale, v2f32 position, string str) {
+    f32 text_height = font_cache_text_height(font)     * draw_scale;
+    f32 text_width  = font_cache_text_width(font, str) * draw_scale;
+
+    s32 mouse_positions[2];
+    bool left_clicked;
+    get_mouse_buttons(&left_clicked, 0, 0);
+    get_mouse_location(mouse_positions, mouse_positions+1);
+
+    struct rectangle_f32 button_bounding_box = rectangle_f32(position.x, position.y, text_width, text_height);
+    struct rectangle_f32 interaction_bounding_box = rectangle_f32(mouse_positions[0], mouse_positions[1], 2, 2);
+
+    if (rectangle_f32_intersect(button_bounding_box, interaction_bounding_box)) {
+        software_framebuffer_draw_text(framebuffer, highlighted_font, draw_scale, position, (str), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+        if (left_clicked) {
+            return true;
+        }
+    } else {
+        software_framebuffer_draw_text(framebuffer, font, draw_scale, position, (str), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+    }
+
+    return false;
+}
+/* little IMGUI  */
 
 void editor_clear_all(struct editor_state* state) {
     state->tile_count      = 0;
@@ -175,7 +210,8 @@ local void update_and_render_pause_editor_menu_ui(struct game_state* state, stru
     f32 max_blur = 1.0;
     f32 max_grayscale = 0.8;
 
-    f32 timescale = 1.34f;
+    /* I'm sure the animation is very pretty but in editor mode I'm in a rush lol */
+    f32 timescale = 3;
 
     switch (menu_state->animation_state) {
         case UI_PAUSE_MENU_TRANSITION_IN: {
@@ -381,8 +417,9 @@ local void update_and_render_pause_editor_menu_ui(struct game_state* state, stru
     }
 
     {
-        struct font_cache* font = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_STEEL]);
-        v2f32 draw_position = v2f32(0,0);
+        struct font_cache* font             = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_STEEL]);
+        struct font_cache* highlighted_font = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_GOLD]);
+        v2f32 draw_position = v2f32(0, 15);
         draw_position.x = lerp_f32(-200, 80, editor_state->serialize_menu_t);
         switch (editor_state->serialize_menu_mode) {
             case 1: {
@@ -398,17 +435,31 @@ local void update_and_render_pause_editor_menu_ui(struct game_state* state, stru
             } break;
             case 2: {
                 software_framebuffer_draw_text(framebuffer, font, font_scale, draw_position, string_literal("LOAD LEVEL"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
-                (draw_position.y += font_scale * 12 * 3);
+                (draw_position.y += font_scale * 12 * 2);
 
+                /* since this listing is actually done immediately/live, technically we hot reload directories... cool! */
                 struct directory_listing listing = directory_listing_list_all_files_in(&scratch_arena, string_literal("areas/"));
 
-                if (listing.count == 0) {
-                    software_framebuffer_draw_text(framebuffer, font, font_scale, draw_position, string_literal("(no areas)"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+                if (listing.count <= 2) {
+                    software_framebuffer_draw_text(framebuffer, font, 2, draw_position, string_literal("(no areas)"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
                 } else {
-                    for (s32 index = 0; index < listing.count; ++index) {
+                    /* skip . and ../ */
+                    for (s32 index = 2; index < listing.count; ++index) {
                         struct directory_file* current_file = listing.files + index;
-                        draw_position.y += font_scale * 12 * 1;
-                        software_framebuffer_draw_text(framebuffer, font, font_scale, draw_position, string_from_cstring(current_file->name), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+                        draw_position.y += 2 * 12 * 1;
+                        if(EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, draw_position, string_from_cstring(current_file->name))) {
+                            struct binary_serializer serializer = open_read_file_serializer(string_concatenate(&scratch_arena, string_literal("areas/"), string_from_cstring(current_file->name)));
+                            editor_serialize_area(&serializer);
+                            serializer_finish(&serializer);
+
+                            cstring_copy(current_file->name, editor_state->current_save_name, array_count(editor_state->current_save_name));
+
+                            menu_state->animation_state = UI_PAUSE_MENU_TRANSITION_IN;
+                            menu_state->transition_t = 0;
+                            editor_state->serialize_menu_mode = 0;
+                            break;
+                        }
+                        /* software_framebuffer_draw_text(framebuffer, font, 2, draw_position, string_from_cstring(current_file->name), color32f32(1,1,1,1), BLEND_MODE_ALPHA); */
                     }
                 }
             } break;

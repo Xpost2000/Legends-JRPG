@@ -439,7 +439,7 @@ struct directory_listing directory_listing_list_all_files_in(struct memory_arena
     struct directory_listing result = {};
 
     WIN32_FIND_DATA find_data = {};
-    HANDLE handle = FindFirstFile(location.data, &find_data);
+    HANDLE handle = FindFirstFile(string_concatenate(arena, location, string_literal("/*")).data, &find_data);
 
     if (handle == INVALID_HANDLE_VALUE) {
         _debugprintf("no files found in directory (\"%s\")", location.data);
