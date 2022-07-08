@@ -38,6 +38,9 @@ local void wrap_around_key_selection(s32 decrease_key, s32 increase_key, s32* po
 
 /* little IMGUI */
 /* no layout stuff, mostly just simple widgets to play with */
+/* also bad code */
+bool _imgui_mouse_button_left_down = false;
+bool _imgui_any_intersection       = false;
 bool EDITOR_imgui_button(struct software_framebuffer* framebuffer, struct font_cache* font, struct font_cache* highlighted_font, f32 draw_scale, v2f32 position, string str) {
     f32 text_height = font_cache_text_height(font)     * draw_scale;
     f32 text_width  = font_cache_text_width(font, str) * draw_scale;
@@ -51,8 +54,12 @@ bool EDITOR_imgui_button(struct software_framebuffer* framebuffer, struct font_c
     struct rectangle_f32 interaction_bounding_box = rectangle_f32(mouse_positions[0], mouse_positions[1], 2, 2);
 
     if (rectangle_f32_intersect(button_bounding_box, interaction_bounding_box)) {
+        _imgui_any_intersection = true;
+        if (!_imgui_mouse_button_left_down & left_clicked) _imgui_mouse_button_left_down = true;
+
         software_framebuffer_draw_text(framebuffer, highlighted_font, draw_scale, position, (str), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
-        if (left_clicked) {
+        if (!left_clicked && _imgui_mouse_button_left_down) {
+            _imgui_mouse_button_left_down = false;
             return true;
         }
     } else {
@@ -128,9 +135,13 @@ local void handle_editor_tool_mode_input(struct software_framebuffer* framebuffe
     bool left_clicked   = 0;
     bool right_clicked  = 0;
     bool middle_clicked = 0;
-    get_mouse_buttons(&left_clicked,
-                      &middle_clicked,
-                      &right_clicked);
+
+    /* do not check for mouse input when our special tab menu is open */
+    if (editor_state->tab_menu_open == TAB_MENU_CLOSED) {
+        get_mouse_buttons(&left_clicked,
+                          &middle_clicked,
+                          &right_clicked);
+    }
 
     s32 mouse_location[2];
     get_mouse_location(mouse_location, mouse_location+1);
@@ -504,8 +515,10 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
     }
 
     /* Consider using tab + radial/fuzzy menu selection for this */
-    if (is_key_down(KEY_SHIFT)) {
-        wrap_around_key_selection(KEY_LEFT, KEY_RIGHT, &editor_state->tool_mode, 0, EDITOR_TOOL_COUNT-1);
+    if (is_key_down(KEY_SHIFT) && is_key_pressed(KEY_TAB)) {
+        /* wrap_around_key_selection(KEY_LEFT, KEY_RIGHT, &editor_state->tool_mode, 0, EDITOR_TOOL_COUNT-1); */
+        editor_state->tab_menu_open ^= TAB_MENU_OPEN_BIT;
+        editor_state->tab_menu_open ^= TAB_MENU_SHIFT_BIT;
     } else {
         handle_editor_tool_mode_input(framebuffer);
     }
@@ -546,6 +559,32 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
                     /* specific trigger property menu: might require lots of buttons and stuff. */
                 }
             } break;
+        }
+    }
+
+    if (editor_state->tab_menu_open & TAB_MENU_OPEN_BIT) {
+        software_framebuffer_draw_quad(framebuffer,
+                                       rectangle_f32(0, 0, framebuffer->width, framebuffer->height),
+                                       color32u8(0,0,0,128), BLEND_MODE_ALPHA);
+        /* tool selector */
+        if (editor_state->tab_menu_open & TAB_MENU_SHIFT_BIT) {
+            struct font_cache* font             = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_STEEL]);
+            struct font_cache* highlighted_font = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_GOLD]);
+
+            f32 draw_cursor_y = 30;
+            for (s32 index = 0; index < array_count(editor_tool_mode_strings)-1; ++index) {
+                if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 3, v2f32(100, draw_cursor_y), editor_tool_mode_strings[index])) {
+                    editor_state->tab_menu_open = 0;
+                    editor_state->tool_mode     = index;
+                    break;
+                }
+                draw_cursor_y += 12 * 1.5 * 3;
+            }
+        }
+        else if (editor_state->tab_menu_open & TAB_MENU_CTRL_BIT) {
+                
+        } else {
+            
         }
     }
     /* not using render commands here. I can trivially figure out what order most things should be... */
@@ -595,6 +634,8 @@ void update_and_render_editor(struct software_framebuffer* framebuffer, f32 dt) 
             }
         } break;
     }
+
     /* cursor ghost */
     software_framebuffer_render_commands(framebuffer, &commands);
+    _imgui_any_intersection = false;
 }

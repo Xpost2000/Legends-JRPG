@@ -170,9 +170,9 @@ enum editor_tool_mode {
     EDITOR_TOOL_COUNT,
 };
 static string editor_tool_mode_strings[]=  {
-    string_literal("Tile"),
-    string_literal("Default spawn"),
-    string_literal("Entity"),
+    string_literal("Tile mode"),
+    string_literal("Place default spawn mode"),
+    string_literal("Entity mode"),
     string_literal("Trigger"),
     string_literal("(count)")
 };
@@ -210,6 +210,20 @@ struct editor_state {
     /* 0 - none, 1 - save, 2 - load */
     s32 serialize_menu_mode;
     f32 serialize_menu_t;
+
+    /* tab menus a chord of tab + any of the modifier keys (might want to avoid alt tab though) */
+    /* naked-tab (mode-specific actions.) */
+    /* shift-tab (mode selection) */
+    /* ctrl-tab  (object specific (property editting?)) */
+    /* ctrl-tab  (object specific (property editting?)) */
+    enum {
+        TAB_MENU_CLOSED    = 0,
+        TAB_MENU_OPEN_BIT  = BIT(0),
+        TAB_MENU_SHIFT_BIT = BIT(1),
+        TAB_MENU_CTRL_BIT  = BIT(2),
+        TAB_MENU_ALT_BIT   = BIT(3),
+    };
+    s32 tab_menu_open;
 
     /* also a cstring... Ughhhh */
     char current_save_name[128];
