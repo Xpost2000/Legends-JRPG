@@ -1,5 +1,7 @@
 /* TODO Need to clean up  */
 /* NOTE can add more visual flare to the new editting widgets */
+/* NOTE text edit bug visual  */
+
 /* 
    NOTE
    I am not surrendering the low resolution, that's part of the aesthetic,
@@ -321,6 +323,8 @@ local void update_and_render_pause_editor_menu_ui(struct game_state* state, stru
                         } else {
                         
                         }
+                    } else {
+                        
                     }
                 } break;
             }
@@ -394,6 +398,19 @@ local void update_and_render_pause_editor_menu_ui(struct game_state* state, stru
             } break;
             case 2: {
                 software_framebuffer_draw_text(framebuffer, font, font_scale, draw_position, string_literal("LOAD LEVEL"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+                (draw_position.y += font_scale * 12 * 3);
+
+                struct directory_listing listing = directory_listing_list_all_files_in(&scratch_arena, string_literal("areas/"));
+
+                if (listing.count == 0) {
+                    software_framebuffer_draw_text(framebuffer, font, font_scale, draw_position, string_literal("(no areas)"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+                } else {
+                    for (s32 index = 0; index < listing.count; ++index) {
+                        struct directory_file* current_file = listing.files + index;
+                        draw_position.y += font_scale * 12 * 1;
+                        software_framebuffer_draw_text(framebuffer, font, font_scale, draw_position, string_from_cstring(current_file->name), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+                    }
+                }
             } break;
         }
     }

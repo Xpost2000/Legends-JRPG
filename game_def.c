@@ -100,7 +100,6 @@ struct trigger_level_transition {
     /* for binary structs, I need cstrings unfortunately. Otherwise they are a little too inconvenient to serialize...*/
     char  target_level[128];
     /* anchoring to an object, might be very niche... */
-    u8    use_default; /* don't remember what this meant gurrr... */
     u8    new_facing_direction;
     v2f32 spawn_location;
 };

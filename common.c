@@ -420,4 +420,47 @@ static inline u32 packu32(u8 b0, u8 b1, u8 b2, u8 b3) {
         ((u32)b3);
 }
 
+/* NOTE win32 code for now */
+struct directory_file {
+    char    name[260];
+    size_t  filesize;
+    bool    is_directory;
+    /* could add more info like timing stuff */
+};
+struct directory_listing {
+    s32                    count;
+    struct directory_file* files;
+};
+
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+
+struct directory_listing directory_listing_list_all_files_in(struct memory_arena* arena, string location) {
+    struct directory_listing result = {};
+
+    WIN32_FIND_DATA find_data = {};
+    HANDLE handle = FindFirstFile(location.data, &find_data);
+
+    if (handle == INVALID_HANDLE_VALUE) {
+        _debugprintf("no files found in directory (\"%s\")", location.data);
+        return result;
+    }
+
+    result.files = memory_arena_push(arena, sizeof(*result.files));
+    _debugprintf("allocating files");
+
+    do {
+        struct directory_file* current_file = &result.files[result.count++];
+
+        current_file->is_directory = (find_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY);
+        cstring_copy(find_data.cFileName, current_file->name, array_count(current_file->name));
+        current_file->filesize = (find_data.nFileSizeHigh * (MAXDWORD+1)) + find_data.nFileSizeLow;
+
+        _debugprintf("read file \"%s\"", find_data.cFileName);
+        memory_arena_push(arena, sizeof(*result.files));
+    } while (FindNextFile(handle, &find_data));
+
+    return result;
+}
+
 #endif
