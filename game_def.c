@@ -224,6 +224,10 @@ struct editor_state {
     /* ui pause menu animation state */
     /* 0 - none, 1 - save, 2 - load */
     s32 serialize_menu_mode;
+    s32 serialize_menu_reason; /* 
+                                  0 - save/load file,
+                                  1 - select/level transition trigger 
+                               */
     f32 serialize_menu_t;
 
     /* tab menus a chord of tab + any of the modifier keys (might want to avoid alt tab though) */
@@ -255,6 +259,12 @@ struct editor_state {
 
     /* also a cstring... Ughhhh */
     char current_save_name[128];
+
+    /* for edits that may require cross area interaction */
+    /* we just load another full level and display it normally without editor mode stuff */
+    char loaded_area_name[260]; /* level_areas don't know where they come from... */
+    struct level_area loaded_area;
+    bool       viewing_loaded_area;
 };
 
 #include "weather_def.c"

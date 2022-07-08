@@ -223,24 +223,54 @@ local void handle_editor_tool_mode_input(struct software_framebuffer* framebuffe
             /* granted it's more programming, but it'll be worth it. */
             /* wrap_around_key_selection(KEY_LEFT, KEY_RIGHT, &editor_state->painting_tile_id, 0, 2); */
 
-            if (left_clicked) {
-                editor_place_tile_at(tile_space_mouse_location);
-            } else if (right_clicked) {
-                editor_remove_tile_at(tile_space_mouse_location);
+            if (!editor_state->viewing_loaded_area) {
+                if (left_clicked) {
+                    editor_place_tile_at(tile_space_mouse_location);
+                } else if (right_clicked) {
+                    editor_remove_tile_at(tile_space_mouse_location);
+                }
             }
         } break;
         case EDITOR_TOOL_SPAWN_PLACEMENT: {
-            if (left_clicked) {
-                editor_state->default_player_spawn.x = world_space_mouse_location.x;
-                editor_state->default_player_spawn.y = world_space_mouse_location.y;
+            if (!editor_state->viewing_loaded_area) {
+                if (left_clicked) {
+                    editor_state->default_player_spawn.x = world_space_mouse_location.x;
+                    editor_state->default_player_spawn.y = world_space_mouse_location.y;
+                }
             }
         } break;
         case EDITOR_TOOL_TRIGGER_PLACEMENT: {
             /* wrap_around_key_selection(KEY_LEFT, KEY_RIGHT, &editor_state->trigger_placement_type, 0, 2); */
-            if (left_clicked) {
-                editor_place_or_drag_level_transition_trigger(tile_space_mouse_location);
-            } else if (right_clicked) {
-                editor_remove_level_transition_trigger_at(tile_space_mouse_location);
+            if (!editor_state->viewing_loaded_area) {
+                if (left_clicked) {
+                    editor_place_or_drag_level_transition_trigger(tile_space_mouse_location);
+                } else if (right_clicked) {
+                    editor_remove_level_transition_trigger_at(tile_space_mouse_location);
+                }
+            } else {
+                if (left_clicked) {
+                    assertion(editor_state->last_selected);
+                    struct trigger_level_transition* trigger = editor_state->last_selected;
+                    cstring_copy(editor_state->loaded_area_name, trigger->target_level, 128);
+
+                    s32 mouse_location[2];
+                    get_mouse_location(mouse_location, mouse_location+1);
+
+                    v2f32 world_space_mouse_location =
+                        camera_project(&editor_state->camera, v2f32(mouse_location[0], mouse_location[1]), framebuffer->width, framebuffer->height);
+
+                    /* for tiles */
+                    v2f32 tile_space_mouse_location = world_space_mouse_location; {
+                        tile_space_mouse_location.x = floorf(world_space_mouse_location.x / TILE_UNIT_SIZE);
+                        tile_space_mouse_location.y = floorf(world_space_mouse_location.y / TILE_UNIT_SIZE);
+                    }
+
+                    trigger->spawn_location = tile_space_mouse_location;
+                }
+
+                if (is_key_pressed(KEY_RETURN)) {
+                    editor_state->viewing_loaded_area = false;
+                }
             }
         } break;
         default: {
@@ -317,8 +347,12 @@ local void update_and_render_pause_editor_menu_ui(struct game_state* state, stru
                     }
 
                     if (is_key_pressed(KEY_ESCAPE)) {
-                        menu_state->animation_state = UI_PAUSE_MENU_TRANSITION_CLOSING;
-                        menu_state->transition_t = 0;
+                        if (editor_state->serialize_menu_reason == 0) {
+                            menu_state->animation_state = UI_PAUSE_MENU_TRANSITION_CLOSING;
+                            menu_state->transition_t = 0;
+                        } else {
+                            game_state_set_ui_state(game_state, state->last_ui_state);
+                        }
                     }        
 
                     if (is_key_down_with_repeat(KEY_DOWN)) {
@@ -363,6 +397,7 @@ local void update_and_render_pause_editor_menu_ui(struct game_state* state, stru
                                 menu_state->animation_state     = UI_PAUSE_MENU_TRANSITION_CLOSING;
                                 menu_state->transition_t        = 0;
                                 editor_state->serialize_menu_mode = 1;
+                                editor_state->serialize_menu_reason = 0;
 #endif
                             } break;
                             case 3: {
@@ -374,6 +409,7 @@ local void update_and_render_pause_editor_menu_ui(struct game_state* state, stru
                                 menu_state->animation_state     = UI_PAUSE_MENU_TRANSITION_CLOSING;
                                 menu_state->transition_t        = 0;
                                 editor_state->serialize_menu_mode = 2;
+                                editor_state->serialize_menu_reason = 0;
 #endif
                             } break;
                             case 4: {
@@ -481,6 +517,7 @@ local void update_and_render_pause_editor_menu_ui(struct game_state* state, stru
         struct font_cache* highlighted_font = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_GOLD]);
         v2f32 draw_position = v2f32(0, 15);
         draw_position.x = lerp_f32(-200, 80, editor_state->serialize_menu_t);
+        
         switch (editor_state->serialize_menu_mode) {
             case 1: {
                 software_framebuffer_draw_text(framebuffer, font, font_scale, draw_position, string_literal("SAVE LEVEL"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
@@ -508,16 +545,26 @@ local void update_and_render_pause_editor_menu_ui(struct game_state* state, stru
                         struct directory_file* current_file = listing.files + index;
                         draw_position.y += 2 * 12 * 1;
                         if(EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, draw_position, string_from_cstring(current_file->name))) {
-                            struct binary_serializer serializer = open_read_file_serializer(string_concatenate(&scratch_arena, string_literal("areas/"), string_from_cstring(current_file->name)));
-                            editor_serialize_area(&serializer);
-                            serializer_finish(&serializer);
+                            switch (editor_state->serialize_menu_reason) {
+                                case 0: {
+                                    struct binary_serializer serializer = open_read_file_serializer(string_concatenate(&scratch_arena, string_literal("areas/"), string_from_cstring(current_file->name)));
+                                    editor_serialize_area(&serializer);
+                                    serializer_finish(&serializer);
 
-                            cstring_copy(current_file->name, editor_state->current_save_name, array_count(editor_state->current_save_name));
+                                    cstring_copy(current_file->name, editor_state->current_save_name, array_count(editor_state->current_save_name));
 
-                            menu_state->animation_state = UI_PAUSE_MENU_TRANSITION_IN;
-                            menu_state->transition_t = 0;
-                            editor_state->serialize_menu_mode = 0;
-                            break;
+                                    menu_state->animation_state = UI_PAUSE_MENU_TRANSITION_IN;
+                                    menu_state->transition_t = 0;
+                                    editor_state->serialize_menu_mode = 0;
+                                    return;
+                                } break;
+                                case 1: {
+                                    struct binary_serializer serializer = open_read_file_serializer(string_concatenate(&scratch_arena, string_literal("areas/"), string_from_cstring(current_file->name)));
+                                    serialize_level_area(state, &serializer, &editor_state->loaded_area);
+                                    serializer_finish(&serializer);
+                                    editor_state->viewing_loaded_area = true;
+                                } break;
+                            }
                         }
                         /* software_framebuffer_draw_text(framebuffer, font, 2, draw_position, string_from_cstring(current_file->name), color32f32(1,1,1,1), BLEND_MODE_ALPHA); */
                     }
@@ -567,6 +614,9 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
     if (is_key_down(KEY_SHIFT) && is_key_pressed(KEY_TAB)) {
         editor_state->tab_menu_open ^= TAB_MENU_OPEN_BIT;
         editor_state->tab_menu_open ^= TAB_MENU_SHIFT_BIT;
+    } else if (is_key_down(KEY_CTRL) && is_key_pressed(KEY_TAB)) {
+        editor_state->tab_menu_open ^= TAB_MENU_OPEN_BIT;
+        editor_state->tab_menu_open ^= TAB_MENU_CTRL_BIT;
     } else if (is_key_pressed(KEY_TAB)) {
         editor_state->tab_menu_open ^= TAB_MENU_OPEN_BIT;
     } else {
@@ -632,7 +682,33 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
                 draw_cursor_y += 12 * 1.5 * 3;
             }
         } else if (editor_state->tab_menu_open & TAB_MENU_CTRL_BIT) {
-                
+            switch (editor_state->tool_mode) {
+                /* I would show images, but this is easier for now */
+                case EDITOR_TOOL_TILE_PAINTING: {} break;
+                case EDITOR_TOOL_TRIGGER_PLACEMENT: {
+                    f32 draw_cursor_y = 30;
+                    struct trigger_level_transition* trigger = editor_state->last_selected;
+
+                    if(EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(16, draw_cursor_y), string_literal("Set Level Trigger Transition Area"))) {
+                        /* open another file selection menu */
+                        editor_state->serialize_menu_mode   = 2;
+                        editor_state->serialize_menu_reason = 1;
+                        struct ui_pause_menu* menu_state = &state->ui_pause;
+                        game_state_set_ui_state(game_state, UI_STATE_PAUSE);
+                        game_state->ui_pause.transition_t    = 0;
+                        game_state->ui_pause.selection       = 0;
+                        zero_array(game_state->ui_pause.shift_t);
+                        menu_state->animation_state = UI_PAUSE_MENU_NO_ANIM;
+                        editor_state->tab_menu_open = 0;
+                    }
+
+                    draw_cursor_y += 12 * 1.2 * 2;
+                    if(EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(16, draw_cursor_y), string_concatenate(&scratch_arena, string_literal("Facing Direction: "), facing_direction_strings[trigger->new_facing_direction]))) {
+                        trigger->new_facing_direction += 1;
+                        if (trigger->new_facing_direction > 4) trigger->new_facing_direction = 0;
+                    }
+                } break;
+            }
         } else {
             switch (editor_state->tool_mode) {
                 /* I would show images, but this is easier for now */
@@ -670,51 +746,68 @@ void update_and_render_editor(struct software_framebuffer* framebuffer, f32 dt) 
     commands.should_clear_buffer = true;
     commands.clear_buffer_color  = color32u8(100, 128, 148, 255);
 
-    /* Maybe change the data structures later? */
-    for (s32 tile_index = 0; tile_index < editor_state->tile_count; ++tile_index) {
-        struct tile*                 current_tile = editor_state->tiles + tile_index;
-        s32                          tile_id      = current_tile->id;
-        struct tile_data_definition* tile_data    = tile_table_data + tile_id;
-        image_id                     tex          = graphics_assets_get_image_by_filepath(&graphics_assets, tile_data->image_asset_location); 
+    if (editor_state->viewing_loaded_area) {
+        /* yeah this is a big mess */
+        render_area(&commands, &editor_state->loaded_area);
+        if (editor_state->last_selected && editor_state->tool_mode == EDITOR_TOOL_TRIGGER_PLACEMENT) {
+            struct trigger_level_transition* trigger = editor_state->last_selected;
+            render_commands_push_quad(&commands, rectangle_f32(trigger->spawn_location.x * TILE_UNIT_SIZE, trigger->spawn_location.y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE),
+                                      color32u8(0, 255, 255, normalized_sinf(global_elapsed_time*4) * 0.5*255 + 64), BLEND_MODE_ALPHA);
+        }
+    } else {
+        /* Maybe change the data structures later? */
+        for (s32 tile_index = 0; tile_index < editor_state->tile_count; ++tile_index) {
+            struct tile*                 current_tile = editor_state->tiles + tile_index;
+            s32                          tile_id      = current_tile->id;
+            struct tile_data_definition* tile_data    = tile_table_data + tile_id;
+            image_id                     tex          = graphics_assets_get_image_by_filepath(&graphics_assets, tile_data->image_asset_location); 
 
-        render_commands_push_image(&commands,
-                                   graphics_assets_get_image_by_id(&graphics_assets, tex),
-                                   rectangle_f32(current_tile->x * TILE_UNIT_SIZE,
-                                                 current_tile->y * TILE_UNIT_SIZE,
-                                                 TILE_UNIT_SIZE,
-                                                 TILE_UNIT_SIZE),
-                                   tile_data->sub_rectangle,
-                                   color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
-    }
-    struct font_cache* font = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_BLUE]);
-    for (s32 trigger_level_transition_index = 0; trigger_level_transition_index < editor_state->trigger_level_transition_count; ++trigger_level_transition_index) {
-        struct trigger_level_transition* current_trigger = editor_state->trigger_level_transitions + trigger_level_transition_index;
-        render_commands_push_quad(&commands, rectangle_f32(current_trigger->bounds.x * TILE_UNIT_SIZE, current_trigger->bounds.y * TILE_UNIT_SIZE,
-                                                           current_trigger->bounds.w * TILE_UNIT_SIZE, current_trigger->bounds.h * TILE_UNIT_SIZE),
-                                  color32u8(255, 0, 0, normalized_sinf(global_elapsed_time*2) * 0.5*255 + 64), BLEND_MODE_ALPHA);
-        render_commands_push_text(&commands, font, 1, v2f32(current_trigger->bounds.x * TILE_UNIT_SIZE, current_trigger->bounds.y * TILE_UNIT_SIZE), string_literal("(level\ntransition\ntrigger)"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
-    }
-    render_commands_push_quad(&commands, rectangle_f32(editor_state->default_player_spawn.x, editor_state->default_player_spawn.y, TILE_UNIT_SIZE/4, TILE_UNIT_SIZE/4),
-                              color32u8(0, 255, 0, normalized_sinf(global_elapsed_time*4) * 0.5*255 + 64), BLEND_MODE_ALPHA);
-
-    switch (editor_state->tool_mode) {
-        case 0: {
-            {
-                s32 mouse_location[2];
-                get_mouse_location(mouse_location, mouse_location+1);
-
-                v2f32 world_space_mouse_location =
-                    camera_project(&editor_state->camera, v2f32(mouse_location[0], mouse_location[1]), framebuffer->width, framebuffer->height);
-                v2f32 tile_space_mouse_location = world_space_mouse_location; {
-                    tile_space_mouse_location.x = floorf(world_space_mouse_location.x / TILE_UNIT_SIZE);
-                    tile_space_mouse_location.y = floorf(world_space_mouse_location.y / TILE_UNIT_SIZE);
-                }
-
-                render_commands_push_quad(&commands, rectangle_f32(tile_space_mouse_location.x * TILE_UNIT_SIZE, tile_space_mouse_location.y * TILE_UNIT_SIZE,
-                                                                   TILE_UNIT_SIZE, TILE_UNIT_SIZE),
-                                          color32u8(0, 0, 255, normalized_sinf(global_elapsed_time*4) * 0.5*255 + 64), BLEND_MODE_ALPHA);
+            render_commands_push_image(&commands,
+                                       graphics_assets_get_image_by_id(&graphics_assets, tex),
+                                       rectangle_f32(current_tile->x * TILE_UNIT_SIZE,
+                                                     current_tile->y * TILE_UNIT_SIZE,
+                                                     TILE_UNIT_SIZE,
+                                                     TILE_UNIT_SIZE),
+                                       tile_data->sub_rectangle,
+                                       color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
+        }
+        struct font_cache* font = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_BLUE]);
+        for (s32 trigger_level_transition_index = 0; trigger_level_transition_index < editor_state->trigger_level_transition_count; ++trigger_level_transition_index) {
+            struct trigger_level_transition* current_trigger = editor_state->trigger_level_transitions + trigger_level_transition_index;
+            if (editor_state->last_selected == current_trigger) {
+                render_commands_push_quad(&commands, rectangle_f32(current_trigger->bounds.x * TILE_UNIT_SIZE, current_trigger->bounds.y * TILE_UNIT_SIZE,
+                                                                   current_trigger->bounds.w * TILE_UNIT_SIZE, current_trigger->bounds.h * TILE_UNIT_SIZE),
+                                          color32u8(255, 255, 255, normalized_sinf(global_elapsed_time*2) * 0.5*255 + 64), BLEND_MODE_ALPHA);
+            } else {
+                render_commands_push_quad(&commands, rectangle_f32(current_trigger->bounds.x * TILE_UNIT_SIZE, current_trigger->bounds.y * TILE_UNIT_SIZE,
+                                                                   current_trigger->bounds.w * TILE_UNIT_SIZE, current_trigger->bounds.h * TILE_UNIT_SIZE),
+                                          color32u8(255, 0, 0, normalized_sinf(global_elapsed_time*2) * 0.5*255 + 64), BLEND_MODE_ALPHA);
             }
-        } break;
+            /* NOTE display a visual denoting facing direction on transition */
+            render_commands_push_text(&commands, font, 1, v2f32(current_trigger->bounds.x * TILE_UNIT_SIZE, current_trigger->bounds.y * TILE_UNIT_SIZE), string_literal("(level\ntransition\ntrigger)"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+        }
+        render_commands_push_quad(&commands, rectangle_f32(editor_state->default_player_spawn.x, editor_state->default_player_spawn.y, TILE_UNIT_SIZE/4, TILE_UNIT_SIZE/4),
+                                  color32u8(0, 255, 0, normalized_sinf(global_elapsed_time*4) * 0.5*255 + 64), BLEND_MODE_ALPHA);
+
+        switch (editor_state->tool_mode) {
+            case 0: {
+                {
+                    s32 mouse_location[2];
+                    get_mouse_location(mouse_location, mouse_location+1);
+
+                    v2f32 world_space_mouse_location =
+                        camera_project(&editor_state->camera, v2f32(mouse_location[0], mouse_location[1]), framebuffer->width, framebuffer->height);
+                    v2f32 tile_space_mouse_location = world_space_mouse_location; {
+                        tile_space_mouse_location.x = floorf(world_space_mouse_location.x / TILE_UNIT_SIZE);
+                        tile_space_mouse_location.y = floorf(world_space_mouse_location.y / TILE_UNIT_SIZE);
+                    }
+
+                    render_commands_push_quad(&commands, rectangle_f32(tile_space_mouse_location.x * TILE_UNIT_SIZE, tile_space_mouse_location.y * TILE_UNIT_SIZE,
+                                                                       TILE_UNIT_SIZE, TILE_UNIT_SIZE),
+                                              color32u8(0, 0, 255, normalized_sinf(global_elapsed_time*4) * 0.5*255 + 64), BLEND_MODE_ALPHA);
+                }
+            } break;
+        }
     }
 
     /* cursor ghost */
