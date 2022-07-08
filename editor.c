@@ -86,13 +86,64 @@ void editor_place_tile_at(v2f32 point_in_tilespace) {
     new_tile->y  = where_y;
 }
 
-local void handle_editor_input(void) {
+local void handle_editor_tool_mode_input(struct software_framebuffer* framebuffer) {
+    bool left_clicked   = 0;
+    bool right_clicked  = 0;
+    bool middle_clicked = 0;
+    get_mouse_buttons(&left_clicked,
+                      &middle_clicked,
+                      &right_clicked);
+
+    s32 mouse_location[2];
+    get_mouse_location(mouse_location, mouse_location+1);
+
+    v2f32 world_space_mouse_location =
+        camera_project(&editor_state->camera, v2f32(mouse_location[0], mouse_location[1]), framebuffer->width, framebuffer->height);
+
+    /* for tiles */
+    v2f32 tile_space_mouse_location = world_space_mouse_location; {
+        tile_space_mouse_location.x = floorf(world_space_mouse_location.x / TILE_UNIT_SIZE);
+        tile_space_mouse_location.y = floorf(world_space_mouse_location.y / TILE_UNIT_SIZE);
+    }
+
+    /* mouse drag scroll */
+    if (middle_clicked) {
+        if (!editor_state->was_already_camera_dragging) {
+            editor_state->was_already_camera_dragging = true;
+            editor_state->initial_mouse_position      = v2f32(mouse_location[0], mouse_location[1]);
+            editor_state->initial_camera_position     = editor_state->camera.xy;
+        } else {
+            v2f32 drag_delta = v2f32_sub(v2f32(mouse_location[0], mouse_location[1]),
+                                         editor_state->initial_mouse_position);
+
+            editor_state->camera.xy = v2f32_sub(editor_state->initial_camera_position,
+                                                v2f32_sub(v2f32(mouse_location[0], mouse_location[1]), editor_state->initial_mouse_position));
+        }
+    } else {
+        editor_state->was_already_camera_dragging = false;
+    }
+
     switch (editor_state->tool_mode) {
         case EDITOR_TOOL_TILE_PAINTING: {
             /* Consider making a visual menu for tile selection. Ought to be less painful.  */
             /* Mouse imo is way faster for level editting tiles than using the keyboard... */
             /* granted it's more programming, but it'll be worth it. */
             wrap_around_key_selection(KEY_LEFT, KEY_RIGHT, &editor_state->painting_tile_id, 0, 2);
+
+            if (left_clicked) {
+                editor_place_tile_at(tile_space_mouse_location);
+            } else if (right_clicked) {
+                editor_remove_tile_at(tile_space_mouse_location);
+            }
+        } break;
+        case EDITOR_TOOL_SPAWN_PLACEMENT: {
+            if (left_clicked) {
+                editor_state->default_player_spawn.x = world_space_mouse_location.x;
+                editor_state->default_player_spawn.y = world_space_mouse_location.y;
+            }
+        } break;
+        case EDITOR_TOOL_TRIGGER_PLACEMENT: {
+            wrap_around_key_selection(KEY_LEFT, KEY_RIGHT, &editor_state->trigger_placement_type, 0, 2);
         } break;
         default: {
         } break;
@@ -139,23 +190,7 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
     if (is_key_down(KEY_SHIFT)) {
         wrap_around_key_selection(KEY_LEFT, KEY_RIGHT, &editor_state->tool_mode, 0, EDITOR_TOOL_COUNT-1);
     } else {
-        handle_editor_input();
-    }
-
-    bool left_clicked = 0;
-    bool right_clicked = 0;
-    get_mouse_buttons(&left_clicked, 0, &right_clicked);
-    if (editor_state->tool_mode == 0) {
-        if (left_clicked) {
-            editor_place_tile_at(tile_space_mouse_location);
-        } else if (right_clicked) {
-            editor_remove_tile_at(tile_space_mouse_location);
-        }
-    } else if (editor_state->tool_mode == 1) {
-        if (left_clicked) {
-            editor_state->default_player_spawn.x = world_space_mouse_location.x;
-            editor_state->default_player_spawn.y = world_space_mouse_location.y;
-        }
+        handle_editor_tool_mode_input(framebuffer);
     }
 
     f32 y_cursor = 0;
@@ -183,7 +218,14 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
                 }
             } break;
             case EDITOR_TOOL_TRIGGER_PLACEMENT: {
-                
+                y_cursor += 12;
+                {
+                    char tmp_text[1024]={};
+                    /* snprintf(tmp_text, 1024, "trigger type: %.*s", [editor_state->trigger_placement_type]); */
+                    software_framebuffer_draw_text(framebuffer,
+                                                   graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_GOLD]),
+                                                   1, v2f32(0,y_cursor), string_from_cstring(tmp_text), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+                }
             } break;
         }
     }

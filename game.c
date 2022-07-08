@@ -311,6 +311,12 @@ struct editor_state {
     struct camera camera;
 
     v2f32 default_player_spawn;
+
+    /* I should force a relative mouse mode? but later */
+    /* scroll drag data */
+    bool was_already_camera_dragging;
+    v2f32 initial_mouse_position;
+    v2f32 initial_camera_position;
 };
 
 #include "weather_def.c"

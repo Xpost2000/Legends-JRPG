@@ -5,7 +5,7 @@
 /* I'm tired of having a distinction between the view camera, and a game camera
    which is basically the same struct but *smarter*. I'm just going to shove all camera code in here... */
 struct camera {
-    v2f32 xy;
+    v2f32 xy; /* rename to position */
     u8    centered;
     f32   zoom;
 };
