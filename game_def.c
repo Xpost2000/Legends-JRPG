@@ -206,6 +206,14 @@ struct editor_state {
     bool was_already_camera_dragging;
     v2f32 initial_mouse_position;
     v2f32 initial_camera_position;
+
+    /* ui pause menu animation state */
+    /* 0 - none, 1 - save, 2 - load */
+    s32 serialize_menu_mode;
+    f32 serialize_menu_t;
+
+    /* also a cstring... Ughhhh */
+    char current_save_name[128];
 };
 
 #include "weather_def.c"

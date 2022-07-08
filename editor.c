@@ -150,6 +150,234 @@ local void handle_editor_tool_mode_input(struct software_framebuffer* framebuffe
     }
 }
 
+/* copied and pasted for now */
+/* This can be compressed, quite easily... However I won't deduplicate this yet, as I've yet to experiment fully with the UI so let's keep it like this for now. */
+/* NOTE: animation is hard. Lots of state to keep track of. */
+local void update_and_render_pause_editor_menu_ui(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
+    /* needs a bit of cleanup */
+    f32 font_scale = 3;
+    /* While the real pause menu is going to be replaced with something else later obviously */
+    /* I want a nice looking menu to show off, and also the main menu is likely taking this design */
+    struct ui_pause_menu* menu_state = &state->ui_pause;
+    v2f32 item_positions[array_count(ui_pause_editor_menu_strings)] = {};
+
+    for (unsigned index = 0; index < array_count(item_positions); ++index) {
+        item_positions[index].y = 36 * (index+0.75);
+    }
+
+    f32 offscreen_x = -240;
+    f32 final_x     = 40;
+
+    u32 blur_samples = 4;
+    f32 max_blur = 1.0;
+    f32 max_grayscale = 0.8;
+
+    f32 timescale = 1.34f;
+
+    switch (menu_state->animation_state) {
+        case UI_PAUSE_MENU_TRANSITION_IN: {
+            menu_state->transition_t   += dt * timescale;
+
+            for (unsigned index = 0; index < array_count(item_positions); ++index) {
+                item_positions[index].x = lerp_f32(offscreen_x, final_x, menu_state->transition_t);
+            }
+            
+            f32 fade_t = menu_state->transition_t;
+            if (editor_state->serialize_menu_mode) {
+                fade_t = 1;
+                editor_state->serialize_menu_t -= dt;
+            }
+
+            game_postprocess_blur(framebuffer, blur_samples, max_blur * fade_t, BLEND_MODE_ALPHA);
+            game_postprocess_grayscale(framebuffer, max_grayscale * fade_t);
+
+            if (menu_state->transition_t >= 1.0f) {
+                menu_state->animation_state += 1;
+                menu_state->transition_t = 0;
+
+                if (editor_state->serialize_menu_mode) {
+                    editor_state->serialize_menu_mode = 0;
+                }
+            }
+        } break;
+        case UI_PAUSE_MENU_NO_ANIM: {
+            switch (editor_state->serialize_menu_mode) {
+                case 0: { /* default state, default pause menu */
+                    for (unsigned index = 0; index < array_count(item_positions); ++index) {
+                        item_positions[index].x = final_x;
+                    }
+
+                    for (unsigned index = 0; index < array_count(item_positions); ++index) {
+                        if (index != menu_state->selection) {
+                            menu_state->shift_t[index] -= dt*4;
+                        }
+                    }
+                    menu_state->shift_t[menu_state->selection] += dt*4;
+                    for (unsigned index = 0; index < array_count(item_positions); ++index) {
+                        menu_state->shift_t[index] = clamp_f32(menu_state->shift_t[index], 0, 1);
+                    }
+
+                    if (is_key_pressed(KEY_ESCAPE)) {
+                        menu_state->animation_state = UI_PAUSE_MENU_TRANSITION_CLOSING;
+                        menu_state->transition_t = 0;
+                    }        
+
+                    if (is_key_down_with_repeat(KEY_DOWN)) {
+                        menu_state->selection++;
+                        if (menu_state->selection >= array_count(item_positions)) menu_state->selection = 0;
+                    }
+                    if (is_key_down_with_repeat(KEY_UP)) {
+                        menu_state->selection--;
+                        if (menu_state->selection < 0) menu_state->selection = array_count(item_positions)-1;
+                    }
+
+                    if (is_key_pressed(KEY_RETURN)) {
+                        switch (menu_state->selection) {
+                            case 0: {
+                                menu_state->animation_state = UI_PAUSE_MENU_TRANSITION_CLOSING;
+                                menu_state->transition_t = 0;
+                            } break;
+                            case 1: {
+                                /* who knows about this one */ 
+                                u8* data;
+                                u64 amount;
+
+                                struct binary_serializer serializer = open_write_memory_serializer();
+                                editor_serialize_area(&serializer);
+                                data = serializer_flatten_memory(&serializer, &amount);
+                                struct binary_serializer serializer1 = open_read_memory_serializer(data, amount);
+                                serialize_level_area(game_state, &serializer1, &game_state->loaded_area);
+                                serializer_finish(&serializer1);
+                                serializer_finish(&serializer);
+                                system_heap_memory_deallocate(data);
+
+                                game_state->in_editor = false;
+                                menu_state->animation_state = UI_PAUSE_MENU_TRANSITION_CLOSING;
+                                menu_state->transition_t    = 0;
+                            } break;
+                            case 2: {
+#if 0
+                                struct binary_serializer serializer = open_write_file_serializer(string_literal("edit.area"));
+                                editor_serialize_area(&serializer);
+                                serializer_finish(&serializer);
+#else
+                                menu_state->animation_state     = UI_PAUSE_MENU_TRANSITION_CLOSING;
+                                menu_state->transition_t        = 0;
+                                editor_state->serialize_menu_mode = 1;
+#endif
+                            } break;
+                            case 3: {
+#if 0
+                                struct binary_serializer serializer = open_read_file_serializer(string_literal("edit.area"));
+                                editor_serialize_area(&serializer);
+                                serializer_finish(&serializer);
+#else
+                                menu_state->animation_state     = UI_PAUSE_MENU_TRANSITION_CLOSING;
+                                menu_state->transition_t        = 0;
+                                editor_state->serialize_menu_mode = 2;
+#endif
+                            } break;
+                            case 4: {
+                            } break;
+                            case 5: {
+                                global_game_running = false;
+                            } break;
+                        }
+                    }
+                } break;
+                case 1:
+                case 2: {
+                    if (is_key_pressed(KEY_ESCAPE)) {
+                        menu_state->animation_state = UI_PAUSE_MENU_TRANSITION_IN;
+                        menu_state->transition_t = 0;
+                    }        
+
+                    for (unsigned index = 0; index < array_count(item_positions); ++index) {
+                        item_positions[index].x = -9999;
+                    }
+
+                    if (editor_state->serialize_menu_t < 1) {
+                        editor_state->serialize_menu_t += dt;
+                    }
+
+                    if (editor_state->serialize_menu_mode == 1) {
+                        
+                    }
+                } break;
+            }
+
+            game_postprocess_blur(framebuffer, blur_samples, max_blur, BLEND_MODE_ALPHA);
+            game_postprocess_grayscale(framebuffer, max_grayscale);
+        } break;
+        case UI_PAUSE_MENU_TRANSITION_CLOSING: {
+            menu_state->transition_t   += dt * timescale;
+
+            for (unsigned index = 0; index < array_count(item_positions); ++index) {
+                item_positions[index].x = lerp_f32(final_x, offscreen_x, menu_state->transition_t);
+            }
+
+            f32 fade_t = (1-menu_state->transition_t);
+            if (editor_state->serialize_menu_mode != 0) {
+                fade_t = (1);
+            }
+
+            game_postprocess_blur(framebuffer, blur_samples, max_blur * fade_t, BLEND_MODE_ALPHA);
+            game_postprocess_grayscale(framebuffer, max_grayscale * fade_t);
+
+            if (menu_state->transition_t >= 1.0f) {
+                menu_state->transition_t = 0;
+                if (editor_state->serialize_menu_mode != 0) {
+                    menu_state->animation_state = UI_PAUSE_MENU_NO_ANIM;
+                    editor_state->serialize_menu_t = 0;
+                } else {
+                    game_state_set_ui_state(game_state, state->last_ui_state);
+                }
+            }
+        } break;
+    }
+    
+    for (unsigned index = 0; index < array_count(item_positions); ++index) {
+        v2f32 draw_position = item_positions[index];
+        draw_position.x += lerp_f32(0, 20, menu_state->shift_t[index]);
+        draw_position.y += 220;
+        /* custom string drawing routine */
+        struct font_cache* font = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_STEEL]);
+        if (index == menu_state->selection) {
+            font = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_GOLD]);
+        }
+
+        for (unsigned character_index = 0; character_index < ui_pause_editor_menu_strings[index].length; ++character_index) {
+            f32 character_displacement_y = sinf((global_elapsed_time*2) + ((character_index+index) * 2381.2318)) * 3;
+
+            v2f32 glyph_position = draw_position;
+            glyph_position.y += character_displacement_y;
+            glyph_position.x += font->tile_width * font_scale * character_index;
+
+            software_framebuffer_draw_text(framebuffer, font, font_scale, glyph_position, string_slice(ui_pause_editor_menu_strings[index], character_index, character_index+1), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+        }
+    }
+
+    {
+        struct font_cache* font = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_STEEL]);
+        v2f32 draw_position = v2f32(0,0);
+        draw_position.x = lerp_f32(-200, 80, editor_state->serialize_menu_t);
+        switch (editor_state->serialize_menu_mode) {
+            case 1: {
+                software_framebuffer_draw_text(framebuffer, font, font_scale, draw_position, string_literal("SAVE GAME"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+                draw_position.y += font_scale * 12 * 3;
+                {
+                    char tmp_text[1024];
+                    snprintf(tmp_text, 1024, "SAVE AS: %s", editor_state->current_save_name);
+                    software_framebuffer_draw_text(framebuffer, font, font_scale, draw_position, string_from_cstring(tmp_text), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+                }
+            } break;
+            case 2: {
+                software_framebuffer_draw_text(framebuffer, font, font_scale, draw_position, string_literal("LOAD GAME"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+            } break;
+        }
+    }
+}
+
 /* Editor code will always be a little nasty lol */
 local void update_and_render_editor_game_menu_ui(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
     s32 mouse_location[2];
@@ -193,6 +421,7 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
         handle_editor_tool_mode_input(framebuffer);
     }
 
+    /* I refuse to code a UI library, unless *absolutely* necessary... Since the editor is the only part that requires this kind of standardized UI... */
     f32 y_cursor = 0;
     {
         software_framebuffer_draw_text(framebuffer,
@@ -221,10 +450,11 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
                 y_cursor += 12;
                 {
                     char tmp_text[1024]={};
-                    /* snprintf(tmp_text, 1024, "trigger type: %.*s", [editor_state->trigger_placement_type]); */
+                    snprintf(tmp_text, 1024, "trigger type: %.*s", trigger_placement_type_strings[editor_state->trigger_placement_type].length, trigger_placement_type_strings[editor_state->trigger_placement_type].data);
                     software_framebuffer_draw_text(framebuffer,
                                                    graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_GOLD]),
                                                    1, v2f32(0,y_cursor), string_from_cstring(tmp_text), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+                    /* specific trigger property menu: might require lots of buttons and stuff. */
                 }
             } break;
         }
