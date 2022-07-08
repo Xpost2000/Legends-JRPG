@@ -120,6 +120,7 @@ struct tile_data_definition {
     /* TODO implement 4 bit marching squares. Useful for graphics */
     struct autotile_table* autotile_info;
 };
+static s32 tile_table_data_count = 0;
 /* tiles.c */
 
 struct tile {

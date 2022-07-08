@@ -519,6 +519,8 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
         /* wrap_around_key_selection(KEY_LEFT, KEY_RIGHT, &editor_state->tool_mode, 0, EDITOR_TOOL_COUNT-1); */
         editor_state->tab_menu_open ^= TAB_MENU_OPEN_BIT;
         editor_state->tab_menu_open ^= TAB_MENU_SHIFT_BIT;
+    } else if (is_key_pressed(KEY_TAB)) {
+        editor_state->tab_menu_open ^= TAB_MENU_OPEN_BIT;
     } else {
         handle_editor_tool_mode_input(framebuffer);
     }
@@ -565,12 +567,12 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
     if (editor_state->tab_menu_open & TAB_MENU_OPEN_BIT) {
         software_framebuffer_draw_quad(framebuffer,
                                        rectangle_f32(0, 0, framebuffer->width, framebuffer->height),
-                                       color32u8(0,0,0,128), BLEND_MODE_ALPHA);
+                                       color32u8(0,0,0,200), BLEND_MODE_ALPHA);
         /* tool selector */
-        if (editor_state->tab_menu_open & TAB_MENU_SHIFT_BIT) {
-            struct font_cache* font             = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_STEEL]);
-            struct font_cache* highlighted_font = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_GOLD]);
+        struct font_cache* font             = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_STEEL]);
+        struct font_cache* highlighted_font = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_GOLD]);
 
+        if (editor_state->tab_menu_open & TAB_MENU_SHIFT_BIT) {
             f32 draw_cursor_y = 30;
             for (s32 index = 0; index < array_count(editor_tool_mode_strings)-1; ++index) {
                 if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 3, v2f32(100, draw_cursor_y), editor_tool_mode_strings[index])) {
@@ -580,11 +582,23 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
                 }
                 draw_cursor_y += 12 * 1.5 * 3;
             }
-        }
-        else if (editor_state->tab_menu_open & TAB_MENU_CTRL_BIT) {
+        } else if (editor_state->tab_menu_open & TAB_MENU_CTRL_BIT) {
                 
         } else {
-            
+            switch (editor_state->tool_mode) {
+                /* I would show images, but this is easier for now */
+                case EDITOR_TOOL_TILE_PAINTING: {
+                    f32 draw_cursor_y = 30;
+                    for (s32 index = 0; index < tile_table_data_count; ++index) {
+                        if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(16, draw_cursor_y), tile_table_data[index].name)) {
+                            editor_state->tab_menu_open    = 0;
+                            editor_state->painting_tile_id = index;
+                            break;
+                        }
+                        draw_cursor_y += 12 * 1.2 * 2;
+                    }
+                } break;
+            }
         }
     }
     /* not using render commands here. I can trivially figure out what order most things should be... */

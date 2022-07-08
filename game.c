@@ -195,6 +195,7 @@ static void initialize_static_table_data(void) {
 #undef insert 
 #undef AT_insert 
 #undef current_AT 
+    tile_table_data_count = i;
 }
 
 void game_initialize(void) {
