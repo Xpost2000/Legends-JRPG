@@ -249,6 +249,10 @@ struct editor_state {
         v2f32 initial_object_dimensions;
     } drag_data;
 
+    /* another context pointer. Use this for the ctrl-tab menu */
+    /* NOTE, might've introduced lots of buggies */
+    void* last_selected;
+
     /* also a cstring... Ughhhh */
     char current_save_name[128];
 };

@@ -107,6 +107,8 @@ void editor_remove_tile_at(v2f32 point_in_tilespace) {
 
         /* override */
         if (current_tile->x == where_x && current_tile->y == where_y) {
+            if (current_tile == editor_state->last_selected) editor_state->last_selected = 0;
+
             current_tile->id = 0;
             editor_state->tiles[index] = editor_state->tiles[--editor_state->tile_count];
             return;
@@ -137,6 +139,7 @@ void editor_place_tile_at(v2f32 point_in_tilespace) {
         /* override */
         if (current_tile->x == where_x && current_tile->y == where_y) {
             current_tile->id = editor_state->painting_tile_id;
+            editor_state->last_selected = current_tile;
             return;
         }
     }
@@ -145,6 +148,7 @@ void editor_place_tile_at(v2f32 point_in_tilespace) {
     new_tile->id = editor_state->painting_tile_id;
     new_tile->x  = where_x;
     new_tile->y  = where_y;
+    editor_state->last_selected = new_tile;
 }
 
 void editor_place_or_drag_level_transition_trigger(v2f32 point_in_tilespace) {
@@ -157,6 +161,7 @@ void editor_place_or_drag_level_transition_trigger(v2f32 point_in_tilespace) {
                 rectangle_f32(point_in_tilespace.x, point_in_tilespace.y, 0.25, 0.25)
             )) {
             /* TODO drag candidate */
+            editor_state->last_selected = current_trigger;
             return;
         }
     }
@@ -167,6 +172,7 @@ void editor_place_or_drag_level_transition_trigger(v2f32 point_in_tilespace) {
     new_transition_trigger->bounds.y = point_in_tilespace.y;
     new_transition_trigger->bounds.w = 1;
     new_transition_trigger->bounds.h = 1;
+    editor_state->last_selected      = new_transition_trigger;
 }
 
 local void handle_editor_tool_mode_input(struct software_framebuffer* framebuffer) {
@@ -215,7 +221,7 @@ local void handle_editor_tool_mode_input(struct software_framebuffer* framebuffe
             /* Consider making a visual menu for tile selection. Ought to be less painful.  */
             /* Mouse imo is way faster for level editting tiles than using the keyboard... */
             /* granted it's more programming, but it'll be worth it. */
-            wrap_around_key_selection(KEY_LEFT, KEY_RIGHT, &editor_state->painting_tile_id, 0, 2);
+            /* wrap_around_key_selection(KEY_LEFT, KEY_RIGHT, &editor_state->painting_tile_id, 0, 2); */
 
             if (left_clicked) {
                 editor_place_tile_at(tile_space_mouse_location);
@@ -230,7 +236,7 @@ local void handle_editor_tool_mode_input(struct software_framebuffer* framebuffe
             }
         } break;
         case EDITOR_TOOL_TRIGGER_PLACEMENT: {
-            wrap_around_key_selection(KEY_LEFT, KEY_RIGHT, &editor_state->trigger_placement_type, 0, 2);
+            /* wrap_around_key_selection(KEY_LEFT, KEY_RIGHT, &editor_state->trigger_placement_type, 0, 2); */
             if (left_clicked) {
                 editor_place_or_drag_level_transition_trigger(tile_space_mouse_location);
             } else if (right_clicked) {
@@ -559,7 +565,6 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
 
     /* Consider using tab + radial/fuzzy menu selection for this */
     if (is_key_down(KEY_SHIFT) && is_key_pressed(KEY_TAB)) {
-        /* wrap_around_key_selection(KEY_LEFT, KEY_RIGHT, &editor_state->tool_mode, 0, EDITOR_TOOL_COUNT-1); */
         editor_state->tab_menu_open ^= TAB_MENU_OPEN_BIT;
         editor_state->tab_menu_open ^= TAB_MENU_SHIFT_BIT;
     } else if (is_key_pressed(KEY_TAB)) {
@@ -621,6 +626,7 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
                 if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 3, v2f32(100, draw_cursor_y), editor_tool_mode_strings[index])) {
                     editor_state->tab_menu_open = 0;
                     editor_state->tool_mode     = index;
+                    editor_state->last_selected = 0;
                     break;
                 }
                 draw_cursor_y += 12 * 1.5 * 3;
