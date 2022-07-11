@@ -227,8 +227,8 @@ local void handle_rectangle_dragging_and_scaling(void) {
         /* when using shift you will write the changes! so be careful! */
         if (left_clicked) {
             /* NOTE this is not used yet because we don't have anything that is *not* grid aligned */
-            v2f32                 displacement_delta = v2f32_sub(editor_state->drag_data.initial_mouse_position,
-                                                 editor_state->drag_data.initial_object_position);
+            v2f32                 displacement_delta = v2f32_sub(v2f32_floor(editor_state->drag_data.initial_mouse_position),
+                                                                 editor_state->drag_data.initial_object_position);
             struct rectangle_f32* object_rectangle   = (struct rectangle_f32*) editor_state->drag_data.context;
 
             v2f32 mouse_position_in_tilespace_rounded = get_mouse_in_tile_space_integer(&editor_state->camera, 640, 480);
@@ -253,8 +253,11 @@ local void handle_rectangle_dragging_and_scaling(void) {
                 }
 #endif
             } else {
-                object_rectangle->x = mouse_position_in_tilespace_rounded.x;
-                object_rectangle->y = mouse_position_in_tilespace_rounded.y;
+                _debugprintf("<%f, %f> initial mpos", editor_state->drag_data.initial_mouse_position.x, editor_state->drag_data.initial_mouse_position.y);
+                _debugprintf("<%f, %f> initial obj pos", editor_state->drag_data.initial_object_position.x, editor_state->drag_data.initial_object_position.y);
+                _debugprintf("<%f, %f> displacement delta", displacement_delta.x, displacement_delta.y);
+                object_rectangle->x = mouse_position_in_tilespace_rounded.x - displacement_delta.x;
+                object_rectangle->y = mouse_position_in_tilespace_rounded.y - displacement_delta.y;
             }
         } else {
             editor_state->drag_data.context = 0;

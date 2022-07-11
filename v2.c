@@ -45,3 +45,7 @@ f32 v2f32_distance(v2f32 a, v2f32 b) {
 f32 v2f32_magnitude(v2f32 v) {
     return sqrtf(v2f32_magnitude_sq(v));
 }
+
+v2f32 v2f32_floor(v2f32 a) {
+    return v2f32(floorf(a.x), floorf(a.y));
+}
