@@ -46,7 +46,8 @@ struct entity_list entity_list_create(struct memory_arena* arena, s32 capacity);
 entity_id          entity_list_create_entity(struct entity_list* entities);
 struct entity*     entity_list_dereference_entity(struct entity_list* entities, entity_id id);
 
-void               entity_list_update_entities(struct entity_list* entities, f32 dt, struct level_area* area);
-void               entity_list_render_entities(struct entity_list* entities, struct graphics_assets* graphics_assets, struct render_commands* commands, f32 dt);
+void                 entity_list_update_entities(struct game_state* state, struct entity_list* entities, f32 dt, struct level_area* area);
+void                 entity_list_render_entities(struct entity_list* entities, struct graphics_assets* graphics_assets, struct render_commands* commands, f32 dt);
+struct rectangle_f32 entity_rectangle_collision_bounds(struct entity* entity);
 
 #endif

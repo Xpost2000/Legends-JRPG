@@ -83,7 +83,7 @@ entity_id entity_list_create_player(struct entity_list* entities, v2f32 position
 #include "entity.c"
 #include "weather.c"
 
-void serialize_level_area(struct game_state* state, struct binary_serializer* serializer, struct level_area* level) {
+void serialize_level_area(struct game_state* state, struct binary_serializer* serializer, struct level_area* level, bool use_default_spawn) {
     serialize_u32(serializer, &level->version);
     serialize_f32(serializer, &level->default_player_spawn.x);
     serialize_f32(serializer, &level->default_player_spawn.y);
@@ -94,9 +94,12 @@ void serialize_level_area(struct game_state* state, struct binary_serializer* se
     }
 
     /* until we have new area transititons or whatever. */
-    struct entity* player = entity_list_dereference_entity(&state->entities, player_id);
-    player->position.x             = level->default_player_spawn.x;
-    player->position.y             = level->default_player_spawn.y;
+    /* TODO dumb to assume only the player... but okay */
+    if (use_default_spawn) {
+        struct entity* player = entity_list_dereference_entity(&state->entities, player_id);
+        player->position.x             = level->default_player_spawn.x;
+        player->position.y             = level->default_player_spawn.y;
+    }
 }
 /* true - changed, false - same */
 bool game_state_set_ui_state(struct game_state* state, u32 new_ui_state) {
@@ -392,7 +395,7 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
 
         render_area(&commands, &game_state->loaded_area);
         if (game_state->ui_state != UI_STATE_PAUSE) {
-            entity_list_update_entities(&game_state->entities, dt, &game_state->loaded_area);
+            entity_list_update_entities(game_state,&game_state->entities, dt, &game_state->loaded_area);
             game_state->weather.timer += dt;
         }
 

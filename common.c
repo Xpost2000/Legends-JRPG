@@ -316,6 +316,13 @@ struct rectangle_s16 {
 #define RECTANGLE_S32_NULL rectangle_s32(0,0,0,0)
 #define RECTANGLE_S16_NULL rectangle_s16(0,0,0,0)
 
+struct rectangle_f32 rectangle_f32_scale(struct rectangle_f32 a, f32 k) {
+    a.x *= k;
+    a.y *= k;
+    a.w *= k;
+    a.h *= k;
+    return a;
+}
 bool rectangle_f32_intersect(struct rectangle_f32 a, struct rectangle_f32 b) {
     if (a.x < b.x + b.w && a.x + a.w > b.x &&
         a.y < b.y + b.h && a.y + a.h > b.y) {

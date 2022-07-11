@@ -274,6 +274,8 @@ struct editor_state {
 };
 
 #include "weather_def.c"
+
+struct game_state;
 #include "entities_def.c"
 
 struct game_state {

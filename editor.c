@@ -484,7 +484,7 @@ local void update_and_render_pause_editor_menu_ui(struct game_state* state, stru
                                 editor_serialize_area(&serializer);
                                 data = serializer_flatten_memory(&serializer, &amount);
                                 struct binary_serializer serializer1 = open_read_memory_serializer(data, amount);
-                                serialize_level_area(game_state, &serializer1, &game_state->loaded_area);
+                                serialize_level_area(game_state, &serializer1, &game_state->loaded_area, true);
                                 serializer_finish(&serializer1);
                                 serializer_finish(&serializer);
                                 system_heap_memory_deallocate(data);
@@ -665,8 +665,8 @@ local void update_and_render_pause_editor_menu_ui(struct game_state* state, stru
                                 } break;
                                 case 1: {
                                     struct binary_serializer serializer = open_read_file_serializer(string_concatenate(&scratch_arena, string_literal("areas/"), string_from_cstring(current_file->name)));
-                                    cstring_copy(current_file->name, editor_state->loaded_area_name, 128);
-                                    serialize_level_area(state, &serializer, &editor_state->loaded_area);
+                                    cstring_copy(current_file->name, editor_state->loaded_area_name, array_count(editor_state->loaded_area_name));
+                                    serialize_level_area(state, &serializer, &editor_state->loaded_area, true);
                                     serializer_finish(&serializer);
                                     editor_state->viewing_loaded_area = true;
                                 } break;
