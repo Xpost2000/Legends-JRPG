@@ -192,7 +192,7 @@ void game_initialize(void) {
     test_image          = graphics_assets_load_image(&graphics_assets, string_literal("./res/a.png"));
     brick_img           = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/brick.png"));
     grass_img           = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/grass.png"));
-    guy_img             = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/guy2.png"));
+    guy_img             = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/guy.png"));
     selection_sword_img = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/selection_sword.png"));
 
     for (unsigned index = 0; index < array_count(menu_font_variation_string_names); ++index) {
@@ -216,14 +216,18 @@ void game_deinitialize(void) {
 }
 
 local void update_and_render_ingame_game_menu_ui(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
-    if (is_key_pressed(KEY_ESCAPE)) {
-        game_state_set_ui_state(game_state, UI_STATE_PAUSE);
-        /* ready pause menu */
-        {
-            game_state->ui_pause.animation_state = 0;
-            game_state->ui_pause.transition_t    = 0;
-            game_state->ui_pause.selection       = 0;
-            zero_array(game_state->ui_pause.shift_t);
+    if (state->is_conversation_active) {
+        
+    } else {
+        if (is_key_pressed(KEY_ESCAPE)) {
+            game_state_set_ui_state(game_state, UI_STATE_PAUSE);
+            /* ready pause menu */
+            {
+                game_state->ui_pause.animation_state = 0;
+                game_state->ui_pause.transition_t    = 0;
+                game_state->ui_pause.selection       = 0;
+                zero_array(game_state->ui_pause.shift_t);
+            }
         }
     }
 }

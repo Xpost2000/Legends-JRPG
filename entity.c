@@ -53,8 +53,12 @@ struct entity* entity_list_dereference_entity(struct entity_list* entities, enti
 }
 
 /* requires tilemap world... */
-void entity_handle_player_controlled(struct entity_list* entities, s32 entity_index, f32 dt) {
+void entity_handle_player_controlled(struct game_state* state, struct entity_list* entities, s32 entity_index, f32 dt) {
     struct entity* entity = entities->entities + entity_index;
+
+    if (state->is_conversation_active) {
+        return;
+    }
 
     bool move_up    = is_key_down(KEY_UP);
     bool move_down  = is_key_down(KEY_DOWN);
@@ -102,7 +106,7 @@ void entity_list_update_entities(struct game_state* state, struct entity_list* e
         }
 
         if (current_entity->flags & ENTITY_FLAGS_PLAYER_CONTROLLED) {
-            entity_handle_player_controlled(entities, index, dt);
+            entity_handle_player_controlled(state, entities, index, dt);
         }
 
         if (!(current_entity->flags & ENTITY_FLAGS_NOCLIP)) {
@@ -193,8 +197,8 @@ void entity_list_render_entities(struct entity_list* entities, struct graphics_a
                                    graphics_assets_get_image_by_id(graphics_assets, guy_img),
                                    rectangle_f32(current_entity->position.x,
                                                  current_entity->position.y,
-                                                 current_entity->scale.x,
-                                                 current_entity->scale.y),
+                                                 16 * 2,
+                                                 32 * 2),
                                    RECTANGLE_F32_NULL, color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
     }
 }

@@ -140,29 +140,9 @@ struct tile {
     s16 y;
 };
 
-/* allow this to be associated to an actor */
-/* NOTE Does not allow conditional dialogue yet. */
-/* NOTE Does not allow anything to happen other than dialogue... */
-#define MAX_CONVERSATION_CHOICES (16)
-struct conversation_choice {
-    string text;
-    /* does not count bartering */
-    u32    target; /* 0 == END_CONVERSATION */
-};
-struct conversation_node {
-    image_id portrait;
-    string   speaker_name;
-    string   text;
-
-    struct conversation_choice choices[MAX_CONVERSATION_CHOICES];
-};
-/* simple? */
-struct conversation {
-    /* assume 0 is the start of the node always */
-    u16 node_count;
-    struct conversation_node* nodes;
-};
 /* END OF NOT CHECKED CODE */
+#include "conversation_def.c"
+
 #define CURRENT_LEVEL_AREA_VERSION (1)
 struct level_area {
     u32          version;
@@ -276,6 +256,7 @@ struct editor_state {
 #include "weather_def.c"
 
 struct game_state;
+
 #include "entities_def.c"
 
 struct game_state {
@@ -306,8 +287,12 @@ struct game_state {
         f32 shift_t[128];
     } ui_pause;
 
-    struct entity_list entities;
-    struct weather     weather;
+    struct entity_list  entities;
+    struct weather      weather;
+    /* fread into this */
+
+    bool                is_conversation_active;
+    struct conversation current_conversation;
 };
 
 local v2f32 get_mouse_in_world_space(struct camera* camera, s32 screen_width, s32 screen_height) {
