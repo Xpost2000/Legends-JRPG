@@ -93,9 +93,13 @@ bool EDITOR_imgui_button(struct software_framebuffer* framebuffer, struct font_c
 }
 /* little IMGUI  */
 
-void editor_clear_all(struct editor_state* state) {
+void editor_clear_all_allocations(struct editor_state* state) {
     state->tile_count                     = 0;
     state->trigger_level_transition_count = 0;
+}
+
+void editor_clear_all(struct editor_state* state) {
+    editor_clear_all_allocations(state);
 
     state->camera.xy       = v2f32(0,0);
     state->camera.zoom     = 1;
@@ -114,11 +118,18 @@ void editor_initialize(struct editor_state* state) {
 
 /* While I could use one serialization function. In the case the formats deviate slightly... */
 void editor_serialize_area(struct binary_serializer* serializer) {
+    if (serializer->mode == BINARY_SERIALIZER_READ)
+        editor_clear_all_allocations(editor_state);
+
     u32 version_id = CURRENT_LEVEL_AREA_VERSION;
     serialize_u32(serializer, &version_id);
     serialize_f32(serializer, &editor_state->default_player_spawn.x);
     serialize_f32(serializer, &editor_state->default_player_spawn.y);
     Serialize_Fixed_Array(serializer, s32, editor_state->tile_count, editor_state->tiles);
+
+    if (version_id >= 1) {
+        Serialize_Fixed_Array(serializer, s32, editor_state->trigger_level_transition_count, editor_state->trigger_level_transitions);
+    }
 }
 
 void editor_remove_tile_at(v2f32 point_in_tilespace) {
@@ -343,6 +354,7 @@ local void handle_editor_tool_mode_input(struct software_framebuffer* framebuffe
                     assertion(editor_state->last_selected);
                     struct trigger_level_transition* trigger = editor_state->last_selected;
                     cstring_copy(editor_state->loaded_area_name, trigger->target_level, 128);
+                    _debugprintf("\"%s\"", trigger->target_level);
 
                     s32 mouse_location[2];
                     get_mouse_location(mouse_location, mouse_location+1);
@@ -653,6 +665,7 @@ local void update_and_render_pause_editor_menu_ui(struct game_state* state, stru
                                 } break;
                                 case 1: {
                                     struct binary_serializer serializer = open_read_file_serializer(string_concatenate(&scratch_arena, string_literal("areas/"), string_from_cstring(current_file->name)));
+                                    cstring_copy(current_file->name, editor_state->loaded_area_name, 128);
                                     serialize_level_area(state, &serializer, &editor_state->loaded_area);
                                     serializer_finish(&serializer);
                                     editor_state->viewing_loaded_area = true;
@@ -782,7 +795,9 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
                     f32 draw_cursor_y = 30;
                     struct trigger_level_transition* trigger = editor_state->last_selected;
 
-                    if(EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(16, draw_cursor_y), string_literal("Set Level Trigger Transition Area"))) {
+                    char tmp_string[1024] = {};
+                    snprintf(tmp_string, 1024, "Transition Area: \"%s\" <%f, %f> (SET?)", trigger->target_level, trigger->spawn_location.x, trigger->spawn_location.y);
+                    if(EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(16, draw_cursor_y), string_from_cstring(tmp_string))) {
                         /* open another file selection menu */
                         editor_state->serialize_menu_mode   = 2;
                         editor_state->serialize_menu_reason = 1;

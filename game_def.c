@@ -163,13 +163,16 @@ struct conversation {
     struct conversation_node* nodes;
 };
 /* END OF NOT CHECKED CODE */
-#define CURRENT_LEVEL_AREA_VERSION (0)
+#define CURRENT_LEVEL_AREA_VERSION (1)
 struct level_area {
     u32          version;
     v2f32        default_player_spawn;
 
     s32          tile_count;
     struct tile* tiles;
+
+    s32 trigger_level_transition_count;
+    struct trigger_level_transition* trigger_level_transitions;
 };
 
 enum editor_tool_mode {

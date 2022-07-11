@@ -89,6 +89,10 @@ void serialize_level_area(struct game_state* state, struct binary_serializer* se
     serialize_f32(serializer, &level->default_player_spawn.y);
     Serialize_Fixed_Array_And_Allocate_From_Arena_Top(serializer, state->arena, s32, level->tile_count, level->tiles);
 
+    if (level->version >= 1) {
+        Serialize_Fixed_Array_And_Allocate_From_Arena_Top(serializer, state->arena, s32, level->trigger_level_transition_count, level->trigger_level_transitions);
+    }
+
     /* until we have new area transititons or whatever. */
     struct entity* player = entity_list_dereference_entity(&state->entities, player_id);
     player->position.x             = level->default_player_spawn.x;
