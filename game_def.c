@@ -282,7 +282,7 @@ struct game_state {
     struct ui_pause_menu {
         u8  animation_state; /* 0 = OPENING, 1 = NONE, 2 = CLOSING */
         f32 transition_t;
-        s16 selection;
+        s32 selection;
         /* reserved space */
         f32 shift_t[128];
     } ui_pause;
@@ -291,8 +291,13 @@ struct game_state {
     struct weather      weather;
     /* fread into this */
 
+    /* I am a fan of animation, so we need to animate this. Even though it causes */
+    /* state nightmares for me. */
     bool                is_conversation_active;
+    bool                viewing_dialogue_choices;
     struct conversation current_conversation;
+    u32                 current_conversation_node_id;
+    s32                 currently_selected_dialogue_choice;
 };
 
 local v2f32 get_mouse_in_world_space(struct camera* camera, s32 screen_width, s32 screen_height) {
@@ -309,5 +314,16 @@ local v2f32 get_mouse_in_tile_space_integer(struct camera* camera, s32 screen_wi
     return v2f32(floorf(tile_space_f32.x), floorf(tile_space_f32.y));
 }
 
+local void wrap_around_key_selection(s32 decrease_key, s32 increase_key, s32* pointer, s32 min, s32 max) {
+    if (is_key_pressed(decrease_key)) {
+        *pointer -= 1;
+        if (*pointer < min)
+            *pointer = max-1;
+    } else if (is_key_pressed(increase_key)) {
+        *pointer += 1;
+        if (*pointer >= max)
+            *pointer = min;
+    }
+}
 
 #endif

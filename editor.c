@@ -24,17 +24,6 @@
    
    We'll only have level transitions right now, so I might not really get to show that off...
 */
-local void wrap_around_key_selection(s32 decrease_key, s32 increase_key, s32* pointer, s32 min, s32 max) {
-    if (is_key_pressed(decrease_key)) {
-        *pointer -= 1;
-        if (*pointer < min)
-            *pointer = max-1;
-    } else if (is_key_pressed(increase_key)) {
-        *pointer += 1;
-        if (*pointer >= max)
-            *pointer = min;
-    }
-}
 
 local bool is_dragging(void) {
     return editor_state->drag_data.context != NULL;
@@ -460,14 +449,7 @@ local void update_and_render_pause_editor_menu_ui(struct game_state* state, stru
                         }
                     }        
 
-                    if (is_key_down_with_repeat(KEY_DOWN)) {
-                        menu_state->selection++;
-                        if (menu_state->selection >= array_count(item_positions)) menu_state->selection = 0;
-                    }
-                    if (is_key_down_with_repeat(KEY_UP)) {
-                        menu_state->selection--;
-                        if (menu_state->selection < 0) menu_state->selection = array_count(item_positions)-1;
-                    }
+                    wrap_around_key_selection(KEY_UP, KEY_DOWN, &menu_state->selection, 0, array_count(item_positions));
 
                     if (is_key_pressed(KEY_RETURN)) {
                         switch (menu_state->selection) {
