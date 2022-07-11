@@ -15,6 +15,7 @@
 #define assertion(x) assert(x)
 #define unimplemented(x) assertion(false && x);
 #define bad_case         default: { unimplemented ("no case"); } break
+#define invalid_cases()  bad_case
 #define array_count(x) (sizeof(x)/sizeof(x[0]))
 #define local    static
 #define internal static

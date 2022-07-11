@@ -162,3 +162,10 @@ bool controller_any_button_down(struct game_controller* controller) {
 
     return false;
 }
+
+v2f32 mouse_location(void) {
+    s32 mouse_positions[2];
+    get_mouse_location(mouse_positions, mouse_positions+1);
+
+    return v2f32(mouse_positions[0], mouse_positions[1]);
+}

@@ -302,4 +302,19 @@ struct game_state {
     struct weather     weather;
 };
 
-#endif GAME_DEF_C
+local v2f32 get_mouse_in_world_space(struct camera* camera, s32 screen_width, s32 screen_height) {
+    return camera_project(camera, mouse_location(), screen_width, screen_height);
+}
+
+local v2f32 get_mouse_in_tile_space(struct camera* camera, s32 screen_width, s32 screen_height) {
+    v2f32 world_space = get_mouse_in_world_space(camera, screen_width, screen_height);
+    return v2f32(world_space.x / TILE_UNIT_SIZE, world_space.y / TILE_UNIT_SIZE);
+}
+
+local v2f32 get_mouse_in_tile_space_integer(struct camera* camera, s32 screen_width, s32 screen_height) {
+    v2f32 tile_space_f32 = get_mouse_in_tile_space(camera, screen_width, screen_height); 
+    return v2f32(floorf(tile_space_f32.x), floorf(tile_space_f32.y));
+}
+
+
+#endif

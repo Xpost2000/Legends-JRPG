@@ -83,3 +83,35 @@ void weather_render_snow(struct game_state* state, struct software_framebuffer* 
         software_framebuffer_draw_line(framebuffer, current_position, v2f32_add(current_position, v2f32(0, 2)), color32u8(255, 255, 255, 255), BLEND_MODE_ALPHA);
     }
 }
+
+void do_weather(struct software_framebuffer* framebuffer, struct game_state* state, f32 dt) {
+    {
+        if (Get_Bit(state->weather.features, WEATHER_RAIN)) {
+            /* 
+               TODO
+               falling lines
+            */
+            weather_render_rain(state, framebuffer, dt);
+        }
+        if (Get_Bit(state->weather.features, WEATHER_SNOW)) {
+            /* 
+               TODO
+               falling pixels, that sprinkle.
+            */
+            weather_render_snow(state, framebuffer, dt);
+        }
+        if (Get_Bit(state->weather.features, WEATHER_FOGGY)) {
+            /*           
+                         TODO
+                         Fog, Too lazy to do stuff for that right now, but I suspect lots of gradients may help
+            */       
+        }
+        if (Get_Bit(state->weather.features, WEATHER_STORMY)) {
+                
+            /* 
+               TODO
+               requires sound
+            */
+        }
+    }
+}

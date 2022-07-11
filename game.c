@@ -9,15 +9,6 @@ static struct memory_arena editor_arena = {};
 
 image_id test_image;
 
-int DEBUG_tilemap[6][6] = {
-    1,1,1,1,1,1,
-    1,0,1,0,1,1,
-    1,0,0,0,0,1,
-    1,0,1,0,1,1,
-    1,0,1,0,0,1,
-    1,1,1,1,1,1,
-};
-
 /* using GNSH fonts, which are public domain, but credits to open game art, this font looks cool */
 enum menu_font_variation {
     MENU_FONT_COLOR_GOLD,
@@ -50,24 +41,6 @@ image_id brick_img;
 image_id grass_img;
 image_id guy_img;
 image_id selection_sword_img;
-
-void DEBUG_render_tilemap(struct render_commands* commands, int* tilemap, s32 w, s32 h) {
-    for (s32 y =0; y < h; ++y) {
-        for (s32 x = 0; x < w; ++x) {
-            image_id tex = brick_img;
-            if (tilemap[y * w + x] == 0) tex = grass_img;
-            render_commands_push_image(commands,
-                                       graphics_assets_get_image_by_id(&graphics_assets, tex),
-                                       rectangle_f32(x * TILE_UNIT_SIZE,
-                                                     y * TILE_UNIT_SIZE,
-                                                     TILE_UNIT_SIZE,
-                                                     TILE_UNIT_SIZE),
-                                       RECTANGLE_F32_NULL, color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
-
-        }
-    }
-}
-
 
 struct tile_data_definition* tile_table_data;
 struct autotile_table*       auto_tile_info;
@@ -413,7 +386,6 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
         commands.should_clear_buffer = true;
         commands.clear_buffer_color  = color32u8(0, 0, 0, 255);
 
-        /* DEBUG_render_tilemap(&commands, DEBUG_tilemap, 6, 6); */
         render_area(&commands, &game_state->loaded_area);
         if (game_state->ui_state != UI_STATE_PAUSE) {
             entity_list_update_entities(&game_state->entities, dt, &game_state->loaded_area);
@@ -429,6 +401,7 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
            I can chew so I can actually have something to play...
            
         */
+#if 0
         if (is_key_pressed(KEY_E)) {
             if (weather_any_active(game_state)) {
                 weather_clear(game_state);
@@ -443,36 +416,9 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                 weather_start_snow(game_state);
             }
         }
-
-        {
-            if (Get_Bit(game_state->weather.features, WEATHER_RAIN)) {
-                /* 
-                   TODO
-                   falling lines
-                */
-                weather_render_rain(game_state, framebuffer, dt);
-            }
-            if (Get_Bit(game_state->weather.features, WEATHER_SNOW)) {
-                /* 
-                   TODO
-                   falling pixels, that sprinkle.
-                */
-                weather_render_snow(game_state, framebuffer, dt);
-            }
-            if (Get_Bit(game_state->weather.features, WEATHER_FOGGY)) {
-                /*           
-                  TODO
-                  Fog, Too lazy to do stuff for that right now, but I suspect lots of gradients may help
-                */       
-            }
-            if (Get_Bit(game_state->weather.features, WEATHER_STORMY)) {
-                
-                /* 
-                   TODO
-                   requires sound
-                */
-            }
-        }
+#endif
     }
+
+    do_weather(framebuffer, game_state, dt);
     update_and_render_game_menu_ui(game_state, framebuffer, dt);
 }

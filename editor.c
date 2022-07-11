@@ -153,28 +153,39 @@ void editor_place_tile_at(v2f32 point_in_tilespace) {
 
 void editor_place_or_drag_level_transition_trigger(v2f32 point_in_tilespace) {
     /* SHIFT TO RESIZE, otherwise mouse drag will just drag! Also the shift is applied prior to drag state! */
-    for (s32 index = 0; index < editor_state->trigger_level_transition_count; ++index) {
-        struct trigger_level_transition* current_trigger = editor_state->trigger_level_transitions + index;
+    if (editor_state->last_selected) {
+        /* since switching modes removes the last selected I can assume that last selected is a fellow level trigger */
+        struct trigger_level_transition* selected_trigger = (struct trigger_level_transition*) editor_state->last_selected;
 
-        if (rectangle_f32_intersect(
-                current_trigger->bounds,
-                rectangle_f32(point_in_tilespace.x, point_in_tilespace.y, 0.25, 0.25)
-            )) {
-            /* TODO drag candidate */
-            editor_state->last_selected = current_trigger;
-            return;
+    } else {
+        for (s32 index = 0; index < editor_state->trigger_level_transition_count; ++index) {
+            struct trigger_level_transition* current_trigger = editor_state->trigger_level_transitions + index;
+
+            if (rectangle_f32_intersect(
+                    current_trigger->bounds,
+                    rectangle_f32(point_in_tilespace.x, point_in_tilespace.y, 0.25, 0.25)
+                )) {
+                /* TODO drag candidate */
+                editor_state->last_selected = current_trigger;
+                return;
+            }
         }
-    }
 
-    /* otherwise no touch, place a new one at default size 1 1 */
-    struct trigger_level_transition* new_transition_trigger = &editor_state->trigger_level_transitions[editor_state->trigger_level_transition_count++];
-    new_transition_trigger->bounds.x = point_in_tilespace.x;
-    new_transition_trigger->bounds.y = point_in_tilespace.y;
-    new_transition_trigger->bounds.w = 1;
-    new_transition_trigger->bounds.h = 1;
-    editor_state->last_selected      = new_transition_trigger;
+
+        /* otherwise no touch, place a new one at default size 1 1 */
+        struct trigger_level_transition* new_transition_trigger = &editor_state->trigger_level_transitions[editor_state->trigger_level_transition_count++];
+        new_transition_trigger->bounds.x = point_in_tilespace.x;
+        new_transition_trigger->bounds.y = point_in_tilespace.y;
+        new_transition_trigger->bounds.w = 1;
+        new_transition_trigger->bounds.h = 1;
+        editor_state->last_selected      = new_transition_trigger;
+    }
 }
 
+/* hopefully I never need to unproject. */
+/* I mean I just do the reverse of my projection so it's okay I guess... */
+
+/* camera should know the world dimensions but okay */
 local void handle_editor_tool_mode_input(struct software_framebuffer* framebuffer) {
     bool left_clicked   = 0;
     bool right_clicked  = 0;
@@ -187,6 +198,7 @@ local void handle_editor_tool_mode_input(struct software_framebuffer* framebuffe
                           &right_clicked);
     }
 
+    /* refactor later */
     s32 mouse_location[2];
     get_mouse_location(mouse_location, mouse_location+1);
 
