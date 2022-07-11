@@ -75,6 +75,8 @@ void handle_entity_level_trigger_interactions(struct game_state* state, struct e
 
     for (s32 index = 0; index < trigger_level_transition_count; ++index) {
         struct trigger_level_transition* current_trigger = trigger_level_transitions + index;
+        v2f32 spawn_location       = current_trigger->spawn_location;
+        u8    new_facing_direction = current_trigger->new_facing_direction;
 
         struct rectangle_f32 entity_collision_bounds = rectangle_f32_scale(entity_rectangle_collision_bounds(entity), 1.0/TILE_UNIT_SIZE);
         if (rectangle_f32_intersect(current_trigger->bounds, entity_collision_bounds)) {
@@ -82,8 +84,8 @@ void handle_entity_level_trigger_interactions(struct game_state* state, struct e
             struct binary_serializer serializer = open_read_file_serializer(string_concatenate(&scratch_arena, string_literal("areas/"), string_from_cstring(current_trigger->target_level)));
             serialize_level_area(state, &serializer, &state->loaded_area, false);
             /* NOTE entity positions are in pixels still.... */
-            entity->position.x = current_trigger->spawn_location.x * TILE_UNIT_SIZE;
-            entity->position.y = current_trigger->spawn_location.y * TILE_UNIT_SIZE;
+            entity->position.x = spawn_location.x * TILE_UNIT_SIZE;
+            entity->position.y = spawn_location.y * TILE_UNIT_SIZE;
 
             return;
         }
