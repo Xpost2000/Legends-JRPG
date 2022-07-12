@@ -1,0 +1,85 @@
+This will probably cover like 3 hours at least.
+(NOTE I'm looking to cover the simplest version of all these things, I probably should've recorded this but, whatever.
+I'll obviously question why these things are not more complicated and come back to do them later)
+
+Given how slow I am at typing realistically this can cover way more...
+
+Honestly I just have to remember to finish these things lol
+
+TODO find a good 16:9 and 16:10 reference resolution to use for rendering when
+we have those resolutions so that will we don't exclude modern devices. Also just
+for completeness since some people may not want to play in 4:3.
+
+They will always still be low resolution, and I don't really want letter-boxing. It just doesn't
+suit 2D games.
+
+Order of Work:
+This is for now what is planned for next week. If I finish some of these
+things. Add more!
+
+Obviously we're going to come back and iterate on the things that I've
+set here, but we're just putting them in the state we need them to be.
+
+- Smooth Camera (not bounded yet. Just smooth movement)
+- Text Prompt
+- Level Editor (see section)
+- Dialogue
+  (for my current sanity, we'll hold off on writing an editor),
+  (and just write a code API for generating the files. Basically just have a generate
+  dialogues source file and do that...)
+- Main Menu?! (holder)
+- NPC entities?! (These guys should be able to persist. I don't know if I want them to move across maps yet though.)
+
+** UI
+   Text prompt! (normal kind for now since we need it for the editor)
+
+** Basic Menu System?!
+      - main menu
+
+** Level Editor
+   - Level Transitions
+   - Better movement ergonomics
+   - Zoom!
+   - (When we have more tilesets, have a better way to change tiles.)
+   - Better Mode Selection
+     - Sub modes!
+   
+** Game World Navigation
+   This is the stuff I want to finish today,
+   with the simple requirements that is.
+
+   Rain Storms and snow would be nice too.
+   
+   - Tilemap level transitions.
+   - Smooth camera.
+
+** RPG Mechanics
+   - Dialogue system!
+     I do want to support western RPG systems however I have to take into account,
+     I'm deliberately forcing a low resolution, since it's literally part of my vision.
+
+     Also this gives me an excuse to use fixed size arrays, which are very simple and don't make
+     me want to shoot myself. Even with std::vector it still makes me want to shoot myself. (And that's
+     supposed to make flexibly sized arrays easier!)
+
+     It'll for all intents and purposes be as complicated as a CRPGs' dialogue system. While I would prefer Morrowind's
+     wiki style format (I find it to be quite interesting and almost natural in a weird way, I need this game to be good with
+     controller first and foremost since it's designed like an RPG maker game. I know Morrowind had an Xbox port but idk.)
+     
+** Figure out artstyle
+** World Exploration Mechanics 
+   - Doors!
+   - Remote Activation / Switches!
+** Extra?
+     - Time of Day lighting
+       Doesn't affect gameplay yet.
+       (since there isn't any yet??)
+
+     - Testing weather effects
+     - Stormy!
+     - Maybe make the weather look nicer
+
+** Combat Mechanics
+     - Figure out combat turns quick
+       - add sprite highlighting for quick visuals?
+       - obviously a light menu system for combat itself.

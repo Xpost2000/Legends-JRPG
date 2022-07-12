@@ -179,7 +179,7 @@ static void initialize_static_table_data(void) {
 }
 
 void game_initialize(void) {
-    game_arena   = memory_arena_create_from_heap("Game Memory", Megabyte(16));
+    game_arena   = memory_arena_create_from_heap("Game Memory", Megabyte(32));
     editor_arena = memory_arena_create_from_heap("Editor Memory", Megabyte(32));
 
     game_state = memory_arena_push(&game_arena, sizeof(*game_state));
@@ -192,7 +192,7 @@ void game_initialize(void) {
     test_image          = graphics_assets_load_image(&graphics_assets, string_literal("./res/a.png"));
     brick_img           = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/brick.png"));
     grass_img           = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/grass.png"));
-    guy_img             = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/guy.png"));
+    guy_img             = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/guy3.png"));
     selection_sword_img = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/selection_sword.png"));
 
     for (unsigned index = 0; index < array_count(menu_font_variation_string_names); ++index) {
@@ -200,7 +200,7 @@ void game_initialize(void) {
         menu_fonts[index] = graphics_assets_load_bitmap_font(&graphics_assets, current, 5, 12, 5, 20);
     }
 
-    game_state->entities = entity_list_create(&game_arena, 1024);
+    game_state->entities = entity_list_create(&game_arena, 16384);
     player_id = entity_list_create_player(&game_state->entities, v2f32(70, 70));
 
     editor_state                = memory_arena_push(&editor_arena, sizeof(*editor_state));
