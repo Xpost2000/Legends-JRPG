@@ -481,8 +481,36 @@ local void update_game_camera(struct game_state* state, f32 dt) {
     camera->tracking_xy = player->position;
 
     /* TODO hard coded */
-    camera->xy.x = camera->tracking_xy.x + 16;
-    camera->xy.y = camera->tracking_xy.y + 32;
+    {
+        static bool camera_init = false;
+        if (!camera_init) {
+            camera->xy.x = camera->tracking_xy.x + 16;
+            camera->xy.y = camera->tracking_xy.y + 32;
+            camera_init  = true;
+        }
+    }
+    {
+        /* kind of like a project on everythign */
+        v2f32                projected_rectangle_position = camera_project(camera, v2f32(camera->travel_bounds.x, camera->travel_bounds.y),
+                                                            640, 480);
+        struct rectangle_f32 projected_rectangle          = rectangle_f32(projected_rectangle_position.x, projected_rectangle_position.y,
+                                                                 camera->travel_bounds.w * camera->zoom, camera->travel_bounds.h * camera->zoom);
+        struct rectangle_f32 player_rectangle             = entity_rectangle_collision_bounds(player);
+
+        if (player_rectangle.x < projected_rectangle.x) {
+            _debugprintf("bounding on left edge!");
+        } else if (player_rectangle.x + player_rectangle.w > projected_rectangle.x + projected_rectangle.w) {
+            _debugprintf("bounding on right edge!") ;
+        }
+
+        if (player_rectangle.y < projected_rectangle.y) {
+            _debugprintf("bounding on top edge!");
+        } else if (player_rectangle.y + player_rectangle.h > projected_rectangle.y + projected_rectangle.h) {
+            _debugprintf("bounding on bottom edge!");
+        }
+    }
+    /* camera->xy.x = camera->tracking_xy.x + 16; */
+    /* camera->xy.y = camera->tracking_xy.y + 32; */
 }
 
 void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
