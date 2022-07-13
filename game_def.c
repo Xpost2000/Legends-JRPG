@@ -323,6 +323,7 @@ struct game_state {
     struct camera camera;
 
     struct ui_pause_menu ui_pause;
+    struct ui_sub_menu_inventory ui_inventory;
 
     struct player_party_inventory inventory;
     struct entity_list  entities;

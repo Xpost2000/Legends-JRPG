@@ -26,10 +26,19 @@ struct item_instance {
 enum item_flags {
     ITEM_NO_FLAGS = 0,
 };
+enum item_type {
+    ITEM_TYPE_MISC,
+    ITEM_TYPE_CONSUMABLE_ITEM, /* party members & player */
+};
+
 struct item_def {
     string id_name;
     string name;
     string description;
+
+    s32 type;
+
+    s32 health_restoration_value;
 
     s32 flags;
     s32 max_stack_value;
@@ -38,14 +47,31 @@ struct item_def {
     /* 
        I could make a mini DSL to apply some script effects...
        Would allow for items to be described in files... But idk yet.
+       
+       Have to expose lots of things to a lisp DSL I guess...
     */
+    /* ironically a script usage file might be "cheaper?" */
 };
 
 #define MAX_ITEMS_DATABASE_SIZE (8192)
 static struct item_def item_database[MAX_ITEMS_DATABASE_SIZE] = {};
 
 static void initialize_items_database(void) {
-    
+    item_database[0].id_name                  = string_literal("item_trout_fish_5");
+    item_database[0].name                     = string_literal("Dead Trout(?)");
+    item_database[0].description              = string_literal("I found this at the bottom of the river. Still edible.");
+    item_database[0].type                     = ITEM_TYPE_CONSUMABLE_ITEM;
+    item_database[0].health_restoration_value = 5;
+    item_database[0].gold_value               = 5;
+    item_database[0].max_stack_value          = 20;
+
+    item_database[1].id_name                  = string_literal("item_sardine_fish_5");
+    item_database[1].name                     = string_literal("Dead Sardine(?)");
+    item_database[1].description              = string_literal("... Something about rule number one...");
+    item_database[1].type                     = ITEM_TYPE_CONSUMABLE_ITEM;
+    item_database[1].health_restoration_value = 5;
+    item_database[1].gold_value               = 5;
+    item_database[1].max_stack_value          = 20;
 }
 
 static struct item_def* item_database_find_by_id(item_id id) {
@@ -72,7 +98,11 @@ static bool verify_no_item_id_name_hash_collisions(void) {
             continue;
         }
 
-        for (unsigned j = 0; j < MAX_ITEMS_DATABASE_SIZE; ++j) {
+        for (unsigned j = i; j < MAX_ITEMS_DATABASE_SIZE; ++j) {
+            if (i == j) {
+                continue;
+            }
+            
             string second = item_database[j].id_name;
 
             if (second.length <= 0) {

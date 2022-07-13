@@ -218,6 +218,11 @@ void game_initialize(void) {
     initialize_items_database();
     assertion(verify_no_item_id_name_hash_collisions());
 
+    entity_inventory_add((struct entity_inventory*)&game_state->inventory, MAX_PARTY_ITEMS, item_id_make(string_literal("item_trout_fish_5")));
+    entity_inventory_add((struct entity_inventory*)&game_state->inventory, MAX_PARTY_ITEMS, item_id_make(string_literal("item_trout_fish_5")));
+    entity_inventory_add((struct entity_inventory*)&game_state->inventory, MAX_PARTY_ITEMS, item_id_make(string_literal("item_trout_fish_5")));
+    entity_inventory_add((struct entity_inventory*)&game_state->inventory, MAX_PARTY_ITEMS, item_id_make(string_literal("item_sardine_fish_5")));
+
 #if 0
     {
         struct conversation s = {};
@@ -335,11 +340,47 @@ local void update_and_render_sub_menu_states(struct game_state* state, struct so
             menu_state->transition_t = 0;
         } break;
         case UI_PAUSE_MENU_SUB_MENU_STATE_INVENTORY: {
-            _debugprintf("inventory not done!");
-            menu_state->animation_state     = UI_PAUSE_MENU_TRANSITION_IN;
-            menu_state->last_sub_menu_state = menu_state->sub_menu_state;
-            menu_state->sub_menu_state      = UI_PAUSE_MENU_SUB_MENU_STATE_NONE;
-            menu_state->transition_t = 0;
+            /* for now this inventory is just going to be flat. Simple display with item selection. */
+            /* TODO no item usage yet. */
+            /* I need functionality quick cause animation takes a while to code. */
+            software_framebuffer_draw_quad(framebuffer, rectangle_f32(100, 100, 400, 300), color32u8(0,0,255, 190), BLEND_MODE_ALPHA);
+
+
+            struct entity_inventory* inventory = (struct entity_inventory*)&state->inventory;
+
+            f32 y_cursor = 110;
+            f32 item_font_scale = 2;
+            struct font_cache* font = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_YELLOW]);
+            struct font_cache* font2 = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_GOLD]);
+
+            wrap_around_key_selection(KEY_UP, KEY_DOWN, &state->ui_inventory.selection_item_list, 0, inventory->count);
+
+            if (is_key_pressed(KEY_ESCAPE)) {
+                menu_state->animation_state     = UI_PAUSE_MENU_TRANSITION_IN;
+                menu_state->last_sub_menu_state = menu_state->sub_menu_state;
+                menu_state->sub_menu_state      = UI_PAUSE_MENU_SUB_MENU_STATE_NONE;
+                menu_state->transition_t = 0;
+            }
+
+            for (unsigned index = 0; index < inventory->count; ++index) {
+                struct item_def* item = item_database_find_by_id(inventory->items[index].item);
+                if (index == state->ui_inventory.selection_item_list) {
+                    software_framebuffer_draw_text(framebuffer, font2, item_font_scale, v2f32(110, y_cursor), item->name, color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+                } else {
+                    software_framebuffer_draw_text(framebuffer, font, item_font_scale, v2f32(110, y_cursor), item->name, color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+                }
+
+                char tmp[255] = {};
+                snprintf(tmp,255,"x%d/%d", inventory->items[index].count, item->max_stack_value);
+                software_framebuffer_draw_text(framebuffer, font2, item_font_scale, v2f32(350, y_cursor), string_from_cstring(tmp), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+                y_cursor += item_font_scale * 16;
+            }
+
+            /* _debugprintf("inventory not done!"); */
+            /* menu_state->animation_state     = UI_PAUSE_MENU_TRANSITION_IN; */
+            /* menu_state->last_sub_menu_state = menu_state->sub_menu_state; */
+            /* menu_state->sub_menu_state      = UI_PAUSE_MENU_SUB_MENU_STATE_NONE; */
+            /* menu_state->transition_t = 0; */
         } break;
     }
 }

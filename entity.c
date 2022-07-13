@@ -204,19 +204,21 @@ void entity_list_render_entities(struct entity_list* entities, struct graphics_a
 }
 
 void entity_inventory_add(struct entity_inventory* inventory, s32 limits, item_id item) {
-    if (inventory->count < limits) {
-        struct item_def* item_base = item_database_find_by_id(item);
+    struct item_def* item_base = item_database_find_by_id(item);
 
-        if (!item_base)
-            return;
+    if (!item_base)
+        return;
 
-        for (unsigned index = 0; index < inventory->count; ++index) {
+    for (unsigned index = 0; index < inventory->count; ++index) {
+        if (inventory->items[index].item.id_hash == item.id_hash) {
             if (inventory->items[index].count < item_base->max_stack_value) {
                 inventory->items[index].count++;
                 return;
             }
         }
+    }
 
+    if (inventory->count < limits) {
         inventory->items[inventory->count].item     = item;
         inventory->items[inventory->count++].count += 1;
     }
