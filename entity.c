@@ -202,3 +202,22 @@ void entity_list_render_entities(struct entity_list* entities, struct graphics_a
                                    RECTANGLE_F32_NULL, color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
     }
 }
+
+void entity_inventory_add(struct entity_inventory* inventory, s32 limits, item_id item) {
+    if (inventory->count < limits) {
+        struct item_def* item_base = item_database_find_by_id(item);
+
+        if (!item_base)
+            return;
+
+        for (unsigned index = 0; index < inventory->count; ++index) {
+            if (inventory->items[index].count < item_base->max_stack_value) {
+                inventory->items[index].count++;
+                return;
+            }
+        }
+
+        inventory->items[inventory->count].item     = item;
+        inventory->items[inventory->count++].count += 1;
+    }
+}

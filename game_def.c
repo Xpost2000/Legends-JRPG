@@ -297,6 +297,17 @@ struct ui_pause_menu {
     f32 shift_t[128];
 };
 
+enum ui_sub_menu_inventory_cursor_region {
+    UI_SUB_MENU_INVENTORY_CURSOR_REGION_FILTER,
+    UI_SUB_MENU_INVENTORY_CURSOR_REGION_ITEM_LIST,
+};
+/* animating this going to be a bitch later... It always is anyways... */
+struct ui_sub_menu_inventory {
+    s32 cursor_region;
+    s32 selection_filter;
+    s32 selection_item_list;
+};
+
 struct game_state {
     struct memory_arena* arena;
 

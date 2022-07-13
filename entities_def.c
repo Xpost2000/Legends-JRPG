@@ -28,11 +28,15 @@ struct player_party_inventory {
 };
 
 /* NOTE for AI use in combat? */
-#define MAX_ACTOR_AVALIABLE_ITEMS (4)
+#define MAX_ACTOR_AVALIABLE_ITEMS (8)
 struct entity_actor_inventory {
     s32           item_count;
     struct item_instance items[MAX_ACTOR_AVALIABLE_ITEMS];
 };
+
+/* both types above cast into this, and hopefully decay correctly without exploding */
+struct entity_inventory{s32 count; struct item_instance items[1];};
+void entity_inventory_add(struct entity_inventory* inventory, s32 limits, item_id item);
 
 /* assume only player/npc style entity for now */
 /* so every entity is really just a guy. We don't care about anything else at the moment. */
