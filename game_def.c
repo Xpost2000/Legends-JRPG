@@ -23,6 +23,7 @@ static string ui_state_strings[] = {
 static string ui_pause_menu_strings[] = {
     string_literal("RESUME"),
     string_literal("PARTY"),
+    string_literal("ITEMS"),
     string_literal("OPTIONS"),
     string_literal("QUIT"),
 };
@@ -260,6 +261,42 @@ struct game_state;
 #include "item_def.c"
 #include "entities_def.c"
 
+enum ui_pause_menu_animation_state{
+    UI_PAUSE_MENU_TRANSITION_IN,
+    UI_PAUSE_MENU_NO_ANIM,
+    UI_PAUSE_MENU_TRANSITION_CLOSING,
+};
+
+/* 
+   check this when doing the transitions,
+       
+   Afterwards we have to hand over control to the sub menu states...
+   It was either this or spend more weeks making a more elaborate UI system...
+       
+   I'd rather just tangle this jungle of complexity now I guess.
+*/
+enum ui_pause_menu_sub_menu_state {
+    UI_PAUSE_MENU_SUB_MENU_STATE_NONE      = 0,
+    UI_PAUSE_MENU_SUB_MENU_STATE_INVENTORY = 1,
+    UI_PAUSE_MENU_SUB_MENU_STATE_OPTIONS   = 2,
+};
+
+/* share this for all types of similar menu types. */
+/* could do for a renaming. */
+struct ui_pause_menu {
+    u8  animation_state; /* 0 = OPENING, 1 = NONE, 2 = CLOSING */
+    f32 transition_t;
+    s32 selection;
+    /* NOTE we can use this field instead of that weird thing in the editor_state */
+    /* other than the fact that the editor is actually ripping this state from the game state */
+    /* in reality, I guess this should actually just be a global variable LOL. Or otherwise shared state */
+    /* since preferably the game_state is almost exclusively only serializing stuff. */
+    s32 last_sub_menu_state;
+    s32 sub_menu_state;
+    /* reserved space */
+    f32 shift_t[128];
+};
+
 struct game_state {
     struct memory_arena* arena;
 
@@ -274,20 +311,7 @@ struct game_state {
     struct random_state rng;
     struct camera camera;
 
-    enum ui_pause_menu_animation_state{
-        UI_PAUSE_MENU_TRANSITION_IN,
-        UI_PAUSE_MENU_NO_ANIM,
-        UI_PAUSE_MENU_TRANSITION_CLOSING,
-    };
-
-    /* share this for all types of similar menu types. */
-    struct ui_pause_menu {
-        u8  animation_state; /* 0 = OPENING, 1 = NONE, 2 = CLOSING */
-        f32 transition_t;
-        s32 selection;
-        /* reserved space */
-        f32 shift_t[128];
-    } ui_pause;
+    struct ui_pause_menu ui_pause;
 
     struct player_party_inventory inventory;
     struct entity_list  entities;

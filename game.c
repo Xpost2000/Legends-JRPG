@@ -319,6 +319,29 @@ local void update_and_render_ingame_game_menu_ui(struct game_state* state, struc
     }
 }
 
+local void update_and_render_sub_menu_states(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
+    f32 font_scale = 3;
+    struct ui_pause_menu* menu_state = &state->ui_pause;
+
+    assertion(menu_state->sub_menu_state != UI_PAUSE_MENU_SUB_MENU_STATE_NONE && "This should be impossible.");
+    switch (menu_state->sub_menu_state) {
+        case UI_PAUSE_MENU_SUB_MENU_STATE_OPTIONS: {
+            _debugprintf("options not done!");
+            menu_state->animation_state     = UI_PAUSE_MENU_TRANSITION_IN;
+            menu_state->last_sub_menu_state = menu_state->sub_menu_state;
+            menu_state->sub_menu_state      = UI_PAUSE_MENU_SUB_MENU_STATE_NONE;
+            menu_state->transition_t = 0;
+        } break;
+        case UI_PAUSE_MENU_SUB_MENU_STATE_INVENTORY: {
+            _debugprintf("inventory not done!");
+            menu_state->animation_state     = UI_PAUSE_MENU_TRANSITION_IN;
+            menu_state->last_sub_menu_state = menu_state->sub_menu_state;
+            menu_state->sub_menu_state      = UI_PAUSE_MENU_SUB_MENU_STATE_NONE;
+            menu_state->transition_t = 0;
+        } break;
+    }
+}
+
 local void update_and_render_pause_game_menu_ui(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
     /* needs a bit of cleanup */
     f32 font_scale = 3;
@@ -348,8 +371,15 @@ local void update_and_render_pause_game_menu_ui(struct game_state* state, struct
                 item_positions[index].x = lerp_f32(offscreen_x, final_x, menu_state->transition_t);
             }
 
-            game_postprocess_blur(framebuffer, blur_samples, max_blur * menu_state->transition_t, BLEND_MODE_ALPHA);
-            game_postprocess_grayscale(framebuffer, max_grayscale * menu_state->transition_t);
+            bool should_blur_fade = (menu_state->last_sub_menu_state == UI_PAUSE_MENU_SUB_MENU_STATE_NONE);
+
+            if (should_blur_fade) {
+                game_postprocess_blur(framebuffer, blur_samples, max_blur * (menu_state->transition_t), BLEND_MODE_ALPHA);
+                game_postprocess_grayscale(framebuffer, max_grayscale * (menu_state->transition_t));
+            } else {
+                game_postprocess_blur(framebuffer, blur_samples, max_blur, BLEND_MODE_ALPHA);
+                game_postprocess_grayscale(framebuffer, max_grayscale);
+            }
 
             if (menu_state->transition_t >= 1.0f) {
                 menu_state->animation_state += 1;
@@ -357,46 +387,67 @@ local void update_and_render_pause_game_menu_ui(struct game_state* state, struct
             }
         } break;
         case UI_PAUSE_MENU_NO_ANIM: {
-            for (unsigned index = 0; index < array_count(item_positions); ++index) {
-                item_positions[index].x = final_x;
-            }
-
             game_postprocess_blur(framebuffer, blur_samples, max_blur, BLEND_MODE_ALPHA);
             game_postprocess_grayscale(framebuffer, max_grayscale);
 
-            for (unsigned index = 0; index < array_count(item_positions); ++index) {
-                if (index != menu_state->selection) {
-                    menu_state->shift_t[index] -= dt*4;
+            if (menu_state->sub_menu_state == UI_PAUSE_MENU_SUB_MENU_STATE_NONE) {
+                for (unsigned index = 0; index < array_count(item_positions); ++index) {
+                    item_positions[index].x = final_x;
                 }
-            }
-            menu_state->shift_t[menu_state->selection] += dt*4;
-            for (unsigned index = 0; index < array_count(item_positions); ++index) {
-                menu_state->shift_t[index] = clamp_f32(menu_state->shift_t[index], 0, 1);
-            }
 
-            if (is_key_pressed(KEY_ESCAPE)) {
-                menu_state->animation_state = UI_PAUSE_MENU_TRANSITION_CLOSING;
-                menu_state->transition_t = 0;
-            }        
-
-            wrap_around_key_selection(KEY_UP, KEY_DOWN, &menu_state->selection, 0, array_count(item_positions));
-
-            if (is_key_pressed(KEY_RETURN)) {
-                switch (menu_state->selection) {
-                    case 0: {
-                        menu_state->animation_state = UI_PAUSE_MENU_TRANSITION_CLOSING;
-                        menu_state->transition_t = 0;
-                    } break;
-                    case 1: {
-                        
-                    } break;
-                    case 2: {
-                        
-                    } break;
-                    case 3: {
-                        global_game_running = false;
-                    } break;
+                for (unsigned index = 0; index < array_count(item_positions); ++index) {
+                    if (index != menu_state->selection) {
+                        menu_state->shift_t[index] -= dt*4;
+                    }
                 }
+                menu_state->shift_t[menu_state->selection] += dt*4;
+                for (unsigned index = 0; index < array_count(item_positions); ++index) {
+                    menu_state->shift_t[index] = clamp_f32(menu_state->shift_t[index], 0, 1);
+                }
+
+                if (is_key_pressed(KEY_ESCAPE)) {
+                    menu_state->animation_state = UI_PAUSE_MENU_TRANSITION_CLOSING;
+                    menu_state->transition_t = 0;
+                }        
+
+                wrap_around_key_selection(KEY_UP, KEY_DOWN, &menu_state->selection, 0, array_count(item_positions));
+
+                if (is_key_pressed(KEY_RETURN)) {
+                    switch (menu_state->selection) {
+                        case 0: {
+                            menu_state->animation_state = UI_PAUSE_MENU_TRANSITION_CLOSING;
+                            menu_state->transition_t = 0;
+                        } break;
+                        case 1: {
+                        } break;
+                        case 2: {
+                            {
+                                menu_state->animation_state = UI_PAUSE_MENU_TRANSITION_CLOSING;
+                                menu_state->last_sub_menu_state  = UI_PAUSE_MENU_SUB_MENU_STATE_NONE;
+                                menu_state->sub_menu_state  = UI_PAUSE_MENU_SUB_MENU_STATE_INVENTORY;
+                                menu_state->transition_t = 0;
+                            }
+                        } break;
+                        case 3: {
+                            {
+                                menu_state->animation_state = UI_PAUSE_MENU_TRANSITION_CLOSING;
+                                menu_state->last_sub_menu_state  = UI_PAUSE_MENU_SUB_MENU_STATE_NONE;
+                                menu_state->sub_menu_state  = UI_PAUSE_MENU_SUB_MENU_STATE_INVENTORY;
+                                menu_state->transition_t = 0;
+                            }
+                        } break;
+                        case 4: {
+                            global_game_running = false;
+                        } break;
+                    }
+                }
+            } else {
+                for (unsigned index = 0; index < array_count(item_positions); ++index) {
+                    item_positions[index].x = -99999999;
+                }
+
+                /* sub menus have their own state. I'm just nesting these. Which is fine since each menu unit is technically "atomic" */
+                update_and_render_sub_menu_states(state, framebuffer, dt);
             }
         } break;
         case UI_PAUSE_MENU_TRANSITION_CLOSING: {
@@ -406,16 +457,36 @@ local void update_and_render_pause_game_menu_ui(struct game_state* state, struct
                 item_positions[index].x = lerp_f32(final_x, offscreen_x, menu_state->transition_t);
             }
 
-            game_postprocess_blur(framebuffer, blur_samples, max_blur * (1-menu_state->transition_t), BLEND_MODE_ALPHA);
-            game_postprocess_grayscale(framebuffer, max_grayscale * (1-menu_state->transition_t));
+            bool should_blur_fade = (menu_state->sub_menu_state == UI_PAUSE_MENU_SUB_MENU_STATE_NONE);
+
+            if (should_blur_fade) {
+                game_postprocess_blur(framebuffer, blur_samples, max_blur * (1-menu_state->transition_t), BLEND_MODE_ALPHA);
+                game_postprocess_grayscale(framebuffer, max_grayscale * (1-menu_state->transition_t));
+            } else {
+                game_postprocess_blur(framebuffer, blur_samples, max_blur, BLEND_MODE_ALPHA);
+                game_postprocess_grayscale(framebuffer, max_grayscale);
+            }
+
 
             if (menu_state->transition_t >= 1.0f) {
                 menu_state->transition_t = 0;
-                game_state_set_ui_state(game_state, state->last_ui_state);
+                switch (menu_state->sub_menu_state) {
+                    case UI_PAUSE_MENU_SUB_MENU_STATE_NONE: {
+                        game_state_set_ui_state(game_state, state->last_ui_state);
+                    } break;
+                        /* 
+                           I don't really think any other UI state requires other special casing behavior
+                           just set to NO ANIM and just don't display the normal menu choices... Basically
+                           just hand off control to our friends.
+                        */
+                    default: {
+                        menu_state->animation_state = UI_PAUSE_MENU_NO_ANIM;
+                    } break;
+                }
             }
         } break;
     }
-    
+
     {
         for (unsigned index = 0; index < array_count(item_positions); ++index) {
             v2f32 draw_position = item_positions[index];
