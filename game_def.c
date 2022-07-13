@@ -257,6 +257,7 @@ struct editor_state {
 
 struct game_state;
 
+#include "item_def.c"
 #include "entities_def.c"
 
 struct game_state {
@@ -288,6 +289,7 @@ struct game_state {
         f32 shift_t[128];
     } ui_pause;
 
+    struct player_party_inventory inventory;
     struct entity_list  entities;
     struct weather      weather;
     /* fread into this */

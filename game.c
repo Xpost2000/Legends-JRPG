@@ -466,10 +466,10 @@ void update_and_render_game_menu_ui(struct game_state* state, struct software_fr
 
 local void recalculate_camera_shifting_bounds(struct software_framebuffer* framebuffer) {
     {
-        game_state->camera.travel_bounds.x = framebuffer->width  * 0.30;
-        game_state->camera.travel_bounds.y = framebuffer->height * 0.23;
-        game_state->camera.travel_bounds.w = framebuffer->width  * 0.4;
-        game_state->camera.travel_bounds.h = framebuffer->height * 0.6;
+        game_state->camera.travel_bounds.x = framebuffer->width  * 0.10;
+        game_state->camera.travel_bounds.y = framebuffer->height * 0.10;
+        game_state->camera.travel_bounds.w = framebuffer->width  * 0.80;
+        game_state->camera.travel_bounds.h = framebuffer->height * 0.80;
     }
 }
 
@@ -530,9 +530,9 @@ local void update_game_camera(struct game_state* state, f32 dt) {
         for (unsigned component_index = 0; component_index < 3; ++component_index) {
             if (camera->try_interpolation[component_index]) {
                 if (camera->interpolation_t[component_index] < 1.0) {
-                    camera->components[component_index] = lerp_f32(camera->start_interpolation_values[component_index],
-                                                                   camera->tracking_components[component_index],
-                                                                   camera->interpolation_t[component_index]);
+                    camera->components[component_index] = quadratic_ease_in_f32(camera->start_interpolation_values[component_index],
+                                                                                camera->tracking_components[component_index],
+                                                                                camera->interpolation_t[component_index]);
                     camera->interpolation_t[component_index] += dt * lerp_component_speeds[component_index];
                 } else {
                     camera->try_interpolation[component_index] = false;
@@ -594,7 +594,7 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
     }
 
     do_weather(framebuffer, game_state, dt);
-#if 0 
+#if 1 
     /* camera debug */
     {
         software_framebuffer_draw_quad(framebuffer, game_state->camera.travel_bounds, color32u8(0,0,255,100), BLEND_MODE_ALPHA);

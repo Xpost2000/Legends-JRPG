@@ -16,6 +16,19 @@ enum entity_flags {
     ENTITY_FLAGS_PLAYER_CONTROLLED = BIT(3),
 };
 
+#define MAX_PARTY_ITEMS (512)
+struct player_party_inventory {
+    s32           item_count;
+    struct item_instance items[MAX_PARTY_ITEMS];
+};
+
+/* NOTE for AI use in combat? */
+#define MAX_ACTOR_AVALIABLE_ITEMS (4)
+struct entity_actor_inventory {
+    s32           item_count;
+    struct item_instance items[MAX_ACTOR_AVALIABLE_ITEMS];
+};
+
 /* assume only player/npc style entity for now */
 /* so every entity is really just a guy. We don't care about anything else at the moment. */
 struct entity {
@@ -27,7 +40,8 @@ struct entity {
     v2f32 velocity;
     u32   flags;
 
-    s32_range health;
+    struct entity_actor_inventory inventory;
+    s32_range                     health;
 };
 
 typedef struct entity_id {
