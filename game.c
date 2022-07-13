@@ -480,7 +480,7 @@ local void update_game_camera(struct game_state* state, f32 dt) {
     camera->zoom        = 1;
     camera->tracking_xy = player->position;
 
-    /* TODO hard coded */
+    /* TODO hard coded sprite sizes */
     {
         static bool camera_init = false;
         if (!camera_init) {
@@ -489,6 +489,14 @@ local void update_game_camera(struct game_state* state, f32 dt) {
             camera_init  = true;
         }
     }
+
+    const f32 lerp_x_speed = 3;
+    const f32 lerp_y_speed = 3;
+
+    const f32 lerp_component_speeds[3] = {
+        2.45, 2.8, 1.5
+    };
+
     {
         /* kind of like a project on everythign */
         v2f32                projected_rectangle_position = camera_project(camera, v2f32(camera->travel_bounds.x, camera->travel_bounds.y),
@@ -497,20 +505,41 @@ local void update_game_camera(struct game_state* state, f32 dt) {
                                                                  camera->travel_bounds.w * camera->zoom, camera->travel_bounds.h * camera->zoom);
         struct rectangle_f32 player_rectangle             = entity_rectangle_collision_bounds(player);
 
-        if (player_rectangle.x < projected_rectangle.x) {
-            _debugprintf("bounding on left edge!");
-        } else if (player_rectangle.x + player_rectangle.w > projected_rectangle.x + projected_rectangle.w) {
-            _debugprintf("bounding on right edge!") ;
+        if (!camera->try_interpolation[0]) {
+            bool pushing_left_edge  = (player_rectangle.x < projected_rectangle.x);
+            bool pushing_right_edge = (player_rectangle.x + player_rectangle.w > projected_rectangle.x + projected_rectangle.w);
+
+            if (pushing_right_edge || pushing_left_edge) {
+                camera->interpolation_t[0] = 0;
+                camera->try_interpolation[0] = true;
+                camera->start_interpolation_values[0] = camera->xy.x;
+            }
         }
 
-        if (player_rectangle.y < projected_rectangle.y) {
-            _debugprintf("bounding on top edge!");
-        } else if (player_rectangle.y + player_rectangle.h > projected_rectangle.y + projected_rectangle.h) {
-            _debugprintf("bounding on bottom edge!");
+        if (!camera->try_interpolation[1]) {
+            bool pushing_top_edge    = (player_rectangle.y < projected_rectangle.y);
+            bool pushing_bottom_edge = (player_rectangle.y + player_rectangle.h > projected_rectangle.y + projected_rectangle.h);
+
+            if (pushing_bottom_edge || pushing_top_edge) {
+                camera->interpolation_t[1] = 0;
+                camera->try_interpolation[1] = true;
+                camera->start_interpolation_values[1] = camera->xy.y;
+            }
+        }
+
+        for (unsigned component_index = 0; component_index < 3; ++component_index) {
+            if (camera->try_interpolation[component_index]) {
+                if (camera->interpolation_t[component_index] < 1.0) {
+                    camera->components[component_index] = lerp_f32(camera->start_interpolation_values[component_index],
+                                                                   camera->tracking_components[component_index],
+                                                                   camera->interpolation_t[component_index]);
+                    camera->interpolation_t[component_index] += dt * lerp_component_speeds[component_index];
+                } else {
+                    camera->try_interpolation[component_index] = false;
+                }
+            }
         }
     }
-    /* camera->xy.x = camera->tracking_xy.x + 16; */
-    /* camera->xy.y = camera->tracking_xy.y + 32; */
 }
 
 void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
@@ -565,9 +594,11 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
     }
 
     do_weather(framebuffer, game_state, dt);
+#if 0 
     /* camera debug */
     {
         software_framebuffer_draw_quad(framebuffer, game_state->camera.travel_bounds, color32u8(0,0,255,100), BLEND_MODE_ALPHA);
     }
+#endif
     update_and_render_game_menu_ui(game_state, framebuffer, dt);
 }

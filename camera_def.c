@@ -5,9 +5,15 @@
 /* I'm tired of having a distinction between the view camera, and a game camera
    which is basically the same struct but *smarter*. I'm just going to shove all camera code in here... */
 struct camera {
-    v2f32 xy; /* rename to position */
+    union {
+        struct {
+            v2f32 xy; /* rename to position */
+            f32   zoom;
+        };
+        f32 components[3];
+    };
+
     u8    centered;
-    f32   zoom;
 
     /*
       NOTE:
@@ -17,10 +23,24 @@ struct camera {
       
       Combat camera is free travel.
       
-      All this data here is for camera updatings.
+      All this data here is for camera updatings, only used by the game.
+      Not the editor code.
+      
+      Would technically be a struct game_camera or something.
     */
     struct rectangle_f32 travel_bounds;
-    v2f32                tracking_xy;
+    union {
+        struct {
+            v2f32                tracking_xy;
+            f32 tracking_zoom;
+        };
+        f32 tracking_components[3];
+    };
+
+    /* NOTE x/y/zoom */
+    f32                  interpolation_t[3];
+    f32                  start_interpolation_values[3];
+    bool                 try_interpolation[3];
 };
 
 v2f32 camera_project(struct camera* camera, v2f32 point, s32 screen_width, s32 screen_height) {
