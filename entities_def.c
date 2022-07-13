@@ -43,8 +43,10 @@ void entity_inventory_add(struct entity_inventory* inventory, s32 limits, item_i
 enum entity_chest_flags {
     ENTITY_CHEST_NONE                           = 0,
     ENTITY_CHEST_FLAGS_REQUIRES_ITEM_FOR_UNLOCK = BIT(0),
+    ENTITY_CHEST_FLAGS_UNLOCKED                 = BIT(1), /* redundant if it does not require an item for unlock */
     ENTITY_CHEST_FLAGS_HIDDEN                   = ENTITY_FLAGS_HIDDEN,
 };
+/* TODO implement */
 struct entity_chest {
     v2f32                position;
     v2f32                scale;
@@ -67,6 +69,8 @@ struct entity {
     struct entity_actor_inventory inventory;
     s32_range                     health;
 };
+
+void entity_inventory_use_item(struct entity_inventory* inventory, s32 item_index, struct entity* target);
 
 typedef struct entity_id {
     s32 index;

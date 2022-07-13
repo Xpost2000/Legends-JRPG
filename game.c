@@ -362,6 +362,18 @@ local void update_and_render_sub_menu_states(struct game_state* state, struct so
                 menu_state->transition_t = 0;
             }
 
+            if (is_key_pressed(KEY_RETURN)) {
+                s32 index = state->ui_inventory.selection_item_list;
+                struct item_def* item = item_database_find_by_id(inventory->items[index].item);
+
+                if (item->type != ITEM_TYPE_MISC) {
+                    _debugprintf("use item \"%.*s\"", item->name.length, item->name.data);
+
+                    struct entity* player = entity_list_dereference_entity(&state->entities, player_id);
+                    entity_inventory_use_item(inventory, index, player);
+                }
+            }
+
             for (unsigned index = 0; index < inventory->count; ++index) {
                 struct item_def* item = item_database_find_by_id(inventory->items[index].item);
                 if (index == state->ui_inventory.selection_item_list) {

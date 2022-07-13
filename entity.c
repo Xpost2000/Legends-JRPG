@@ -223,3 +223,29 @@ void entity_inventory_add(struct entity_inventory* inventory, s32 limits, item_i
         inventory->items[inventory->count++].count += 1;
     }
 }
+
+/* from inventory */
+void item_apply_to_entity(struct item_def* item, struct entity* target) {
+    switch (item->type) {
+        case ITEM_TYPE_CONSUMABLE_ITEM: {
+            if (item->health_restoration_value != 0) {
+                target->health.value += item->health_restoration_value;
+                _debugprintf("restored: %d health", item->health_restoration_value);
+            }
+        } break;
+    }
+}
+
+void entity_inventory_use_item(struct entity_inventory* inventory, s32 item_index, struct entity* target) {
+    struct item_instance* current_item = &inventory->items[item_index];
+    struct item_def* item_base         = item_database_find_by_id(current_item->item);
+
+    current_item->count -= 1;
+
+    if (current_item->count <= 0) {
+        inventory->items[item_index] = inventory->items[--inventory->count];
+    }
+
+    /* or region? */
+    item_apply_to_entity(item_base, target);
+}
