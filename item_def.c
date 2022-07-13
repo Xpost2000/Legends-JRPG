@@ -26,9 +26,26 @@ struct item_instance {
 enum item_flags {
     ITEM_NO_FLAGS = 0,
 };
+
+/* these are broad/general types. */
+/* The game itself will sort by more specific criteria. */
 enum item_type {
+    /* do not use for item type please */
+    ITEM_SORT_FILTER_ALL,
     ITEM_TYPE_MISC,
     ITEM_TYPE_CONSUMABLE_ITEM, /* party members & player */
+    ITEM_TYPE_WEAPON,
+    ITEM_TYPE_EQUIPMENT,
+    ITEM_TYPE_COUNT,
+};
+/* editor strings */
+static string item_type_strings[] = {
+    string_literal("(all.)"),
+    string_literal("(misc.)"),
+    string_literal("(consum.)"),
+    string_literal("(weap.)"),
+    string_literal("(equip.)"),
+    string_literal("(count)"),
 };
 
 struct item_def {
@@ -52,6 +69,10 @@ struct item_def {
     */
     /* ironically a script usage file might be "cheaper?" */
 };
+
+item_id item_get_id(struct item_def* item) {
+    return item_id_make(item->id_name);
+}
 
 #define MAX_ITEMS_DATABASE_SIZE (8192)
 static struct item_def item_database[MAX_ITEMS_DATABASE_SIZE] = {};

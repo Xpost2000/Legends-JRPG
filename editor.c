@@ -749,6 +749,9 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
     s32 mouse_location[2];
     get_mouse_location(mouse_location, mouse_location+1);
 
+    bool left_clicked   = 0; bool right_clicked  = 0; bool middle_clicked = 0;
+    get_mouse_buttons(&left_clicked, &middle_clicked, &right_clicked);
+
     v2f32 world_space_mouse_location =
         camera_project(&editor_state->camera, v2f32(mouse_location[0], mouse_location[1]), framebuffer->width, framebuffer->height);
 
@@ -887,38 +890,89 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
                 case EDITOR_TOOL_ENTITY_PLACEMENT: {
                     switch (editor_state->entity_placement_type) {
                         case ENTITY_PLACEMENT_TYPE_CHEST: {
-                            f32 draw_cursor_y = 60;
+                            f32 draw_cursor_y = 70;
                             struct entity_chest* chest = editor_state->last_selected;
                             software_framebuffer_draw_text(framebuffer, font, 2, v2f32(10, 10), string_literal("Chest Items"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
 
-                            if (chest->inventory.item_count > 0) {
-                                char tmp[255] = {};
-                                for (s32 index = 0; index < chest->inventory.item_count; ++index) {
-                                    struct item_instance* item      = chest->inventory.items + index;
-                                    struct item_def*      item_base = item_database_find_by_id(item->item);
-                                    snprintf(tmp, 255, "(%.*s) %.*s - %d/%d", item_base->id_name.length, item_base->id_name.data, item_base->name.length, item_base->name.data, item->count, item_base->max_stack_value);
-                                    draw_cursor_y += 12 * 1.2 * 1.5;
+                            {
+                                /* sort bar */
+                                f32 draw_cursor_x = 30;
 
-                                    s32 button_response = (EDITOR_imgui_button(framebuffer, font, highlighted_font, 1.5, v2f32(16, draw_cursor_y), string_from_cstring(tmp)));
-                                    if(button_response == 1) {
-                                        /* ?clone? Not exactly expected behavior I'd say lol. */
-                                        entity_inventory_add(&chest->inventory, 16, item->item);
-                                    } else if (button_response == 2) {
-                                        if (is_key_down(KEY_SHIFT)) {
-                                            entity_inventory_remove_item(&chest->inventory, index, true);
-                                        } else {
-                                            entity_inventory_remove_item(&chest->inventory, index, false);
+                                for (unsigned index = 0; index < array_count(item_type_strings); ++index) {
+                                    string text = item_type_strings[index];
+
+                                    if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(draw_cursor_x, 35), text)) {
+                                        /* should be mask */
+                                        editor_state->chest_property_menu.item_sort_filter = index;
+                                    }
+
+                                    draw_cursor_x += font_cache_text_width(font, text) * 2 * 1.15;
+                                }
+                            }
+
+                            if (editor_state->chest_property_menu.adding_item) {
+                                if (is_key_down(KEY_UP)) {
+                                    editor_state->chest_property_menu.item_list_scroll_y -= 100 * dt;
+                                } else if (is_key_down(KEY_DOWN)) {
+                                    editor_state->chest_property_menu.item_list_scroll_y += 100 * dt;
+                                } else if (is_key_pressed(KEY_HOME)) {
+                                    editor_state->chest_property_menu.item_list_scroll_y = 0;
+                                }
+
+                                for (unsigned index = 0; index < MAX_ITEMS_DATABASE_SIZE; ++index) {
+                                    struct item_def* item_base = item_database + index;
+
+                                    if (editor_state->chest_property_menu.item_sort_filter) {
+                                        if (editor_state->chest_property_menu.item_sort_filter != item_base->type)
+                                            continue;
+                                    }
+
+                                    if (item_base->id_name.length > 0) {
+                                        /* TODO make a temporary printing function or something. God. */
+                                        char tmp[255] = {};
+                                        snprintf(tmp, 255, "(%.*s) %.*s", item_base->id_name.length, item_base->id_name.data, item_base->name.length, item_base->name.data);
+
+                                        if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 1.3, v2f32(16, draw_cursor_y + editor_state->chest_property_menu.item_list_scroll_y), string_from_cstring(tmp))) {
+                                            entity_inventory_add(&chest->inventory, 16, item_get_id(item_base));
+                                            editor_state->chest_property_menu.adding_item = false;
+                                            break;
                                         }
+
+                                        draw_cursor_y += 12 * 1.2 * 1.3;
                                     }
                                 }
                             } else {
-                                software_framebuffer_draw_text(framebuffer, font, 2, v2f32(10, draw_cursor_y), string_literal("(no items)"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
-                            }
+                                if (chest->inventory.item_count > 0) {
+                                    char tmp[255] = {};
+                                    for (s32 index = 0; index < chest->inventory.item_count; ++index) {
+                                        struct item_instance* item      = chest->inventory.items + index;
+                                        struct item_def*      item_base = item_database_find_by_id(item->item);
+                                        snprintf(tmp, 255, "(%.*s) %.*s - %d/%d", item_base->id_name.length, item_base->id_name.data, item_base->name.length, item_base->name.data, item->count, item_base->max_stack_value);
+                                        draw_cursor_y += 12 * 1.2 * 1.5;
 
-                            if(EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(150, 10), string_literal("(add item)"))) {
-                                /* pop up should just replace the menu */
-                                /* for now just add a test item */
-                                entity_inventory_add(&chest->inventory, 16, item_id_make(string_literal("item_sardine_fish_5")));
+                                        s32 button_response = (EDITOR_imgui_button(framebuffer, font, highlighted_font, 1.5, v2f32(16, draw_cursor_y), string_from_cstring(tmp)));
+                                        if(button_response == 1) {
+                                            /* ?clone? Not exactly expected behavior I'd say lol. */
+                                            entity_inventory_add(&chest->inventory, 16, item->item);
+                                        } else if (button_response == 2) {
+                                            if (is_key_down(KEY_SHIFT)) {
+                                                entity_inventory_remove_item(&chest->inventory, index, true);
+                                            } else {
+                                                entity_inventory_remove_item(&chest->inventory, index, false);
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    software_framebuffer_draw_text(framebuffer, font, 2, v2f32(10, draw_cursor_y), string_literal("(no items)"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+                                }
+
+                                if(EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(150, 10), string_literal("(add item)"))) {
+                                    /* pop up should just replace the menu */
+                                    /* for now just add a test item */
+                                    /* entity_inventory_add(&chest->inventory, 16, item_id_make(string_literal("item_sardine_fish_5"))); */
+                                    editor_state->chest_property_menu.adding_item        = true;
+                                    editor_state->chest_property_menu.item_list_scroll_y = 0;
+                                }
                             }
                         } break;
                     }

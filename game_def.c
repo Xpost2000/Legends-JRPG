@@ -190,7 +190,9 @@ static string entity_placement_type_strings[] = {
 };
 struct entity_chest_placement_property_menu {
     /* bool item_edit_open; */
-    /* bool adding_item; */
+    bool adding_item;
+    f32  item_list_scroll_y;
+    s32  item_sort_filter;
 };
 struct editor_state {
     struct memory_arena* arena;
