@@ -13,6 +13,7 @@ typedef struct {
 #define string_literal(x) (string){ .length = sizeof(x)-1, .capacity = 0, .data = x }
 
 string string_from_cstring(cstring str);
+string string_from_cstring_length_counted(cstring str, u64 length);
 string string_slice(string a, s32 start, s32 end);
 bool   string_equal(string a, string b);
 

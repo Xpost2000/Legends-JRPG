@@ -7,6 +7,13 @@ string string_from_cstring(cstring str) {
     };
 }
 
+string string_from_cstring_length_counted(cstring str, u64 length) {
+    return (string) {
+        .length = length,
+        .data   = str
+    };
+}
+
 bool string_equal(string a, string b) {
     if (a.length == b.length) {
         for (unsigned index = 0; index < a.length; ++index) {

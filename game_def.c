@@ -273,6 +273,17 @@ struct editor_state {
     bool       viewing_loaded_area;
 };
 
+#if 0
+/* TODO */
+/* for now just an informative message box. No prompting. Prompts are probably just going to be different code, and more involved. */
+/* I need a UI graphic for this. */
+struct ui_popup_message_box {
+    char message_storage[128];
+    /* should include animation time */
+    s32 show_character_count;
+};
+#endif
+
 #include "weather_def.c"
 
 struct game_state;
