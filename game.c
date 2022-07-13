@@ -215,6 +215,8 @@ void game_initialize(void) {
     editor_state                = memory_arena_push(&editor_arena, sizeof(*editor_state));
     editor_initialize(editor_state);
     initialize_static_table_data();
+    initialize_items_database();
+    assertion(verify_no_item_id_name_hash_collisions());
 
 #if 0
     {

@@ -60,6 +60,20 @@ static inline f32 normalized_cosf(f32 t) {
     return (cosf(t)+1)/2.0;
 }
 
+static inline u32 hash_bytes_fnv1a(u8* bytes, size_t length) {
+    u32 offset_basis = 2166136261;
+    u32 prime        = 16777619;
+
+    u32 hash = offset_basis;
+
+    for (unsigned index = 0; index < length; ++index) {
+        hash ^= bytes[index];
+        hash *= prime;
+    }
+
+    return hash;
+}
+
 #define Swap(a, b, type)                        \
     do {                                        \
         type tmp = a;                           \

@@ -14,6 +14,11 @@ enum entity_flags {
 
     /* no multiplayer, only default player bindings */
     ENTITY_FLAGS_PLAYER_CONTROLLED = BIT(3),
+
+    /*
+     * ....
+     */
+    ENTITY_FLAGS_HIDDEN            = BIT(31),
 };
 
 #define MAX_PARTY_ITEMS (512)
@@ -31,6 +36,21 @@ struct entity_actor_inventory {
 
 /* assume only player/npc style entity for now */
 /* so every entity is really just a guy. We don't care about anything else at the moment. */
+enum entity_chest_flags {
+    ENTITY_CHEST_NONE                           = 0,
+    ENTITY_CHEST_FLAGS_REQUIRES_ITEM_FOR_UNLOCK = BIT(0),
+    ENTITY_CHEST_FLAGS_HIDDEN                   = ENTITY_FLAGS_HIDDEN,
+};
+struct entity_chest {
+    v2f32                position;
+    v2f32                scale;
+    u32                  flags;
+    struct item_instance items[16];
+    item_id              key_item;
+};
+
+/* note because  */
+
 struct entity {
     /* These two fields should define an AABB */
     /* actual visual information is for now just handled by the rendering procedure */

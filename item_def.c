@@ -1,8 +1,11 @@
 #ifndef ITEM_DEF_C
 #define ITEM_DEF_C
 
+/*
+  NOTE: FNV1-A hasn't really failed me yet...
+*/
 typedef struct item_id {
-    string id; /* names are a bit harder to funge up... */
+    u32 id_hash; /* may have collisions but with small item count prolly not */
 } item_id;
 
 struct item_instance {
@@ -37,6 +40,30 @@ static struct item_def item_database[MAX_ITEMS_DATABASE_SIZE] = {};
 
 static void initialize_items_database(void) {
     
+}
+
+/* TODO only for debug reasons I guess */
+static bool verify_no_item_id_name_hash_collisions(void) {
+    bool bad = false;
+#ifndef RELEASE
+    for(unsigned i = 0; i < MAX_ITEMS_DATABASE_SIZE; ++i) {
+        string first = item_database[i].id_name;
+
+        for (unsigned j = 0; j < MAX_ITEMS_DATABASE_SIZE; ++j) {
+            string second = item_database[j].id_name;
+
+            u32 hash_first  = hash_bytes_fnv1a(first.data, first.length);
+            u32 hash_second = hash_bytes_fnv1a(second.data, second.length);
+
+            if (hash_second == hash_first) {
+                _debugprintf("hash collision(\"%.*s\" & \"%.*s\")", first.length, first.data, second.length, second.data);
+                bad = true;
+            }
+        }
+    }
+
+#endif
+    return !bad;
 }
 
 #endif
