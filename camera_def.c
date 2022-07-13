@@ -8,6 +8,19 @@ struct camera {
     v2f32 xy; /* rename to position */
     u8    centered;
     f32   zoom;
+
+    /*
+      NOTE:
+      The region size where the camera may start to readjust to the player.
+      
+      Only used for the gameplay world camera, and specified in screen coordinates.
+      
+      Combat camera is free travel.
+      
+      All this data here is for camera updatings.
+    */
+    struct rectangle_f32 travel_bounds;
+    v2f32                tracking_xy;
 };
 
 v2f32 camera_project(struct camera* camera, v2f32 point, s32 screen_width, s32 screen_height) {

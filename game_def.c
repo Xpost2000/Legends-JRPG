@@ -271,6 +271,7 @@ struct game_state {
     /* in "open" regions, allow for regions to be streamed in... Have to set game mode state flag. */
     struct level_area loaded_area;
     struct random_state rng;
+    struct camera camera;
 
     enum ui_pause_menu_animation_state{
         UI_PAUSE_MENU_TRANSITION_IN,

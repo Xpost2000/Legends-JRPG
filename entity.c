@@ -197,8 +197,8 @@ void entity_list_render_entities(struct entity_list* entities, struct graphics_a
                                    graphics_assets_get_image_by_id(graphics_assets, guy_img),
                                    rectangle_f32(current_entity->position.x,
                                                  current_entity->position.y,
-                                                 16 * 4,
-                                                 32 * 4),
+                                                 16 * 2,
+                                                 32 * 2),
                                    RECTANGLE_F32_NULL, color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
     }
 }

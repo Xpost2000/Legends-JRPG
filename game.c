@@ -1,5 +1,5 @@
 /* virtual pixels */
-#define TILE_UNIT_SIZE (64)
+#define TILE_UNIT_SIZE (32)
 
 #include "game_def.c"
 
@@ -80,7 +80,6 @@ entity_id entity_list_create_player(struct entity_list* entities, v2f32 position
 }
 
 
-#include "entity.c"
 #include "weather.c"
 
 void serialize_level_area(struct game_state* state, struct binary_serializer* serializer, struct level_area* level, bool use_default_spawn) {
@@ -101,6 +100,14 @@ void serialize_level_area(struct game_state* state, struct binary_serializer* se
         player->position.y             = level->default_player_spawn.y;
     }
 }
+
+/* this is used for cheating or to setup the game I suppose. */
+void load_level_from_file(struct game_state* state, string filename) {
+    struct binary_serializer serializer = open_read_file_serializer(string_concatenate(state->arena, string_literal("areas/"), filename));
+    serialize_level_area(state, &serializer, &state->loaded_area, false);
+    serializer_finish(&serializer);
+}
+
 /* true - changed, false - same */
 bool game_state_set_ui_state(struct game_state* state, u32 new_ui_state) {
     if (state->ui_state != new_ui_state) {
@@ -112,6 +119,8 @@ bool game_state_set_ui_state(struct game_state* state, u32 new_ui_state) {
 
     return false;
 }
+
+#include "entity.c"
 
 void game_postprocess_blur(struct software_framebuffer* framebuffer, s32 quality_scale, f32 t, u32 blend_mode) {
     f32 box_blur[] = {
@@ -207,7 +216,7 @@ void game_initialize(void) {
     editor_initialize(editor_state);
     initialize_static_table_data();
 
-#if 1
+#if 0
     {
         struct conversation s = {};
         {
@@ -226,6 +235,7 @@ void game_initialize(void) {
         game_state->current_conversation_node_id = 1;
     }
 #endif
+    load_level_from_file(game_state, string_literal("1.area"));
 }
 
 void game_deinitialize(void) {
@@ -454,16 +464,42 @@ void update_and_render_game_menu_ui(struct game_state* state, struct software_fr
     }
 }
 
+local void recalculate_camera_shifting_bounds(struct software_framebuffer* framebuffer) {
+    {
+        game_state->camera.travel_bounds.x = framebuffer->width  * 0.30;
+        game_state->camera.travel_bounds.y = framebuffer->height * 0.23;
+        game_state->camera.travel_bounds.w = framebuffer->width  * 0.4;
+        game_state->camera.travel_bounds.h = framebuffer->height * 0.6;
+    }
+}
+
+local void update_game_camera(struct game_state* state, f32 dt) {
+    struct camera* camera = &state->camera;
+    struct entity* player = entity_list_dereference_entity(&state->entities, player_id);
+    camera->centered    = true;
+    camera->zoom        = 1;
+    camera->tracking_xy = player->position;
+
+    /* TODO hard coded */
+    camera->xy.x = camera->tracking_xy.x + 16;
+    camera->xy.y = camera->tracking_xy.y + 32;
+}
+
 void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
     if (is_key_pressed(KEY_F12)) {
         image_buffer_write_to_disk(framebuffer, string_literal("scr"));
     }
 
+    recalculate_camera_shifting_bounds(framebuffer);
+
     if (game_state->in_editor) {
         update_and_render_editor(framebuffer, dt);
     } else {
         struct entity* player_entity = entity_list_dereference_entity(&game_state->entities, player_id);
-        struct render_commands commands = render_commands(camera_centered(player_entity->position, 1));
+        update_game_camera(game_state, dt);
+
+        struct render_commands commands = render_commands(game_state->camera);
+
         commands.should_clear_buffer = true;
         commands.clear_buffer_color  = color32u8(0, 0, 0, 255);
 
@@ -501,5 +537,9 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
     }
 
     do_weather(framebuffer, game_state, dt);
+    /* camera debug */
+    {
+        software_framebuffer_draw_quad(framebuffer, game_state->camera.travel_bounds, color32u8(0,0,255,100), BLEND_MODE_ALPHA);
+    }
     update_and_render_game_menu_ui(game_state, framebuffer, dt);
 }
