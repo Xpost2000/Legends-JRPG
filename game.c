@@ -59,6 +59,19 @@ void render_area(struct render_commands* commands, struct level_area* area) {
                                    color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
 
     }
+
+    _debugprintf("%d chests", area->entity_chest_count);
+    for (s32 index = 0; index < area->entity_chest_count; ++index) {
+        struct entity_chest* current_chest = area->chests + index;
+        render_commands_push_image(&commands,
+                                   graphics_assets_get_image_by_id(&graphics_assets, chest_closed_img),
+                                   rectangle_f32(current_chest->position.x * TILE_UNIT_SIZE,
+                                                 current_chest->position.y * TILE_UNIT_SIZE,
+                                                 current_chest->scale.x * TILE_UNIT_SIZE,
+                                                 current_chest->scale.y * TILE_UNIT_SIZE),
+                                   RECTANGLE_F32_NULL,
+                                   color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
+    }
 }
 
 entity_id player_id;
@@ -87,6 +100,10 @@ void serialize_level_area(struct game_state* state, struct binary_serializer* se
 
     if (level->version >= 1) {
         Serialize_Fixed_Array_And_Allocate_From_Arena_Top(serializer, state->arena, s32, level->trigger_level_transition_count, level->trigger_level_transitions);
+        /* this thing is allergic to chest updates. Unfortunately it might happen a lot... */
+        if (level->version >= 2) {
+            Serialize_Fixed_Array_And_Allocate_From_Arena_Top(serializer, state->arena, s32, level->entity_chest_count, level->chests);
+        }
     }
 
     /* until we have new area transititons or whatever. */
@@ -663,6 +680,29 @@ local void update_game_camera(struct game_state* state, f32 dt) {
                     camera->try_interpolation[component_index] = false;
                 }
             }
+        }
+    }
+}
+
+void handle_entity_level_trigger_interactions(struct game_state* state, struct entity* entity, s32 trigger_level_transition_count, struct trigger_level_transition* trigger_level_transitions, f32 dt) {
+    if (!(entity->flags & ENTITY_FLAGS_PLAYER_CONTROLLED))
+        return;
+
+    for (s32 index = 0; index < trigger_level_transition_count; ++index) {
+        struct trigger_level_transition* current_trigger = trigger_level_transitions + index;
+        v2f32 spawn_location       = current_trigger->spawn_location;
+        u8    new_facing_direction = current_trigger->new_facing_direction;
+
+        struct rectangle_f32 entity_collision_bounds = rectangle_f32_scale(entity_rectangle_collision_bounds(entity), 1.0/TILE_UNIT_SIZE);
+        if (rectangle_f32_intersect(current_trigger->bounds, entity_collision_bounds)) {
+            /* queue a level transition, animation (god animation sucks... For now instant transition) */
+            struct binary_serializer serializer = open_read_file_serializer(string_concatenate(&scratch_arena, string_literal("areas/"), string_from_cstring(current_trigger->target_level)));
+            serialize_level_area(state, &serializer, &state->loaded_area, false);
+            /* NOTE entity positions are in pixels still.... */
+            entity->position.x = spawn_location.x * TILE_UNIT_SIZE;
+            entity->position.y = spawn_location.y * TILE_UNIT_SIZE;
+
+            return;
         }
     }
 }

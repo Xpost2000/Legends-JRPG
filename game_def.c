@@ -141,10 +141,14 @@ struct tile {
     s16 y;
 };
 
-/* END OF NOT CHECKED CODE */
 #include "conversation_def.c"
+#include "weather_def.c"
 
-#define CURRENT_LEVEL_AREA_VERSION (1)
+struct game_state;
+
+#include "item_def.c"
+
+#define CURRENT_LEVEL_AREA_VERSION (2)
 struct level_area {
     u32          version;
     v2f32        default_player_spawn;
@@ -154,6 +158,9 @@ struct level_area {
 
     s32 trigger_level_transition_count;
     struct trigger_level_transition* trigger_level_transitions;
+
+    s32 entity_chest_count;
+    struct entity_chest* chests;
 };
 
 enum editor_tool_mode {
@@ -286,13 +293,6 @@ struct ui_popup_message_box {
 };
 #endif
 
-#include "weather_def.c"
-
-struct game_state;
-
-#include "item_def.c"
-#include "entities_def.c"
-
 enum ui_pause_menu_animation_state{
     UI_PAUSE_MENU_TRANSITION_IN,
     UI_PAUSE_MENU_NO_ANIM,
@@ -340,6 +340,7 @@ struct ui_sub_menu_inventory {
     s32 selection_item_list;
 };
 
+#include "entities_def.c"
 struct game_state {
     struct memory_arena* arena;
 

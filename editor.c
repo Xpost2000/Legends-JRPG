@@ -130,6 +130,9 @@ void editor_serialize_area(struct binary_serializer* serializer) {
 
     if (version_id >= 1) {
         Serialize_Fixed_Array(serializer, s32, editor_state->trigger_level_transition_count, editor_state->trigger_level_transitions);
+        if (version_id >= 2) {
+            Serialize_Fixed_Array(serializer, s32, editor_state->entity_chest_count, editor_state->entity_chests);
+        }
     }
 }
 
@@ -927,6 +930,7 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
                                             continue;
                                     }
 
+                                    /* TODO more flags */
                                     if (item_base->id_name.length > 0) {
                                         /* TODO make a temporary printing function or something. God. */
                                         char tmp[255] = {};

@@ -73,28 +73,6 @@ void entity_handle_player_controlled(struct game_state* state, struct entity_lis
     if (move_left)  entity->velocity.x  = -100;
     if (move_right) entity->velocity.x  = 100;
 }
-void handle_entity_level_trigger_interactions(struct game_state* state, struct entity* entity, s32 trigger_level_transition_count, struct trigger_level_transition* trigger_level_transitions, f32 dt) {
-    if (!(entity->flags & ENTITY_FLAGS_PLAYER_CONTROLLED))
-        return;
-
-    for (s32 index = 0; index < trigger_level_transition_count; ++index) {
-        struct trigger_level_transition* current_trigger = trigger_level_transitions + index;
-        v2f32 spawn_location       = current_trigger->spawn_location;
-        u8    new_facing_direction = current_trigger->new_facing_direction;
-
-        struct rectangle_f32 entity_collision_bounds = rectangle_f32_scale(entity_rectangle_collision_bounds(entity), 1.0/TILE_UNIT_SIZE);
-        if (rectangle_f32_intersect(current_trigger->bounds, entity_collision_bounds)) {
-            /* queue a level transition, animation (god animation sucks... For now instant transition) */
-            struct binary_serializer serializer = open_read_file_serializer(string_concatenate(&scratch_arena, string_literal("areas/"), string_from_cstring(current_trigger->target_level)));
-            serialize_level_area(state, &serializer, &state->loaded_area, false);
-            /* NOTE entity positions are in pixels still.... */
-            entity->position.x = spawn_location.x * TILE_UNIT_SIZE;
-            entity->position.y = spawn_location.y * TILE_UNIT_SIZE;
-
-            return;
-        }
-    }
-}
 
 void entity_list_update_entities(struct game_state* state, struct entity_list* entities, f32 dt, struct level_area* area) {
 /* void entity_list_update_entities(struct entity_list* entities, f32 dt, s32* tilemap, s32 w, s32 h) { */
