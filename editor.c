@@ -52,14 +52,18 @@ local void clear_drag_candidate(void) {
 /* no layout stuff, mostly just simple widgets to play with */
 /* also bad code */
 bool _imgui_mouse_button_left_down = false;
+bool _imgui_mouse_button_right_down = false;
 bool _imgui_any_intersection       = false;
-bool EDITOR_imgui_button(struct software_framebuffer* framebuffer, struct font_cache* font, struct font_cache* highlighted_font, f32 draw_scale, v2f32 position, string str) {
+
+/* 1 - left click, 2 - right click. Might be weird if you're not expecting it... */
+/* TODO correct this elsweyr. */
+s32 EDITOR_imgui_button(struct software_framebuffer* framebuffer, struct font_cache* font, struct font_cache* highlighted_font, f32 draw_scale, v2f32 position, string str) {
     f32 text_height = font_cache_text_height(font)     * draw_scale;
     f32 text_width  = font_cache_text_width(font, str) * draw_scale;
 
     s32 mouse_positions[2];
-    bool left_clicked;
-    get_mouse_buttons(&left_clicked, 0, 0);
+    bool left_clicked, right_clicked;
+    get_mouse_buttons(&left_clicked, 0, &right_clicked);
     get_mouse_location(mouse_positions, mouse_positions+1);
 
     struct rectangle_f32 button_bounding_box = rectangle_f32(position.x, position.y, text_width, text_height);
@@ -67,24 +71,30 @@ bool EDITOR_imgui_button(struct software_framebuffer* framebuffer, struct font_c
 
     if (rectangle_f32_intersect(button_bounding_box, interaction_bounding_box)) {
         _imgui_any_intersection = true;
-        if (!_imgui_mouse_button_left_down & left_clicked) _imgui_mouse_button_left_down = true;
+        if (!_imgui_mouse_button_left_down & left_clicked)   _imgui_mouse_button_left_down  = true;
+        if (!_imgui_mouse_button_right_down & right_clicked) _imgui_mouse_button_right_down = true;
 
         software_framebuffer_draw_text(framebuffer, highlighted_font, draw_scale, position, (str), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
         if (!left_clicked && _imgui_mouse_button_left_down) {
             _imgui_mouse_button_left_down = false;
-            return true;
+            return 1;
+        }
+        if (!right_clicked && _imgui_mouse_button_right_down) {
+            _imgui_mouse_button_right_down = false;
+            return 2;
         }
     } else {
         software_framebuffer_draw_text(framebuffer, font, draw_scale, position, (str), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
     }
 
-    return false;
+    return 0;
 }
 /* little IMGUI  */
 
 void editor_clear_all_allocations(struct editor_state* state) {
     state->tile_count                     = 0;
     state->trigger_level_transition_count = 0;
+    state->entity_chest_count             = 0;
 }
 
 void editor_clear_all(struct editor_state* state) {
@@ -97,11 +107,13 @@ void editor_clear_all(struct editor_state* state) {
 }
 
 void editor_initialize(struct editor_state* state) {
-    editor_state->arena                          = &editor_arena;
-    editor_state->tile_capacity                  = 8192;
-    editor_state->trigger_level_transition_count = 1024;
-    state->tiles                                 = memory_arena_push(state->arena, state->tile_capacity * sizeof(*state->tiles));
-    state->trigger_level_transitions             = memory_arena_push(state->arena, state->trigger_level_transition_count * sizeof(*state->trigger_level_transitions));
+    editor_state->arena                             = &editor_arena;
+    editor_state->tile_capacity                     = 8192;
+    editor_state->trigger_level_transition_capacity = 1024;
+    editor_state->entity_chest_capacity             = 1024;
+    state->tiles                                    = memory_arena_push(state->arena, state->tile_capacity                     * sizeof(*state->tiles));
+    state->trigger_level_transitions                = memory_arena_push(state->arena, state->trigger_level_transition_capacity * sizeof(*state->trigger_level_transitions));
+    state->entity_chests                            = memory_arena_push(state->arena, state->entity_chest_capacity             * sizeof(*state->entity_chests));
     editor_clear_all(state);
 }
 
@@ -205,6 +217,58 @@ void editor_place_or_drag_level_transition_trigger(v2f32 point_in_tilespace) {
         new_transition_trigger->bounds.w = 1;
         new_transition_trigger->bounds.h = 1;
         editor_state->last_selected      = new_transition_trigger;
+    }
+}
+
+void editor_place_or_drag_chest(v2f32 point_in_tilespace) {
+    if (is_dragging()) {
+        return;
+    }
+
+    {
+        for (s32 index = 0; index < editor_state->entity_chest_count; ++index) {
+            struct entity_chest* current_chest = editor_state->entity_chests + index;
+
+            if (rectangle_f32_intersect(
+                    rectangle_f32(current_chest->position.x,
+                                  current_chest->position.y,
+                                  current_chest->scale.x,
+                                  current_chest->scale.y),
+                    rectangle_f32(point_in_tilespace.x, point_in_tilespace.y, 0.25, 0.25)
+                )) {
+                /* TODO drag candidate */
+                editor_state->last_selected = current_chest;
+                set_drag_candidate(current_chest, get_mouse_in_tile_space(&editor_state->camera, 640, 480),
+                                   v2f32(current_chest->position.x, current_chest->position.y));
+                return;
+            }
+        }
+
+
+        /* otherwise no touch, place a new one at default size 1 1 */
+        struct entity_chest* new_chest = &editor_state->entity_chests[editor_state->entity_chest_count++];
+        new_chest->position.x = point_in_tilespace.x;
+        new_chest->position.y = point_in_tilespace.y;
+        new_chest->scale.x = 1;
+        new_chest->scale.y = 1;
+        editor_state->last_selected      = new_chest;
+    }
+}
+
+void editor_remove_chest_at(v2f32 point_in_tilespace) {
+    for (s32 index = 0; index < editor_state->entity_chest_count; ++index) {
+        struct entity_chest* current_chest = editor_state->entity_chests + index;
+
+        if (rectangle_f32_intersect(
+                rectangle_f32(current_chest->position.x,
+                              current_chest->position.y,
+                              current_chest->scale.x,
+                              current_chest->scale.y),
+                rectangle_f32(point_in_tilespace.x, point_in_tilespace.y, 0.25, 0.25)
+            )) {
+            editor_state->entity_chests[index] = editor_state->entity_chests[--editor_state->entity_chest_count];
+            return;
+        }
     }
 }
 
@@ -330,39 +394,57 @@ local void handle_editor_tool_mode_input(struct software_framebuffer* framebuffe
                 }
             }
         } break;
+        case EDITOR_TOOL_ENTITY_PLACEMENT: {
+            switch (editor_state->entity_placement_type) {
+                /* NOTE for chest mode we should have a highlight tooltip to peak at the items in the chest. For quick assessment of things */
+                /* I guess same for the triggers... */
+                case ENTITY_PLACEMENT_TYPE_CHEST: {
+                    if (left_clicked) {
+                        editor_place_or_drag_chest(tile_space_mouse_location);
+                    } else if (right_clicked) {
+                        editor_remove_chest_at(tile_space_mouse_location);
+                    }
+                } break;
+            }
+        } break;
         case EDITOR_TOOL_TRIGGER_PLACEMENT: {
             /* wrap_around_key_selection(KEY_LEFT, KEY_RIGHT, &editor_state->trigger_placement_type, 0, 2); */
-            if (!editor_state->viewing_loaded_area) {
-                if (left_clicked) {
-                    editor_place_or_drag_level_transition_trigger(tile_space_mouse_location);
-                } else if (right_clicked) {
-                    editor_remove_level_transition_trigger_at(tile_space_mouse_location);
-                }
-            } else {
-                if (left_clicked) {
-                    assertion(editor_state->last_selected);
-                    struct trigger_level_transition* trigger = editor_state->last_selected;
-                    cstring_copy(editor_state->loaded_area_name, trigger->target_level, 128);
-                    _debugprintf("\"%s\"", trigger->target_level);
+            switch (editor_state->trigger_placement_type) {
+                case TRIGGER_PLACEMENT_TYPE_LEVEL_TRANSITION: {
+                    if (!editor_state->viewing_loaded_area) {
+                        if (left_clicked) {
+                            /* NOTE check the trigger mode */
+                            editor_place_or_drag_level_transition_trigger(tile_space_mouse_location);
+                        } else if (right_clicked) {
+                            editor_remove_level_transition_trigger_at(tile_space_mouse_location);
+                        }
+                    } else {
+                        if (left_clicked) {
+                            assertion(editor_state->last_selected);
+                            struct trigger_level_transition* trigger = editor_state->last_selected;
+                            cstring_copy(editor_state->loaded_area_name, trigger->target_level, 128);
+                            _debugprintf("\"%s\"", trigger->target_level);
 
-                    s32 mouse_location[2];
-                    get_mouse_location(mouse_location, mouse_location+1);
+                            s32 mouse_location[2];
+                            get_mouse_location(mouse_location, mouse_location+1);
 
-                    v2f32 world_space_mouse_location =
-                        camera_project(&editor_state->camera, v2f32(mouse_location[0], mouse_location[1]), framebuffer->width, framebuffer->height);
+                            v2f32 world_space_mouse_location =
+                                camera_project(&editor_state->camera, v2f32(mouse_location[0], mouse_location[1]), framebuffer->width, framebuffer->height);
 
-                    /* for tiles */
-                    v2f32 tile_space_mouse_location = world_space_mouse_location; {
-                        tile_space_mouse_location.x = floorf(world_space_mouse_location.x / TILE_UNIT_SIZE);
-                        tile_space_mouse_location.y = floorf(world_space_mouse_location.y / TILE_UNIT_SIZE);
+                            /* for tiles */
+                            v2f32 tile_space_mouse_location = world_space_mouse_location; {
+                                tile_space_mouse_location.x = floorf(world_space_mouse_location.x / TILE_UNIT_SIZE);
+                                tile_space_mouse_location.y = floorf(world_space_mouse_location.y / TILE_UNIT_SIZE);
+                            }
+
+                            trigger->spawn_location = tile_space_mouse_location;
+                        }
+
+                        if (is_key_pressed(KEY_RETURN)) {
+                            editor_state->viewing_loaded_area = false;
+                        }
                     }
-
-                    trigger->spawn_location = tile_space_mouse_location;
-                }
-
-                if (is_key_pressed(KEY_RETURN)) {
-                    editor_state->viewing_loaded_area = false;
-                }
+                } break;
             }
         } break;
         default: {
@@ -774,28 +856,71 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
                 /* I would show images, but this is easier for now */
                 case EDITOR_TOOL_TILE_PAINTING: {} break;
                 case EDITOR_TOOL_TRIGGER_PLACEMENT: {
-                    f32 draw_cursor_y = 30;
-                    struct trigger_level_transition* trigger = editor_state->last_selected;
+                    switch (editor_state->trigger_placement_type) {
+                        case TRIGGER_PLACEMENT_TYPE_LEVEL_TRANSITION: {
+                            f32 draw_cursor_y = 30;
+                            struct trigger_level_transition* trigger = editor_state->last_selected;
 
-                    char tmp_string[1024] = {};
-                    snprintf(tmp_string, 1024, "Transition Area: \"%s\" <%f, %f> (SET?)", trigger->target_level, trigger->spawn_location.x, trigger->spawn_location.y);
-                    if(EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(16, draw_cursor_y), string_from_cstring(tmp_string))) {
-                        /* open another file selection menu */
-                        editor_state->serialize_menu_mode   = 2;
-                        editor_state->serialize_menu_reason = 1;
-                        struct ui_pause_menu* menu_state = &state->ui_pause;
-                        game_state_set_ui_state(game_state, UI_STATE_PAUSE);
-                        game_state->ui_pause.transition_t    = 0;
-                        game_state->ui_pause.selection       = 0;
-                        zero_array(game_state->ui_pause.shift_t);
-                        menu_state->animation_state = UI_PAUSE_MENU_NO_ANIM;
-                        editor_state->tab_menu_open = 0;
+                            char tmp_string[1024] = {};
+                            snprintf(tmp_string, 1024, "Transition Area: \"%s\" <%f, %f> (SET?)", trigger->target_level, trigger->spawn_location.x, trigger->spawn_location.y);
+                            if(EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(16, draw_cursor_y), string_from_cstring(tmp_string))) {
+                                /* open another file selection menu */
+                                editor_state->serialize_menu_mode   = 2;
+                                editor_state->serialize_menu_reason = 1;
+                                struct ui_pause_menu* menu_state = &state->ui_pause;
+                                game_state_set_ui_state(game_state, UI_STATE_PAUSE);
+                                game_state->ui_pause.transition_t    = 0;
+                                game_state->ui_pause.selection       = 0;
+                                zero_array(game_state->ui_pause.shift_t);
+                                menu_state->animation_state = UI_PAUSE_MENU_NO_ANIM;
+                                editor_state->tab_menu_open = 0;
+                            }
+
+                            draw_cursor_y += 12 * 1.2 * 2;
+                            if(EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(16, draw_cursor_y), string_concatenate(&scratch_arena, string_literal("Facing Direction: "), facing_direction_strings[trigger->new_facing_direction]))) {
+                                trigger->new_facing_direction += 1;
+                                if (trigger->new_facing_direction > 4) trigger->new_facing_direction = 0;
+                            }
+                        } break;
                     }
+                } break;
+                case EDITOR_TOOL_ENTITY_PLACEMENT: {
+                    switch (editor_state->entity_placement_type) {
+                        case ENTITY_PLACEMENT_TYPE_CHEST: {
+                            f32 draw_cursor_y = 60;
+                            struct entity_chest* chest = editor_state->last_selected;
+                            software_framebuffer_draw_text(framebuffer, font, 2, v2f32(10, 10), string_literal("Chest Items"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
 
-                    draw_cursor_y += 12 * 1.2 * 2;
-                    if(EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(16, draw_cursor_y), string_concatenate(&scratch_arena, string_literal("Facing Direction: "), facing_direction_strings[trigger->new_facing_direction]))) {
-                        trigger->new_facing_direction += 1;
-                        if (trigger->new_facing_direction > 4) trigger->new_facing_direction = 0;
+                            if (chest->inventory.item_count > 0) {
+                                char tmp[255] = {};
+                                for (s32 index = 0; index < chest->inventory.item_count; ++index) {
+                                    struct item_instance* item      = chest->inventory.items + index;
+                                    struct item_def*      item_base = item_database_find_by_id(item->item);
+                                    snprintf(tmp, 255, "(%.*s) %.*s - %d/%d", item_base->id_name.length, item_base->id_name.data, item_base->name.length, item_base->name.data, item->count, item_base->max_stack_value);
+                                    draw_cursor_y += 12 * 1.2 * 1.5;
+
+                                    s32 button_response = (EDITOR_imgui_button(framebuffer, font, highlighted_font, 1.5, v2f32(16, draw_cursor_y), string_from_cstring(tmp)));
+                                    if(button_response == 1) {
+                                        /* ?clone? Not exactly expected behavior I'd say lol. */
+                                        entity_inventory_add(&chest->inventory, 16, item->item);
+                                    } else if (button_response == 2) {
+                                        if (is_key_down(KEY_SHIFT)) {
+                                            entity_inventory_remove_item(&chest->inventory, index, true);
+                                        } else {
+                                            entity_inventory_remove_item(&chest->inventory, index, false);
+                                        }
+                                    }
+                                }
+                            } else {
+                                software_framebuffer_draw_text(framebuffer, font, 2, v2f32(10, draw_cursor_y), string_literal("(no items)"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+                            }
+
+                            if(EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(150, 10), string_literal("(add item)"))) {
+                                /* pop up should just replace the menu */
+                                /* for now just add a test item */
+                                entity_inventory_add(&chest->inventory, 16, item_id_make(string_literal("item_sardine_fish_5")));
+                            }
+                        } break;
                     }
                 } break;
             }
@@ -808,6 +933,17 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
                         if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(16, draw_cursor_y), tile_table_data[index].name)) {
                             editor_state->tab_menu_open    = 0;
                             editor_state->painting_tile_id = index;
+                            break;
+                        }
+                        draw_cursor_y += 12 * 1.2 * 2;
+                    }
+                } break;
+                case EDITOR_TOOL_ENTITY_PLACEMENT: {
+                    f32 draw_cursor_y = 30;
+                    for (s32 index = 0; index < array_count(entity_placement_type_strings)-1; ++index) {
+                        if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(16, draw_cursor_y), entity_placement_type_strings[index])) {
+                            editor_state->tab_menu_open          = 0;
+                            editor_state->entity_placement_type = index;
                             break;
                         }
                         draw_cursor_y += 12 * 1.2 * 2;
@@ -876,6 +1012,28 @@ void update_and_render_editor(struct software_framebuffer* framebuffer, f32 dt) 
             /* NOTE display a visual denoting facing direction on transition */
             render_commands_push_text(&commands, font, 1, v2f32(current_trigger->bounds.x * TILE_UNIT_SIZE, current_trigger->bounds.y * TILE_UNIT_SIZE), string_literal("(level\ntransition\ntrigger)"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
         }
+
+        for (s32 chest_index = 0; chest_index < editor_state->entity_chest_count; ++chest_index) {
+            struct entity_chest* current_chest = editor_state->entity_chests + chest_index;
+
+            render_commands_push_image(&commands,
+                                       graphics_assets_get_image_by_id(&graphics_assets, chest_closed_img),
+                                       rectangle_f32(current_chest->position.x * TILE_UNIT_SIZE,
+                                                     current_chest->position.y * TILE_UNIT_SIZE,
+                                                     current_chest->scale.x * TILE_UNIT_SIZE,
+                                                     current_chest->scale.y * TILE_UNIT_SIZE),
+                                       RECTANGLE_F32_NULL,
+                                       color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
+
+            if (editor_state->last_selected == current_chest) {
+                render_commands_push_quad(&commands, rectangle_f32(current_chest->position.x * TILE_UNIT_SIZE,
+                                                                   current_chest->position.y * TILE_UNIT_SIZE,
+                                                                   current_chest->scale.x    * TILE_UNIT_SIZE,
+                                                                   current_chest->scale.y    * TILE_UNIT_SIZE),
+                                          color32u8(255, 0, 0, normalized_sinf(global_elapsed_time*2) * 0.5 *255 + 64), BLEND_MODE_ALPHA);
+            }
+        }
+        
         render_commands_push_quad(&commands, rectangle_f32(editor_state->default_player_spawn.x, editor_state->default_player_spawn.y, TILE_UNIT_SIZE/4, TILE_UNIT_SIZE/4),
                                   color32u8(0, 255, 0, normalized_sinf(global_elapsed_time*4) * 0.5*255 + 64), BLEND_MODE_ALPHA);
 

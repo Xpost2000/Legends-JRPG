@@ -7,8 +7,6 @@ static struct memory_arena game_arena   = {};
 /* compile out */
 static struct memory_arena editor_arena = {};
 
-image_id test_image;
-
 /* using GNSH fonts, which are public domain, but credits to open game art, this font looks cool */
 enum menu_font_variation {
     MENU_FONT_COLOR_GOLD,
@@ -37,10 +35,9 @@ static string menu_font_variation_string_names[] = {
 };
 font_id menu_fonts[9];
 
-image_id brick_img;
-image_id grass_img;
 image_id guy_img;
 image_id selection_sword_img;
+image_id chest_closed_img, chest_open_bottom_img, chest_open_top_img;
 
 struct tile_data_definition* tile_table_data;
 struct autotile_table*       auto_tile_info;
@@ -198,11 +195,13 @@ void game_initialize(void) {
     graphics_assets = graphics_assets_create(&game_arena, 64, 512);
     scratch_arena = memory_arena_create_from_heap("Scratch Buffer", Megabyte(16));
 
-    test_image          = graphics_assets_load_image(&graphics_assets, string_literal("./res/a.png"));
-    brick_img           = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/brick.png"));
-    grass_img           = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/grass.png"));
-    guy_img             = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/guy3.png"));
-    selection_sword_img = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/selection_sword.png"));
+    guy_img               = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/guy3.png"));
+    chest_closed_img      = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/chestclosed.png"));
+    chest_open_bottom_img = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/chestopenbottom.png"));
+    chest_open_top_img    = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/chestopentop.png"));
+    selection_sword_img   = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/selection_sword.png"));
+    graphics_assets_load_image(&graphics_assets, string_literal("./res/img/brick.png"));
+    graphics_assets_load_image(&graphics_assets, string_literal("./res/img/grass.png"));
 
     for (unsigned index = 0; index < array_count(menu_font_variation_string_names); ++index) {
         string current = menu_font_variation_string_names[index];

@@ -224,6 +224,15 @@ void entity_inventory_add(struct entity_inventory* inventory, s32 limits, item_i
     }
 }
 
+void entity_inventory_remove_item(struct entity_inventory* inventory, s32 item_index, bool remove_all) {
+    struct item_instance* item = inventory->items + item_index;
+    item->count -= 1;
+
+    if (item->count <= 0 || remove_all) {
+        inventory->items[item_index] = inventory->items[--inventory->count];
+    }
+}
+
 /* from inventory */
 void item_apply_to_entity(struct item_def* item, struct entity* target) {
     switch (item->type) {

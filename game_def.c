@@ -178,6 +178,20 @@ static string trigger_placement_type_strings[] = {
     string_literal("Level Transition"),
     string_literal("(count)")
 };
+enum entity_placement_type {
+    /* ENTITY_PLACEMENT_TYPE_ACTOR, */
+    ENTITY_PLACEMENT_TYPE_CHEST,
+    ENTITY_PLACEMENT_TYPE_COUNT,
+};
+static string entity_placement_type_strings[] = {
+    /* string_literal("NPC"), */
+    string_literal("Chest"),
+    string_literal("(count)"),
+};
+struct entity_chest_placement_property_menu {
+    /* bool item_edit_open; */
+    /* bool adding_item; */
+};
 struct editor_state {
     struct memory_arena* arena;
     /* SHIFT TAB SHOULD INTRODUCE A TOOL SELECTION MODE, instead of arrow keys */
@@ -186,14 +200,17 @@ struct editor_state {
     /* TAB WILL PROVIDE A CONTEXT SPECIFIC SELECTION */
     s32           painting_tile_id;
     s32           trigger_placement_type;
+    s32           entity_placement_type;
 
-    s32           tile_count;
-    s32           tile_capacity;
-    struct tile*  tiles;
-
+    s32                              tile_count;
+    s32                              tile_capacity;
+    struct tile*                     tiles;
     s32                              trigger_level_transition_count;
     s32                              trigger_level_transition_capacity;
     struct trigger_level_transition* trigger_level_transitions;
+    s32                              entity_chest_count;
+    s32                              entity_chest_capacity;
+    struct entity_chest*             entity_chests;
     
     struct camera camera;
 
@@ -204,6 +221,8 @@ struct editor_state {
     bool was_already_camera_dragging;
     v2f32 initial_mouse_position;
     v2f32 initial_camera_position;
+
+    struct entity_chest_placement_property_menu chest_property_menu;
 
     /* ui pause menu animation state */
     /* 0 - none, 1 - save, 2 - load */
