@@ -21,7 +21,8 @@ enum entity_flags {
     ENTITY_FLAGS_HIDDEN            = BIT(31),
 };
 
-#define MAX_PARTY_ITEMS (512)
+/* generousity is well rewarded */
+#define MAX_PARTY_ITEMS (4096)
 struct player_party_inventory {
     s32           item_count;
     struct item_instance items[MAX_PARTY_ITEMS];
@@ -42,6 +43,7 @@ struct entity_chest_inventory {
 /* both types above cast into this, and hopefully decay correctly without exploding */
 struct entity_inventory{s32 count; struct item_instance items[1];};
 void entity_inventory_add(struct entity_inventory* inventory, s32 limits, item_id item);
+void entity_inventory_add_multiple(struct entity_inventory* inventory, s32 limits, item_id item, s32 count);
 void entity_inventory_remove_item(struct entity_inventory* inventory, s32 item_index, bool remove_all);
 
 /* assume only player/npc style entity for now */
@@ -53,7 +55,7 @@ enum entity_chest_flags {
     ENTITY_CHEST_FLAGS_HIDDEN                   = ENTITY_FLAGS_HIDDEN,
 };
 /* in tiles */
-#define ENTITY_CHEST_INTERACTIVE_RADIUS (5)
+#define ENTITY_CHEST_INTERACTIVE_RADIUS ((f32)1.8565 * TILE_UNIT_SIZE)
 /* TODO implement */
 struct entity_chest {
     v2f32                         position;

@@ -53,6 +53,7 @@ struct entity* entity_list_dereference_entity(struct entity_list* entities, enti
 }
 
 /* requires tilemap world... */
+void player_handle_radial_interactables(struct game_state* state, struct entity_list* entities, s32 entity_index, f32 dt);
 void entity_handle_player_controlled(struct game_state* state, struct entity_list* entities, s32 entity_index, f32 dt) {
     struct entity* entity = entities->entities + entity_index;
 
@@ -72,6 +73,8 @@ void entity_handle_player_controlled(struct game_state* state, struct entity_lis
     if (move_down)  entity->velocity.y  = 100;
     if (move_left)  entity->velocity.x  = -100;
     if (move_right) entity->velocity.x  = 100;
+
+    player_handle_radial_interactables(state, entities, entity_index, dt);
 }
 
 void entity_list_update_entities(struct game_state* state, struct entity_list* entities, f32 dt, struct level_area* area) {
@@ -227,8 +230,6 @@ void entity_list_update_entities(struct game_state* state, struct entity_list* e
             /* handle trigger interactions */
             /* NPCs should not be able to leave areas for now */
             handle_entity_level_trigger_interactions(state, current_entity, area->trigger_level_transition_count, area->trigger_level_transitions, dt);
-            if (current_entity->flags & ENTITY_FLAGS_PLAYER_CONTROLLED) {
-            }
         } else {
             current_entity->position.x += current_entity->velocity.x * dt;
             current_entity->position.y += current_entity->velocity.y * dt;
@@ -277,6 +278,12 @@ void entity_inventory_add(struct entity_inventory* inventory, s32 limits, item_i
     if (inventory->count < limits) {
         inventory->items[inventory->count].item     = item;
         inventory->items[inventory->count++].count += 1;
+    }
+}
+
+void entity_inventory_add_multiple(struct entity_inventory* inventory, s32 limits, item_id item, s32 count) {
+    for (s32 time = 0; time < count; ++time) {
+        entity_inventory_add(inventory, limits, item);
     }
 }
 

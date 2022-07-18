@@ -61,17 +61,34 @@ void render_area(struct render_commands* commands, struct level_area* area) {
     }
 
     /* _debugprintf("%d chests", area->entity_chest_count); */
-    for (s32 index = 0; index < area->entity_chest_count; ++index) {
-        struct entity_chest* current_chest = area->chests + index;
-
-        render_commands_push_image(commands,
-                                   graphics_assets_get_image_by_id(&graphics_assets, chest_closed_img),
-                                   rectangle_f32(current_chest->position.x * TILE_UNIT_SIZE,
-                                                 current_chest->position.y * TILE_UNIT_SIZE,
-                                                 current_chest->scale.x * TILE_UNIT_SIZE,
-                                                 current_chest->scale.y * TILE_UNIT_SIZE),
-                                   RECTANGLE_F32_NULL,
-                                   color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
+    Array_For_Each(it, struct entity_chest, area->chests, area->entity_chest_count) {
+        if (it->flags & ENTITY_CHEST_FLAGS_UNLOCKED) {
+            render_commands_push_image(commands,
+                                       graphics_assets_get_image_by_id(&graphics_assets, chest_open_top_img),
+                                       rectangle_f32(it->position.x * TILE_UNIT_SIZE,
+                                                     (it->position.y-0.5) * TILE_UNIT_SIZE,
+                                                     it->scale.x * TILE_UNIT_SIZE,
+                                                     it->scale.y * TILE_UNIT_SIZE),
+                                       RECTANGLE_F32_NULL,
+                                       color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
+            render_commands_push_image(commands,
+                                       graphics_assets_get_image_by_id(&graphics_assets, chest_open_bottom_img),
+                                       rectangle_f32(it->position.x * TILE_UNIT_SIZE,
+                                                     it->position.y * TILE_UNIT_SIZE,
+                                                     it->scale.x * TILE_UNIT_SIZE,
+                                                     it->scale.y * TILE_UNIT_SIZE),
+                                       RECTANGLE_F32_NULL,
+                                       color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
+        } else {
+            render_commands_push_image(commands,
+                                       graphics_assets_get_image_by_id(&graphics_assets, chest_closed_img),
+                                       rectangle_f32(it->position.x * TILE_UNIT_SIZE,
+                                                     it->position.y * TILE_UNIT_SIZE,
+                                                     it->scale.x * TILE_UNIT_SIZE,
+                                                     it->scale.y * TILE_UNIT_SIZE),
+                                       RECTANGLE_F32_NULL,
+                                       color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
+        }
     }
 }
 
@@ -269,7 +286,32 @@ void game_deinitialize(void) {
     memory_arena_finish(&scratch_arena);
 }
 
+local void game_loot_chest(struct game_state* state, struct entity_chest* chest) {
+    struct entity* player = entity_list_dereference_entity(&state->entities, player_id);
+    
+    Array_For_Each(it, struct item_instance, chest->inventory.items, chest->inventory.item_count) {
+        entity_inventory_add_multiple(&state->inventory, MAX_PARTY_ITEMS, it->item, it->count);
+        {
+            char tmp[512]= {};
+            struct item_def* item_base = item_database_find_by_id(it->item);
+            snprintf(tmp, 512, "acquired %.*s x%d", item_base->name.length, item_base->name.data, it->count);
+            game_message_queue(string_from_cstring(tmp));
+        }
+    }
+}
+
+void game_message_queue(string message) {
+    
+}
+
+void game_display_and_update_messages(struct software_framebuffer* framebuffer, f32 dt) {
+    
+}
+
 local void update_and_render_ingame_game_menu_ui(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
+    if (game_display_and_update_messages(framebuffer, dt))
+        return;
+
     if (state->is_conversation_active) {
         /* TODO no layout right now, do that later or tomorrow as warmup */
         /* TODO animation! */
@@ -329,7 +371,26 @@ local void update_and_render_ingame_game_menu_ui(struct game_state* state, struc
                 }
             }
         }
-    } else {
+    }
+
+    if (state->interactable_state.interactable_type != INTERACTABLE_TYPE_NONE) {
+        struct font_cache* font = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_BLUE]);
+        switch (state->interactable_state.interactable_type) {
+            case INTERACTABLE_TYPE_CHEST: {
+                struct entity_chest* chest = state->interactable_state.context;
+                software_framebuffer_draw_text(framebuffer, font, 4, v2f32(100, 100), string_literal("open chest"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+
+                if (is_key_pressed(KEY_RETURN)) {
+                    game_loot_chest(state, chest);
+                }
+            } break;
+            default: {
+                
+            } break;
+        }
+    }
+
+    {
         if (is_key_pressed(KEY_ESCAPE)) {
             game_state_set_ui_state(game_state, UI_STATE_PAUSE);
             /* ready pause menu */
@@ -715,7 +776,7 @@ local void unmark_any_interactables(struct game_state* state) {
 local void mark_interactable(struct game_state* state, s32 type, void* ptr) {
     if (state->interactable_state.interactable_type == type &&
         state->interactable_state.context == ptr) {
-        
+        _debugprintf("same interactable!");
     } else {
         state->interactable_state.interactable_type = type;
         state->interactable_state.context           = ptr;
@@ -729,10 +790,13 @@ void player_handle_radial_interactables(struct game_state* state, struct entity_
 
     if (!found_any_interactable) {
         Array_For_Each(it, struct entity_chest, area->chests, area->entity_chest_count) {
-            f32 distance_sq = v2f32_distance_sq(entity->position, it->position);
+            f32 distance_sq = v2f32_distance_sq(entity->position, v2f32_scale(it->position, TILE_UNIT_SIZE));
+            if (it->flags & ENTITY_CHEST_FLAGS_UNLOCKED) continue;
 
             if (distance_sq <= (ENTITY_CHEST_INTERACTIVE_RADIUS*ENTITY_CHEST_INTERACTIVE_RADIUS)) {
                 mark_interactable(state, INTERACTABLE_TYPE_CHEST, it);
+                found_any_interactable = true;
+                break;
             }
         }
     }

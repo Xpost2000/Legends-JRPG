@@ -282,16 +282,24 @@ struct editor_state {
     bool       viewing_loaded_area;
 };
 
-#if 0
 /* TODO */
 /* for now just an informative message box. No prompting. Prompts are probably just going to be different code, and more involved. */
 /* I need a UI graphic for this. */
 struct ui_popup_message_box {
-    char message_storage[128];
+    /* internal cstring storage unfortunately. */
+    char message_storage[256];
     /* should include animation time */
-    s32 show_character_count;
+    /* s32 show_character_count; */
 };
-#endif
+/* anim state */
+struct ui_popup_state {
+    s32                         message_count;
+    struct ui_popup_message_box messages[128];
+};
+
+struct ui_popup_state global_popup_state = {};
+void game_message_queue(string message);
+bool game_display_and_update_messages(struct software_framebuffer* framebuffer, f32 dt);
 
 enum ui_pause_menu_animation_state{
     UI_PAUSE_MENU_TRANSITION_IN,
@@ -340,7 +348,18 @@ struct ui_sub_menu_inventory {
     s32 selection_item_list;
 };
 
+enum interactable_type {
+    INTERACTABLE_TYPE_NONE,
+    INTERACTABLE_TYPE_CHEST,
+    INTERACTABLE_TYPE_COUNT,
+};
+static string interactable_type_strings[] = {
+    string_literal("(none)"),
+    string_literal("(chest)"),
+    string_literal("(count)"),
+};
 #include "entities_def.c"
+
 struct game_state {
     struct memory_arena* arena;
 
@@ -370,6 +389,13 @@ struct game_state {
     struct conversation current_conversation;
     u32                 current_conversation_node_id;
     s32                 currently_selected_dialogue_choice;
+
+    struct {
+        s32   interactable_type;
+        void* context;
+
+        /* animation state... hahahahahaha */
+    } interactable_state;
 };
 
 local v2f32 get_mouse_in_world_space(struct camera* camera, s32 screen_width, s32 screen_height) {
