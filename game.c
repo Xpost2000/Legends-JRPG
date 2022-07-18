@@ -315,14 +315,12 @@ bool game_display_and_update_messages(struct software_framebuffer* framebuffer, 
         struct font_cache* font = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_YELLOW]);
         string message_str      = string_from_cstring(current_message->message_storage);
 
-        f32                  message_text_height = font_cache_calculate_height_of(font, message_str, framebuffer->width * 0.5) * 2;
-        struct rectangle_f32 message_region      = rectangle_f32_centered(rectangle_f32(0, 0, framebuffer->width, framebuffer->height), framebuffer->width * 0.5, message_text_height);
+        f32                  message_text_height = font_cache_calculate_height_of(font, message_str, framebuffer->width * 0.5, 2);
+        struct rectangle_f32 message_region      = rectangle_f32_centered(rectangle_f32(0, 0, framebuffer->width, framebuffer->height), framebuffer->width * 0.5, message_text_height*1.15);
 
         {
-            software_framebuffer_draw_quad(framebuffer, message_region, color32u8(30, 30, 255, 255), BLEND_MODE_ALPHA);
+            software_framebuffer_draw_quad(framebuffer, message_region, color32u8(30, 30, 200, 255), BLEND_MODE_ALPHA);
             software_framebuffer_draw_text_bounds(framebuffer, font, 2, v2f32(message_region.x+5, message_region.y+5), framebuffer->width * 0.5, message_str, color32f32(1,1,1,1), BLEND_MODE_ALPHA);
-            /* software_framebuffer_draw_text(framebuffer, font, 2, v2f32(message_region.x + 5, message_region.y + 5), string_from_cstring(current_message->message_storage), */
-            /*                                color32f32(1,1,1,1), BLEND_MODE_ALPHA); */
         }
 
         /* dismiss current message */

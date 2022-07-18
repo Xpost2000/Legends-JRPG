@@ -59,10 +59,11 @@ f32 font_cache_text_height(struct font_cache* font_cache) {
     return font_cache->tile_height;
 }
 
-f32 font_cache_calculate_height_of(struct font_cache* font_cache, string str, f32 width_bounds) {
+f32 font_cache_calculate_height_of(struct font_cache* font_cache, string str, f32 width_bounds, f32 scale) {
     f32 font_height = font_cache_text_height(font_cache);
 
-    s32 units = 0;
+    s32 units = 1;
+
     if (width_bounds == 0.0f) {
         for (s32 index = 0; index < str.length; ++index) {
             if (str.data[index] == '\n')
@@ -71,7 +72,7 @@ f32 font_cache_calculate_height_of(struct font_cache* font_cache, string str, f3
     } else {
         f32 cursor_x = 0;
         for (s32 index = 0; index < str.length; ++index) {
-            cursor_x += font_cache->tile_width;
+            cursor_x += font_cache->tile_width * scale;
 
             if (str.data[index] == '\n') {
                 cursor_x = 0;
@@ -85,7 +86,7 @@ f32 font_cache_calculate_height_of(struct font_cache* font_cache, string str, f3
         }
     }
 
-    return units * font_height;
+    return units * font_height * scale;
 }
 
 f32 font_cache_text_width(struct font_cache* font_cache, string text) {
@@ -503,7 +504,7 @@ void software_framebuffer_draw_text_bounds(struct software_framebuffer* framebuf
 
             x_cursor += font->tile_width * scale;
 
-            if (x_cursor >= bounds_w) {
+            if (x_cursor >= xy.x+bounds_w) {
                 x_cursor = xy.x;
                 y_cursor += font->tile_height * scale;
             }

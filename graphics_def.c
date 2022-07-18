@@ -94,7 +94,7 @@ struct font_cache font_cache_load_bitmap_font(string filepath, s32 tile_width, s
 void              font_cache_free(struct font_cache* font_cache);
 f32               font_cache_text_height(struct font_cache* font_cache);
 f32               font_cache_text_width(struct font_cache* font_cache, string text);
-f32               font_cache_calculate_height_of(struct font_cache* font_cache, string str, f32 width_bounds);
+f32               font_cache_calculate_height_of(struct font_cache* font_cache, string str, f32 width_bounds, f32 scale);
 
 struct image_buffer image_buffer_load_from_file(string file_path);
 void                image_buffer_write_to_disk(struct image_buffer* image, string as);
