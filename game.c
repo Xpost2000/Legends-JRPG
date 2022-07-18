@@ -708,6 +708,20 @@ void handle_entity_level_trigger_interactions(struct game_state* state, struct e
     }
 }
 
+local void unmark_any_interactables(struct game_state* state) {
+    state->interactable_state.interactable_type = 0;
+    state->interactable_state.context           = NULL;
+}
+local void mark_interactable(struct game_state* state, s32 type, void* ptr) {
+    if (state->interactable_state.interactable_type == type &&
+        state->interactable_state.context == ptr) {
+        
+    } else {
+        state->interactable_state.interactable_type = type;
+        state->interactable_state.context           = ptr;
+    }
+}
+
 void player_handle_radial_interactables(struct game_state* state, struct entity_list* entities, s32 entity_index, f32 dt ) {
     bool found_any_interactable = false;
     struct level_area* area   = &state->loaded_area;
@@ -715,8 +729,15 @@ void player_handle_radial_interactables(struct game_state* state, struct entity_
 
     if (!found_any_interactable) {
         Array_For_Each(it, struct entity_chest, area->chests, area->entity_chest_count) {
+            f32 distance_sq = v2f32_distance_sq(entity->position, it->position);
+
+            if (distance_sq <= (ENTITY_CHEST_INTERACTIVE_RADIUS*ENTITY_CHEST_INTERACTIVE_RADIUS)) {
+                mark_interactable(state, INTERACTABLE_TYPE_CHEST, it);
+            }
         }
     }
+
+    if (!found_any_interactable) unmark_any_interactables(state);
 }
 
 void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
