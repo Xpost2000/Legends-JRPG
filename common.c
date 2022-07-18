@@ -349,6 +349,14 @@ struct rectangle_s16 {
 #define RECTANGLE_S32_NULL rectangle_s32(0,0,0,0)
 #define RECTANGLE_S16_NULL rectangle_s16(0,0,0,0)
 
+struct rectangle_f32 rectangle_f32_centered(struct rectangle_f32 center_region, f32 width, f32 height) {
+    return rectangle_f32(
+        center_region.x + (center_region.w/2) - (width/2),
+        center_region.y + (center_region.h/2) - (height/2),
+        width, height
+    );
+}
+
 struct rectangle_f32 rectangle_f32_scale(struct rectangle_f32 a, f32 k) {
     a.x *= k;
     a.y *= k;

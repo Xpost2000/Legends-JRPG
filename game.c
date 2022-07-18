@@ -312,11 +312,17 @@ bool game_display_and_update_messages(struct software_framebuffer* framebuffer, 
         /* haven't decided the stack order... Just do first in, last out for now */
         struct ui_popup_message_box* current_message = &global_popup_state.messages[global_popup_state.message_count-1];
 
+        struct font_cache* font = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_YELLOW]);
+        string message_str      = string_from_cstring(current_message->message_storage);
+
+        f32                  message_text_height = font_cache_calculate_height_of(font, message_str, framebuffer->width * 0.5) * 2;
+        struct rectangle_f32 message_region      = rectangle_f32_centered(rectangle_f32(0, 0, framebuffer->width, framebuffer->height), framebuffer->width * 0.5, message_text_height);
+
         {
-            struct font_cache* font = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_YELLOW]);
-            software_framebuffer_draw_quad(framebuffer, rectangle_f32(50, 480-180, 200, 30), color32u8(90, 30, 255, 255), BLEND_MODE_ALPHA);
-            software_framebuffer_draw_text(framebuffer, font, 2, v2f32(60, 480-150+10), string_from_cstring(current_message->message_storage),
-                                           color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+            software_framebuffer_draw_quad(framebuffer, message_region, color32u8(30, 30, 255, 255), BLEND_MODE_ALPHA);
+            software_framebuffer_draw_text_bounds(framebuffer, font, 2, v2f32(message_region.x+5, message_region.y+5), framebuffer->width * 0.5, message_str, color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+            /* software_framebuffer_draw_text(framebuffer, font, 2, v2f32(message_region.x + 5, message_region.y + 5), string_from_cstring(current_message->message_storage), */
+            /*                                color32f32(1,1,1,1), BLEND_MODE_ALPHA); */
         }
 
         /* dismiss current message */

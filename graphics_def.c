@@ -94,6 +94,7 @@ struct font_cache font_cache_load_bitmap_font(string filepath, s32 tile_width, s
 void              font_cache_free(struct font_cache* font_cache);
 f32               font_cache_text_height(struct font_cache* font_cache);
 f32               font_cache_text_width(struct font_cache* font_cache, string text);
+f32               font_cache_calculate_height_of(struct font_cache* font_cache, string str, f32 width_bounds);
 
 struct image_buffer image_buffer_load_from_file(string file_path);
 void                image_buffer_write_to_disk(struct image_buffer* image, string as);
@@ -148,7 +149,9 @@ void software_framebuffer_draw_quad(struct software_framebuffer* framebuffer, st
 void software_framebuffer_draw_image_ex(struct software_framebuffer* framebuffer, struct image_buffer* image, struct rectangle_f32 destination, struct rectangle_f32 src, union color32f32 modulation, u32 flags, u8 blend_mode);
 /* we do not have a draw glyph */
 /* add layout draw_text */
-void software_framebuffer_draw_text(struct software_framebuffer* framebuffer, struct font_cache* font, f32 scale, v2f32 xy, string cstring, union color32f32 modulation, u8 blend_mode);
+void software_framebuffer_draw_text(struct software_framebuffer* framebuffer, struct font_cache* font, f32 scale, v2f32 xy, string text, union color32f32 modulation, u8 blend_mode);
+/* TODO make command buffer version */
+void software_framebuffer_draw_text_bounds(struct software_framebuffer* framebuffer, struct font_cache* font, f32 scale, v2f32 xy, f32 bounds_w, string cstring, union color32f32 modulation, u8 blend_mode);
 /* only thin lines */
 void software_framebuffer_draw_line(struct software_framebuffer* framebuffer, v2f32 start, v2f32 end, union color32u8 rgba, u8 blend_mode);
 

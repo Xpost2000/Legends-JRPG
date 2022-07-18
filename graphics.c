@@ -59,6 +59,35 @@ f32 font_cache_text_height(struct font_cache* font_cache) {
     return font_cache->tile_height;
 }
 
+f32 font_cache_calculate_height_of(struct font_cache* font_cache, string str, f32 width_bounds) {
+    f32 font_height = font_cache_text_height(font_cache);
+
+    s32 units = 0;
+    if (width_bounds == 0.0f) {
+        for (s32 index = 0; index < str.length; ++index) {
+            if (str.data[index] == '\n')
+                units++;
+        }
+    } else {
+        f32 cursor_x = 0;
+        for (s32 index = 0; index < str.length; ++index) {
+            cursor_x += font_cache->tile_width;
+
+            if (str.data[index] == '\n') {
+                cursor_x = 0;
+                units++;
+            }
+
+            if (cursor_x >= width_bounds) {
+                cursor_x = 0;
+                units++;
+            }
+        }
+    }
+
+    return units * font_height;
+}
+
 f32 font_cache_text_width(struct font_cache* font_cache, string text) {
     /* NOTE font_caches are monospaced */
     return font_cache->tile_width * text.length;
@@ -440,6 +469,44 @@ void software_framebuffer_draw_text(struct software_framebuffer* framebuffer, st
             );
 
             x_cursor += font->tile_width * scale;
+        }
+    }
+}
+
+void software_framebuffer_draw_text_bounds(struct software_framebuffer* framebuffer, struct font_cache* font, f32 scale, v2f32 xy, f32 bounds_w, string text, union color32f32 modulation, u8 blend_mode) {
+    f32 x_cursor = xy.x;
+    f32 y_cursor = xy.y;
+
+    for (unsigned index = 0; index < text.length; ++index) {
+        if (text.data[index] == '\n') {
+            y_cursor += font->tile_height * scale;
+            x_cursor = xy.x;
+        } else {
+            s32 character_index = text.data[index] - 32;
+
+            software_framebuffer_draw_image_ex(
+                framebuffer, font,
+                rectangle_f32(
+                    x_cursor, y_cursor,
+                    font->tile_width * scale,
+                    font->tile_height * scale
+                ),
+                rectangle_f32(
+                    (character_index % font->atlas_cols) * font->tile_width,
+                    (character_index / font->atlas_cols) * font->tile_height,
+                    font->tile_width, font->tile_height
+                ),
+                modulation,
+                NO_FLAGS,
+                blend_mode
+            );
+
+            x_cursor += font->tile_width * scale;
+
+            if (x_cursor >= bounds_w) {
+                x_cursor = xy.x;
+                y_cursor += font->tile_height * scale;
+            }
         }
     }
 }
