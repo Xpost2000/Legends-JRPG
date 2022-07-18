@@ -133,7 +133,7 @@ void entity_list_update_entities(struct game_state* state, struct entity_list* e
                             f32 chest_right_edge  = (chest->position.x + 1) * TILE_UNIT_SIZE;
                             f32 chest_left_edge   = (chest->position.x)     * TILE_UNIT_SIZE;
                             f32 chest_bottom_edge = (chest->position.y + 1) * TILE_UNIT_SIZE;
-                            f32 chest_top_edge    = (chest->position.x)     * TILE_UNIT_SIZE;
+                            f32 chest_top_edge    = (chest->position.y)     * TILE_UNIT_SIZE;
 
                             f32 entity_left_edge   = current_entity->position.x;
                             f32 entity_right_edge  = current_entity->position.x + current_entity->scale.x;
@@ -199,7 +199,7 @@ void entity_list_update_entities(struct game_state* state, struct entity_list* e
                             f32 chest_right_edge  = (chest->position.x + 1) * TILE_UNIT_SIZE;
                             f32 chest_left_edge   = (chest->position.x)     * TILE_UNIT_SIZE;
                             f32 chest_bottom_edge = (chest->position.y + 1) * TILE_UNIT_SIZE;
-                            f32 chest_top_edge    = (chest->position.x)     * TILE_UNIT_SIZE;
+                            f32 chest_top_edge    = (chest->position.y)     * TILE_UNIT_SIZE;
 
                             f32 entity_left_edge   = current_entity->position.x;
                             f32 entity_right_edge  = current_entity->position.x + current_entity->scale.x;
