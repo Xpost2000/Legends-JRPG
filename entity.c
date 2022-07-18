@@ -91,63 +91,136 @@ void entity_list_update_entities(struct game_state* state, struct entity_list* e
             /* tile intersection */
             {
                 current_entity->position.x += current_entity->velocity.x * dt;
-                for (s32 index = 0; index < area->tile_count; ++index) {
-                    struct tile* current_tile = area->tiles + index;
-                    struct tile_data_definition* tile_data = tile_table_data + current_tile->id;
+                {
+                    bool stop_horizontal_movement = false;
 
-                    if (Get_Bit(tile_data->flags, TILE_DATA_FLAGS_SOLID)) {
-                        f32 tile_right_edge  = (current_tile->x + 1) * TILE_UNIT_SIZE;
-                        f32 tile_left_edge   = (current_tile->x) * TILE_UNIT_SIZE;
-                        f32 tile_top_edge    = (current_tile->y) * TILE_UNIT_SIZE;
-                        f32 tile_bottom_edge = (current_tile->y + 1) * TILE_UNIT_SIZE;
+                    if (!stop_horizontal_movement) {
+                        for (s32 index = 0; index < area->tile_count; ++index) {
+                            struct tile* current_tile = area->tiles + index;
+                            struct tile_data_definition* tile_data = tile_table_data + current_tile->id;
 
-                        f32 entity_left_edge   = current_entity->position.x;
-                        f32 entity_right_edge  = current_entity->position.x + current_entity->scale.x;
-                        f32 entity_top_edge    = current_entity->position.y;
-                        f32 entity_bottom_edge = current_entity->position.y + current_entity->scale.y;
+                            if (Get_Bit(tile_data->flags, TILE_DATA_FLAGS_SOLID)) {
+                                f32 tile_right_edge  = (current_tile->x + 1) * TILE_UNIT_SIZE;
+                                f32 tile_left_edge   = (current_tile->x) * TILE_UNIT_SIZE;
+                                f32 tile_top_edge    = (current_tile->y) * TILE_UNIT_SIZE;
+                                f32 tile_bottom_edge = (current_tile->y + 1) * TILE_UNIT_SIZE;
 
-                        /* x */
-                        if (rectangle_f32_intersect(rectangle_f32(current_entity->position.x, current_entity->position.y, current_entity->scale.x, current_entity->scale.y),
-                                                    rectangle_f32(tile_left_edge, tile_top_edge, tile_right_edge - tile_left_edge, tile_bottom_edge - tile_top_edge)))
-                        {
-                            if (entity_right_edge > tile_right_edge) {
-                                current_entity->position.x = tile_right_edge;
-                            } else if (entity_right_edge > tile_left_edge) {
-                                current_entity->position.x = tile_left_edge - current_entity->scale.x;
+                                f32 entity_left_edge   = current_entity->position.x;
+                                f32 entity_right_edge  = current_entity->position.x + current_entity->scale.x;
+                                f32 entity_top_edge    = current_entity->position.y;
+                                f32 entity_bottom_edge = current_entity->position.y + current_entity->scale.y;
+
+                                /* x */
+                                if (rectangle_f32_intersect(entity_rectangle_collision_bounds(current_entity),
+                                                            rectangle_f32(tile_left_edge, tile_top_edge, tile_right_edge - tile_left_edge, tile_bottom_edge - tile_top_edge)))
+                                {
+                                    if (entity_right_edge > tile_right_edge) {
+                                        current_entity->position.x = tile_right_edge;
+                                    } else if (entity_right_edge > tile_left_edge) {
+                                        current_entity->position.x = tile_left_edge - current_entity->scale.x;
+                                    }
+
+                                    stop_horizontal_movement = true;
+                                }
                             }
-                            current_entity->velocity.x = 0;
                         }
                     }
+
+                    if (!stop_horizontal_movement) {
+                        for (s32 index = 0; index < area->entity_chest_count; ++index) {
+                            struct entity_chest* chest = area->chests + index;
+
+                            f32 chest_right_edge  = (chest->position.x + 1) * TILE_UNIT_SIZE;
+                            f32 chest_left_edge   = (chest->position.x)     * TILE_UNIT_SIZE;
+                            f32 chest_bottom_edge = (chest->position.y + 1) * TILE_UNIT_SIZE;
+                            f32 chest_top_edge    = (chest->position.x)     * TILE_UNIT_SIZE;
+
+                            f32 entity_left_edge   = current_entity->position.x;
+                            f32 entity_right_edge  = current_entity->position.x + current_entity->scale.x;
+                            f32 entity_top_edge    = current_entity->position.y;
+                            f32 entity_bottom_edge = current_entity->position.y + current_entity->scale.y;
+
+                            if (rectangle_f32_intersect(entity_rectangle_collision_bounds(current_entity),
+                                                        rectangle_f32(chest_left_edge, chest_top_edge, chest_right_edge - chest_left_edge, chest_bottom_edge - chest_top_edge))) {
+                                if (entity_right_edge > chest_right_edge) {
+                                    current_entity->position.x = chest_right_edge;
+                                } else if (entity_right_edge > chest_left_edge) {
+                                    current_entity->position.x = chest_left_edge - current_entity->scale.x;
+                                }
+
+                                stop_horizontal_movement = true;
+                            }
+                        }
+                    }
+
+                    if (stop_horizontal_movement) current_entity->velocity.x = 0;
                 }
 
                 current_entity->position.y += current_entity->velocity.y * dt;
-                for (s32 index = 0; index < area->tile_count; ++index) {
-                    struct tile* current_tile = area->tiles + index;
-                    struct tile_data_definition* tile_data = tile_table_data + current_tile->id;
+                {
+                    bool stop_vertical_movement = false;
 
-                    if (Get_Bit(tile_data->flags, TILE_DATA_FLAGS_SOLID)) {
-                        f32 tile_right_edge  = (current_tile->x + 1) * TILE_UNIT_SIZE;
-                        f32 tile_left_edge   = (current_tile->x) * TILE_UNIT_SIZE;
-                        f32 tile_top_edge    = (current_tile->y) * TILE_UNIT_SIZE;
-                        f32 tile_bottom_edge = (current_tile->y + 1) * TILE_UNIT_SIZE;
+                    if (!stop_vertical_movement) {
+                        for (s32 index = 0; index < area->tile_count; ++index) {
+                            struct tile* current_tile = area->tiles + index;
+                            struct tile_data_definition* tile_data = tile_table_data + current_tile->id;
 
-                        f32 entity_left_edge   = current_entity->position.x;
-                        f32 entity_right_edge  = current_entity->position.x + current_entity->scale.x;
-                        f32 entity_top_edge    = current_entity->position.y;
-                        f32 entity_bottom_edge = current_entity->position.y + current_entity->scale.y;
+                            if (Get_Bit(tile_data->flags, TILE_DATA_FLAGS_SOLID)) {
+                                f32 tile_right_edge  = (current_tile->x + 1) * TILE_UNIT_SIZE;
+                                f32 tile_left_edge   = (current_tile->x) * TILE_UNIT_SIZE;
+                                f32 tile_top_edge    = (current_tile->y) * TILE_UNIT_SIZE;
+                                f32 tile_bottom_edge = (current_tile->y + 1) * TILE_UNIT_SIZE;
 
-                        /* x */
-                        if (rectangle_f32_intersect(rectangle_f32(current_entity->position.x, current_entity->position.y, current_entity->scale.x, current_entity->scale.y),
-                                                    rectangle_f32(tile_left_edge, tile_top_edge, tile_right_edge - tile_left_edge, tile_bottom_edge - tile_top_edge)))
-                        {
-                            if (entity_bottom_edge > tile_top_edge && entity_bottom_edge < tile_bottom_edge) {
-                                current_entity->position.y = tile_top_edge - current_entity->scale.y;
-                            } else if (entity_top_edge < tile_bottom_edge && entity_bottom_edge > tile_bottom_edge) {
-                                current_entity->position.y = tile_bottom_edge;
+                                f32 entity_left_edge   = current_entity->position.x;
+                                f32 entity_right_edge  = current_entity->position.x + current_entity->scale.x;
+                                f32 entity_top_edge    = current_entity->position.y;
+                                f32 entity_bottom_edge = current_entity->position.y + current_entity->scale.y;
+
+                                /* x */
+                                if (rectangle_f32_intersect(rectangle_f32(current_entity->position.x, current_entity->position.y, current_entity->scale.x, current_entity->scale.y),
+                                                            rectangle_f32(tile_left_edge, tile_top_edge, tile_right_edge - tile_left_edge, tile_bottom_edge - tile_top_edge)))
+                                {
+                                    if (entity_bottom_edge > tile_top_edge && entity_bottom_edge < tile_bottom_edge) {
+                                        current_entity->position.y = tile_top_edge - current_entity->scale.y;
+                                    } else if (entity_top_edge < tile_bottom_edge && entity_bottom_edge > tile_bottom_edge) {
+                                        current_entity->position.y = tile_bottom_edge;
+                                    }
+
+                                    stop_vertical_movement = true;
+                                }
                             }
-                            current_entity->velocity.y = 0;
                         }
                     }
+
+                    if (!stop_vertical_movement) {
+                        for (s32 index = 0; index < area->entity_chest_count; ++index) {
+                            struct entity_chest* chest = area->chests + index;
+
+                            f32 chest_right_edge  = (chest->position.x + 1) * TILE_UNIT_SIZE;
+                            f32 chest_left_edge   = (chest->position.x)     * TILE_UNIT_SIZE;
+                            f32 chest_bottom_edge = (chest->position.y + 1) * TILE_UNIT_SIZE;
+                            f32 chest_top_edge    = (chest->position.x)     * TILE_UNIT_SIZE;
+
+                            f32 entity_left_edge   = current_entity->position.x;
+                            f32 entity_right_edge  = current_entity->position.x + current_entity->scale.x;
+                            f32 entity_top_edge    = current_entity->position.y;
+                            f32 entity_bottom_edge = current_entity->position.y + current_entity->scale.y;
+
+                            if (rectangle_f32_intersect(entity_rectangle_collision_bounds(current_entity),
+                                                        rectangle_f32(chest_left_edge, chest_top_edge,
+                                                                      chest_right_edge - chest_left_edge, chest_bottom_edge - chest_top_edge))) {
+                                if (entity_bottom_edge > chest_top_edge && entity_bottom_edge < chest_bottom_edge) {
+                                    current_entity->position.y = chest_top_edge - current_entity->scale.y;
+                                } else if (entity_top_edge < chest_bottom_edge && entity_bottom_edge > chest_bottom_edge) {
+                                    current_entity->position.y = chest_bottom_edge;
+                                }
+
+                                stop_vertical_movement = true;
+                            }
+                        }
+                    }
+
+                    if (stop_vertical_movement) current_entity->velocity.y = 0;
                 }
             }
 
@@ -171,13 +244,18 @@ void entity_list_render_entities(struct entity_list* entities, struct graphics_a
             continue;
         }
 
+        /* TODO sprite model anchor */
         render_commands_push_image(commands,
                                    graphics_assets_get_image_by_id(graphics_assets, guy_img),
                                    rectangle_f32(current_entity->position.x,
-                                                 current_entity->position.y,
+                                                 current_entity->position.y - 32,
                                                  16 * 2,
                                                  32 * 2),
                                    RECTANGLE_F32_NULL, color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
+
+#ifndef RELEASE
+        render_commands_push_quad(commands, rectangle_f32(current_entity->position.x, current_entity->position.y, current_entity->scale.x, current_entity->scale.y), color32u8(255, 0, 0, 64), BLEND_MODE_ALPHA);
+#endif
     }
 }
 

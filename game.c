@@ -60,10 +60,11 @@ void render_area(struct render_commands* commands, struct level_area* area) {
 
     }
 
-    _debugprintf("%d chests", area->entity_chest_count);
+    /* _debugprintf("%d chests", area->entity_chest_count); */
     for (s32 index = 0; index < area->entity_chest_count; ++index) {
         struct entity_chest* current_chest = area->chests + index;
-        render_commands_push_image(&commands,
+
+        render_commands_push_image(commands,
                                    graphics_assets_get_image_by_id(&graphics_assets, chest_closed_img),
                                    rectangle_f32(current_chest->position.x * TILE_UNIT_SIZE,
                                                  current_chest->position.y * TILE_UNIT_SIZE,
@@ -759,7 +760,7 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
     }
 
     do_weather(framebuffer, game_state, dt);
-#if 1 
+#if 0
     /* camera debug */
     {
         software_framebuffer_draw_quad(framebuffer, game_state->camera.travel_bounds, color32u8(0,0,255,100), BLEND_MODE_ALPHA);
