@@ -287,14 +287,14 @@ struct editor_state {
 /* I need a UI graphic for this. */
 struct ui_popup_message_box {
     /* internal cstring storage unfortunately. */
-    char message_storage[256];
+    char message_storage[128];
     /* should include animation time */
     /* s32 show_character_count; */
 };
 /* anim state */
 struct ui_popup_state {
     s32                         message_count;
-    struct ui_popup_message_box messages[128];
+    struct ui_popup_message_box messages[256];
 };
 
 struct ui_popup_state global_popup_state = {};

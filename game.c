@@ -301,11 +301,34 @@ local void game_loot_chest(struct game_state* state, struct entity_chest* chest)
 }
 
 void game_message_queue(string message) {
-    
+    assertion(global_popup_state.message_count < array_count(global_popup_state.messages));
+    struct ui_popup_message_box* current_message = &global_popup_state.messages[global_popup_state.message_count++];
+    /* NOTE, in this case this works since I just casted a message from a cstring. This is not really secure */
+    cstring_copy(message.data, current_message->message_storage, array_count(current_message->message_storage));
 }
 
-void game_display_and_update_messages(struct software_framebuffer* framebuffer, f32 dt) {
-    
+bool game_display_and_update_messages(struct software_framebuffer* framebuffer, f32 dt) {
+    if (global_popup_state.message_count > 0) {
+        /* haven't decided the stack order... Just do first in, last out for now */
+        struct ui_popup_message_box* current_message = &global_popup_state.messages[global_popup_state.message_count-1];
+
+        {
+            struct font_cache* font = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_YELLOW]);
+            software_framebuffer_draw_quad(framebuffer, rectangle_f32(50, 480-180, 200, 30), color32u8(90, 30, 255, 255), BLEND_MODE_ALPHA);
+            software_framebuffer_draw_text(framebuffer, font, 2, v2f32(60, 480-150+10), string_from_cstring(current_message->message_storage),
+                                           color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+        }
+
+        /* dismiss current message */
+        if (is_key_pressed(KEY_RETURN)) {
+            global_popup_state.message_count -= 1;
+        }
+
+        return true;
+    }
+
+
+    return false;
 }
 
 local void update_and_render_ingame_game_menu_ui(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
