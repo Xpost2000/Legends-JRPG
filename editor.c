@@ -58,8 +58,8 @@ bool _imgui_any_intersection       = false;
 /* 1 - left click, 2 - right click. Might be weird if you're not expecting it... */
 /* TODO correct this elsweyr. */
 s32 EDITOR_imgui_button(struct software_framebuffer* framebuffer, struct font_cache* font, struct font_cache* highlighted_font, f32 draw_scale, v2f32 position, string str) {
-    f32 text_height = font_cache_text_height(font)     * draw_scale;
-    f32 text_width  = font_cache_text_width(font, str) * draw_scale;
+    f32 text_height = font_cache_text_height(font) * draw_scale;
+    f32 text_width  = font_cache_text_width(font, str, draw_scale);
 
     s32 mouse_positions[2];
     bool left_clicked, right_clicked;
@@ -909,7 +909,7 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
                                         editor_state->chest_property_menu.item_sort_filter = index;
                                     }
 
-                                    draw_cursor_x += font_cache_text_width(font, text) * 2 * 1.15;
+                                    draw_cursor_x += font_cache_text_width(font, text, 2) * 1.15;
                                 }
                             }
 

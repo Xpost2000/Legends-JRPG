@@ -93,7 +93,7 @@ struct font_cache {
 struct font_cache font_cache_load_bitmap_font(string filepath, s32 tile_width, s32 tile_height, s32 atlas_rows, s32 atlas_columns);
 void              font_cache_free(struct font_cache* font_cache);
 f32               font_cache_text_height(struct font_cache* font_cache);
-f32               font_cache_text_width(struct font_cache* font_cache, string text);
+f32               font_cache_text_width(struct font_cache* font_cache, string text, f32 scale);
 f32               font_cache_calculate_height_of(struct font_cache* font_cache, string str, f32 width_bounds, f32 scale);
 
 struct image_buffer image_buffer_load_from_file(string file_path);
@@ -152,6 +152,7 @@ void software_framebuffer_draw_image_ex(struct software_framebuffer* framebuffer
 void software_framebuffer_draw_text(struct software_framebuffer* framebuffer, struct font_cache* font, f32 scale, v2f32 xy, string text, union color32f32 modulation, u8 blend_mode);
 /* TODO make command buffer version */
 void software_framebuffer_draw_text_bounds(struct software_framebuffer* framebuffer, struct font_cache* font, f32 scale, v2f32 xy, f32 bounds_w, string cstring, union color32f32 modulation, u8 blend_mode);
+void software_framebuffer_draw_text_bounds_centered(struct software_framebuffer* framebuffer, struct font_cache* font, f32 scale, struct rectangle_f32 bounds, string text, union color32f32 modulation, u8 blend_mode);
 /* only thin lines */
 void software_framebuffer_draw_line(struct software_framebuffer* framebuffer, v2f32 start, v2f32 end, union color32u8 rgba, u8 blend_mode);
 

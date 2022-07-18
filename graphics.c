@@ -89,9 +89,9 @@ f32 font_cache_calculate_height_of(struct font_cache* font_cache, string str, f3
     return units * font_height * scale;
 }
 
-f32 font_cache_text_width(struct font_cache* font_cache, string text) {
+f32 font_cache_text_width(struct font_cache* font_cache, string text, f32 scale) {
     /* NOTE font_caches are monospaced */
-    return font_cache->tile_width * text.length;
+    return font_cache->tile_width * text.length * scale;
 }
 
 /* we would like temporary arenas yes... */
@@ -506,6 +506,51 @@ void software_framebuffer_draw_text_bounds(struct software_framebuffer* framebuf
 
             if (x_cursor >= xy.x+bounds_w) {
                 x_cursor = xy.x;
+                y_cursor += font->tile_height * scale;
+            }
+        }
+    }
+}
+
+void software_framebuffer_draw_text_bounds_centered(struct software_framebuffer* framebuffer, struct font_cache* font, f32 scale, struct rectangle_f32 bounds, string text, union color32f32 modulation, u8 blend_mode) {
+    f32 text_width  = font_cache_text_width(font, text, scale);
+    f32 text_height = font_cache_calculate_height_of(font, text, bounds.w, scale);
+    v2f32 centered_starting_position = v2f32(0,0);
+
+    centered_starting_position.x = bounds.x + (bounds.w/2) - (text_width/2);
+    centered_starting_position.y = bounds.y + (bounds.h/2) - (text_height/2);
+
+    f32 x_cursor = centered_starting_position.x;
+    f32 y_cursor = centered_starting_position.y;
+
+    for (unsigned index = 0; index < text.length; ++index) {
+        if (text.data[index] == '\n') {
+            y_cursor += font->tile_height * scale;
+            x_cursor = centered_starting_position.x;
+        } else {
+            s32 character_index = text.data[index] - 32;
+
+            software_framebuffer_draw_image_ex(
+                framebuffer, font,
+                rectangle_f32(
+                    x_cursor, y_cursor,
+                    font->tile_width * scale,
+                    font->tile_height * scale
+                ),
+                rectangle_f32(
+                    (character_index % font->atlas_cols) * font->tile_width,
+                    (character_index / font->atlas_cols) * font->tile_height,
+                    font->tile_width, font->tile_height
+                ),
+                modulation,
+                NO_FLAGS,
+                blend_mode
+            );
+
+            x_cursor += font->tile_width * scale;
+
+            if (x_cursor >= bounds.x+bounds.w) {
+                x_cursor = centered_starting_position.x;
                 y_cursor += font->tile_height * scale;
             }
         }

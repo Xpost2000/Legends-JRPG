@@ -53,6 +53,7 @@ struct entity* entity_list_dereference_entity(struct entity_list* entities, enti
 }
 
 /* requires tilemap world... */
+/* TODO fix implicit decls, linker hasn't killed game yet */
 void player_handle_radial_interactables(struct game_state* state, struct entity_list* entities, s32 entity_index, f32 dt);
 void entity_handle_player_controlled(struct game_state* state, struct entity_list* entities, s32 entity_index, f32 dt) {
     struct entity* entity = entities->entities + entity_index;

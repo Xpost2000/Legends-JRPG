@@ -405,7 +405,8 @@ local void update_and_render_ingame_game_menu_ui(struct game_state* state, struc
         switch (state->interactable_state.interactable_type) {
             case INTERACTABLE_TYPE_CHEST: {
                 struct entity_chest* chest = state->interactable_state.context;
-                software_framebuffer_draw_text(framebuffer, font, 4, v2f32(100, 100), string_literal("open chest"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+                software_framebuffer_draw_text_bounds_centered(framebuffer, font, 4, rectangle_f32(0, 400, framebuffer->width, framebuffer->height - 400),
+                                                               string_literal("open chest"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
 
                 if (is_key_pressed(KEY_RETURN)) {
                     game_loot_chest(state, chest);
