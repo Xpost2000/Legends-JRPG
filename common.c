@@ -33,6 +33,8 @@
 #define Terabyte(x)                 (uint64_t)(x * 1024LL * 1024LL * 1024LL * 1024LL)
 #define _debugprintf(fmt, args...)  fprintf(stderr, "[%s:%d:%s()]: " fmt "\n", __FILE__, __LINE__, __func__, ##args)
 
+#define Array_For_Each(NAME, TYPE, ARR, COUNT) for (TYPE * NAME = ARR; NAME != (ARR + COUNT); NAME += 1)
+
 #define unused(x) (void)(x)
 
 #define min(a, b) ((a) < (b)) ? (a) : (b)
