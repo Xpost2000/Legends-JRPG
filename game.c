@@ -911,3 +911,5 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
 #endif
     update_and_render_game_menu_ui(game_state, framebuffer, dt);
 }
+
+#include "save_data_def.c"

@@ -398,6 +398,8 @@ struct game_state {
     } interactable_state;
 };
 
+#include "save_data_def.c"
+
 local v2f32 get_mouse_in_world_space(struct camera* camera, s32 screen_width, s32 screen_height) {
     return camera_project(camera, mouse_location(), screen_width, screen_height);
 }
