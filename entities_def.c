@@ -52,6 +52,8 @@ enum entity_chest_flags {
     ENTITY_CHEST_FLAGS_UNLOCKED                 = BIT(1), /* redundant if it does not require an item for unlock */
     ENTITY_CHEST_FLAGS_HIDDEN                   = ENTITY_FLAGS_HIDDEN,
 };
+/* in tiles */
+#define ENTITY_CHEST_INTERACTIVE_RADIUS (5)
 /* TODO implement */
 struct entity_chest {
     v2f32                         position;

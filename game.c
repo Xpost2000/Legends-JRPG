@@ -708,6 +708,17 @@ void handle_entity_level_trigger_interactions(struct game_state* state, struct e
     }
 }
 
+void player_handle_radial_interactables(struct game_state* state, struct entity_list* entities, s32 entity_index, f32 dt ) {
+    bool found_any_interactable = false;
+    struct level_area* area   = &state->loaded_area;
+    struct entity*     entity = entities->entities + entity_index;
+
+    if (!found_any_interactable) {
+        Array_For_Each(it, struct entity_chest, area->chests, area->entity_chest_count) {
+        }
+    }
+}
+
 void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
     if (is_key_pressed(KEY_F12)) {
         image_buffer_write_to_disk(framebuffer, string_literal("scr"));
