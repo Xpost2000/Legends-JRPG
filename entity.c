@@ -297,8 +297,21 @@ void entity_inventory_remove_item(struct entity_inventory* inventory, s32 item_i
     }
 }
 
+bool entity_inventory_has_item(struct entity_inventory* inventory, item_id item) {
+    for (unsigned index = 0; index < inventory->count; ++index) {
+        struct item_instance* current_item = &(inventory->items[index]);
+
+        if (current_item->item.id_hash == item.id_hash) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 /* from inventory */
 void item_apply_to_entity(struct item_def* item, struct entity* target) {
+    /* NOTE: obviously we need more stuff here */
     switch (item->type) {
         case ITEM_TYPE_CONSUMABLE_ITEM: {
             if (item->health_restoration_value != 0) {

@@ -289,14 +289,33 @@ void game_deinitialize(void) {
 local void game_loot_chest(struct game_state* state, struct entity_chest* chest) {
     struct entity* player = entity_list_dereference_entity(&state->entities, player_id);
     
-    Array_For_Each(it, struct item_instance, chest->inventory.items, chest->inventory.item_count) {
-        entity_inventory_add_multiple(&state->inventory, MAX_PARTY_ITEMS, it->item, it->count);
-        {
-            char tmp[512]= {};
-            struct item_def* item_base = item_database_find_by_id(it->item);
-            snprintf(tmp, 512, "acquired %.*s x%d", item_base->name.length, item_base->name.data, it->count);
-            game_message_queue(string_from_cstring(tmp));
+    bool permit_unlocking = true;
+    if (chest->flags & ENTITY_CHEST_FLAGS_REQUIRES_ITEM_FOR_UNLOCK) {
+        if (entity_inventory_has_item(&state->inventory, chest->key_item)) {
+            {
+                char tmp[512]= {};
+                struct item_def* item_base = item_database_find_by_id(chest->key_item);
+                snprintf(tmp, 512, "Unlocked using \".*s\"", item_base->name.length, item_base->name.data);
+                game_message_queue(string_from_cstring(tmp));
+            }
+        } else {
+            game_message_queue(string_literal("Chest is locked!"));
+            permit_unlocking = false;
         }
+    }
+
+    if (permit_unlocking) {
+        Array_For_Each(it, struct item_instance, chest->inventory.items, chest->inventory.item_count) {
+            entity_inventory_add_multiple(&state->inventory, MAX_PARTY_ITEMS, it->item, it->count);
+            {
+                char tmp[512]= {};
+                struct item_def* item_base = item_database_find_by_id(it->item);
+                snprintf(tmp, 512, "acquired %.*s x%d", item_base->name.length, item_base->name.data, it->count);
+                game_message_queue(string_from_cstring(tmp));
+            }
+        }
+
+        chest->flags |= ENTITY_CHEST_FLAGS_UNLOCKED;
     }
 }
 

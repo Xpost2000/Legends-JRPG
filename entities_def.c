@@ -42,9 +42,10 @@ struct entity_chest_inventory {
 
 /* both types above cast into this, and hopefully decay correctly without exploding */
 struct entity_inventory{s32 count; struct item_instance items[1];};
-void entity_inventory_add(struct entity_inventory* inventory, s32 limits, item_id item);
-void entity_inventory_add_multiple(struct entity_inventory* inventory, s32 limits, item_id item, s32 count);
-void entity_inventory_remove_item(struct entity_inventory* inventory, s32 item_index, bool remove_all);
+void                  entity_inventory_add(struct entity_inventory* inventory, s32 limits, item_id item);
+void                  entity_inventory_add_multiple(struct entity_inventory* inventory, s32 limits, item_id item, s32 count);
+void                  entity_inventory_remove_item(struct entity_inventory* inventory, s32 item_index, bool remove_all);
+bool                  entity_inventory_has_item(struct entity_inventory* inventory, item_id item);
 
 /* assume only player/npc style entity for now */
 /* so every entity is really just a guy. We don't care about anything else at the moment. */
