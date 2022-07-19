@@ -267,10 +267,18 @@ void deinitialize(void) {
     /* assertion(system_heap_memory_leak_check()); */
 }
 
+void ___dialogue_testing(void) {
+    game_open_conversation_file(&game_state, string_literal("./dlg/intro00.txt"));
+}
+
 int main(int argc, char** argv) {
     f32 last_elapsed_delta_time = (1.0 / 60.0f);
     initialize();
 
+#if 1
+    ___dialogue_testing();
+    return 1;
+#endif
     char window_name_title_buffer[256] = {};
     while (global_game_running) {
         u32 start_frame_time = SDL_GetTicks();
