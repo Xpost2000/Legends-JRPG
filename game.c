@@ -167,6 +167,18 @@ void game_postprocess_blur(struct software_framebuffer* framebuffer, s32 quality
     software_framebuffer_kernel_convolution_ex(&scratch_arena, &blur_buffer, box_blur, 3, 3, 12, t, 2);
     software_framebuffer_draw_image_ex(framebuffer, &blur_buffer, RECTANGLE_F32_NULL, RECTANGLE_F32_NULL, color32f32(1,1,1,1), NO_FLAGS, blend_mode);
 }
+void game_postprocess_blur_ingame(struct software_framebuffer* framebuffer, s32 quality_scale, f32 t, u32 blend_mode) {
+    f32 box_blur[] = {
+        1,1.5,1,
+        1.5,1,1.5,
+        1,1.5,1,
+    };
+
+    struct software_framebuffer blur_buffer = software_framebuffer_create(&scratch_arena, framebuffer->width/quality_scale, framebuffer->height/quality_scale);
+    software_framebuffer_copy_into(&blur_buffer, framebuffer);
+    software_framebuffer_kernel_convolution_ex(&scratch_arena, &blur_buffer, box_blur, 3, 3, 10, t, 1);
+    software_framebuffer_draw_image_ex(framebuffer, &blur_buffer, RECTANGLE_F32_NULL, RECTANGLE_F32_NULL, color32f32(1,1,1,1), NO_FLAGS, blend_mode);
+}
 
 void game_postprocess_grayscale(struct software_framebuffer* framebuffer, f32 t) {
     for (s32 y_cursor = 0; y_cursor < framebuffer->height; ++y_cursor) {
@@ -878,6 +890,7 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
 
         entity_list_render_entities(&game_state->entities, &graphics_assets, &commands, dt);
         software_framebuffer_render_commands(framebuffer, &commands);
+        game_postprocess_blur_ingame(framebuffer, 2, 0.34, BLEND_MODE_ALPHA);
 
         /* Rendering weather atop */
         /* NOTE
@@ -904,7 +917,7 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
     }
 
     do_weather(framebuffer, game_state, dt);
-#if 1
+#if 0
     /* camera debug */
     {
         software_framebuffer_draw_quad(framebuffer, game_state->camera.travel_bounds, color32u8(0,0,255,100), BLEND_MODE_ALPHA);

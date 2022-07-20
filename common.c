@@ -31,7 +31,12 @@
 #define Megabyte(x)                 (uint64_t)(x * 1024LL * 1024LL)
 #define Gigabyte(x)                 (uint64_t)(x * 1024LL * 1024LL * 1024LL)
 #define Terabyte(x)                 (uint64_t)(x * 1024LL * 1024LL * 1024LL * 1024LL)
+
+#ifndef RELEASE
 #define _debugprintf(fmt, args...)  fprintf(stderr, "[%s:%d:%s()]: " fmt "\n", __FILE__, __LINE__, __func__, ##args)
+#else
+#define _debugprintf(fmt, args...)  
+#endif
 
 #define Array_For_Each(NAME, TYPE, ARR, COUNT) for (TYPE * NAME = ARR; NAME != (ARR + COUNT); NAME += 1)
 

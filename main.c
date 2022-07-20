@@ -258,7 +258,7 @@ void deinitialize(void) {
 }
 
 void ___dialogue_testing(void) {
-    game_open_conversation_file(&game_state, string_literal("./dlg/intro00.txt"));
+    game_open_conversation_file(game_state, string_literal("./dlg/intro00.txt"));
 }
 
 int main(int argc, char** argv) {
