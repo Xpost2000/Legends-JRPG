@@ -127,6 +127,7 @@ void serialize_bytes(struct binary_serializer* serializer, void* bytes, size_t s
         } break;
         case BINARY_SERIALIZER_MEMORY: {
             if (serializer->mode == BINARY_SERIALIZER_READ) {
+                _debugprintf("already read: (%d) : (%p) (sz to read %d)", serializer->memory_buffer.buffer, serializer->memory_buffer.already_read, size);
                 memcpy(bytes, serializer->memory_buffer.buffer + serializer->memory_buffer.already_read, size);
                 serializer->memory_buffer.already_read += size;
             } else {
