@@ -364,11 +364,6 @@ local void handle_editor_tool_mode_input(struct software_framebuffer* framebuffe
 
     switch (editor_state->tool_mode) {
         case EDITOR_TOOL_TILE_PAINTING: {
-            /* Consider making a visual menu for tile selection. Ought to be less painful.  */
-            /* Mouse imo is way faster for level editting tiles than using the keyboard... */
-            /* granted it's more programming, but it'll be worth it. */
-            /* wrap_around_key_selection(KEY_LEFT, KEY_RIGHT, &editor_state->painting_tile_id, 0, 2); */
-
             if (!editor_state->viewing_loaded_area) {
                 if (left_clicked) {
                     editor_place_tile_at(tile_space_mouse_location);
@@ -976,7 +971,14 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
             switch (editor_state->tool_mode) {
                 /* I would show images, but this is easier for now */
                 case EDITOR_TOOL_TILE_PAINTING: {
-                    f32 draw_cursor_y = 30;
+                    f32 draw_cursor_y = 30 + editor_state->tile_painting_property_menu.item_list_scroll_y;
+                    if (is_key_down(KEY_UP)) {
+                        editor_state->tile_painting_property_menu.item_list_scroll_y -= 100 * dt;
+                    } else if (is_key_down(KEY_DOWN)) {
+                        editor_state->tile_painting_property_menu.item_list_scroll_y += 100 * dt;
+                    } else if (is_key_pressed(KEY_HOME)) {
+                        editor_state->tile_painting_property_menu.item_list_scroll_y = 0;
+                    }
                     for (s32 index = 0; index < tile_table_data_count; ++index) {
                         if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(16, draw_cursor_y), tile_table_data[index].name)) {
                             editor_state->tab_menu_open    = 0;

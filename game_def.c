@@ -209,6 +209,9 @@ struct entity_chest_placement_property_menu {
     f32  item_list_scroll_y;
     s32  item_sort_filter;
 };
+struct tile_painting_property_menu {
+    f32 item_list_scroll_y;
+};
 struct editor_state {
     struct memory_arena* arena;
     /* SHIFT TAB SHOULD INTRODUCE A TOOL SELECTION MODE, instead of arrow keys */
@@ -240,6 +243,7 @@ struct editor_state {
     v2f32 initial_camera_position;
 
     struct entity_chest_placement_property_menu chest_property_menu;
+    struct tile_painting_property_menu          tile_painting_property_menu;
 
     /* ui pause menu animation state */
     /* 0 - none, 1 - save, 2 - load */
