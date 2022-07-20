@@ -1,17 +1,5 @@
 #define USE_SIMD_OPTIMIZATIONS
 
-/*
- Single 
- Instruction
- Multiple
- Data
-*/
-
-/*
-  TODO
-  basic world collision detection
-*/
-
 #include <SDL2/SDL.h>
 
 #include "common.c"
@@ -19,6 +7,13 @@
 #include "input.c"
 #include "sdl_scancode_table.c"
 #include "graphics.c"
+
+/* target engine res */
+const u32 SCREEN_WIDTH       = 640;
+const u32 SCREEN_HEIGHT      = 480;
+/* real res */
+local u32 REAL_SCREEN_WIDTH  = SCREEN_WIDTH;
+local u32 REAL_SCREEN_HEIGHT = SCREEN_HEIGHT;
 
 const char* _build_flags =
 #ifdef USE_SIMD_OPTIMIZATIONS
@@ -236,11 +231,6 @@ void handle_sdl_events(void) {
 void initialize(void) {
     SDL_Init(SDL_INIT_EVERYTHING);
 
-    const u32 SCREEN_WIDTH  = 640;
-    const u32 SCREEN_HEIGHT = 480;
-    const u32 REAL_SCREEN_WIDTH  = SCREEN_WIDTH;
-    const u32 REAL_SCREEN_HEIGHT = SCREEN_HEIGHT;
-
     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, 0);
 
     /* global_game_window          = SDL_CreateWindow("RPG", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN); */
@@ -275,7 +265,7 @@ int main(int argc, char** argv) {
     f32 last_elapsed_delta_time = (1.0 / 60.0f);
     initialize();
 
-#if 1
+#if 0
     ___dialogue_testing();
     return 1;
 #endif

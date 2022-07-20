@@ -250,9 +250,9 @@ void entity_list_render_entities(struct entity_list* entities, struct graphics_a
         render_commands_push_image(commands,
                                    graphics_assets_get_image_by_id(graphics_assets, guy_img),
                                    rectangle_f32(current_entity->position.x,
-                                                 current_entity->position.y - 32,
-                                                 16 * 2,
-                                                 32 * 2),
+                                                 current_entity->position.y - (TILE_UNIT_SIZE),
+                                                 TILE_UNIT_SIZE,
+                                                 TILE_UNIT_SIZE * 2),
                                    RECTANGLE_F32_NULL, color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
 
 #ifndef RELEASE

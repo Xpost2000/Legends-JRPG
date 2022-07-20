@@ -1,28 +1,13 @@
 /* TODO Need to clean up  */
-/* NOTE can add more visual flare to the new editting widgets */
 
 /*
-  Lots of weird editor visual quirks.
+  NOTE:
 
-  Does not seem to break anything.
-  
-  (NOTE few weird ergonomics, as the pause menu is not intended to be moused over, yet some editor menus only
-  allow the mouse. It's a bit confusing. Not an issue for me but consider it.)
-*/
+  Doesn't technically account for a different screen resolution.
+  (some parts anyways...)
 
-/* 
-   NOTE
-   I am not surrendering the low resolution, that's part of the aesthetic,
-   and also the software renderer may struggle at higher resolutions lol (post processing hurts),
-   
-   I believe on the last project, I wanted to basic "metaprogram" my property editor, which is probably
-   the best way to make a level editor without wanting to shoot myself.
-   
-   I now have the opportunity to try that, although I may have to code specific editors for certain things
-   still. Not a big deal, but maybe I can make a simple property editor and just expand the property
-   editors as we do something else.
-   
-   We'll only have level transitions right now, so I might not really get to show that off...
+  The framebuffer is always 640x480(or whatever resolution I decide it should always stay at),
+  and I do allow the window to change size to scale up. So I have to bake lots of scaling to fix this later.
 */
 
 local bool is_dragging(void) {
@@ -205,7 +190,7 @@ void editor_place_or_drag_level_transition_trigger(v2f32 point_in_tilespace) {
                 )) {
                 /* TODO drag candidate */
                 editor_state->last_selected = current_trigger;
-                set_drag_candidate_rectangle(current_trigger, get_mouse_in_tile_space(&editor_state->camera, 640, 480),
+                set_drag_candidate_rectangle(current_trigger, get_mouse_in_tile_space(&editor_state->camera, REAL_SCREEN_WIDTH, REAL_SCREEN_HEIGHT),
                                              v2f32(current_trigger->bounds.x, current_trigger->bounds.y),
                                              v2f32(current_trigger->bounds.w, current_trigger->bounds.h));
                 return;
@@ -241,7 +226,7 @@ void editor_place_or_drag_chest(v2f32 point_in_tilespace) {
                 )) {
                 /* TODO drag candidate */
                 editor_state->last_selected = current_chest;
-                set_drag_candidate(current_chest, get_mouse_in_tile_space(&editor_state->camera, 640, 480),
+                set_drag_candidate(current_chest, get_mouse_in_tile_space(&editor_state->camera, REAL_SCREEN_WIDTH, REAL_SCREEN_HEIGHT),
                                    v2f32(current_chest->position.x, current_chest->position.y));
                 return;
             }
@@ -298,7 +283,7 @@ local void handle_rectangle_dragging_and_scaling(void) {
                                                                  editor_state->drag_data.initial_object_position);
             struct rectangle_f32* object_rectangle   = (struct rectangle_f32*) editor_state->drag_data.context;
 
-            v2f32 mouse_position_in_tilespace_rounded = get_mouse_in_tile_space_integer(&editor_state->camera, 640, 480);
+            v2f32 mouse_position_in_tilespace_rounded = get_mouse_in_tile_space_integer(&editor_state->camera, REAL_SCREEN_WIDTH, REAL_SCREEN_HEIGHT);
 
             if (is_key_down(KEY_SHIFT) && editor_state->drag_data.has_size) {
                 object_rectangle->w =  mouse_position_in_tilespace_rounded.x - editor_state->drag_data.initial_object_position.x;
@@ -349,7 +334,7 @@ local void handle_editor_tool_mode_input(struct software_framebuffer* framebuffe
     get_mouse_location(mouse_location, mouse_location+1);
 
     v2f32 world_space_mouse_location =
-        camera_project(&editor_state->camera, v2f32(mouse_location[0], mouse_location[1]), framebuffer->width, framebuffer->height);
+        camera_project(&editor_state->camera, v2f32(mouse_location[0], mouse_location[1]), REAL_SCREEN_WIDTH, REAL_SCREEN_HEIGHT);
 
     /* for tiles */
     v2f32 tile_space_mouse_location = world_space_mouse_location; {
@@ -432,7 +417,7 @@ local void handle_editor_tool_mode_input(struct software_framebuffer* framebuffe
                             get_mouse_location(mouse_location, mouse_location+1);
 
                             v2f32 world_space_mouse_location =
-                                camera_project(&editor_state->camera, v2f32(mouse_location[0], mouse_location[1]), framebuffer->width, framebuffer->height);
+                                camera_project(&editor_state->camera, v2f32(mouse_location[0], mouse_location[1]), REAL_SCREEN_WIDTH, REAL_SCREEN_HEIGHT);
 
                             /* for tiles */
                             v2f32 tile_space_mouse_location = world_space_mouse_location; {
@@ -756,7 +741,7 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
     get_mouse_buttons(&left_clicked, &middle_clicked, &right_clicked);
 
     v2f32 world_space_mouse_location =
-        camera_project(&editor_state->camera, v2f32(mouse_location[0], mouse_location[1]), framebuffer->width, framebuffer->height);
+        camera_project(&editor_state->camera, v2f32(mouse_location[0], mouse_location[1]), REAL_SCREEN_WIDTH, REAL_SCREEN_HEIGHT);
 
     /* for tiles */
     v2f32 tile_space_mouse_location = world_space_mouse_location; {
@@ -1102,7 +1087,7 @@ void update_and_render_editor(struct software_framebuffer* framebuffer, f32 dt) 
                     get_mouse_location(mouse_location, mouse_location+1);
 
                     v2f32 world_space_mouse_location =
-                        camera_project(&editor_state->camera, v2f32(mouse_location[0], mouse_location[1]), framebuffer->width, framebuffer->height);
+                        camera_project(&editor_state->camera, v2f32(mouse_location[0], mouse_location[1]), REAL_SCREEN_WIDTH, REAL_SCREEN_HEIGHT);
                     v2f32 tile_space_mouse_location = world_space_mouse_location; {
                         tile_space_mouse_location.x = floorf(world_space_mouse_location.x / TILE_UNIT_SIZE);
                         tile_space_mouse_location.y = floorf(world_space_mouse_location.y / TILE_UNIT_SIZE);

@@ -1,7 +1,8 @@
 /* virtual pixels */
-#define TILE_UNIT_SIZE (32)
+#define TILE_UNIT_SIZE (32) /* measured with a reference of 640x480 */
 
 #include "game_def.c"
+#include "dialogue_script_parse.c"
 
 static struct memory_arena game_arena   = {};
 /* compile out */
@@ -903,7 +904,7 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
     }
 
     do_weather(framebuffer, game_state, dt);
-#if 0
+#if 1
     /* camera debug */
     {
         software_framebuffer_draw_quad(framebuffer, game_state->camera.travel_bounds, color32u8(0,0,255,100), BLEND_MODE_ALPHA);

@@ -387,6 +387,18 @@ struct game_state {
     bool                is_conversation_active;
     bool                viewing_dialogue_choices;
     struct conversation current_conversation;
+    /* TODO:
+       
+       Fill this buffer, and source all strings from here during
+       conversations.
+       
+       I mean I could also "interpret" the file, but it'd be
+       easier to just compile the thing into an easier format
+       and just work from there.
+       
+       This is dynamically allocated and must be freed.
+     */
+    struct file_buffer  conversation_file_buffer;
     u32                 current_conversation_node_id;
     s32                 currently_selected_dialogue_choice;
 
