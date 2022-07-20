@@ -2,14 +2,6 @@
 #define TILE_UNIT_SIZE (32) /* measured with a reference of 640x480 */
 #define MAX_TILE_LAYERS (4) 
 
-/* unused */
-static f32 tile_layer_multipliers[] = {
-    /* 0 (ground) */ 0.5,
-    /* 1 */          0.65,
-    /* 2 */          0.85,
-    /* 3 */          1.00
-};
-
 #include "game_def.c"
 #include "dialogue_script_parse.c"
 
@@ -141,18 +133,14 @@ void serialize_level_area(struct game_state* state, struct binary_serializer* se
     serialize_f32(serializer, &level->default_player_spawn.y);
     _debugprintf("reading tiles");
     /* just going to cheat and used fixed size allocations... */
-    /* Serialize_Fixed_Array(serializer, s32, level->tile_count, level->tiles); */
-    /* Serialize_Fixed_Array_And_Allocate_From_Arena_Top(serializer, state->arena, s32, level->tile_count, level->tiles); */
     Serialize_Fixed_Array_And_Allocate_From_Arena_Top(serializer, state->arena, s32, level->tile_count, level->tiles);
 
     if (level->version >= 1) {
         _debugprintf("reading level transitions");
-        /* Serialize_Fixed_Array(serializer, s32, level->trigger_level_transition_count, level->trigger_level_transitions); */
         Serialize_Fixed_Array_And_Allocate_From_Arena_Top(serializer, state->arena, s32, level->trigger_level_transition_count, level->trigger_level_transitions);
         /* this thing is allergic to chest updates. Unfortunately it might happen a lot... */
         if (level->version >= 2) {
             _debugprintf("reading containers");
-            /* Serialize_Fixed_Array(serializer, s32, level->entity_chest_count, level->chests); */
             Serialize_Fixed_Array_And_Allocate_From_Arena_Top(serializer, state->arena, s32, level->entity_chest_count, level->chests);
         }
     }

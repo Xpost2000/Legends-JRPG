@@ -474,6 +474,33 @@ static inline u32 packu32(u8 b0, u8 b1, u8 b2, u8 b3) {
         ((u32)b3);
 }
 
+#define TEMPORARY_STORAGE_BUFFER_SIZE (4096)
+#define TEMPORARY_STORAGE_BUFFER_COUNT (4)
+static const char* cstr_yesno[]     = {"no", "yes"};
+static const char* cstr_truefalse[] = {"false", "true"};
+static const string yesno[] = {string_literal("no"), string_literal("yes")};
+static const string truefalse[] = {string_literal("false"), string_literal("true")};
+
+char* format_temp(const char* fmt, ...) {
+    local int current_buffer = 0;
+    local char temporary_text_buffer[TEMPORARY_STORAGE_BUFFER_COUNT][TEMPORARY_STORAGE_BUFFER_SIZE] = {};
+
+    char* target_buffer = temporary_text_buffer[current_buffer++];
+    zero_buffer_memory(target_buffer, TEMPORARY_STORAGE_BUFFER_SIZE+1);
+    {
+        va_list args;
+        va_start(args, fmt);
+        int written = vsnprintf(target_buffer, TEMPORARY_STORAGE_BUFFER_SIZE-1, fmt, args);
+        va_end(args);
+    }
+
+    if (current_buffer >= TEMPORARY_STORAGE_BUFFER_COUNT) {
+        current_buffer = 0;
+    }
+
+    return target_buffer;
+}
+
 /* NOTE win32 code for now */
 struct directory_file {
     char    name[260];

@@ -679,7 +679,6 @@ local void update_and_render_pause_editor_menu_ui(struct game_state* state, stru
                 draw_position.y += font_scale * 12 * 3;
                 {
                     char tmp_text[1024] = {};
-                    /* snprintf(tmp_text, 1024, "SAVE AS: %s", editor_state->current_save_name); */
                     snprintf(tmp_text, 1024, "SAVE AS: %s", current_text_buffer());
                     _debugprintf("\"%s\"\n", current_text_buffer());
                     software_framebuffer_draw_text(framebuffer, font, font_scale, draw_position, string_from_cstring(tmp_text), color32f32(1,1,1,1), BLEND_MODE_ALPHA);

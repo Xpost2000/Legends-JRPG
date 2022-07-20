@@ -12,6 +12,8 @@
 const u32 SCREEN_WIDTH       = 640;
 const u32 SCREEN_HEIGHT      = 480;
 /* real res */
+/* consider a better way to decouple this from the editor logic. */
+/* game logic is okay because we don't use the mouse for UI. (I mean I probably should allow it, but whatever.) */
 local u32 REAL_SCREEN_WIDTH  = SCREEN_WIDTH;
 local u32 REAL_SCREEN_HEIGHT = SCREEN_HEIGHT;
 
@@ -257,18 +259,15 @@ void deinitialize(void) {
     /* assertion(system_heap_memory_leak_check()); */
 }
 
-void ___dialogue_testing(void) {
-    game_open_conversation_file(game_state, string_literal("./dlg/intro00.txt"));
-}
+#include "sandbox_tests.c"
 
 int main(int argc, char** argv) {
     f32 last_elapsed_delta_time = (1.0 / 60.0f);
     initialize();
 
-#if 0
-    ___dialogue_testing();
-    return 1;
-#endif
+    if (sandbox_testing())
+        return 1;
+
     char window_name_title_buffer[256] = {};
     while (global_game_running) {
         u32 start_frame_time = SDL_GetTicks();
