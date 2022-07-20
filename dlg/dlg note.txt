@@ -1,0 +1,11 @@
+To avoid changing the data structure I currently have too much,
+I'm probably just going to "preprocess" the dialogue files since the problem I have with augmenting
+the data structure is to account for the permutations of the tree.
+
+However the permutations are generally fixed on entering the dialogue so, a lot of permutations can basically
+be "optimized out", mostly anything involving conditionals. Even random chance can be permutated out since we just
+roll all the die at dialogue load. It's basically the same.
+
+It causes more parsing work, however it makes the runtime code very simple.
+
+I'm writing this here incase I forget this. Although it's very likely I myself may never read this file.

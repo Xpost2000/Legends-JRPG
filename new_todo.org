@@ -1,0 +1,64 @@
+** Lighting / Bloomy effects
+   That was the main point of using software rendering, to more easily take advantage
+   of these things.
+
+   I need more textures, but it should be fine. It's going to be a little expensive since we
+   are doing multiple bloom passes. (one on the main game to make it a little hazy and dreamy,
+   while a second one is for bloom.)
+   
+** Start polishing my current stuff (add more art, and animate the shit)
+** Start introducing our combat
+** Finish the Chest implementation (lots of menuing work...)
+** Add UI Pop Up messages
+** nine-patch squares... Please for the UI?
+** Consider cutscene system!
+** Finish Chest interactions!
+** Implement UI Layout for the dialogue system and any in-game text in general!
+** Draw some nine-patch UIs for the UI system :)
+** Combat!
+** Main Menu?
+** Little bits of code clean up.
+   While the camera does not technically do any projecting, it'd be very nice to just remove some dependencies to
+   the framebuffer. 
+
+   the framebuffer has to render in the games resolution any how, so it might just be a global variable... A bit nasty
+   but simple, and nicer
+
+   make all editor_ functions take an editor state*.  Even if they're globally avaliable. Consistency is key. Either we go one way
+   or the opposite way. No in between (that's a clean up.)
+   
+** Inventory Animation
+   Same thing as the dialogue system animation code. Another day!
+
+   Core functionality first!
+** Dialogue System Animation Code
+   - [ ] Animate the dialogue boxes
+   - [ ] Gradually opening text
+   - [ ] Animated dialogues
+   - [ ] Dialogue file format to load from. (Accommodate this simple one for now...)
+
+** Also I guess, yeah I'll have random encounters and an over-world...
+** Dialogue Script !
+** Game Items / Inventory System!
+   We're going to take more JRPG approaches, so the inventory is more list-like,
+   we're going to try to allow unbounded player items, and obviously each item needs to be handled
+   in a relatively specific way...
+
+   Inventory will only ever just hold item ids anyways, we're not allowing customization. So it's pretty
+   simple from that front.
+
+   We need controls for that.
+
+   We are also going to probably introduce a shop system. Since we are taking after JRPGs, it's a relatively static
+   system, so shops are extensions of dialogues, and are not associated to any NPC inventories. Thank the gods.
+
+   Items are probably going to be defined through a basic text format, as to not make me want to shoot anyone. I do not need an item editor
+   for any reason whatsoever. Text works fine for stuff like that.
+
+** (Future) more scriptable behaviors...
+   We need more hookable things, and granted while I can most certainly hard code some special game
+   code into it. It'd be nice to not have to do that...
+   
+** World Interactables. (Lights!? Doors?! Keys?! Chests?!)
+   We're going to introduce an inventory system and look for keys I guess.
+   Doors and keys! Yay!

@@ -1,0 +1,24 @@
+# Experimental DSL for the games' dialogue system.
+# needs to support actions and conditionals
+
+# The thing is this is practically a lisp.
+
+# attempting grammar
+# (START) => (ACTIONS) (this is to allow you to setup scenes)
+# NAME (game-focus-target-id)? : (string dialogue) => (ACTIONS)
+
+# (ACTIONS) is meant to basically be a lisp form to be evaluated
+# (START) => (GOTO 0) If we don't find one of these somewhere, always start at the first node
+
+"Frimor" : "The stars are certainly blessed tonight..." => (NEXT)
+"Frimor" : "Aren't they? Calamir." =>
+(CHOICES
+    ("Perhaps."           => (NEXT))
+    ("Same as any other." => (GOTO 4)))
+
+"Frimor" : "There's something special tonight isn't there?"               => (SKIP-AHEAD 1)
+"Frimor" : "Heh, maybe it is. I don't spend as much time as you do here." => (NEXT)
+
+"Frimor" : "How have your days been anyways?"                     => (NEXT)
+"Frimor" : "Actually... Nevermind, I didn't mean to disturb you." => (NEXT)
+"Frimor" : "I'll be going"                                        => (BYE)
