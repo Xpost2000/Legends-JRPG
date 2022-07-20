@@ -157,6 +157,36 @@ struct game_state;
 #include "item_def.c"
 
 #define CURRENT_LEVEL_AREA_VERSION (2)
+
+enum game_ui_nine_patch_id {
+    NINE_PATCH_LEFT,
+    NINE_PATCH_RIGHT,
+    NINE_PATCH_TOP,
+    NINE_PATCH_BOTTOM,
+    NINE_PATCH_TOP_LEFT,
+    NINE_PATCH_TOP_RIGHT,
+    NINE_PATCH_BOTTOM_LEFT,
+    NINE_PATCH_BOTTOM_RIGHT,
+    NINE_PATCH_MIDDLE,
+};
+static string game_ui_nine_patch_id_strings[] = {
+    string_literal("left"),
+    string_literal("right"),
+    string_literal("top"),
+    string_literal("bottom"),
+    string_literal("top_left"),
+    string_literal("top_right"),
+    string_literal("center"),
+};
+/* nine patches are only drawn in exact tile measurements*/
+struct game_ui_nine_patch {
+    s32 tile_width;
+    s32 tile_height;
+    image_id textures[9];
+};
+/* TODO render and use ninepatches later :*/
+struct game_ui_nine_patch game_ui_nine_patch_load_from_directory(struct graphics_assets* graphics_assets, string directory, s32 tile_width, s32 tile_height);
+
 struct level_area {
     u32          version;
     v2f32        default_player_spawn;

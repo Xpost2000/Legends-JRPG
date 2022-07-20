@@ -41,6 +41,25 @@ image_id guy_img;
 image_id selection_sword_img;
 image_id chest_closed_img, chest_open_bottom_img, chest_open_top_img;
 
+struct game_ui_nine_patch game_ui_nine_patch_load_from_directory(struct graphics_assets* graphics_assets, string directory, s32 tile_width, s32 tile_height) {
+    struct game_ui_nine_patch ui_skin = {}; 
+
+    {
+        s32 index = 0;
+
+        Array_For_Each(it, string, game_ui_nine_patch_id_strings, array_count(game_ui_nine_patch_id_strings)) {
+            index++;
+            string filepath         = string_from_cstring(format_temp("%.*s/%.*s.png", directory.length, directory.data, it->length, it->data));
+            ui_skin.textures[index] = graphics_assets_load_image(graphics_assets, filepath);
+        }
+
+        ui_skin.tile_width  = tile_width;
+        ui_skin.tile_height = tile_height;
+    }
+
+    return ui_skin;
+}
+
 struct tile_data_definition* tile_table_data;
 struct autotile_table*       auto_tile_info;
 
