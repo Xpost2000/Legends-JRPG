@@ -208,7 +208,7 @@ void game_postprocess_blur(struct software_framebuffer* framebuffer, s32 quality
     struct software_framebuffer blur_buffer = software_framebuffer_create(&scratch_arena, framebuffer->width/quality_scale, framebuffer->height/quality_scale);
     software_framebuffer_copy_into(&blur_buffer, framebuffer);
     software_framebuffer_kernel_convolution_ex(&scratch_arena, &blur_buffer, box_blur, 3, 3, 12, t, 2);
-    software_framebuffer_draw_image_ex(framebuffer, &blur_buffer, RECTANGLE_F32_NULL, RECTANGLE_F32_NULL, color32f32(1,1,1,1), NO_FLAGS, blend_mode);
+    software_framebuffer_draw_image_ex(framebuffer, (struct image_buffer*)&blur_buffer, RECTANGLE_F32_NULL, RECTANGLE_F32_NULL, color32f32(1,1,1,1), NO_FLAGS, blend_mode);
 }
 void game_postprocess_blur_ingame(struct software_framebuffer* framebuffer, s32 quality_scale, f32 t, u32 blend_mode) {
     f32 box_blur[] = {
@@ -220,7 +220,7 @@ void game_postprocess_blur_ingame(struct software_framebuffer* framebuffer, s32 
     struct software_framebuffer blur_buffer = software_framebuffer_create(&scratch_arena, framebuffer->width/quality_scale, framebuffer->height/quality_scale);
     software_framebuffer_copy_into(&blur_buffer, framebuffer);
     software_framebuffer_kernel_convolution_ex(&scratch_arena, &blur_buffer, box_blur, 3, 3, 10, t, 1);
-    software_framebuffer_draw_image_ex(framebuffer, &blur_buffer, RECTANGLE_F32_NULL, RECTANGLE_F32_NULL, color32f32(1,1,1,1), NO_FLAGS, blend_mode);
+    software_framebuffer_draw_image_ex(framebuffer, (struct image_buffer*)&blur_buffer, RECTANGLE_F32_NULL, RECTANGLE_F32_NULL, color32f32(1,1,1,1), NO_FLAGS, blend_mode);
 }
 
 void game_postprocess_grayscale(struct software_framebuffer* framebuffer, f32 t) {
@@ -485,7 +485,7 @@ local void game_loot_chest(struct game_state* state, struct entity_chest* chest)
     
     bool permit_unlocking = true;
     if (chest->flags & ENTITY_CHEST_FLAGS_REQUIRES_ITEM_FOR_UNLOCK) {
-        if (entity_inventory_has_item(&state->inventory, chest->key_item)) {
+        if (entity_inventory_has_item((struct entity_inventory*)&state->inventory, chest->key_item)) {
             {
                 char tmp[512]= {};
                 struct item_def* item_base = item_database_find_by_id(chest->key_item);
@@ -500,7 +500,7 @@ local void game_loot_chest(struct game_state* state, struct entity_chest* chest)
 
     if (permit_unlocking) {
         Array_For_Each(it, struct item_instance, chest->inventory.items, chest->inventory.item_count) {
-            entity_inventory_add_multiple(&state->inventory, MAX_PARTY_ITEMS, it->item, it->count);
+            entity_inventory_add_multiple((struct entity_inventory*)&state->inventory, MAX_PARTY_ITEMS, it->item, it->count);
             {
                 char tmp[512]= {};
                 struct item_def* item_base = item_database_find_by_id(it->item);
@@ -1049,7 +1049,7 @@ void player_handle_radial_interactables(struct game_state* state, struct entity_
 
 void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
     if (is_key_pressed(KEY_F12)) {
-        image_buffer_write_to_disk(framebuffer, string_literal("scr"));
+        image_buffer_write_to_disk((struct image_buffer*)framebuffer, string_literal("scr"));
     }
 
     recalculate_camera_shifting_bounds(framebuffer);

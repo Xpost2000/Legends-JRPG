@@ -921,7 +921,7 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
                                         snprintf(tmp, 255, "(%.*s) %.*s", item_base->id_name.length, item_base->id_name.data, item_base->name.length, item_base->name.data);
 
                                         if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 1.3, v2f32(16, draw_cursor_y + editor_state->chest_property_menu.item_list_scroll_y), string_from_cstring(tmp))) {
-                                            entity_inventory_add(&chest->inventory, 16, item_get_id(item_base));
+                                            entity_inventory_add((struct entity_inventory*)&chest->inventory, 16, item_get_id(item_base));
                                             editor_state->chest_property_menu.adding_item = false;
                                             break;
                                         }
@@ -941,12 +941,12 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
                                         s32 button_response = (EDITOR_imgui_button(framebuffer, font, highlighted_font, 1.5, v2f32(16, draw_cursor_y), string_from_cstring(tmp)));
                                         if(button_response == 1) {
                                             /* ?clone? Not exactly expected behavior I'd say lol. */
-                                            entity_inventory_add(&chest->inventory, 16, item->item);
+                                            entity_inventory_add((struct entity_inventory*)&chest->inventory, 16, item->item);
                                         } else if (button_response == 2) {
                                             if (is_key_down(KEY_SHIFT)) {
-                                                entity_inventory_remove_item(&chest->inventory, index, true);
+                                                entity_inventory_remove_item((struct entity_inventory*)&chest->inventory, index, true);
                                             } else {
-                                                entity_inventory_remove_item(&chest->inventory, index, false);
+                                                entity_inventory_remove_item((struct entity_inventory*)&chest->inventory, index, false);
                                             }
                                         }
                                     }

@@ -476,7 +476,7 @@ void software_framebuffer_draw_text(struct software_framebuffer* framebuffer, st
             s32 character_index = text.data[index] - 32;
 
             software_framebuffer_draw_image_ex(
-                framebuffer, font,
+                framebuffer, (struct image_buffer*)font,
                 rectangle_f32(
                     x_cursor, y_cursor,
                     font->tile_width * scale,
@@ -509,7 +509,7 @@ void software_framebuffer_draw_text_bounds(struct software_framebuffer* framebuf
             s32 character_index = text.data[index] - 32;
 
             software_framebuffer_draw_image_ex(
-                framebuffer, font,
+                framebuffer, (struct image_buffer*)font,
                 rectangle_f32(
                     x_cursor, y_cursor,
                     font->tile_width * scale,
@@ -554,7 +554,7 @@ void software_framebuffer_draw_text_bounds_centered(struct software_framebuffer*
             s32 character_index = text.data[index] - 32;
 
             software_framebuffer_draw_image_ex(
-                framebuffer, font,
+                framebuffer, (struct image_buffer*)font,
                 rectangle_f32(
                     x_cursor, y_cursor,
                     font->tile_width * scale,
@@ -584,7 +584,7 @@ void software_framebuffer_copy_into(struct software_framebuffer* target, struct 
     if (target->width == source->width && target->height == source->height) {
         memory_copy(source->pixels, target->pixels, target->width * target->height * sizeof(u32));
     } else {
-        software_framebuffer_draw_image_ex(target, source, RECTANGLE_F32_NULL, RECTANGLE_F32_NULL, color32f32(1,1,1,1), NO_FLAGS, 0);
+        software_framebuffer_draw_image_ex(target, (struct image_buffer*)source, RECTANGLE_F32_NULL, RECTANGLE_F32_NULL, color32f32(1,1,1,1), NO_FLAGS, 0);
     }
 }
 

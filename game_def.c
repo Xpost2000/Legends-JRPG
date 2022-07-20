@@ -141,9 +141,10 @@ struct tile {
     s16 y;
     s16 layer;
 };
+
 s32 _qsort_tile(const void* a, const void* b) {
-    struct tile* a_tile = a;
-    struct tile* b_tile = b;
+    const struct tile* a_tile = a;
+    const struct tile* b_tile = b;
     if (a_tile->layer < b_tile->layer) return -1;
     else if (a_tile->layer > b_tile->layer) return 1;
     return 0;
@@ -242,6 +243,18 @@ struct entity_chest_placement_property_menu {
 struct tile_painting_property_menu {
     f32 item_list_scroll_y;
 };
+/* tab menus a chord of tab + any of the modifier keys (might want to avoid alt tab though) */
+/* naked-tab (mode-specific actions.) */
+/* shift-tab (mode selection) */
+/* ctrl-tab  (object specific (property editting?)) */
+/* ctrl-tab  (object specific (property editting?)) */
+enum tab_menu_bit_flags {
+    TAB_MENU_CLOSED    = 0,
+    TAB_MENU_OPEN_BIT  = BIT(0),
+    TAB_MENU_SHIFT_BIT = BIT(1),
+    TAB_MENU_CTRL_BIT  = BIT(2),
+    TAB_MENU_ALT_BIT   = BIT(3),
+};
 struct editor_state {
     struct memory_arena* arena;
     /* SHIFT TAB SHOULD INTRODUCE A TOOL SELECTION MODE, instead of arrow keys */
@@ -284,18 +297,6 @@ struct editor_state {
                                */
     f32 serialize_menu_t;
 
-    /* tab menus a chord of tab + any of the modifier keys (might want to avoid alt tab though) */
-    /* naked-tab (mode-specific actions.) */
-    /* shift-tab (mode selection) */
-    /* ctrl-tab  (object specific (property editting?)) */
-    /* ctrl-tab  (object specific (property editting?)) */
-    enum {
-        TAB_MENU_CLOSED    = 0,
-        TAB_MENU_OPEN_BIT  = BIT(0),
-        TAB_MENU_SHIFT_BIT = BIT(1),
-        TAB_MENU_CTRL_BIT  = BIT(2),
-        TAB_MENU_ALT_BIT   = BIT(3),
-    };
     s32 tab_menu_open;
 
     /* NOTE I'm aware there is drag data like a few lines above this. */
@@ -457,6 +458,7 @@ struct game_state {
 };
 
 #include "save_data_def.c"
+void handle_entity_level_trigger_interactions(struct game_state* state, struct entity* entity, s32 trigger_level_transition_count, struct trigger_level_transition* trigger_level_transitions, f32 dt);
 
 local v2f32 get_mouse_in_world_space(struct camera* camera, s32 screen_width, s32 screen_height) {
     return camera_project(camera, mouse_location(), screen_width, screen_height);

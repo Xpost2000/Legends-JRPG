@@ -2,7 +2,7 @@
 # TODO make this use the SDL distribution inside of the repository.
 
 CC=gcc
-CFLAGS=-Wno-unused -Wno-format -Wno-unused-but-set-variable -Wall -std=c99
+CFLAGS=-Werror -Wno-unused -Wno-format -Wno-unused-but-set-variable -Wall -std=c99
 CLIBS=`pkg-config --libs --cflags sdl2` -I./dependencies/
 SOURCE_FILE_MODULES= main.c
 

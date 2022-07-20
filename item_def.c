@@ -10,7 +10,7 @@ typedef struct item_id {
 
 item_id item_id_make(string id_name) {
     item_id result = {};
-    result.id_hash = hash_bytes_fnv1a(id_name.data, id_name.length);
+    result.id_hash = hash_bytes_fnv1a((u8*)id_name.data, id_name.length);
     return result;
 }
 
@@ -98,7 +98,7 @@ static void initialize_items_database(void) {
 static struct item_def* item_database_find_by_id(item_id id) {
     for (unsigned index = 0; index < MAX_ITEMS_DATABASE_SIZE; ++index) {
         struct item_def* candidate = &item_database[index];
-        s32 hash = hash_bytes_fnv1a(candidate->id_name.data, candidate->id_name.length);
+        s32 hash = hash_bytes_fnv1a((u8*) candidate->id_name.data, candidate->id_name.length);
 
         if (hash == id.id_hash) {
             return candidate;
@@ -130,8 +130,8 @@ static bool verify_no_item_id_name_hash_collisions(void) {
                 continue;
             }
 
-            u32 hash_first  = hash_bytes_fnv1a(first.data, first.length);
-            u32 hash_second = hash_bytes_fnv1a(second.data, second.length);
+            u32 hash_first  = hash_bytes_fnv1a((u8*) first.data, first.length);
+            u32 hash_second = hash_bytes_fnv1a((u8*) second.data, second.length);
 
             if (hash_second == hash_first) {
                 _debugprintf("hash collision(\"%.*s\" & \"%.*s\")", first.length, first.data, second.length, second.data);
