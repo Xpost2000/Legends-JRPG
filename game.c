@@ -132,16 +132,19 @@ void serialize_level_area(struct game_state* state, struct binary_serializer* se
     serialize_f32(serializer, &level->default_player_spawn.y);
     _debugprintf("reading tiles");
     /* just going to cheat and used fixed size allocations... */
-    Serialize_Fixed_Array(serializer, s32, level->tile_count, level->tiles);
+    /* Serialize_Fixed_Array(serializer, s32, level->tile_count, level->tiles); */
     /* Serialize_Fixed_Array_And_Allocate_From_Arena_Top(serializer, state->arena, s32, level->tile_count, level->tiles); */
+    Serialize_Fixed_Array_And_Allocate_From_Arena_Top(serializer, state->arena, s32, level->tile_count, level->tiles);
 
     if (level->version >= 1) {
         _debugprintf("reading level transitions");
-        Serialize_Fixed_Array(serializer, s32, level->trigger_level_transition_count, level->trigger_level_transitions);
+        /* Serialize_Fixed_Array(serializer, s32, level->trigger_level_transition_count, level->trigger_level_transitions); */
+        Serialize_Fixed_Array_And_Allocate_From_Arena_Top(serializer, state->arena, s32, level->trigger_level_transition_count, level->trigger_level_transitions);
         /* this thing is allergic to chest updates. Unfortunately it might happen a lot... */
         if (level->version >= 2) {
             _debugprintf("reading containers");
-            Serialize_Fixed_Array(serializer, s32, level->entity_chest_count, level->chests);
+            /* Serialize_Fixed_Array(serializer, s32, level->entity_chest_count, level->chests); */
+            Serialize_Fixed_Array_And_Allocate_From_Arena_Top(serializer, state->arena, s32, level->entity_chest_count, level->chests);
         }
     }
 
@@ -309,7 +312,7 @@ void game_initialize(void) {
     editor_arena = memory_arena_create_from_heap("Editor Memory", Megabyte(32));
 
     game_state = memory_arena_push(&game_arena, sizeof(*game_state));
-#if 1
+#if 0
     {
         /* NOTE, not what I want to do, but I cannot figure out the cause of the segfault rn. */
         game_state->loaded_area.tiles                     = memory_arena_push(&game_arena, sizeof(*game_state->loaded_area.tiles) * 8192);

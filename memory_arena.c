@@ -68,9 +68,9 @@ void* memory_arena_push_bottom_unaligned(struct memory_arena* arena, u64 amount)
 
 void* memory_arena_push_top_unaligned(struct memory_arena* arena, u64 amount) {
     void* end_of_memory = arena->memory + arena->capacity;
+    arena->used_top += amount;
     void* base_pointer  = end_of_memory - arena->used_top;
 
-    arena->used_top += amount;
     arena->flags |= MEMORY_ARENA_TOUCHED_TOP;
     _memory_arena_usage_bounds_check(arena);
 
