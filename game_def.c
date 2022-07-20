@@ -414,6 +414,10 @@ struct game_state {
     u32                 current_conversation_node_id;
     s32                 currently_selected_dialogue_choice;
 
+    /* TODO: Normalize this text. Anyways this should be in a string table. */
+    char                current_region_name[96];
+    char                current_region_subtitle[128];
+
     struct {
         s32   interactable_type;
         void* context;

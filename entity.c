@@ -58,6 +58,11 @@ void player_handle_radial_interactables(struct game_state* state, struct entity_
 void entity_handle_player_controlled(struct game_state* state, struct entity_list* entities, s32 entity_index, f32 dt) {
     struct entity* entity = entities->entities + entity_index;
 
+    if (region_zone_animation_block_input) {
+        return;
+    }
+
+    /* conversations should be in it's own "module" like region_change_presentation.c */
     if (state->is_conversation_active) {
         return;
     }

@@ -52,6 +52,16 @@ image_id chest_closed_img, chest_open_bottom_img, chest_open_top_img;
 struct tile_data_definition* tile_table_data;
 struct autotile_table*       auto_tile_info;
 
+#include "region_change_presentation.c"
+local void game_attempt_to_change_area_name(struct game_state* state, string name, string subtitle) {
+    /* we don't need to check the subtitle. That doesn't matter. I would think. */
+    if (!cstring_equal(name.data, state->current_region_name)) {
+        cstring_copy(name.data,     state->current_region_name    , array_count(state->current_region_name));
+        cstring_copy(subtitle.data, state->current_region_subtitle, array_count(state->current_region_subtitle));
+        initialize_region_zone_change();
+    }
+}
+
 void render_area(struct render_commands* commands, struct level_area* area) {
     /* TODO do it lazy mode. Once only */
 
@@ -360,7 +370,7 @@ static void initialize_static_table_data(void) {
     insert(
         ((struct tile_data_definition){
             .name                 = string_literal("(door)"),
-            .image_asset_location = string_literal("./res/img/building/door"),
+            .image_asset_location = string_literal("./res/img/building/door.png"),
             .flags                = TILE_DATA_FLAGS_SOLID,
         })
     );
@@ -368,7 +378,7 @@ static void initialize_static_table_data(void) {
         ((struct tile_data_definition){
             .name                 = string_literal("(wood_log_side)"),
             .image_asset_location = string_literal("./res/img/cave/wood_log_side.png"),
-            .flags                = TILE_DATA_FLAGS_SOLID,
+            .flags                = TILE_DATA_FLAGS_NONE,
         })
     );
 #undef insert 
@@ -423,7 +433,11 @@ void game_initialize(void) {
     }
 
     assertion(verify_no_item_id_name_hash_collisions());
+    void game_initialize_game_world(void);
+    game_initialize_game_world();
+}
 
+void game_initialize_game_world(void) {
     entity_inventory_add((struct entity_inventory*)&game_state->inventory, MAX_PARTY_ITEMS, item_id_make(string_literal("item_trout_fish_5")));
     entity_inventory_add((struct entity_inventory*)&game_state->inventory, MAX_PARTY_ITEMS, item_id_make(string_literal("item_trout_fish_5")));
     entity_inventory_add((struct entity_inventory*)&game_state->inventory, MAX_PARTY_ITEMS, item_id_make(string_literal("item_trout_fish_5")));
@@ -449,6 +463,7 @@ void game_initialize(void) {
     }
 #endif
     load_level_from_file(game_state, string_literal("testisland.area"));
+    game_attempt_to_change_area_name(game_state, string_literal("Old Iyeila"), string_literal("Grave of Stars"));
 }
 
 void game_deinitialize(void) {
@@ -609,6 +624,7 @@ local void update_and_render_ingame_game_menu_ui(struct game_state* state, struc
         }
     }
 
+    /* TODO Region zone change does not prevent pausing right now! */
     {
         if (is_key_pressed(KEY_ESCAPE)) {
             game_state_set_ui_state(game_state, UI_STATE_PAUSE);
@@ -639,7 +655,7 @@ local void update_and_render_sub_menu_states(struct game_state* state, struct so
         case UI_PAUSE_MENU_SUB_MENU_STATE_INVENTORY: {
             /* for now this inventory is just going to be flat. Simple display with item selection. */
             /* TODO no item usage yet. */
-            /* I need functionality quick cause animation takes a while to code. */
+            /* TODO need more item types for usage */
             software_framebuffer_draw_quad(framebuffer, rectangle_f32(100, 100, 400, 300), color32u8(0,0,255, 190), BLEND_MODE_ALPHA);
 
 
@@ -874,6 +890,7 @@ void update_and_render_game_menu_ui(struct game_state* state, struct software_fr
                 update_and_render_editor_game_menu_ui(state, framebuffer, dt);
             } else {
                 update_and_render_ingame_game_menu_ui(state, framebuffer, dt);
+                update_and_render_region_zone_change(state, framebuffer, dt);
             }
         } break;
         case UI_STATE_PAUSE: {
@@ -1050,6 +1067,9 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
         entity_list_render_entities(&game_state->entities, &graphics_assets, &commands, dt);
         software_framebuffer_render_commands(framebuffer, &commands);
         game_postprocess_blur_ingame(framebuffer, 2, 0.34, BLEND_MODE_ALPHA);
+
+        /* color "grading" */
+        software_framebuffer_draw_quad(framebuffer, rectangle_f32(0,0,999,999), color32u8(178,180,255,255), BLEND_MODE_MULTIPLICATIVE);
 
         /* Rendering weather atop */
         /* NOTE

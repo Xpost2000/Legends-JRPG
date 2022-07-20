@@ -11,6 +11,7 @@ typedef struct {
     char* data;
 } string;
 #define string_literal(x) (string){ .length = sizeof(x)-1, .capacity = 0, .data = x }
+#define string_null       (string){}
 
 string string_from_cstring(cstring str);
 string string_from_cstring_length_counted(cstring str, u64 length);

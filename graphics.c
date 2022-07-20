@@ -149,6 +149,22 @@ void software_framebuffer_clear_buffer(struct software_framebuffer* framebuffer,
                     FRAMEBUFFER->pixels[Y * stride * 4 + X * 4 + 3] = 255; \
                 }                                                       \
             } break;                                                    \
+            case BLEND_MODE_MULTIPLICATIVE: {                           \
+                {                                                       \
+                    u32 modulated_r = FRAMEBUFFER->pixels[Y * stride * 4 + X * 4 + 0] * RGBA.r/255.0f; \
+                    u32 modulated_g = FRAMEBUFFER->pixels[Y * stride * 4 + X * 4 + 1] * RGBA.g/255.0f; \
+                    u32 modulated_b = FRAMEBUFFER->pixels[Y * stride * 4 + X * 4 + 2] * RGBA.b/255.0f; \
+                                                                        \
+                    if (modulated_r > 255) modulated_r = 255;           \
+                    if (modulated_g > 255) modulated_g = 255;           \
+                    if (modulated_b > 255) modulated_b = 255;           \
+                                                                        \
+                    FRAMEBUFFER->pixels[Y * stride * 4 + X * 4 + 0] = modulated_r; \
+                    FRAMEBUFFER->pixels[Y * stride * 4 + X * 4 + 1] = modulated_g; \
+                    FRAMEBUFFER->pixels[Y * stride * 4 + X * 4 + 2] = modulated_b; \
+                    FRAMEBUFFER->pixels[Y * stride * 4 + X * 4 + 3] = 255; \
+                }                                                       \
+            } break;                                                    \
                 bad_case;                                               \
         }                                                               \
     } while(0)
@@ -346,6 +362,11 @@ void software_framebuffer_draw_image_ex(struct software_framebuffer* framebuffer
                     red_destination_channels   = _mm_add_ps(red_destination_channels,   _mm_mul_ps(red_channels, alpha_channels));
                     green_destination_channels = _mm_add_ps(green_destination_channels, _mm_mul_ps(green_channels, alpha_channels));
                     blue_destination_channels  = _mm_add_ps(blue_destination_channels,  _mm_mul_ps(blue_channels,  alpha_channels));
+                } break;
+                case BLEND_MODE_MULTIPLICATIVE: {
+                    red_destination_channels   = _mm_mul_ps(red_destination_channels,   _mm_mul_ps(_mm_mul_ps(red_channels, alpha_channels),   inverse_255));
+                    green_destination_channels = _mm_mul_ps(green_destination_channels, _mm_mul_ps(_mm_mul_ps(green_channels, alpha_channels), inverse_255));
+                    blue_destination_channels  = _mm_mul_ps(blue_destination_channels,  _mm_mul_ps(_mm_mul_ps(blue_channels,  alpha_channels), inverse_255));
                 } break;
                     bad_case;
             }
