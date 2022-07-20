@@ -1,5 +1,14 @@
 /* virtual pixels */
 #define TILE_UNIT_SIZE (32) /* measured with a reference of 640x480 */
+#define MAX_TILE_LAYERS (4) 
+
+/* unused */
+static f32 tile_layer_multipliers[] = {
+    /* 0 (ground) */ 0.5,
+    /* 1 */          0.65,
+    /* 2 */          0.85,
+    /* 3 */          1.00
+};
 
 #include "game_def.c"
 #include "dialogue_script_parse.c"
@@ -44,6 +53,9 @@ struct tile_data_definition* tile_table_data;
 struct autotile_table*       auto_tile_info;
 
 void render_area(struct render_commands* commands, struct level_area* area) {
+    /* TODO do it lazy mode. Once only */
+    qsort(area->tiles, area->tile_count, sizeof(*area->tiles), _qsort_tile);
+
     for (s32 index = 0; index < area->tile_count; ++index) {
         s32 tile_id = area->tiles[index].id;
         struct tile_data_definition* tile_data = tile_table_data + tile_id;
@@ -215,7 +227,7 @@ static void initialize_static_table_data(void) {
     insert(
         ((struct tile_data_definition){
             .name                 = string_literal("(grass test(filled))"),
-            .image_asset_location = string_literal("./res/img/grass.png"),
+            .image_asset_location = string_literal("./res/img/land/grass.png"),
             .flags                = TILE_DATA_FLAGS_NONE,
         })
     );
@@ -223,6 +235,48 @@ static void initialize_static_table_data(void) {
         ((struct tile_data_definition){
             .name                 = string_literal("(brick test(filled))"),
             .image_asset_location = string_literal("./res/img/brick.png"),
+            .flags                = TILE_DATA_FLAGS_SOLID,
+        })
+    );
+    insert(
+        ((struct tile_data_definition){
+            .name                 = string_literal("(dirt)"),
+            .image_asset_location = string_literal("./res/img/land/dirt.png"),
+            .flags                = TILE_DATA_FLAGS_NONE,
+        })
+    );
+    insert(
+        ((struct tile_data_definition){
+            .name                 = string_literal("(water (unpassable))"),
+            .image_asset_location = string_literal("./res/img/land/water.png"),
+            .flags                = TILE_DATA_FLAGS_SOLID,
+        })
+    );
+    insert(
+        ((struct tile_data_definition){
+            .name                 = string_literal("(water (passable))"),
+            .image_asset_location = string_literal("./res/img/land/water.png"),
+            .flags                = TILE_DATA_FLAGS_NONE,
+        })
+    );
+    insert(
+        ((struct tile_data_definition){
+            .name                 = string_literal("(cave wall)"),
+            .image_asset_location = string_literal("./res/img/cave/cavewall2.png"),
+            .flags                = TILE_DATA_FLAGS_NONE,
+        })
+    );
+    insert(
+        ((struct tile_data_definition){
+            .name                 = string_literal("(cobble floor1)"),
+            .image_asset_location = string_literal("./res/img/cave/cobble_floor1.png"),
+            .flags                = TILE_DATA_FLAGS_NONE,
+        })
+    );
+    insert(
+        ((struct tile_data_definition){
+            .name                 = string_literal("(tree wall)"),
+            .image_asset_location = string_literal("./res/img/cave/cavewall1.png"),
             .flags                = TILE_DATA_FLAGS_SOLID,
         })
     );
@@ -247,9 +301,7 @@ void game_initialize(void) {
     chest_closed_img      = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/chestclosed.png"));
     chest_open_bottom_img = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/chestopenbottom.png"));
     chest_open_top_img    = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/chestopentop.png"));
-    selection_sword_img   = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/selection_sword.png"));
-    graphics_assets_load_image(&graphics_assets, string_literal("./res/img/brick.png"));
-    graphics_assets_load_image(&graphics_assets, string_literal("./res/img/grass.png"));
+    /* selection_sword_img   = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/selection_sword.png")); */
 
     for (unsigned index = 0; index < array_count(menu_font_variation_string_names); ++index) {
         string current = menu_font_variation_string_names[index];
@@ -263,6 +315,14 @@ void game_initialize(void) {
     editor_initialize(editor_state);
     initialize_static_table_data();
     initialize_items_database();
+
+    for (unsigned index = 0; index < 2048; ++index) {
+        struct tile_data_definition* item = tile_table_data + index;
+        if (item->image_asset_location.length && item->image_asset_location.data) {
+            graphics_assets_load_image(&graphics_assets, item->image_asset_location);
+        }
+    }
+
     assertion(verify_no_item_id_name_hash_collisions());
 
     entity_inventory_add((struct entity_inventory*)&game_state->inventory, MAX_PARTY_ITEMS, item_id_make(string_literal("item_trout_fish_5")));
@@ -289,14 +349,14 @@ void game_initialize(void) {
         game_state->current_conversation_node_id = 1;
     }
 #endif
-    load_level_from_file(game_state, string_literal("1.area"));
+    /* load_level_from_file(game_state, string_literal("1.area")); */
 }
 
 void game_deinitialize(void) {
-    graphics_assets_finish(&graphics_assets);
-    memory_arena_finish(&editor_arena);
-    memory_arena_finish(&game_arena);
     memory_arena_finish(&scratch_arena);
+    memory_arena_finish(&editor_arena);
+    graphics_assets_finish(&graphics_assets);
+    memory_arena_finish(&game_arena);
 }
 
 local void game_loot_chest(struct game_state* state, struct entity_chest* chest) {

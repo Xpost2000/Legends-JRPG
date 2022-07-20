@@ -29,8 +29,10 @@ void image_buffer_write_to_disk(struct image_buffer* image, string as) {
 }
 
 void image_buffer_free(struct image_buffer* image) {
-    assertion(image->pixels);
-    system_heap_memory_deallocate(image->pixels);
+    if (image->pixels) {
+        system_heap_memory_deallocate(image->pixels);
+        image->pixels = 0;
+    }
 }
 
 struct font_cache font_cache_load_bitmap_font(string filepath, s32 tile_width, s32 tile_height, s32 atlas_rows, s32 atlas_columns) {
@@ -791,21 +793,30 @@ struct graphics_assets graphics_assets_create(struct memory_arena* arena, u32 fo
 }
 
 void graphics_assets_finish(struct graphics_assets* assets) {
-    for (unsigned font_index = 0; font_index < assets->font_count; ++font_index) {
-        struct font_cache* font = assets->fonts + font_index;
-        font_cache_free(font);
-    }
-
     for (unsigned image_index = 0; image_index < assets->image_count; ++image_index) {
         struct image_buffer* image = assets->images + image_index;
+        _debugprintf("destroying img: %p (%d) (%dx%d %p)", image, image_index, image->width, image->height, image->pixels);
         image_buffer_free(image);
+    }
+    for (unsigned font_index = 0; font_index < assets->font_count; ++font_index) {
+        struct font_cache* font = assets->fonts + font_index;
+        _debugprintf("destroying font: %p (%d)", font, font_index);
+        font_cache_free(font);
     }
 }
 
-/* TODO */
-/* TODO: does not check for duplicates, since I don't hash yet */
 image_id graphics_assets_load_image(struct graphics_assets* assets, string path) {
+    for (s32 index = 0; index < assets->image_count; ++index) {
+        string filepath = assets->image_file_strings[index];
+
+        if (string_equal(path, filepath)) {
+            _debugprintf("img reused: %.*s", path.length, path.data);
+            return (image_id){.index = index+1};
+        }
+    }
+
     image_id new_id = (image_id) { .index = assets->image_count + 1 };
+    _debugprintf("img loaded: %.*s", path.length, path.data);
 
     struct image_buffer* new_image = &assets->images[assets->image_count];
     string*              new_filepath_string = &assets->image_file_strings[assets->image_count++];

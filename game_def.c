@@ -139,7 +139,15 @@ struct tile {
     s32 flags; /* acts as a XOR against it's parent? (tile definitions elsewhere.) */
     s16 x;
     s16 y;
+    s16 layer;
 };
+s32 _qsort_tile(const void* a, const void* b) {
+    struct tile* a_tile = a;
+    struct tile* b_tile = b;
+    if (a_tile->layer < b_tile->layer) return -1;
+    else if (a_tile->layer > b_tile->layer) return 1;
+    return 0;
+}
 
 #include "conversation_def.c"
 #include "weather_def.c"

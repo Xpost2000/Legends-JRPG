@@ -1025,6 +1025,9 @@ void update_and_render_editor(struct software_framebuffer* framebuffer, f32 dt) 
         }
     } else {
         /* Maybe change the data structures later? */
+        /* TODO do it lazy mode. Once only */
+        qsort(editor_state->tiles, editor_state->tile_count, sizeof(*editor_state->tiles), _qsort_tile);
+
         for (s32 tile_index = 0; tile_index < editor_state->tile_count; ++tile_index) {
             struct tile*                 current_tile = editor_state->tiles + tile_index;
             s32                          tile_id      = current_tile->id;
