@@ -54,7 +54,7 @@ struct autotile_table*       auto_tile_info;
 
 void render_area(struct render_commands* commands, struct level_area* area) {
     /* TODO do it lazy mode. Once only */
-    qsort(area->tiles, area->tile_count, sizeof(*area->tiles), _qsort_tile);
+    /* qsort(area->tiles, area->tile_count, sizeof(*area->tiles), _qsort_tile); */
 
     for (s32 index = 0; index < area->tile_count; ++index) {
         s32 tile_id = area->tiles[index].id;
@@ -124,26 +124,34 @@ entity_id entity_list_create_player(struct entity_list* entities, v2f32 position
 #include "weather.c"
 
 void serialize_level_area(struct game_state* state, struct binary_serializer* serializer, struct level_area* level, bool use_default_spawn) {
+    _debugprintf("reading version");
     serialize_u32(serializer, &level->version);
+    _debugprintf("reading default player spawn");
     serialize_f32(serializer, &level->default_player_spawn.x);
     serialize_f32(serializer, &level->default_player_spawn.y);
+    _debugprintf("reading tiles");
     Serialize_Fixed_Array_And_Allocate_From_Arena_Top(serializer, state->arena, s32, level->tile_count, level->tiles);
 
     if (level->version >= 1) {
+        _debugprintf("reading level transitions");
         Serialize_Fixed_Array_And_Allocate_From_Arena_Top(serializer, state->arena, s32, level->trigger_level_transition_count, level->trigger_level_transitions);
         /* this thing is allergic to chest updates. Unfortunately it might happen a lot... */
         if (level->version >= 2) {
+            _debugprintf("reading containers");
             Serialize_Fixed_Array_And_Allocate_From_Arena_Top(serializer, state->arena, s32, level->entity_chest_count, level->chests);
         }
     }
 
     /* until we have new area transititons or whatever. */
     /* TODO dumb to assume only the player... but okay */
+    struct entity* player = entity_list_dereference_entity(&state->entities, player_id);
     if (use_default_spawn) {
-        struct entity* player = entity_list_dereference_entity(&state->entities, player_id);
         player->position.x             = level->default_player_spawn.x;
         player->position.y             = level->default_player_spawn.y;
     }
+
+    state->camera.xy.x = player->position.x;
+    state->camera.xy.y = player->position.y;
 }
 
 /* this is used for cheating or to setup the game I suppose. */
@@ -262,8 +270,15 @@ static void initialize_static_table_data(void) {
     insert(
         ((struct tile_data_definition){
             .name                 = string_literal("(cave wall)"),
-            .image_asset_location = string_literal("./res/img/cave/cavewall2.png"),
-            .flags                = TILE_DATA_FLAGS_NONE,
+            .image_asset_location = string_literal("./res/img/cave/cavewall1.png"),
+            .flags                = TILE_DATA_FLAGS_SOLID,
+        })
+    );
+    insert(
+        ((struct tile_data_definition){
+            .name                 = string_literal("(cave wall opening)"),
+            .image_asset_location = string_literal("./res/img/cave/cavewall_opening.png"),
+            .flags                = TILE_DATA_FLAGS_SOLID,
         })
     );
     insert(
@@ -275,8 +290,8 @@ static void initialize_static_table_data(void) {
     );
     insert(
         ((struct tile_data_definition){
-            .name                 = string_literal("(tree wall)"),
-            .image_asset_location = string_literal("./res/img/cave/cavewall1.png"),
+            .name                 = string_literal("(bush)"),
+            .image_asset_location = string_literal("./res/img/land/bush.png"),
             .flags                = TILE_DATA_FLAGS_SOLID,
         })
     );
@@ -308,7 +323,7 @@ void game_initialize(void) {
         menu_fonts[index] = graphics_assets_load_bitmap_font(&graphics_assets, current, 5, 12, 5, 20);
     }
 
-    game_state->entities = entity_list_create(&game_arena, 16384);
+    game_state->entities = entity_list_create(&game_arena, 8192);
     player_id = entity_list_create_player(&game_state->entities, v2f32(70, 70));
 
     editor_state                = memory_arena_push(&editor_arena, sizeof(*editor_state));
@@ -349,7 +364,7 @@ void game_initialize(void) {
         game_state->current_conversation_node_id = 1;
     }
 #endif
-    /* load_level_from_file(game_state, string_literal("1.area")); */
+    /* load_level_from_file(game_state, string_literal("testisland.area")); */
 }
 
 void game_deinitialize(void) {

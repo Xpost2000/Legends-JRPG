@@ -108,9 +108,12 @@ void editor_serialize_area(struct binary_serializer* serializer) {
         editor_clear_all_allocations(editor_state);
 
     u32 version_id = CURRENT_LEVEL_AREA_VERSION;
+    _debugprintf("reading version");
     serialize_u32(serializer, &version_id);
+    _debugprintf("reading default player spawn");
     serialize_f32(serializer, &editor_state->default_player_spawn.x);
     serialize_f32(serializer, &editor_state->default_player_spawn.y);
+    _debugprintf("reading tiles");
     Serialize_Fixed_Array(serializer, s32, editor_state->tile_count, editor_state->tiles);
 
     if (version_id >= 1) {
@@ -780,6 +783,8 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
         editor_state->tab_menu_open ^= TAB_MENU_CTRL_BIT;
     } else if (is_key_pressed(KEY_TAB)) {
         editor_state->tab_menu_open ^= TAB_MENU_OPEN_BIT;
+
+        if (!(editor_state->tab_menu_open & TAB_MENU_OPEN_BIT)) editor_state->tab_menu_open = 0;
     } else {
         handle_editor_tool_mode_input(framebuffer);
     }
