@@ -204,11 +204,11 @@ char character_uppercase(char c) {
 }
 
 s32 string_to_s32(string s) {
-    char* temporary = format_temp("%*.s", s.length, s.data);
+    char* temporary = format_temp("%.*s", s.length, s.data);
     return atoi(temporary);
 }
 
 f32 string_to_f32(string s) {
-    char* temporary = format_temp("%*.s", s.length, s.data);
+    char* temporary = format_temp("%.*s", s.length, s.data);
     return atof(temporary);
 }

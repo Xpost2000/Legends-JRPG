@@ -452,7 +452,7 @@ void game_initialize_game_world(void) {
 
 #if 1
     /* game_open_conversation_file(game_state, string_literal("./dlg/linear_test.txt")); */
-    /* game_open_conversation_file(game_state, string_literal("./dlg/simple_choices.txt")); */
+    game_open_conversation_file(game_state, string_literal("./dlg/simple_choices.txt"));
 #endif
     load_level_from_file(game_state, string_literal("testisland.area"));
     game_attempt_to_change_area_name(game_state, string_literal("Old Iyeila"), string_literal("Grave of Stars"));
