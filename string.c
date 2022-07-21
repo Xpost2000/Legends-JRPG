@@ -109,7 +109,7 @@ string string_concatenate(struct memory_arena* arena, string a, string b) {
 
 string string_clone(struct memory_arena* arena, string a) {
     string result = {};
-    result.data    = memory_arena_push(a.length);
+    result.data    = memory_arena_push(arena, a.length);
     result.length = a.length;
     for (unsigned index = 0; index < a.length; ++index) {
         result.data[index] = a.data[index];
@@ -201,4 +201,14 @@ char character_uppercase(char c) {
     }
 
     return c;
+}
+
+s32 string_to_s32(string s) {
+    char* temporary = format_temp("%*.s", s.length, s.data);
+    return atoi(temporary);
+}
+
+f32 string_to_f32(string s) {
+    char* temporary = format_temp("%*.s", s.length, s.data);
+    return atof(temporary);
 }

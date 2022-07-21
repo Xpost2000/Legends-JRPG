@@ -49,6 +49,7 @@ enum lisp_form_type {
     LISP_FORM_SYMBOL,
     LISP_FORM_NUMBER,
     LISP_FORM_QUOTE,
+    LISP_FORM_LIST,
     LISP_FORM_COUNT,
 };
 static string lisp_form_type_strings[] = {
@@ -58,6 +59,7 @@ static string lisp_form_type_strings[] = {
     string_literal("(symbol)"),
     string_literal("(number)"),
     string_literal("(quote)"),
+    string_literal("(list)"),
     string_literal("(count)"),
 };
 struct lisp_form {
@@ -71,8 +73,9 @@ struct lisp_form {
     };
 };
 struct lisp_list {
-    struct lisp_form  form;
-    struct lisp_list* next;
+    /* this is a simpler API to build than a real linked list... */
+    s32               count;
+    struct lisp_form* forms;
 };
 
 bool lexer_done(struct lexer* lexer) {
@@ -277,50 +280,95 @@ struct lexer_token lexer_peek_token(struct lexer* lexer) {
     return peeked;
 }
 
-struct lisp_form* lisp_read_form(struct memory_arena* arena, string code) {
+/* you can use this to try and read a top level I guess... (reads multiple forms I guess) */
+struct lisp_form lisp_read_form(struct memory_arena* arena, string code);
+struct lisp_form lisp_read_list(struct memory_arena* arena, string code);
+
+struct lisp_form lisp_read_list(struct memory_arena* arena, string code) {
+    struct lexer lexer_state = {.buffer = code};
+    struct lisp_form result = {};
+
+    {
+        struct lexer_token first_token = lexer_peek_token(&lexer_state);
+        if (lexer_token_is_null(first_token)) {
+            result.type   = LISP_FORM_NIL;
+            result.string = string_literal("nil");
+        } else {
+            result.type = LISP_FORM_LIST;
+            result.list = memory_arena_push(arena, sizeof(*result.list));
+
+            struct lisp_list* list_contents = result.list;
+
+            s32 child_count = 0;
+            s32 current_read_index = lexer_state.current_read_index;
+
+            /* precount children to preallocate nodes. */
+            {
+                while (!lexer_done(&lexer_state)) {
+                    lexer_next_token(&lexer_state);
+                    child_count++;
+                }
+                lexer_state.current_read_index = current_read_index;
+            }
+
+            list_contents->count = child_count;
+            list_contents->forms = memory_arena_push(arena, sizeof(*list_contents->forms) * list_contents->count);
+
+            for (unsigned index = 0; index < list_contents->count; ++index) {
+                struct lisp_form* current_form = list_contents->forms + index;
+                struct lexer_token token = lexer_next_token(&lexer_state);
+
+                (*current_form) = lisp_read_form(arena, token.str);
+            }
+        }
+    }
+
+    return result;
+}
+
+/* reads a singular form. */
+struct lisp_form lisp_read_form(struct memory_arena* arena, string code) {
     struct lexer lexer_state = {.buffer = code,};
     struct lexer_token first_token = lexer_next_token(&lexer_state);
 
-    struct lisp_form* result;
+    struct lisp_form result = {};
 
     if (first_token.type == TOKEN_TYPE_LIST) {
         string inner_list_string = string_slice(first_token.str, 1, first_token.str.length-1);
-        result = lisp_read_list(arena, inner_list_string);
+        result                   = lisp_read_list(arena, inner_list_string);
     } else {
         /* read form */
-        result = memory_arena_push(arena, sizeof(*result));
-
         switch (first_token.type) {
             case TOKEN_TYPE_SYMBOL:
             case TOKEN_TYPE_COLON:
             case TOKEN_TYPE_COMMA: {
-                result->type       = LISP_FORM_SYMBOL;
-                result->string     = string_clone(arena, first_token.str);
+                result.type       = LISP_FORM_SYMBOL;
+                result.string     = string_clone(arena, first_token.str);
             } break;
             case TOKEN_TYPE_SINGLE_QUOTE: {
-                result->type       = LISP_FORM_QUOTE;
-                result->string     = string_literal("\'");
+                result.type       = LISP_FORM_QUOTE;
+                result.string     = string_literal("\'");
             } break;
             case TOKEN_TYPE_T: {
-                result->type       = LISP_FORM_T;
-                result->string     = string_literal("T");
+                result.type       = LISP_FORM_T;
+                result.string     = string_literal("T");
             } break;
             case TOKEN_TYPE_NIL: {
-                result->type       = LISP_FORM_NIL;
-                result->string     = string_literal("nil");
+                result.type       = LISP_FORM_NIL;
+                result.string     = string_literal("nil");
             } break;
             case TOKEN_TYPE_STRING: {
-                result->type       = LISP_FORM_STRING;
-                result->string     = string_clone(arena, first_token.str);
+                result.type       = LISP_FORM_STRING;
+                result.string     = string_clone(arena, first_token.str);
             } break;
             case TOKEN_TYPE_NUMBER: {
-                result->type       = LISP_FORM_NUMBER;
-                result->is_real    = first_token.is_real;
+                result.type       = LISP_FORM_NUMBER;
+                result.is_real    = first_token.is_real;
 
-                if (result->is_real) {
-                    result->real = first_token.real;
+                if (result.is_real) {
+                    result.real = string_to_f32(first_token.str);
                 } else {
-                    result->integer = first_token.integer;
+                    result.integer = string_to_s32(first_token.str);
                 }
             } break;
         }
@@ -338,6 +386,38 @@ void game_finish_conversation(struct game_state* state) {
 static void _debug_print_token(struct lexer_token token) {
     string type_string = token_type_strings[token.type];
     _debugprintf("type: (%.*s) value : \"%.*s\"", type_string.length, type_string.data, token.str.length, token.str.data);
+}
+
+static void _debug_print_out_lisp_code(struct lisp_form* code) {
+    switch (code->type) {
+        case LISP_FORM_LIST: {
+            _debugprintf1("( ");
+
+            struct lisp_list* list_contents = code->list;
+            for (unsigned index = 0; index < list_contents->count; ++index) {
+                _debug_print_out_lisp_code(&list_contents->forms[index]);
+                _debugprintf1(" ");
+            }
+
+            _debugprintf1(" )");
+        } break;
+        case LISP_FORM_NUMBER: {
+            if (code->is_real) {
+                _debugprintf1("%f", code->real);
+            } else {
+                _debugprintf1("%d", code->integer);
+            }
+        } break;
+        case LISP_FORM_STRING: {
+            _debugprintf1("\".*s\"", code->string.length, code->string.data);
+        } break;
+        case LISP_FORM_QUOTE:
+        case LISP_FORM_T:
+        case LISP_FORM_NIL:
+        case LISP_FORM_SYMBOL: {
+            _debugprintf1(".*s", code->string.length, code->string.data);
+        } break;
+    }
 }
 
 local void parse_and_compose_dialogue(struct game_state* state, struct lexer* lexer_state) {
@@ -365,11 +445,14 @@ local void parse_and_compose_dialogue(struct game_state* state, struct lexer* le
             struct lexer_token lisp_code = lexer_next_token(lexer_state);
 
             if (lisp_code.type != TOKEN_TYPE_LIST) {
-                _debugprintf(lisp_code);
+                _debug_print_token(lisp_code);
                 goto error;
             } else {
                 /* not top-level */
-                struct lisp_form* code = lisp_read_form(&scratch_arena, lisp_code.str);
+                struct lisp_form code = lisp_read_form(&scratch_arena, lisp_code.str);
+                _debugprintf("lisp printing start");
+                _debug_print_out_lisp_code(&code);
+                _debugprintf("lisp printing done");
                 /* 
                    I mean theoretically I could interpret all of this and not have the structure... 
                    

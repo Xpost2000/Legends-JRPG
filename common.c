@@ -33,9 +33,11 @@
 #define Terabyte(x)                 (uint64_t)(x * 1024LL * 1024LL * 1024LL * 1024LL)
 
 #ifndef RELEASE
-#define _debugprintf(fmt, args...)  fprintf(stderr, "[%s:%d:%s()]: " fmt "\n", __FILE__, __LINE__, __func__, ##args)
+#define _debugprintf(fmt, args...)   fprintf(stderr, "[%s:%d:%s()]: " fmt "\n", __FILE__, __LINE__, __func__, ##args)
+#define _debugprintf1(fmt, args...)  fprintf(stderr,  fmt, ##args)
 #else
 #define _debugprintf(fmt, args...)  
+#define _debugprintf1(fmt, args...)
 #endif
 
 #define Array_For_Each(NAME, TYPE, ARR, COUNT) for (TYPE * NAME = ARR; NAME != (ARR + COUNT); NAME += 1)
@@ -402,11 +404,40 @@ f32 get_average_frametime(void) {
     return sum / global_frametime_sample_array.length;
 }
 
+#define TEMPORARY_STORAGE_BUFFER_SIZE (4096)
+#define TEMPORARY_STORAGE_BUFFER_COUNT (4)
+static const char* cstr_yesno[]     = {"no", "yes"};
+static const char* cstr_truefalse[] = {"false", "true"};
+
+char* format_temp(const char* fmt, ...) {
+    local int current_buffer = 0;
+    local char temporary_text_buffer[TEMPORARY_STORAGE_BUFFER_COUNT][TEMPORARY_STORAGE_BUFFER_SIZE] = {};
+
+    char* target_buffer = temporary_text_buffer[current_buffer++];
+    zero_memory(target_buffer, TEMPORARY_STORAGE_BUFFER_SIZE+1);
+    {
+        va_list args;
+        va_start(args, fmt);
+        int written = vsnprintf(target_buffer, TEMPORARY_STORAGE_BUFFER_SIZE-1, fmt, args);
+        va_end(args);
+    }
+
+    if (current_buffer >= TEMPORARY_STORAGE_BUFFER_COUNT) {
+        current_buffer = 0;
+    }
+
+    return target_buffer;
+}
+
+
 #define NO_FLAGS (0)
 
 #include "prng.c"
 #include "v2.c"
 #include "string.c"
+
+static const string yesno[] = {string_literal("no"), string_literal("yes")};
+static const string truefalse[] = {string_literal("false"), string_literal("true")};
 
 #include "memory_arena.c"
 #include "allocators.c"
@@ -482,33 +513,6 @@ static inline u32 packu32(u8 b0, u8 b1, u8 b2, u8 b3) {
         ((u32)(b1) << 16)    |
         ((u32)(b2) << 8)     |
         ((u32)b3);
-}
-
-#define TEMPORARY_STORAGE_BUFFER_SIZE (4096)
-#define TEMPORARY_STORAGE_BUFFER_COUNT (4)
-static const char* cstr_yesno[]     = {"no", "yes"};
-static const char* cstr_truefalse[] = {"false", "true"};
-static const string yesno[] = {string_literal("no"), string_literal("yes")};
-static const string truefalse[] = {string_literal("false"), string_literal("true")};
-
-char* format_temp(const char* fmt, ...) {
-    local int current_buffer = 0;
-    local char temporary_text_buffer[TEMPORARY_STORAGE_BUFFER_COUNT][TEMPORARY_STORAGE_BUFFER_SIZE] = {};
-
-    char* target_buffer = temporary_text_buffer[current_buffer++];
-    zero_memory(target_buffer, TEMPORARY_STORAGE_BUFFER_SIZE+1);
-    {
-        va_list args;
-        va_start(args, fmt);
-        int written = vsnprintf(target_buffer, TEMPORARY_STORAGE_BUFFER_SIZE-1, fmt, args);
-        va_end(args);
-    }
-
-    if (current_buffer >= TEMPORARY_STORAGE_BUFFER_COUNT) {
-        current_buffer = 0;
-    }
-
-    return target_buffer;
 }
 
 /* NOTE win32 code for now */

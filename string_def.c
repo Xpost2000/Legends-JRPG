@@ -25,6 +25,9 @@ bool is_valid_integer(string str);
 char character_lowercase(char c);
 char character_uppercase(char c);
 
+s32 string_to_s32(string s);
+f32 string_to_f32(string s);
+
 string string_from_cstring(cstring str);
 string string_from_cstring_length_counted(cstring str, u64 length);
 string string_slice(string a, s32 start, s32 end);
