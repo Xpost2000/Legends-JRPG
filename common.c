@@ -416,6 +416,11 @@ struct file_buffer {
     u64 length;
 };
 
+string file_buffer_slice(struct file_buffer* buffer, u64 start, u64 end) {
+    char* cstring_buffer = (char*)buffer->buffer;
+    return string_from_cstring_length_counted(cstring_buffer + start, (end - start));
+}
+
 bool   file_exists(string path) {
     FILE* f = fopen(path.data, "r");
 
