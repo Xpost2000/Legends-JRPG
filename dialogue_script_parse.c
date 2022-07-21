@@ -38,7 +38,7 @@ local void dialogue_node_evaluate_code(struct memory_arena* arena, struct conver
                         if (lisp_form_symbol_matching(*action_form_first, string_literal("bye"))) {
                             new_choice->target = 0;
                         } else if (lisp_form_symbol_matching(*action_form_first, string_literal("next"))) {
-                            s32 offset = 1;
+                            s32 offset = 2;
 
                             if (action_form->list.count > 1) {
                                 struct lisp_form* action_form_second = &action_form->list.forms[1];
@@ -85,7 +85,8 @@ local void dialogue_node_evaluate_code(struct memory_arena* arena, struct conver
                         }
                     }
                 } else {
-                    new_choice->target = node_index + 1;
+                    _debugprintf("okay default choices!");
+                    new_choice->target = node_index + 2;
                 }
             }
         } else if (lisp_form_symbol_matching(first, string_literal("do"))) {

@@ -534,6 +534,27 @@ bool game_display_and_update_messages(struct software_framebuffer* framebuffer, 
     return false;
 }
 
+local void dialogue_try_to_execute_script_actions(struct game_state* state, struct conversation_node* node) {
+    /* 
+       since we may try to compile the same code multiple times... It is entirely possible to run out of memory. 
+       
+       Granted these things are so small, that unless you were spamming dialogue choices we would not run out of memory
+       in normal scenarios.
+    */
+    if (node->script_code.length) {
+        _debugprintf("dialogue script present");
+    } else {
+        _debugprintf("no dialogue script present");
+    }
+}
+local void dialogue_choice_try_to_execute_script_actions(struct game_state* state, struct conversation_choice* choice) {
+    if (choice->script_code.length) {
+        _debugprintf("dialogue choice script present");
+    } else {
+        _debugprintf("no dialogue choice script present");
+    }
+}
+
 local void update_and_render_ingame_game_menu_ui(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
     if (game_display_and_update_messages(framebuffer, dt))
         return;
@@ -556,6 +577,7 @@ local void update_and_render_ingame_game_menu_ui(struct game_state* state, struc
             software_framebuffer_draw_text(framebuffer, font, 2, v2f32(60, 480-40), string_literal("(next)"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
             if (is_key_pressed(KEY_RETURN)) {
                 u32 target = current_conversation_node->target;
+                dialogue_try_to_execute_script_actions(game_state, current_conversation_node);
                 game_state->current_conversation_node_id = target;
 
                 if (target == 0) {
@@ -585,6 +607,7 @@ local void update_and_render_ingame_game_menu_ui(struct game_state* state, struc
                 if (is_key_pressed(KEY_RETURN)) {
                     state->viewing_dialogue_choices = false;
                     u32 target = current_conversation_node->choices[state->currently_selected_dialogue_choice].target;
+                    dialogue_choice_try_to_execute_script_actions(game_state, &current_conversation_node->choices[state->currently_selected_dialogue_choice]);
                     state->current_conversation_node_id = target;
 
                     if (target == 0) {
