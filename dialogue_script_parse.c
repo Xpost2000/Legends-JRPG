@@ -41,7 +41,7 @@ struct lexer {
 };
 
 bool lexer_done(struct lexer* lexer) {
-    if (lexer->current_read_index < lexer->buffer.length) {
+    if (lexer->current_read_index <= lexer->buffer.length) {
         return false;
     }
 
@@ -91,7 +91,7 @@ struct lexer_token lexer_try_to_eat_list(struct lexer* lexer) {
         }
 
         if (balancer == 0) {
-            list_end_index = lexer->current_read_index-1;
+            list_end_index = lexer->current_read_index;
 
             return (struct lexer_token) {
                 .type = TOKEN_TYPE_LIST,
@@ -129,6 +129,18 @@ struct lexer_token lexer_try_to_eat_string(struct lexer* lexer) {
     return NULL_TOKEN;
 }
 
+bool lexer_token_is_null(struct lexer_token token) {
+    return token.type == TOKEN_TYPE_NONE;
+}
+
+bool lexer_token_is_symbol_matching(struct lexer_token token, string symbol_value) {
+    if (token.type == TOKEN_TYPE_SYMBOL) {
+        return string_equal(token.str, symbol_value);
+    }
+
+    return false;
+}
+
 struct lexer_token lexer_try_to_eat_identifier_symbol_or_number(struct lexer* lexer) {
     s32 identifier_start_index = lexer->current_read_index-1;
     s32 identifier_end_index   = identifier_start_index;
@@ -139,7 +151,7 @@ struct lexer_token lexer_try_to_eat_identifier_symbol_or_number(struct lexer* le
     while (!lexer_done(lexer) && !found_end_of_token) {
         char eaten = lexer_eat_next_character(lexer);
 
-        if (is_whitespace(eaten)) {
+        if (is_whitespace(eaten) || (eaten == 0)) {
             identifier_end_index = lexer->current_read_index-1;
             found_end_of_token   = true;
         }
@@ -161,6 +173,10 @@ struct lexer_token lexer_try_to_eat_identifier_symbol_or_number(struct lexer* le
                 result.type = TOKEN_TYPE_NUMBER;
             }
         }
+    }
+
+    if (result.str.length == 0) {
+        return NULL_TOKEN;
     }
 
     return result;
@@ -213,12 +229,51 @@ struct lexer_token lexer_next_token(struct lexer* lexer) {
     return NULL_TOKEN;
 }
 
+struct lexer_token lexer_peek_token(struct lexer* lexer) {
+    s32 current_read_index = lexer->current_read_index;
+    struct lexer_token peeked = lexer_next_token(lexer);
+    lexer->current_read_index = current_read_index;
+    return peeked;
+}
+
 void game_finish_conversation(struct game_state* state) {
     state->is_conversation_active = false;
     file_buffer_free(&state->conversation_file_buffer);
 }
 
-void game_open_conversation_file(struct game_state* state, string filename) {
+local void parse_and_compose_dialogue(struct game_state* state, struct lexer* lexer_state) {
+    /* no error checking */
+    struct lexer_token speaker_name  = lexer_next_token(lexer_state);
+    struct lexer_token colon         = lexer_next_token(lexer_state);
+    struct lexer_token dialogue_line = lexer_next_token(lexer_state);
+    /* try to peek and see if we find an arrow */
+    struct lexer_token maybe_arrow   = lexer_peek_token(lexer_state);
+
+    struct conversation* conversation = &state->current_conversation;
+    conversation->node_count = 0;
+
+    if (speaker_name.type == TOKEN_TYPE_STRING && colon.type == TOKEN_TYPE_COLON && dialogue_line.type == TOKEN_TYPE_STRING) {
+        struct conversation_node* new_node = &conversation->nodes[conversation->node_count++];
+
+        new_node->speaker_name = speaker_name.str;
+        new_node->text         = dialogue_line.str;
+        new_node->choice_count = 0;
+        new_node->target       = conversation->node_count+1;
+
+        if (lexer_token_is_symbol_matching(maybe_arrow, string_literal("=>"))) {
+            lexer_next_token(lexer_state);
+            _debugprintf("has arrow... Look for lisp code and parse it into instructions!");
+        } else {
+            if (lexer_token_is_null(maybe_arrow)) {
+                lexer_next_token(lexer_state);
+                new_node->target = 0;
+            }
+        }
+    }
+
+}
+
+local void game_open_conversation_file(struct game_state* state, string filename) {
     _debugprintf("opening file: %.*s", filename.length, filename.data);
     /* 
        NOTE:
@@ -229,14 +284,14 @@ void game_open_conversation_file(struct game_state* state, string filename) {
        keep this in memory until the conversation is done.
     */
     state->conversation_file_buffer = read_entire_file(heap_allocator(), filename);
-    /* struct lexer lexer_state = {.buffer = file_buffer_as_string(&state->conversation_file_buffer),}; */
-    struct lexer lexer_state = {.buffer = string_literal("hi hi hi this"),};
+    struct lexer lexer_state = {.buffer = file_buffer_as_string(&state->conversation_file_buffer),};
 
     while (!lexer_done(&lexer_state)) {
-        struct lexer_token token       = lexer_next_token(&lexer_state);
-        string             type_string = token_type_strings[token.type];
+        parse_and_compose_dialogue(state, &lexer_state);
+        /* struct lexer_token token       = lexer_next_token(&lexer_state); */
+        /* string             type_string = token_type_strings[token.type]; */
 
-        _debugprintf("type: (%.*s) value : \"%.*s\"", type_string.length, type_string.data, token.str.length, token.str.data);
+        /* _debugprintf("type: (%.*s) value : \"%.*s\"", type_string.length, type_string.data, token.str.length, token.str.data); */
     }
     
 }
