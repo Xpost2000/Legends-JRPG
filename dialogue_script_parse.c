@@ -98,9 +98,9 @@ static void _debug_print_out_lisp_code(struct lisp_form* code) {
         } break;
         case LISP_FORM_NUMBER: {
             if (code->is_real) {
-                _debugprintf1("%f", code->real);
+                _debugprintf1("(real)%f", code->real);
             } else {
-                _debugprintf1("%d", code->integer);
+                _debugprintf1("(int)%d", code->integer);
             }
         } break;
         case LISP_FORM_STRING: {
@@ -226,7 +226,8 @@ struct lexer_token lexer_try_to_eat_identifier_symbol_or_number(struct lexer* le
     while (!lexer_done(lexer) && !found_end_of_token) {
         char eaten = lexer_eat_next_character(lexer);
 
-        if (is_whitespace(eaten) || (eaten == 0)) {
+        /* _debugprintf("eating: \'%c(%d)\'", eaten, eaten); */
+        if (is_whitespace(eaten) || (eaten == 0) || lexer_done(lexer)) {
             identifier_end_index = lexer->current_read_index-1;
             found_end_of_token   = true;
         }
@@ -254,7 +255,6 @@ struct lexer_token lexer_try_to_eat_identifier_symbol_or_number(struct lexer* le
         _debugprintf("empty token");
         return NULL_TOKEN;
     }
-
     return result;
 }
 /* 
@@ -344,8 +344,8 @@ struct lisp_form lisp_read_list(struct memory_arena* arena, string code) {
             /* precount children to preallocate nodes. */
             {
                 while (!lexer_done(&lexer_state)) {
-                    lexer_next_token(&lexer_state);
-                    child_count++;
+                    if (!lexer_token_is_null(lexer_next_token(&lexer_state)))
+                        child_count++;
                 }
                 lexer_state.current_read_index = current_read_index;
             }
@@ -359,9 +359,7 @@ struct lisp_form lisp_read_list(struct memory_arena* arena, string code) {
                 struct lexer_token token = lexer_next_token(&lexer_state);
 
                 _debug_print_token(token);
-
-                if (!lexer_token_is_null(token))
-                    (*current_form) = lisp_read_form(arena, token.str);
+                (*current_form) = lisp_read_form(arena, token.str);
             }
         }
     }
