@@ -157,7 +157,7 @@ struct tile* level_area_find_tile(struct level_area* level, s32 x, s32 y) {
 }
 
 local void build_navigation_map_for_level_area(struct memory_arena* arena, struct level_area* level) {
-    {
+    if (level->tile_count > 0) {
         struct level_area_navigation_map* navigation_map = &level->navigation_data;
 
         s32 min_x = level->tiles[0].x;
@@ -177,8 +177,8 @@ local void build_navigation_map_for_level_area(struct memory_arena* arena, struc
         navigation_map->max_x = max_x;
         navigation_map->max_y = max_y;
 
-        navigation_map->width  = max_x - min_x;
-        navigation_map->height = max_y - min_y;
+        navigation_map->width  = (max_x - min_x)+1;
+        navigation_map->height = (max_y - min_y)+1;
 
         navigation_map->tiles = memory_arena_push_top(arena, sizeof(*navigation_map->tiles) * navigation_map->width * navigation_map->height);
 
@@ -222,7 +222,7 @@ struct navigation_path navigation_path_find(struct memory_arena* arena, struct l
         level_area_navigation_map_is_point_in_bounds(navigation_map, end)) {
         s32                               map_width               = navigation_map->width;
         s32                               map_height              = navigation_map->height;
-        s32                               total_elements          = map_width * map_height;
+        s32                               total_elements          = (map_width * map_height);
 
         s32                               exploration_queue_count = 0;
         v2f32*                            exploration_queue       = memory_arena_push(arena, sizeof(*exploration_queue) * total_elements);
@@ -242,11 +242,10 @@ struct navigation_path navigation_path_find(struct memory_arena* arena, struct l
         static s32 neighbor_offsets_x[] = {-1,0,1};
         static s32 neighbor_offsets_y[] = {-1,0,1};
 
-        _debugprintf("map (%dx%d) (minx: %d, maxx: %d, miny: %d, maxy: %d)", map_width, map_height, navigation_map->min_x, navigation_map->max_x, navigation_map->min_y, navigation_map->max_y);
+        /* _debugprintf("map (%dx%d) (minx: %d, maxx: %d, miny: %d, maxy: %d)", map_width, map_height, navigation_map->min_x, navigation_map->max_x, navigation_map->min_y, navigation_map->max_y); */
 
         while (exploration_queue_count > 0 && !found_end) {
             v2f32 current_point = exploration_queue[exploration_queue_count-1];
-            _debugprintf("current_point: <%f, %f>", current_point.x, current_point.y);
 
             {
                 s32 index = exploration_queue_count-1;
@@ -267,7 +266,7 @@ struct navigation_path navigation_path_find(struct memory_arena* arena, struct l
                             origin_paths     [((s32)proposed_point.y - navigation_map->min_y) * map_width + ((s32)proposed_point.x - navigation_map->min_x)] = current_point;
                             explored_points  [((s32)proposed_point.y - navigation_map->min_y) * map_width + ((s32)proposed_point.x - navigation_map->min_x)] = true;
                             exploration_queue[exploration_queue_count++]                                                                                     = proposed_point;
-                            _debugprintf("neighbor <%f, %f> (origin as: <%f, %f>) (%d, %d offset) is okay to add", proposed_point.x, proposed_point.y, current_point.x, current_point.y, x_cursor, y_cursor);
+                            /* _debugprintf("neighbor <%d, %d> (origin as: <%d, %d>) (%d, %d offset) is okay to add", (s32)proposed_point.x, (s32)proposed_point.y, (s32)current_point.x, (s32)current_point.y, x_cursor, y_cursor); */
                         }
                     }
                 }
@@ -275,46 +274,37 @@ struct navigation_path navigation_path_find(struct memory_arena* arena, struct l
 
 #if 1
             if (current_point.x == end.x && current_point.y == end.y) {
-                _debugprintf("found end");
                 found_end = true;
 
-                for (s32 y_cursor = navigation_map->min_y; y_cursor <= navigation_map->max_y; ++y_cursor) {
-                    for (s32 x_cursor = navigation_map->min_x; x_cursor <= navigation_map->max_x; ++x_cursor) {
-                        v2f32 origin = origin_paths[(y_cursor - navigation_map->min_y) * map_width + (x_cursor - navigation_map->min_x)];
-                        _debugprintf("<%d, %d> origin is: <%d, %d>", x_cursor, y_cursor, (s32)origin.x, (s32)origin.y);
+                s32 path_length = 1;
+                bool found_start = false;
+                while (!found_start) {
+                    v2f32 old_current = current_point;
+                    current_point = origin_paths[((s32)current_point.y - navigation_map->min_y) * map_width + ((s32)current_point.x - navigation_map->min_x)];
+
+                    path_length++;
+
+                    if (current_point.x == start.x && current_point.y == start.y) {
+                        found_start = true;
                     }
                 }
 
-                /* _debugprintf("computing path traceback"); */
-                /* s32 path_length = 0; */
-                /* bool found_start = false; */
-                /* while (!found_start) { */
-                /*     v2f32 old_current = current_point; */
-                /*     current_point = origin_paths[((s32)current_point.y - navigation_map->min_y) * map_width + ((s32)current_point.x - navigation_map->min_x)]; */
+                results.count = path_length;
+                results.points  = memory_arena_push(arena, sizeof(*results.points) * results.count);
 
-                /*     _debugprintf("Origin of (%f, %f) is (%f, %f)", old_current.x, old_current.y, current_point.x, current_point.y); */
-                /*     path_length++; */
+                found_start = false;
 
-                /*     if (current_point.x == start.x && current_point.y == start.y) { */
-                /*         found_start = true; */
-                /*     } */
-                /* } */
+                s32 index = 0;
+                current_point = end;
+                while (!found_start) {
+                    results.points[index++] = current_point;
+                    current_point        = origin_paths[((s32)current_point.y - navigation_map->min_y) * map_width + ((s32)current_point.x - navigation_map->min_x)];
 
-                /* results.count = path_length; */
-                /* results.points  = memory_arena_push(arena, sizeof(*results.points) * results.count); */
-
-                /* found_start = false; */
-
-                /* s32 index = 0; */
-                /* current_point = end; */
-                /* while (!found_start) { */
-                /*     results.points[index++] = current_point; */
-                /*     current_point        = origin_paths[((s32)current_point.y - navigation_map->min_y) * map_width + ((s32)current_point.x - navigation_map->min_x)]; */
-
-                /*     if (current_point.x == start.x && current_point.y == start.y) { */
-                /*         found_start = true; */
-                /*     } */
-                /* } */
+                    if (current_point.x == start.x && current_point.y == start.y) {
+                        found_start = true;
+                    }
+                }
+                results.points[index++] = start;
             }
 #endif
         }
