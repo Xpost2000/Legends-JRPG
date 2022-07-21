@@ -617,9 +617,11 @@ void game_initialize_game_world(void) {
     /* game_open_conversation_file(game_state, string_literal("./dlg/linear_test.txt")); */
     game_open_conversation_file(game_state, string_literal("./dlg/simple_choices.txt"));
 #endif
-    load_level_from_file(game_state, string_literal("testisland.area"));
+    load_level_from_file(game_state, string_literal("pf.area"));
+    /* load_level_from_file(game_state, string_literal("testisland.area")); */
     /* game_attempt_to_change_area_name(game_state, string_literal("Old Iyeila"), string_literal("Grave of Stars")); */
-#if 0
+#if 1
+    int _game_sandbox_testing(void);
     _game_sandbox_testing();
 #endif
 }

@@ -233,6 +233,15 @@ struct navigation_path {
     v2f32*        points;
 };
 
+void _debug_print_navigation_path(struct navigation_path* path) {
+    _debugprintf("path start");
+    for (unsigned index = 0; index < path->count; ++index) {
+        v2f32 current_point = path->points[index];
+        _debugprintf("P[%d](%f, %f)", index, current_point.x, current_point.y);
+    }
+    _debugprintf("path end");
+}
+
 struct navigation_path navigation_path_find(struct memory_arena* arena, struct level_area* area, v2f32 start, v2f32 end);
 
 enum editor_tool_mode {

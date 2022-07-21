@@ -820,6 +820,14 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
                 }
             } break;
         }
+        y_cursor += 12;
+        {
+            v2f32 mouse_tilespace = get_mouse_in_tile_space(&editor_state->camera, SCREEN_WIDTH, SCREEN_HEIGHT);
+            
+            software_framebuffer_draw_text(framebuffer,
+                                           graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_GOLD]),
+                                           1, v2f32(0,y_cursor), string_from_cstring(format_temp("Mouse: (tx: %d, ty: %d)", (s32)mouse_tilespace.x, (s32)mouse_tilespace.y)), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+        }
     }
 
     if (editor_state->tab_menu_open & TAB_MENU_OPEN_BIT) {
@@ -1112,6 +1120,7 @@ void update_and_render_editor(struct software_framebuffer* framebuffer, f32 dt) 
 
     /* cursor ghost */
     software_framebuffer_render_commands(framebuffer, &commands);
+    
     _imgui_any_intersection = false;
 }
 
