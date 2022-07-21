@@ -182,15 +182,18 @@ local void build_navigation_map_for_level_area(struct memory_arena* arena, struc
 
         navigation_map->tiles = memory_arena_push_top(arena, sizeof(*navigation_map->tiles) * navigation_map->width * navigation_map->height);
 
-        /* TODO heavily simplified for now. Just a binary view */
         for (s32 y_cursor = navigation_map->min_y; y_cursor < navigation_map->max_y; ++y_cursor) {
             for (s32 x_cursor = navigation_map->min_x; x_cursor < navigation_map->max_x; ++x_cursor) {
                 struct level_area_navigation_map_tile* nav_tile = &navigation_map->tiles[((y_cursor - navigation_map->min_y) * navigation_map->width + (x_cursor - navigation_map->min_x))];
                 struct tile*                          real_tile = level_area_find_tile(level, x_cursor, y_cursor);
-                struct tile_data_definition*          tile_data_entry = &tile_table_data[real_tile->id];
 
                 nav_tile->score_modifier = 1;
-                nav_tile->type           = (tile_data_entry->flags & TILE_DATA_FLAGS_SOLID) && true;
+                if (real_tile) {
+                    struct tile_data_definition* tile_data_entry = &tile_table_data[real_tile->id];
+                    nav_tile->type                               = (tile_data_entry->flags & TILE_DATA_FLAGS_SOLID) && true;
+                } else {
+                    nav_tile->type           = 0;
+                }
             }
         }
     }
@@ -512,6 +515,9 @@ void game_initialize_game_world(void) {
 #endif
     load_level_from_file(game_state, string_literal("testisland.area"));
     /* game_attempt_to_change_area_name(game_state, string_literal("Old Iyeila"), string_literal("Grave of Stars")); */
+#if 0
+    _game_sandbox_testing();
+#endif
 }
 
 void game_deinitialize(void) {
