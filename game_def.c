@@ -442,6 +442,8 @@ struct game_state {
        This is dynamically allocated and must be freed.
      */
     struct file_buffer  conversation_file_buffer;
+    /* to store strings and stuff like that. Clear this when dialogue finishes (or opening new dlg)*/
+    struct memory_arena conversation_arena;
     u32                 current_conversation_node_id;
     s32                 currently_selected_dialogue_choice;
 

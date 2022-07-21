@@ -399,6 +399,7 @@ void game_initialize(void) {
     editor_arena = memory_arena_create_from_heap("Editor Memory", Megabyte(32));
 
     game_state = memory_arena_push(&game_arena, sizeof(*game_state));
+    game_state->conversation_arena = memory_arena_push_sub_arena(&game_arena, Kilobyte(64));
 #if 0
     {
         /* NOTE, not what I want to do, but I cannot figure out the cause of the segfault rn. */
@@ -455,7 +456,7 @@ void game_initialize_game_world(void) {
     game_open_conversation_file(game_state, string_literal("./dlg/simple_choices.txt"));
 #endif
     load_level_from_file(game_state, string_literal("testisland.area"));
-    game_attempt_to_change_area_name(game_state, string_literal("Old Iyeila"), string_literal("Grave of Stars"));
+    /* game_attempt_to_change_area_name(game_state, string_literal("Old Iyeila"), string_literal("Grave of Stars")); */
 }
 
 void game_deinitialize(void) {

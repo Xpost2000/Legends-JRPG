@@ -77,6 +77,17 @@ void* memory_arena_push_top_unaligned(struct memory_arena* arena, u64 amount) {
     return base_pointer;
 }
 
+struct memory_arena memory_arena_push_sub_arena(struct memory_arena* arena, u64 amount) {
+    char* name = MEMORY_ARENA_DEFAULT_NAME;
+
+    struct memory_arena sub_arena = {};
+    /* sub_arena.parent = arena; */
+    sub_arena.memory   = memory_arena_push(arena, amount);
+    sub_arena.capacity = amount;
+    sub_arena.name     = name;
+    return sub_arena;
+}
+
 struct temporary_memory memory_arena_begin_temporary_memory(cstring name, struct memory_arena* arena) {
     struct temporary_memory result = { .name = name };
     

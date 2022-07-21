@@ -8,10 +8,10 @@ void game_finish_conversation(struct game_state* state) {
     file_buffer_free(&state->conversation_file_buffer);
 }
 
-local void dialogue_node_evaluate_code(struct conversation* conversation, u32 node_index, string code_string) {
+local void dialogue_node_evaluate_code(struct memory_arena* arena, struct conversation* conversation, u32 node_index, string code_string) {
     struct conversation_node* node = conversation->nodes + node_index;
 
-    struct lisp_form code = lisp_read_form(&scratch_arena, code_string);
+    struct lisp_form code = lisp_read_form(arena, code_string);
     assertion(code.type == LISP_FORM_LIST);
 
     struct lisp_list* list = &code.list;
@@ -29,6 +29,7 @@ local void dialogue_node_evaluate_code(struct conversation* conversation, u32 no
 
                 /* I mean I should really be error checking, but I'm too lazy to do that right now */
                 string choice_text = choice_form->list.forms[0].string;
+                new_choice->text = choice_text;
                 if (choice_form->list.count > 1) {
                     struct lisp_form* action_form = &choice_form->list.forms[1];
                     {
@@ -130,7 +131,7 @@ local void parse_and_compose_dialogue(struct game_state* state, struct lexer* le
                    Maybe consider that at some point?
                 */
                 /* build code */
-                dialogue_node_evaluate_code(conversation, conversation->node_count-1, lisp_code.str);
+                dialogue_node_evaluate_code(&state->conversation_arena, conversation, conversation->node_count-1, lisp_code.str);
             }
         } else {
             _debugprintf("linear dialogue");
@@ -151,6 +152,8 @@ local void parse_and_compose_dialogue(struct game_state* state, struct lexer* le
 }
 
 local void game_open_conversation_file(struct game_state* state, string filename) {
+    memory_arena_clear_bottom(&state->conversation_arena);
+    memory_arena_clear_top(&state->conversation_arena);
     _debugprintf("opening file: %.*s", filename.length, filename.data);
     /* 
        NOTE:

@@ -38,6 +38,7 @@ void                    memory_arena_clear_bottom(struct memory_arena* arena);
 void*                   memory_arena_push_top_unaligned(struct memory_arena* arena, u64 amount);
 #define                 memory_arena_push_top(arena, amount) memory_arena_push_top_unaligned(arena, amount)
 void*                   memory_arena_push_bottom_unaligned(struct memory_arena* arena, u64 amount);
+struct memory_arena     memory_arena_push_sub_arena(struct memory_arena* arena, u64 amount);
 #define                 memory_arena_push_bottom(arena, amount) memory_arena_push_bottom_unaligned(arena, amount)
 struct temporary_memory memory_arena_begin_temporary_memory(cstring name, struct memory_arena* arena);
 void                    memory_arena_end_temporary_memory(struct temporary_memory* temporary_arena);
