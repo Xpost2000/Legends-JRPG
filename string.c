@@ -27,6 +27,19 @@ bool string_equal(string a, string b) {
     return false;
 }
 
+bool string_equal_case_insensitive(string a, string b) {
+    if (a.length == b.length) {
+        for (unsigned index = 0; index < a.length; ++index) {
+            if (character_lowercase(a.data[index]) != character_lowercase(b.data[index]))
+                return false;
+        }
+
+        return true;
+    }
+
+    return false;
+}
+
 u64 cstring_length(const char* cstring) {
     char* cursor = (char*)cstring;
 
@@ -92,4 +105,90 @@ string string_concatenate(struct memory_arena* arena, string a, string b) {
     /* cstring friendly... */
     new_string.data[write_index++] = 0;
     return new_string;
+}
+
+bool is_whitespace(char c) {
+    if ((c == ' ') ||
+        (c == '\t') ||
+        (c == '\r') ||
+        (c == '\n')) {
+        return true;
+    }
+
+    return false;
+}
+
+bool is_alphabetic_lowercase(char c) {
+    if (c >= 'a' && c <= 'z') {
+        return true;
+    }
+
+    return false;
+}
+
+bool is_alphabetic_uppercase(char c) {
+    if (c >= 'A' && c <= 'Z') {
+        return true;
+    }
+
+    return false;
+}
+
+bool is_alphabetic(char c) {
+    return is_alphabetic_lowercase(c) || is_alphabetic_uppercase(c);
+}
+
+bool is_numeric(char c) {
+    if (c >= '0' && c <= '9') {
+        return true;
+    }
+    return false;
+}
+
+bool is_numeric_with_decimal(char c) {
+    return is_numeric(c) || c == '.';
+}
+
+bool is_valid_real_number(string str) {
+    bool found_one_decimal = false;
+
+    for (unsigned index = 0; index < str.length; ++index) {
+        if (str.data[index] == '.') {
+            if (!found_one_decimal) {
+                found_one_decimal = true;
+            } else {
+                return false;
+            }
+        } else if (!is_numeric(str.data[index])) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool is_valid_integer(string str) {
+    for (unsigned index = 0; index < str.length; ++index) {
+        if (!is_numeric(str.data[index])) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+char character_lowercase(char c) {
+    if (is_alphabetic_uppercase(c)) {
+        return (c + 32);
+    }
+
+    return c;
+}
+
+char character_uppercase(char c) {
+    if (is_alphabetic_lowercase(c)) {
+        return (c - 32);
+    }
+
+    return c;
 }

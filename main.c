@@ -265,8 +265,8 @@ int main(int argc, char** argv) {
     f32 last_elapsed_delta_time = (1.0 / 60.0f);
     initialize();
 
-    /* if (sandbox_testing()) */
-    /*     return 1; */
+    if (sandbox_testing())
+        return 1;
 
     char window_name_title_buffer[256] = {};
     while (global_game_running) {

@@ -88,6 +88,7 @@ static inline u32 hash_bytes_fnv1a(u8* bytes, size_t length) {
         b = tmp;                                \
     } while (0)
 
+
 /* hopefully these are branchless, I can optimize on sunday? */
 s32 clamp_s32(s32 x, s32 min, s32 max) {
 #if 0
@@ -419,6 +420,10 @@ struct file_buffer {
 string file_buffer_slice(struct file_buffer* buffer, u64 start, u64 end) {
     char* cstring_buffer = (char*)buffer->buffer;
     return string_from_cstring_length_counted(cstring_buffer + start, (end - start));
+}
+
+string file_buffer_as_string(struct file_buffer* buffer) {
+    return file_buffer_slice(buffer, 0, buffer->length);
 }
 
 bool   file_exists(string path) {
