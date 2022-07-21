@@ -239,42 +239,61 @@ struct navigation_path navigation_path_find(struct memory_arena* arena, struct l
 
         bool found_end = false;
 
-        static s32 neighbor_offsets_x[] = {-1,0,1};
-        static s32 neighbor_offsets_y[] = {-1,0,1};
-
-        /* _debugprintf("map (%dx%d) (minx: %d, maxx: %d, miny: %d, maxy: %d)", map_width, map_height, navigation_map->min_x, navigation_map->max_x, navigation_map->min_y, navigation_map->max_y); */
+        /* TODO: allow special case, if we can do a bresenham line, just use the trace */
 
         while (exploration_queue_count > 0 && !found_end) {
-            v2f32 current_point = exploration_queue[exploration_queue_count-1];
+            v2f32 current_point = exploration_queue[0];
+            /* _debugprintf("current point: <%d, %d>", (s32)current_point.x, (s32)current_point.y); */
 
             {
-                s32 index = exploration_queue_count-1;
-                exploration_queue[index] = exploration_queue[--exploration_queue_count];
+                /* I could use a double pointer setup but... */
+                /*
+                  IE: I have enough memory to store the entire queue, so I mean I could just
+                  do
+
+                  current_point = exploration_queue[queue_start];
+                  queue_start++;
+                  
+                  exploration_queue[queue_end++] = new_neighbors;
+                  
+                  ... Why I wrote the code without actually doing it is ironic.
+                 */
+                for (s32 index = 0; index < exploration_queue_count-1; ++index) {
+                    exploration_queue[index] = exploration_queue[index+1];
+                }
+                exploration_queue_count--;
             }
 
             explored_points[((s32)current_point.y - navigation_map->min_y) * map_width + ((s32)current_point.x - navigation_map->min_x)] = true;
 
             /* add neighbors */
+            /* might have to make four neighbors. We can configure it anyhow */
+            _debugprintf("try to find neighbors");
             for (s32 y_cursor = -1; y_cursor <= 1; ++y_cursor) {
                 for (s32 x_cursor = -1; x_cursor <= 1; ++x_cursor) {
                     v2f32 proposed_point  = current_point;
                     proposed_point.x     += x_cursor;
                     proposed_point.y     += y_cursor;
 
+                    /* _debugprintf("neighbor <%d, %d> (origin as: <%d, %d>) (%d, %d offset) proposed", (s32)proposed_point.x, (s32)proposed_point.y, (s32)current_point.x, (s32)current_point.y, x_cursor, y_cursor); */
                     if (level_area_navigation_map_is_point_in_bounds(navigation_map, proposed_point)) {
                         if (!(explored_points[((s32)proposed_point.y - navigation_map->min_y) * map_width + ((s32)proposed_point.x - navigation_map->min_x)])) {
                             origin_paths     [((s32)proposed_point.y - navigation_map->min_y) * map_width + ((s32)proposed_point.x - navigation_map->min_x)] = current_point;
                             explored_points  [((s32)proposed_point.y - navigation_map->min_y) * map_width + ((s32)proposed_point.x - navigation_map->min_x)] = true;
                             exploration_queue[exploration_queue_count++]                                                                                     = proposed_point;
                             /* _debugprintf("neighbor <%d, %d> (origin as: <%d, %d>) (%d, %d offset) is okay to add", (s32)proposed_point.x, (s32)proposed_point.y, (s32)current_point.x, (s32)current_point.y, x_cursor, y_cursor); */
+                        } else {
+                            /* _debugprintf("refused, already visited") ; */
                         }
+                    } else {
+                        /* _debugprintf("refused... Not in bounds"); */
                     }
                 }
             }
 
-#if 1
             if (current_point.x == end.x && current_point.y == end.y) {
                 found_end = true;
+                /* _debugprintf("found end"); */
 
                 s32 path_length = 1;
                 bool found_start = false;
@@ -305,8 +324,8 @@ struct navigation_path navigation_path_find(struct memory_arena* arena, struct l
                     }
                 }
                 results.points[index++] = start;
+                Reverse_Array_Inplace(results.points, path_length, v2f32);
             }
-#endif
         }
 
     }

@@ -90,6 +90,12 @@ static inline u32 hash_bytes_fnv1a(u8* bytes, size_t length) {
         b = tmp;                                \
     } while (0)
 
+#define Reverse_Array_Inplace(ARRAY, LENGTH, TYPE)                      \
+    do {                                                                \
+        for (s32 _index = 0; _index < LENGTH/2; ++_index) {             \
+            Swap(ARRAY[_index], ARRAY[(LENGTH-1)-_index], TYPE);        \
+        }                                                               \
+    } while (0)
 
 /* hopefully these are branchless, I can optimize on sunday? */
 s32 clamp_s32(s32 x, s32 min, s32 max) {
