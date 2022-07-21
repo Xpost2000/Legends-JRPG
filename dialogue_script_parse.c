@@ -22,8 +22,8 @@ static string token_type_strings[] = {
     string_literal("(symbol)"),
     string_literal("(string)"),
     string_literal("(list)"),
-    string_literal("(T)"),
-    string_literal("(NIL)"),
+    string_literal("(t)"),
+    string_literal("(nil)"),
     string_literal("(number)"),
     string_literal("(colon)"),
     string_literal("(comma)"),
@@ -39,6 +39,40 @@ struct lexer_token {
 struct lexer {
     string              buffer;
     s32                 current_read_index;
+};
+
+struct lisp_form;
+enum lisp_form_type {
+    LISP_FORM_NIL,
+    LISP_FORM_T,
+    LISP_FORM_STRING,
+    LISP_FORM_SYMBOL,
+    LISP_FORM_NUMBER,
+    LISP_FORM_QUOTE,
+    LISP_FORM_COUNT,
+};
+static string lisp_form_type_strings[] = {
+    string_literal("(nil)"),
+    string_literal("(t)"),
+    string_literal("(string)"),
+    string_literal("(symbol)"),
+    string_literal("(number)"),
+    string_literal("(quote)"),
+    string_literal("(count)"),
+};
+struct lisp_form {
+    s32 type;
+    s8  is_real;
+    union {
+        struct lisp_list* list;
+        string            string;
+        float             real;
+        s32               integer;
+    };
+};
+struct lisp_list {
+    struct lisp_form  form;
+    struct lisp_list* next;
 };
 
 bool lexer_done(struct lexer* lexer) {
@@ -243,6 +277,59 @@ struct lexer_token lexer_peek_token(struct lexer* lexer) {
     return peeked;
 }
 
+struct lisp_form* lisp_read_form(struct memory_arena* arena, string code) {
+    struct lexer lexer_state = {.buffer = code,};
+    struct lexer_token first_token = lexer_next_token(&lexer_state);
+
+    struct lisp_form* result;
+
+    if (first_token.type == TOKEN_TYPE_LIST) {
+        string inner_list_string = string_slice(first_token.str, 1, first_token.str.length-1);
+        result = lisp_read_list(arena, inner_list_string);
+    } else {
+        /* read form */
+        result = memory_arena_push(arena, sizeof(*result));
+
+        switch (first_token.type) {
+            case TOKEN_TYPE_SYMBOL:
+            case TOKEN_TYPE_COLON:
+            case TOKEN_TYPE_COMMA: {
+                result->type       = LISP_FORM_SYMBOL;
+                result->string     = string_clone(arena, first_token.str);
+            } break;
+            case TOKEN_TYPE_SINGLE_QUOTE: {
+                result->type       = LISP_FORM_QUOTE;
+                result->string     = string_literal("\'");
+            } break;
+            case TOKEN_TYPE_T: {
+                result->type       = LISP_FORM_T;
+                result->string     = string_literal("T");
+            } break;
+            case TOKEN_TYPE_NIL: {
+                result->type       = LISP_FORM_NIL;
+                result->string     = string_literal("nil");
+            } break;
+            case TOKEN_TYPE_STRING: {
+                result->type       = LISP_FORM_STRING;
+                result->string     = string_clone(arena, first_token.str);
+            } break;
+            case TOKEN_TYPE_NUMBER: {
+                result->type       = LISP_FORM_NUMBER;
+                result->is_real    = first_token.is_real;
+
+                if (result->is_real) {
+                    result->real = first_token.real;
+                } else {
+                    result->integer = first_token.integer;
+                }
+            } break;
+        }
+    }
+
+    return result;
+}
+
+
 void game_finish_conversation(struct game_state* state) {
     state->is_conversation_active = false;
     file_buffer_free(&state->conversation_file_buffer);
@@ -275,6 +362,22 @@ local void parse_and_compose_dialogue(struct game_state* state, struct lexer* le
         if (lexer_token_is_symbol_matching(maybe_arrow, string_literal("=>"))) {
             lexer_next_token(lexer_state);
             _debugprintf("has arrow... Look for lisp code and parse it into instructions!");
+            struct lexer_token lisp_code = lexer_next_token(lexer_state);
+
+            if (lisp_code.type != TOKEN_TYPE_LIST) {
+                _debugprintf(lisp_code);
+                goto error;
+            } else {
+                /* not top-level */
+                struct lisp_form* code = lisp_read_form(&scratch_arena, lisp_code.str);
+                /* 
+                   I mean theoretically I could interpret all of this and not have the structure... 
+                   
+                   Maybe consider that at some point?
+                */
+                /* build code */
+                /* dialogue_evaluate_actions(code); */
+            }
         } else {
             _debugprintf("linear dialogue");
             if (lexer_token_is_null(maybe_arrow)) {
@@ -283,6 +386,7 @@ local void parse_and_compose_dialogue(struct game_state* state, struct lexer* le
             }
         }
     } else {
+    error:
         _debugprintf("dialogue error, cannot read for some reason... Not sure why right now");
         _debug_print_token(speaker_name);
         _debug_print_token(colon);

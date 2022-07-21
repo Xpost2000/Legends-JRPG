@@ -194,7 +194,7 @@ void handle_sdl_events(void) {
                 } break;
                 case SDL_MOUSEBUTTONDOWN:
                 case SDL_MOUSEBUTTONUP: {
-                    int button_id;
+                    s32 button_id = 0;
                     switch (current_event.button.button) {
                         case SDL_BUTTON_LEFT: {
                             button_id = MOUSE_BUTTON_LEFT;

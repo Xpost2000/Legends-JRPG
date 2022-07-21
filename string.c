@@ -107,6 +107,16 @@ string string_concatenate(struct memory_arena* arena, string a, string b) {
     return new_string;
 }
 
+string string_clone(struct memory_arena* arena, string a) {
+    string result = {};
+    result.data    = memory_arena_push(a.length);
+    result.length = a.length;
+    for (unsigned index = 0; index < a.length; ++index) {
+        result.data[index] = a.data[index];
+    }
+    return result;
+}
+
 bool is_whitespace(char c) {
     if ((c == ' ') ||
         (c == '\t') ||

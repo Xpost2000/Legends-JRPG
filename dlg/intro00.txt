@@ -16,7 +16,7 @@
     ("Perhaps."           => (NEXT))
     ("Same as any other." => (GOTO 4)))
 
-"Frimor" : "There's something special tonight isn't there?"               => (SKIP-AHEAD 1)
+"Frimor" : "There's something special tonight isn't there?"               => (NEXT 1)
 "Frimor" : "Heh, maybe it is. I don't spend as much time as you do here." => (NEXT)
 
 "Frimor" : "How have your days been anyways?"                     => (NEXT)

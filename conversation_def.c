@@ -15,6 +15,9 @@ struct conversation_choice {
     string text;
     /* does not count bartering */
     u32    target; /* 0 == END_CONVERSATION */
+
+    /* will override target! */
+    string script_code;
 };
 struct conversation_node {
     string   speaker_name;
@@ -25,6 +28,10 @@ struct conversation_node {
 
     /* use if no choices, and using the default continue option */
     u32 target;
+
+    /* will override target! */
+    /* note you cannot have script + choices. */
+    string script_code;
 };
 /* simple? */
 struct conversation {

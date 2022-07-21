@@ -41,5 +41,6 @@ void cstring_copy(cstring source, cstring destination, u64 destination_length);
 #include "memory_arena_def.c"
 
 string string_concatenate(struct memory_arena* arena, string a, string b);
+string string_clone(struct memory_arena* arena, string a);
 
 #endif
