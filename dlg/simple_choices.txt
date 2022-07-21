@@ -1,0 +1,10 @@
+"Guy" : "Here's a choice..." => (CHOICES
+     ("Yes?") 
+     ("No?" (NEXT 1))
+)
+"Me": "Yes."
+"Me": "Wait... No?"
+"Guy": "Make up your mind won't you?" => (DO (GAME_START_RAIN) (DLG_NEXT))
+"Guy": "Look what you did..."
+"Guy": "It started raining!" => (DO (GAME_STOP_RAIN) (DLG_NEXT))
+"Guy": "Oh... Nevermind..."

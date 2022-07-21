@@ -344,6 +344,16 @@ static void _debug_print_out_lisp_code(struct lisp_form* code) {
 struct lisp_form lisp_read_form(struct memory_arena* arena, string code);
 struct lisp_form lisp_read_list(struct memory_arena* arena, string code);
 
+struct lisp_form* lisp_list_get_child(struct lisp_form* form, s32 index) {
+    if (form->type == LISP_FORM_LIST) {
+        if (index >= 0 && index < form->list.count) {
+            return form->list.forms + index;
+        }
+    }
+
+    return NULL;
+}
+
 struct lisp_form lisp_read_list(struct memory_arena* arena, string code) {
     struct lexer lexer_state = {.buffer = code};
     struct lisp_form result = {};

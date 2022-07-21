@@ -1,0 +1,7 @@
+"Frimor" : "The stars are certainly blessed tonight..."
+"Frimor" : "Aren't they? Calamir."
+"Frimor" : "There's something special tonight isn't there?"
+"Frimor" : "Heh, maybe it is. I don't spend as much time as you do here."
+"Frimor" : "How have your days been anyways?"                    
+"Frimor" : "Actually... Nevermind, I didn't mean to disturb you."
+"Frimor" : "I'll be going"                                      

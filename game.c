@@ -3,7 +3,9 @@
 #define MAX_TILE_LAYERS (4) 
 
 #include "game_def.c"
+#include "save_data_def.c"
 #include "dialogue_script_parse.c"
+#include "game_script_def.c"
 
 static struct memory_arena game_arena   = {};
 /* compile out */
@@ -536,13 +538,20 @@ bool game_display_and_update_messages(struct software_framebuffer* framebuffer, 
 
 local void dialogue_try_to_execute_script_actions(struct game_state* state, struct conversation_node* node) {
     /* 
-       since we may try to compile the same code multiple times... It is entirely possible to run out of memory. 
+       scratch arena is okay for evaluation
        
-       Granted these things are so small, that unless you were spamming dialogue choices we would not run out of memory
-       in normal scenarios.
-    */
+       we can keep game/vm game state elsewhere.
+     */
     if (node->script_code.length) {
         _debugprintf("dialogue script present");
+        _debugprintf("dialogue script-code: %.*s", node->script_code.length, node->script_code.data);
+        struct lisp_form code = lisp_read_form(&scratch_arena, node->script_code);
+        /* we should already know this is a DO form so just go */
+        struct lisp_list* list_contents = &code.list;
+        for (unsigned index = 1; index < list_contents->count; ++index) {
+            struct lisp_form* form = list_contents->forms + index;
+            game_script_evaluate_form(&scratch_arena, state, form);
+        }
     } else {
         _debugprintf("no dialogue script present");
     }
@@ -550,6 +559,7 @@ local void dialogue_try_to_execute_script_actions(struct game_state* state, stru
 local void dialogue_choice_try_to_execute_script_actions(struct game_state* state, struct conversation_choice* choice) {
     if (choice->script_code.length) {
         _debugprintf("dialogue choice script present");
+        _debugprintf("choice script-code: %.*s", choice->script_code.length, choice->script_code.data);
     } else {
         _debugprintf("no dialogue choice script present");
     }
@@ -1121,4 +1131,4 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
     update_and_render_game_menu_ui(game_state, framebuffer, dt);
 }
 
-#include "save_data_def.c"
+#include "game_script.c"
