@@ -23,7 +23,10 @@ static bool sandbox_testing(void) {
 
 /* I don't remember if the game has been initiated yet LOL */
 int _game_sandbox_testing(void) {
-    struct navigation_path path = navigation_path_find(&scratch_arena, &game_state->loaded_area, v2f32(7,5), v2f32(7,10));
-    _debug_print_navigation_path(&path);
+    {
+        struct navigation_path path = navigation_path_find(&scratch_arena, &game_state->loaded_area,
+                                                        v2f32(7,5), v2f32(7,10));
+        _debug_print_navigation_path(&path);
+    }
     return true; 
 }
