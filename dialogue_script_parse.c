@@ -78,6 +78,43 @@ struct lisp_list {
     struct lisp_form* forms;
 };
 
+static void _debug_print_token(struct lexer_token token) {
+    string type_string = token_type_strings[token.type];
+    _debugprintf("type: (%.*s) value : \"%.*s\"", type_string.length, type_string.data, token.str.length, token.str.data);
+}
+
+static void _debug_print_out_lisp_code(struct lisp_form* code) {
+    switch (code->type) {
+        case LISP_FORM_LIST: {
+            _debugprintf1("( ");
+
+            struct lisp_list* list_contents = code->list;
+            for (unsigned index = 0; index < list_contents->count; ++index) {
+                _debug_print_out_lisp_code(&list_contents->forms[index]);
+                _debugprintf1(" ");
+            }
+
+            _debugprintf1(" )");
+        } break;
+        case LISP_FORM_NUMBER: {
+            if (code->is_real) {
+                _debugprintf1("%f", code->real);
+            } else {
+                _debugprintf1("%d", code->integer);
+            }
+        } break;
+        case LISP_FORM_STRING: {
+            _debugprintf1("\"%.*s\"", code->string.length, code->string.data);
+        } break;
+        case LISP_FORM_QUOTE:
+        case LISP_FORM_T:
+        case LISP_FORM_NIL:
+        case LISP_FORM_SYMBOL: {
+            _debugprintf1("%.*s", code->string.length, code->string.data);
+        } break;
+    }
+}
+
 bool lexer_done(struct lexer* lexer) {
     if (lexer->current_read_index <= lexer->buffer.length) {
         return false;
@@ -214,6 +251,7 @@ struct lexer_token lexer_try_to_eat_identifier_symbol_or_number(struct lexer* le
     }
 
     if (result.str.length == 0) {
+        _debugprintf("empty token");
         return NULL_TOKEN;
     }
 
@@ -290,6 +328,7 @@ struct lisp_form lisp_read_list(struct memory_arena* arena, string code) {
 
     {
         struct lexer_token first_token = lexer_peek_token(&lexer_state);
+
         if (lexer_token_is_null(first_token)) {
             result.type   = LISP_FORM_NIL;
             result.string = string_literal("nil");
@@ -310,6 +349,7 @@ struct lisp_form lisp_read_list(struct memory_arena* arena, string code) {
                 }
                 lexer_state.current_read_index = current_read_index;
             }
+            _debugprintf("counted : %d children", child_count);
 
             list_contents->count = child_count;
             list_contents->forms = memory_arena_push(arena, sizeof(*list_contents->forms) * list_contents->count);
@@ -318,7 +358,10 @@ struct lisp_form lisp_read_list(struct memory_arena* arena, string code) {
                 struct lisp_form* current_form = list_contents->forms + index;
                 struct lexer_token token = lexer_next_token(&lexer_state);
 
-                (*current_form) = lisp_read_form(arena, token.str);
+                _debug_print_token(token);
+
+                if (!lexer_token_is_null(token))
+                    (*current_form) = lisp_read_form(arena, token.str);
             }
         }
     }
@@ -335,6 +378,7 @@ struct lisp_form lisp_read_form(struct memory_arena* arena, string code) {
 
     if (first_token.type == TOKEN_TYPE_LIST) {
         string inner_list_string = string_slice(first_token.str, 1, first_token.str.length-1);
+        _debugprintf("Inner code \"%.*s\"", inner_list_string.length, inner_list_string.data);
         result                   = lisp_read_list(arena, inner_list_string);
     } else {
         /* read form */
@@ -381,43 +425,6 @@ struct lisp_form lisp_read_form(struct memory_arena* arena, string code) {
 void game_finish_conversation(struct game_state* state) {
     state->is_conversation_active = false;
     file_buffer_free(&state->conversation_file_buffer);
-}
-
-static void _debug_print_token(struct lexer_token token) {
-    string type_string = token_type_strings[token.type];
-    _debugprintf("type: (%.*s) value : \"%.*s\"", type_string.length, type_string.data, token.str.length, token.str.data);
-}
-
-static void _debug_print_out_lisp_code(struct lisp_form* code) {
-    switch (code->type) {
-        case LISP_FORM_LIST: {
-            _debugprintf1("( ");
-
-            struct lisp_list* list_contents = code->list;
-            for (unsigned index = 0; index < list_contents->count; ++index) {
-                _debug_print_out_lisp_code(&list_contents->forms[index]);
-                _debugprintf1(" ");
-            }
-
-            _debugprintf1(" )");
-        } break;
-        case LISP_FORM_NUMBER: {
-            if (code->is_real) {
-                _debugprintf1("%f", code->real);
-            } else {
-                _debugprintf1("%d", code->integer);
-            }
-        } break;
-        case LISP_FORM_STRING: {
-            _debugprintf1("\".*s\"", code->string.length, code->string.data);
-        } break;
-        case LISP_FORM_QUOTE:
-        case LISP_FORM_T:
-        case LISP_FORM_NIL:
-        case LISP_FORM_SYMBOL: {
-            _debugprintf1(".*s", code->string.length, code->string.data);
-        } break;
-    }
 }
 
 local void parse_and_compose_dialogue(struct game_state* state, struct lexer* lexer_state) {

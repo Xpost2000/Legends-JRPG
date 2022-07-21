@@ -10,7 +10,12 @@ void ___dialogue_testing(void) {
 }
 
 static bool sandbox_testing(void) {
+    _debugprintf("sandbox start");
     /* ___dialogue_testing(); */
+    struct lisp_form code = lisp_read_form(&scratch_arena, string_literal("(hi this is cool)"));
+    _debug_print_out_lisp_code(&code);
+    fprintf(stderr, "\n");
+    _debugprintf("sandbox end");
 
-    return false;
+    return true;
 }
