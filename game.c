@@ -199,6 +199,110 @@ local void build_navigation_map_for_level_area(struct memory_arena* arena, struc
     }
 }
 
+bool level_area_navigation_map_is_point_in_bounds(struct level_area_navigation_map* navigation_map, v2f32 point) {
+    s32 x = point.x;
+    s32 y = point.y;
+
+    if (x >= navigation_map->min_x && x <= navigation_map->max_x &&
+        y >= navigation_map->min_y && y <= navigation_map->max_y) {
+        return true;
+    }
+
+    return false;
+}
+
+/* This is just going to start as a breadth first search */
+struct navigation_path navigation_path_find(struct memory_arena* arena, struct level_area* area, v2f32 start, v2f32 end) {
+    struct level_area_navigation_map* navigation_map          = &area->navigation_data;
+    struct navigation_path            results                 = {};
+
+    if (level_area_navigation_map_is_point_in_bounds(navigation_map, start) &&
+        level_area_navigation_map_is_point_in_bounds(navigation_map, end)) {
+        s32                               map_width               = navigation_map->width;
+        s32                               map_height              = navigation_map->height;
+        s32                               total_elements          = map_width * map_height;
+
+        s32                               exploration_queue_count = 0;
+        v2f32*                            exploration_queue       = memory_arena_push(arena, sizeof(*exploration_queue) * total_elements);
+
+        s32                               origin_path_count       = 0;
+        v2f32*                            origin_paths            = memory_arena_push(arena, sizeof(*origin_paths)      * total_elements);
+
+        s32                               explored_point_count    = 0;
+        bool*                             explored_points         = memory_arena_push(arena, sizeof(*explored_points)   * total_elements);
+
+
+        exploration_queue[exploration_queue_count++]     = start;
+        origin_paths     [((s32)start.y - navigation_map->min_y) * map_width + ((s32)start.x - navigation_map->min_x)] = start;
+
+        bool found_end = false;
+
+        static s32 neighbor_offsets_x[] = {-1,0,1};
+        static s32 neighbor_offsets_y[] = {-1,0,1};
+
+        while (exploration_queue_count > 0 && !found_end) {
+            v2f32 current_point = exploration_queue[exploration_queue_count-1];
+
+            {
+                exploration_queue_count--;
+                exploration_queue[exploration_queue_count-1] = exploration_queue[exploration_queue_count+1];
+            }
+
+            explored_points[((s32)current_point.y - navigation_map->min_y) * map_width + ((s32)current_point.x - navigation_map->min_x)] = true;
+
+            /* add neighbors */
+            for (s32 y_cursor = -1; y_cursor <= 1; ++y_cursor) {
+                for (s32 x_cursor = -1; x_cursor <=1; ++x_cursor) {
+                    v2f32 proposed_point  = current_point;
+                    proposed_point.x     += x_cursor;
+                    proposed_point.y     += y_cursor;
+
+                    if (level_area_navigation_map_is_point_in_bounds(navigation_map, proposed_point)) {
+                        if (!(explored_points[((s32)proposed_point.y - navigation_map->min_y) * map_width + ((s32)proposed_point.x - navigation_map->min_x)])) {
+                            origin_paths     [((s32)proposed_point.y - navigation_map->min_y) * map_width + ((s32)proposed_point.x - navigation_map->min_x)] = current_point;
+                            exploration_queue[exploration_queue_count++]                                                                                     = proposed_point;
+                        }
+                    }
+                }
+            }
+
+            if (current_point.x == end.x && current_point.y == end.y) {
+                found_end = true;
+
+                s32 path_length = 0;
+                bool found_start = false;
+                while (!found_start) {
+                    current_point = origin_paths[((s32)current_point.y - navigation_map->min_y) * map_width + ((s32)current_point.x - navigation_map->min_x)];
+                    path_length++;
+
+                    if (current_point.x == start.x && current_point.y == start.y) {
+                        found_start = true;
+                    }
+                }
+
+                results.count = path_length;
+                results.points  = memory_arena_push(arena, sizeof(*results.points) * results.count);
+
+                found_start = false;
+
+                s32 index = 0;
+                current_point = end;
+                while (!found_start) {
+                    results.points[index++] = current_point;
+                    current_point        = origin_paths[((s32)current_point.y - navigation_map->min_y) * map_width + ((s32)current_point.x - navigation_map->min_x)];
+
+                    if (current_point.x == start.x && current_point.y == start.y) {
+                        found_start = true;
+                    }
+                }
+            }
+        }
+
+    }
+
+    return results;
+}
+
 void serialize_level_area(struct game_state* state, struct binary_serializer* serializer, struct level_area* level, bool use_default_spawn) {
     memory_arena_clear_top(state->arena);
     _debugprintf("reading version");

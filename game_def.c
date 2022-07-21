@@ -228,6 +228,13 @@ struct level_area {
     struct level_area_navigation_map navigation_data;
 };
 
+struct navigation_path {
+    s32           count;
+    v2f32*        points;
+};
+
+struct navigation_path navigation_path_find(struct memory_arena* arena, struct level_area* area, v2f32 start, v2f32 end);
+
 enum editor_tool_mode {
     EDITOR_TOOL_TILE_PAINTING,
     EDITOR_TOOL_SPAWN_PLACEMENT,
