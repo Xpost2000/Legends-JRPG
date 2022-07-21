@@ -188,6 +188,29 @@ struct game_ui_nine_patch {
 /* TODO render and use ninepatches later :*/
 struct game_ui_nine_patch game_ui_nine_patch_load_from_directory(struct graphics_assets* graphics_assets, string directory, s32 tile_width, s32 tile_height);
 
+struct level_area_navigation_map_tile {
+    f32 score_modifier; 
+    s32 type;          /* 0 ground, 1 solid, 2 obstacle(removable?) */
+};
+/* NOTE:
+   I might just allow pathfinding every frame we need it since, we're not expecting humungous maps or otherwise slow processed maps 
+   
+   If it's really bad I'll think of caching the path.
+*/
+struct level_area_navigation_map {
+    s32 width;
+    s32 height;
+
+    /* keep this here if I have to remap coordinates or something */
+    s32 min_x;
+    s32 min_y;
+
+    s32 max_x;
+    s32 max_y;
+
+    struct level_area_navigation_map_tile* tiles;
+};
+
 struct level_area {
     u32          version;
     v2f32        default_player_spawn;
@@ -200,6 +223,9 @@ struct level_area {
 
     s32 entity_chest_count;
     struct entity_chest* chests;
+
+    /* runtime data */
+    struct level_area_navigation_map navigation_data;
 };
 
 enum editor_tool_mode {

@@ -23,6 +23,9 @@ void weather_start_rain(struct game_state* state) {
 
     Set_Bit(weather->features, WEATHER_RAIN);
 }
+void weather_stop_rain(struct game_state* state) {
+    state->weather.features &= ~WEATHER_RAIN;
+}
 
 void weather_start_snow(struct game_state* state) {
     struct weather* weather = &state->weather;
@@ -37,10 +40,13 @@ void weather_start_snow(struct game_state* state) {
     Set_Bit(weather->features, WEATHER_SNOW);
 }
 
+void weather_stop_snow(struct game_state* state) {
+    state->weather.features &= ~WEATHER_SNOW;
+}
 
 void weather_render_rain(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
     /* when setting up rain, simulate each particle individually... */
-    while (state->weather.timer > 1.0/120.0f) {
+    while (state->weather.timer > 1.0/60.0f) {
         for (s32 index = 0; index < MAX_WEATHER_PARTICLES; ++index) {
             v2f32* current_position = &state->weather.rain_positions[index];
 

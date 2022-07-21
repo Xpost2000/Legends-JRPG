@@ -145,6 +145,57 @@ entity_id entity_list_create_player(struct entity_list* entities, v2f32 position
 
 #include "weather.c"
 
+/* does not account for layers right now. That's okay. */
+struct tile* level_area_find_tile(struct level_area* level, s32 x, s32 y) {
+    Array_For_Each(it, struct tile, level->tiles, level->tile_count) {
+        if ((s32)(it->x)== x && (s32)(it->y) == y) {
+            return it;
+        }
+    }
+
+    return NULL;
+}
+
+local void build_navigation_map_for_level_area(struct memory_arena* arena, struct level_area* level) {
+    {
+        struct level_area_navigation_map* navigation_map = &level->navigation_data;
+
+        s32 min_x = level->tiles[0].x;
+        s32 min_y = level->tiles[0].y;
+        s32 max_x = level->tiles[0].x;
+        s32 max_y = level->tiles[0].y;
+
+        Array_For_Each(it, struct tile, level->tiles, level->tile_count) {
+            if ((s32)it->x < min_x) min_x = (s32)(it->x);
+            if ((s32)it->y < min_y) min_y = (s32)(it->y);
+            if ((s32)it->x > max_x) max_x = (s32)(it->x);
+            if ((s32)it->y > max_y) max_y = (s32)(it->y);
+        }
+
+        navigation_map->min_x = min_x;
+        navigation_map->min_y = min_y;
+        navigation_map->max_x = max_x;
+        navigation_map->max_y = max_y;
+
+        navigation_map->width  = max_x - min_x;
+        navigation_map->height = max_y - min_y;
+
+        navigation_map->tiles = memory_arena_push_top(arena, sizeof(*navigation_map->tiles) * navigation_map->width * navigation_map->height);
+
+        /* TODO heavily simplified for now. Just a binary view */
+        for (s32 y_cursor = navigation_map->min_y; y_cursor < navigation_map->max_y; ++y_cursor) {
+            for (s32 x_cursor = navigation_map->min_x; x_cursor < navigation_map->max_x; ++x_cursor) {
+                struct level_area_navigation_map_tile* nav_tile = &navigation_map->tiles[((y_cursor - navigation_map->min_y) * navigation_map->width + (x_cursor - navigation_map->min_x))];
+                struct tile*                          real_tile = level_area_find_tile(level, x_cursor, y_cursor);
+                struct tile_data_definition*          tile_data_entry = &tile_table_data[real_tile->id];
+
+                nav_tile->score_modifier = 1;
+                nav_tile->type           = (tile_data_entry->flags & TILE_DATA_FLAGS_SOLID) && true;
+            }
+        }
+    }
+}
+
 void serialize_level_area(struct game_state* state, struct binary_serializer* serializer, struct level_area* level, bool use_default_spawn) {
     memory_arena_clear_top(state->arena);
     _debugprintf("reading version");
@@ -177,6 +228,8 @@ void serialize_level_area(struct game_state* state, struct binary_serializer* se
     state->camera.xy.x = player->position.x;
     state->camera.xy.y = player->position.y;
     qsort(level->tiles, level->tile_count, sizeof(*level->tiles), _qsort_tile);
+
+    build_navigation_map_for_level_area(state->arena, level);
 }
 
 /* this is used for cheating or to setup the game I suppose. */

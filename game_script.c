@@ -16,11 +16,11 @@ GAME_LISP_FUNCTION(DLG_NEXT) {
     return (struct lisp_form) { .type = LISP_FORM_NIL, .string = string_literal("nil") };
 }
 GAME_LISP_FUNCTION(GAME_START_RAIN) {
-    state->weather.features |= WEATHER_RAIN;
+    weather_start_rain(state);
     return (struct lisp_form) { .type = LISP_FORM_NIL, .string = string_literal("nil") };
 }
 GAME_LISP_FUNCTION(GAME_STOP_RAIN) {
-    state->weather.features &= ~WEATHER_RAIN;
+    weather_stop_rain(state);
     return (struct lisp_form) { .type = LISP_FORM_NIL, .string = string_literal("nil") };
 }
 
