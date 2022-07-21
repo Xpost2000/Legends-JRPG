@@ -10,7 +10,7 @@ void ___dialogue_testing(void) {
 }
 
 static bool sandbox_testing(void) {
-    ___dialogue_testing();
+    /* ___dialogue_testing(); */
 
-    return true;
+    return false;
 }

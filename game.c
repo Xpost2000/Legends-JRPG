@@ -450,24 +450,8 @@ void game_initialize_game_world(void) {
     entity_inventory_add((struct entity_inventory*)&game_state->inventory, MAX_PARTY_ITEMS, item_id_make(string_literal("item_trout_fish_5")));
     entity_inventory_add((struct entity_inventory*)&game_state->inventory, MAX_PARTY_ITEMS, item_id_make(string_literal("item_sardine_fish_5")));
 
-#if 0
-    {
-        struct conversation s = {};
-        {
-            struct conversation_node* a = conversation_push_node(&s, string_literal("Frimor"), string_literal("The stars are certainly blessed tonight..."), 2);
-            struct conversation_node* b = conversation_push_node(&s, string_literal("Frimor"), string_literal("Aren't they? Calamir."), 0);
-            struct conversation_node* c = conversation_push_node(&s, string_literal("Frimor"), string_literal("There's something special tonight isn't there?"), 5);
-            struct conversation_node* d = conversation_push_node(&s, string_literal("Frimor"), string_literal("Heh, maybe it is. I don't spend as much time as you do here."), 5);
-            struct conversation_node* e = conversation_push_node(&s, string_literal("Frimor"), string_literal("How have your days been anyways?"), 6);
-            struct conversation_node* f = conversation_push_node(&s, string_literal("Frimor"), string_literal("Actually... Nevermind, I didn't mean to disturb you."), 7);
-            struct conversation_node* g = conversation_push_node(&s, string_literal("Frimor"), string_literal("I'll be going."), 0);
-            conversation_push_choice(b, string_literal("Perhaps."), 3);
-            conversation_push_choice(b, string_literal("Same as any other."), 4);
-        }
-        game_state->is_conversation_active       = true;
-        game_state->current_conversation         = s;
-        game_state->current_conversation_node_id = 1;
-    }
+#if 1
+    game_open_conversation_file(game_state, string_literal("./dlg/linear_test.txt"));
 #endif
     load_level_from_file(game_state, string_literal("testisland.area"));
     game_attempt_to_change_area_name(game_state, string_literal("Old Iyeila"), string_literal("Grave of Stars"));

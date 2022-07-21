@@ -26,6 +26,7 @@ static string token_type_strings[] = {
     string_literal("(NIL)"),
     string_literal("(number)"),
     string_literal("(colon)"),
+    string_literal("(comma)"),
     string_literal("(single-quote)"),
     string_literal("(count)"),
 };
@@ -202,9 +203,15 @@ struct lexer_token lexer_next_token(struct lexer* lexer) {
                         break;
                 }
             } break;
+            case ',': {
+                return (struct lexer_token) {
+                    .type = TOKEN_TYPE_COMMA,
+                    .str  = string_literal(",")
+                };
+            } break;
             case ':': {
                 return (struct lexer_token) {
-                    .type = TOKEN_TYPE_SINGLE_QUOTE,
+                    .type = TOKEN_TYPE_COLON,
                     .str  = string_literal(":")
                 };
             } break;
@@ -241,6 +248,11 @@ void game_finish_conversation(struct game_state* state) {
     file_buffer_free(&state->conversation_file_buffer);
 }
 
+static void _debug_print_token(struct lexer_token token) {
+    string type_string = token_type_strings[token.type];
+    _debugprintf("type: (%.*s) value : \"%.*s\"", type_string.length, type_string.data, token.str.length, token.str.data);
+}
+
 local void parse_and_compose_dialogue(struct game_state* state, struct lexer* lexer_state) {
     /* no error checking */
     struct lexer_token speaker_name  = lexer_next_token(lexer_state);
@@ -250,10 +262,10 @@ local void parse_and_compose_dialogue(struct game_state* state, struct lexer* le
     struct lexer_token maybe_arrow   = lexer_peek_token(lexer_state);
 
     struct conversation* conversation = &state->current_conversation;
-    conversation->node_count = 0;
 
     if (speaker_name.type == TOKEN_TYPE_STRING && colon.type == TOKEN_TYPE_COLON && dialogue_line.type == TOKEN_TYPE_STRING) {
         struct conversation_node* new_node = &conversation->nodes[conversation->node_count++];
+        _debugprintf("allocating new node: (%d)", conversation->node_count);
 
         new_node->speaker_name = speaker_name.str;
         new_node->text         = dialogue_line.str;
@@ -264,11 +276,18 @@ local void parse_and_compose_dialogue(struct game_state* state, struct lexer* le
             lexer_next_token(lexer_state);
             _debugprintf("has arrow... Look for lisp code and parse it into instructions!");
         } else {
+            _debugprintf("linear dialogue");
             if (lexer_token_is_null(maybe_arrow)) {
                 lexer_next_token(lexer_state);
                 new_node->target = 0;
             }
         }
+    } else {
+        _debugprintf("dialogue error, cannot read for some reason... Not sure why right now");
+        _debug_print_token(speaker_name);
+        _debug_print_token(colon);
+        _debug_print_token(dialogue_line);
+        state->is_conversation_active             = false;
     }
 
 }
@@ -283,8 +302,14 @@ local void game_open_conversation_file(struct game_state* state, string filename
        NOTE:
        keep this in memory until the conversation is done.
     */
-    state->conversation_file_buffer = read_entire_file(heap_allocator(), filename);
-    struct lexer lexer_state = {.buffer = file_buffer_as_string(&state->conversation_file_buffer),};
+
+    state->is_conversation_active             = true;
+    struct conversation* conversation = &state->current_conversation;
+    conversation->node_count = 0;
+    state->current_conversation_node_id       = 1;
+    state->currently_selected_dialogue_choice = 0;
+    state->conversation_file_buffer           = read_entire_file(heap_allocator(), filename);
+    struct lexer lexer_state                  = {.buffer = file_buffer_as_string(&state->conversation_file_buffer),};
 
     while (!lexer_done(&lexer_state)) {
         parse_and_compose_dialogue(state, &lexer_state);
