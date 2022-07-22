@@ -451,6 +451,9 @@ struct game_state_combat_state {
     s32       count;
     /* sorted by initiative */
     entity_id participants[512];
+
+    /* crying for all the animation state */
+    s32       active_combatant;
 };
 
 struct game_state {

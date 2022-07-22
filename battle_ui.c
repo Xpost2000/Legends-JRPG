@@ -15,10 +15,24 @@ local void start_combat_ui(void) {
     global_battle_ui_state.timer = 0;
 }
 
+local bool is_player_turn(struct game_state* state) {
+    struct game_state_combat_state* combat_state            = &state->combat_state;
+    struct entity*                  active_combatant_entity = entity_list_dereference_entity(&state->entities, combat_state->participants[combat_state->active_combatant]);
+    struct entity*                  player_entity           = entity_list_dereference_entity(&state->entities, player_id);
+
+    if (player_entity == active_combatant_entity)
+        return true;
+
+    return false;
+}
+
 local void draw_turn_panel(struct game_state* state, struct software_framebuffer* framebuffer, f32 x, f32 y) {
     struct game_state_combat_state* combat_state = &state->combat_state;
 
-    for (s32 index = 0; index < combat_state->count; ++index) {
+    struct entity* active_combatant_entity = entity_list_dereference_entity(&state->entities, combat_state->participants[combat_state->active_combatant]);
+    bool player_turn = is_player_turn(state);
+
+    for (s32 index = combat_state->active_combatant; index < combat_state->count; ++index) {
         union color32u8 color = color32u8(128, 128, 128, 255);
 
         {
@@ -32,8 +46,14 @@ local void draw_turn_panel(struct game_state* state, struct software_framebuffer
             }
         }
 
+        if (!player_turn) {
+            color.r >>= 1;
+            color.g >>= 1;
+            color.b >>= 1;
+        }
+
         const s32 square_size = 32;
-        software_framebuffer_draw_quad(framebuffer, rectangle_f32(x, y + index * square_size * 1.3, square_size, square_size), color, BLEND_MODE_ALPHA);
+        software_framebuffer_draw_quad(framebuffer, rectangle_f32(x, y + (index - combat_state->active_combatant) * square_size * 1.3, square_size, square_size), color, BLEND_MODE_ALPHA);
     }
 }
 

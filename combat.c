@@ -37,7 +37,8 @@ local void determine_if_combat_should_begin(struct game_state* state, struct ent
     }
 
     if (should_be_in_combat) {
-        state->combat_state.active_combat = true;
+        state->combat_state.active_combat    = true;
+        state->combat_state.active_combatant = 0;
         start_combat_ui();
         add_all_combat_participants(state, entities);
     }
