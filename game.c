@@ -7,6 +7,9 @@
 #include "dialogue_script_parse.c"
 #include "game_script_def.c"
 
+struct game_state*   game_state = 0;
+struct editor_state* editor_state = 0;
+
 static struct memory_arena game_arena   = {};
 /* compile out */
 static struct memory_arena editor_arena = {};
@@ -40,6 +43,8 @@ static string menu_font_variation_string_names[] = {
 font_id menu_fonts[9];
 
 image_id guy_img;
+image_id combat_square_unselected;
+image_id combat_square_selected;
 image_id selection_sword_img;
 image_id chest_closed_img, chest_open_bottom_img, chest_open_top_img;
 
@@ -98,7 +103,6 @@ void render_area(struct render_commands* commands, struct level_area* area) {
                                                  TILE_UNIT_SIZE),
                                    tile_data->sub_rectangle,
                                    color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
-
     }
 
     /* _debugprintf("%d chests", area->entity_chest_count); */
@@ -145,8 +149,9 @@ entity_id entity_list_create_player(struct entity_list* entities, v2f32 position
     player->health.min = 100;
     player->health.max = 100;
     player->position  = position;
-    player->scale.x = TILE_UNIT_SIZE-2;
-    player->scale.y = TILE_UNIT_SIZE-2;
+    /* align collision boxes a bit better later :) */
+    player->scale.x = TILE_UNIT_SIZE*0.8;
+    player->scale.y = TILE_UNIT_SIZE*0.8;
 
     return result;
 }
@@ -447,8 +452,6 @@ void game_postprocess_grayscale(struct software_framebuffer* framebuffer, f32 t)
 }
 
 
-struct game_state*   game_state = 0;
-struct editor_state* editor_state = 0;
 void editor_initialize(struct editor_state* state);
 #include "editor.c"
 
@@ -617,6 +620,9 @@ void game_initialize(void) {
 
     graphics_assets = graphics_assets_create(&game_arena, 64, 1024);
     scratch_arena = memory_arena_create_from_heap("Scratch Buffer", Megabyte(4));
+
+    combat_square_unselected = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/cmbt/cmbt_grid_sq.png"));
+    combat_square_selected   = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/cmbt/cmbt_selected_sq.png"));
 
     guy_img               = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/guy3.png"));
     chest_closed_img      = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/chestclosed.png"));

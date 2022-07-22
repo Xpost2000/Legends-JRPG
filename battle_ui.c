@@ -17,6 +17,7 @@ local void start_combat_ui(void) {
 
 local void draw_turn_panel(struct game_state* state, struct software_framebuffer* framebuffer, f32 x, f32 y) {
     struct game_state_combat_state* combat_state = &state->combat_state;
+
     for (s32 index = 0; index < combat_state->count; ++index) {
         union color32u8 color = color32u8(128, 128, 128, 255);
 
@@ -64,6 +65,8 @@ local void update_and_render_battle_ui(struct game_state* state, struct software
 
             f32 x_cursor = lerp_f32(-300, 0, t);
             software_framebuffer_draw_text_bounds_centered(framebuffer, font, 4, rectangle_f32(x_cursor, 0, SCREEN_WIDTH, SCREEN_HEIGHT), string_literal("BATTLE ENGAGED!"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+
+            /* while this happens we should also snap all entities to grid points */
 
             global_battle_ui_state.timer += dt;
 
