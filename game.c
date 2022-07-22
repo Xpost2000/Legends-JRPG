@@ -1212,6 +1212,7 @@ local void unmark_any_interactables(struct game_state* state) {
     state->interactable_state.interactable_type = 0;
     state->interactable_state.context           = NULL;
 }
+
 local void mark_interactable(struct game_state* state, s32 type, void* ptr) {
     if (state->interactable_state.interactable_type == type &&
         state->interactable_state.context == ptr) {
@@ -1243,32 +1244,7 @@ void player_handle_radial_interactables(struct game_state* state, struct entity_
     if (!found_any_interactable) unmark_any_interactables(state);
 }
 
-/* check for any nearby conflicts for any reason */
-/* for now just check if there are any enemies in the play area. */
-/* no need for anything fancy right now. That comes later. */
-/* (hard coding data is a real pain in my ass, so until I can specify NPCs through data, I just
-   want the quickest way of doing stuff) */
-local void determine_if_combat_should_begin(struct game_state* state, struct entity_list* entities) {
-    struct entity* player = entity_list_dereference_entity(entities, player_id);
-
-    bool should_be_in_combat = false;
-
-    for (u32 index = 0; index < entities->count && !should_be_in_combat; ++index) {
-        struct entity* current_entity = entities->entities + index;
-
-        if (current_entity != player) {
-            struct entity_ai_data* ai = &current_entity->ai;
-
-            if (ai->flags & ENTITY_AI_FLAGS_AGGRESSIVE_TO_PLAYER) {
-                should_be_in_combat = true;
-            }
-        }
-    }
-
-    if (should_be_in_combat) {
-        state->combat_state.active_combat = true;
-    }
-}
+#include "combat.c"
 
 void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
     if (is_key_pressed(KEY_F12)) {
@@ -1292,7 +1268,7 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
         if (game_state->ui_state != UI_STATE_PAUSE) {
             entity_list_update_entities(game_state,&game_state->entities, dt, &game_state->loaded_area);
 
-            if (!state->combat_state.active_combat) {
+            if (!game_state->combat_state.active_combat) {
                 determine_if_combat_should_begin(game_state, &game_state->entities);
             } else {
                 update_combat(game_state, dt);
@@ -1307,29 +1283,6 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
 
         /* color "grading" */
         software_framebuffer_draw_quad(framebuffer, rectangle_f32(0,0,999,999), color32u8(178,180,255,255), BLEND_MODE_MULTIPLICATIVE);
-
-        /* Rendering weather atop */
-        /* NOTE
-           While I would like more advanced weather effects, let's not bite off more than
-           I can chew so I can actually have something to play...
-           
-        */
-#if 0
-        if (is_key_pressed(KEY_E)) {
-            if (weather_any_active(game_state)) {
-                weather_clear(game_state);
-            } else {
-                weather_start_rain(game_state);
-            }
-        }
-        if (is_key_pressed(KEY_R)) {
-            if (weather_any_active(game_state)) {
-                weather_clear(game_state);
-            } else {
-                weather_start_snow(game_state);
-            }
-        }
-#endif
     }
 
     do_weather(framebuffer, game_state, dt);

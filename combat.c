@@ -1,0 +1,48 @@
+local void add_all_combat_participants(struct game_state* state, struct entity_list* entities) {
+    /* TODO for now we don't have initiative so we'll just add in the same order */  
+    struct game_state_combat_state* combat_state = &state->combat_state;
+
+    combat_state->participants[combat_state->count++] = player_id;
+
+    for (s32 index = 0; index < entities->capacity; ++index) {
+        if (entities->entities[index].flags & ENTITY_FLAGS_ALIVE) {
+            combat_state->participants[combat_state->count++] = entity_list_get_id(entities, index);
+        }
+    }
+}
+
+/* check for any nearby conflicts for any reason */
+/* for now just check if there are any enemies in the play area. */
+/* no need for anything fancy right now. That comes later. */
+/* (hard coding data is a real pain in my ass, so until I can specify NPCs through data, I just
+   want the quickest way of doing stuff) */
+local void determine_if_combat_should_begin(struct game_state* state, struct entity_list* entities) {
+    struct entity* player = entity_list_dereference_entity(entities, player_id);
+
+    bool should_be_in_combat = false;
+
+    for (u32 index = 0; index < entities->capacity && !should_be_in_combat; ++index) {
+        struct entity* current_entity = entities->entities + index;
+
+        if (!(current_entity->flags & ENTITY_FLAGS_ALIVE))
+            continue;
+
+        if (current_entity != player) {
+            struct entity_ai_data* ai = &current_entity->ai;
+
+            if (ai->flags & ENTITY_AI_FLAGS_AGGRESSIVE_TO_PLAYER) {
+                should_be_in_combat = true;
+            }
+        }
+    }
+
+    if (should_be_in_combat) {
+        state->combat_state.active_combat = true;
+        start_combat_ui();
+        add_all_combat_participants(state, entities);
+    }
+}
+
+void update_combat(struct game_state* state, f32 dt) {
+    /* idk */
+}

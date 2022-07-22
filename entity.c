@@ -48,6 +48,13 @@ entity_id entity_list_create_entity(struct entity_list* entities) {
     return (entity_id){0,0};
 }
 
+entity_id entity_list_get_id(struct entity_list* entities, s32 index) {
+    entity_id result;
+    result.index      = index+1;
+    result.generation = entities->generation_count[index];
+    return result;
+}
+
 static struct entity _entity_sentinel = {};
 struct entity* entity_list_dereference_entity(struct entity_list* entities, entity_id id) {
     if (id.index <= 0 || id.index > entities->capacity) {
@@ -69,6 +76,11 @@ struct entity* entity_list_dereference_entity(struct entity_list* entities, enti
 void player_handle_radial_interactables(struct game_state* state, struct entity_list* entities, s32 entity_index, f32 dt);
 void entity_handle_player_controlled(struct game_state* state, struct entity_list* entities, s32 entity_index, f32 dt) {
     struct entity* entity = entities->entities + entity_index;
+
+    /* combat has it's own special movement rules. */
+    if (state->combat_state.active_combat) {
+        return;
+    }
 
     if (region_zone_animation_block_input) {
         return;

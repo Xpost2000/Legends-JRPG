@@ -472,6 +472,7 @@ struct game_state {
     struct ui_pause_menu ui_pause;
     struct ui_sub_menu_inventory ui_inventory;
 
+    /* TODO add party member stuff! */
     struct player_party_inventory inventory;
     struct entity_list  entities;
     struct weather      weather;
@@ -485,17 +486,6 @@ struct game_state {
 
     /* only player v world conflicts should happen. */
     struct game_state_combat_state combat_state;
-    /* TODO:
-       
-       Fill this buffer, and source all strings from here during
-       conversations.
-       
-       I mean I could also "interpret" the file, but it'd be
-       easier to just compile the thing into an easier format
-       and just work from there.
-       
-       This is dynamically allocated and must be freed.
-     */
     struct file_buffer  conversation_file_buffer;
     /* to store strings and stuff like that. Clear this when dialogue finishes (or opening new dlg)*/
     struct memory_arena conversation_arena;
