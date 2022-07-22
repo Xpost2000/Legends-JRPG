@@ -224,7 +224,8 @@ struct navigation_path navigation_path_find(struct memory_arena* arena, struct l
         s32                               map_height              = navigation_map->height;
         s32                               total_elements          = (map_width * map_height);
 
-        s32                               exploration_queue_count = 0;
+        s32                               exploration_queue_start = 0;
+        s32                               exploration_queue_end   = 0;
         v2f32*                            exploration_queue       = memory_arena_push(arena, sizeof(*exploration_queue) * total_elements);
 
         s32                               origin_path_count       = 0;
@@ -234,36 +235,16 @@ struct navigation_path navigation_path_find(struct memory_arena* arena, struct l
         bool*                             explored_points         = memory_arena_push(arena, sizeof(*explored_points)   * total_elements);
 
 
-        exploration_queue[exploration_queue_count++]     = start;
+        exploration_queue[exploration_queue_end++]     = start;
         origin_paths     [((s32)start.y - navigation_map->min_y) * map_width + ((s32)start.x - navigation_map->min_x)] = start;
 
         bool found_end = false;
 
         /* TODO: allow special case, if we can do a bresenham line, just use the trace */
 
-        while (exploration_queue_count > 0 && !found_end) {
-            v2f32 current_point = exploration_queue[0];
+        while (exploration_queue_start <= exploration_queue_end && !found_end) {
+            v2f32 current_point = exploration_queue[exploration_queue_start++];
             /* _debugprintf("current point: <%d, %d>", (s32)current_point.x, (s32)current_point.y); */
-
-            {
-                /* I could use a double pointer setup but... */
-                /*
-                  IE: I have enough memory to store the entire queue, so I mean I could just
-                  do
-
-                  current_point = exploration_queue[queue_start];
-                  queue_start++;
-                  
-                  exploration_queue[queue_end++] = new_neighbors;
-                  
-                  ... Why I wrote the code without actually doing it is ironic.
-                 */
-                for (s32 index = 0; index < exploration_queue_count-1; ++index) {
-                    exploration_queue[index] = exploration_queue[index+1];
-                }
-                exploration_queue_count--;
-            }
-
             explored_points[((s32)current_point.y - navigation_map->min_y) * map_width + ((s32)current_point.x - navigation_map->min_x)] = true;
 
             /* add neighbors */
@@ -283,7 +264,7 @@ struct navigation_path navigation_path_find(struct memory_arena* arena, struct l
                             if (!(explored_points[((s32)proposed_point.y - navigation_map->min_y) * map_width + ((s32)proposed_point.x - navigation_map->min_x)])) {
                                 origin_paths     [((s32)proposed_point.y - navigation_map->min_y) * map_width + ((s32)proposed_point.x - navigation_map->min_x)] = current_point;
                                 explored_points  [((s32)proposed_point.y - navigation_map->min_y) * map_width + ((s32)proposed_point.x - navigation_map->min_x)] = true;
-                                exploration_queue[exploration_queue_count++]                                                                                     = proposed_point;
+                                exploration_queue[exploration_queue_end++]                                                                                       = proposed_point;
                                 /* _debugprintf("neighbor <%d, %d> (origin as: <%d, %d>) (%d, %d offset) is okay to add", (s32)proposed_point.x, (s32)proposed_point.y, (s32)current_point.x, (s32)current_point.y, x_cursor, y_cursor); */
                             } else {
                                 /* _debugprintf("refused, already visited") ; */
@@ -340,6 +321,7 @@ struct navigation_path navigation_path_find(struct memory_arena* arena, struct l
 }
 
 void serialize_level_area(struct game_state* state, struct binary_serializer* serializer, struct level_area* level, bool use_default_spawn) {
+    _debugprintf("%d memory used", state->arena->used + state->arena->used_top);
     memory_arena_clear_top(state->arena);
     _debugprintf("reading version");
     serialize_u32(serializer, &level->version);
@@ -373,6 +355,8 @@ void serialize_level_area(struct game_state* state, struct binary_serializer* se
     qsort(level->tiles, level->tile_count, sizeof(*level->tiles), _qsort_tile);
 
     build_navigation_map_for_level_area(state->arena, level);
+
+    _debugprintf("%d memory used", state->arena->used + state->arena->used_top);
 }
 
 /* this is used for cheating or to setup the game I suppose. */
@@ -610,7 +594,7 @@ void game_initialize(void) {
     game_state->arena = &game_arena;
 
     graphics_assets = graphics_assets_create(&game_arena, 64, 512);
-    scratch_arena = memory_arena_create_from_heap("Scratch Buffer", Megabyte(16));
+    scratch_arena = memory_arena_create_from_heap("Scratch Buffer", Megabyte(4));
 
     guy_img               = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/guy3.png"));
     chest_closed_img      = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/chestclosed.png"));
@@ -623,7 +607,7 @@ void game_initialize(void) {
         menu_fonts[index] = graphics_assets_load_bitmap_font(&graphics_assets, current, 5, 12, 5, 20);
     }
 
-    game_state->entities = entity_list_create(&game_arena, 8192);
+    game_state->entities = entity_list_create(&game_arena, 16384);
     player_id = entity_list_create_player(&game_state->entities, v2f32(70, 70));
 
     editor_state                = memory_arena_push(&editor_arena, sizeof(*editor_state));
@@ -663,6 +647,7 @@ void game_initialize_game_world(void) {
 }
 
 void game_deinitialize(void) {
+    game_finish_conversation(game_state);
     memory_arena_finish(&scratch_arena);
     memory_arena_finish(&editor_arena);
     graphics_assets_finish(&graphics_assets);
@@ -792,7 +777,7 @@ local void update_and_render_ingame_game_menu_ui(struct game_state* state, struc
                 game_state->current_conversation_node_id = target;
 
                 if (target == 0) {
-                    state->is_conversation_active = false;
+                    game_finish_conversation(state);
                 }
             }
         } else {
@@ -822,7 +807,7 @@ local void update_and_render_ingame_game_menu_ui(struct game_state* state, struc
                     state->current_conversation_node_id = target;
 
                     if (target == 0) {
-                        state->is_conversation_active = false;
+                        game_finish_conversation(state);
                     }
                 }
             } else {

@@ -1,3 +1,20 @@
+NPCs and some combat next?
+
+Anyways, I realize it is incredibly naive and stupid to do this,
+however my games requirements are frankly not as complicated as larger
+scale games.
+
+Even then the level areas take up a pretty insignificant amount of memory.
+
+If I really have to, I might just dynamically allocate them. However it might
+be quite feasible to literally just load them into game memory at almost all
+times.
+
+Just a thought...
+
+Anyways I need to polish some things and make some new animations, after
+some combat stuff. Need to design some levels.
+
 ** Lighting / Bloomy effects
    That was the main point of using software rendering, to more easily take advantage
    of these things.

@@ -212,6 +212,7 @@ struct level_area_navigation_map {
 };
 
 struct level_area {
+    /* keep reference of a name. */
     u32          version;
     v2f32        default_player_spawn;
 
