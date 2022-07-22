@@ -267,6 +267,18 @@ void entity_list_update_entities(struct game_state* state, struct entity_list* e
     }
 }
 
+void entity_think_combat_actions(struct entity* entity, struct game_state* state, f32 dt) {
+    if (entity->flags & ENTITY_FLAGS_PLAYER_CONTROLLED) {
+        /* let the UI handle this thing */
+    } else {
+        entity->ai.wait_timer += dt;
+        if (entity->ai.wait_timer >= 1.0) {
+            /* TODO technically the action should consider the end of waiting on turn. */
+            entity->waiting_on_turn = false;
+        }
+    }
+}
+
 void entity_list_render_entities(struct entity_list* entities, struct graphics_assets* graphics_assets, struct render_commands* commands, f32 dt) {
     for (s32 index = 0; index < entities->capacity; ++index) {
         struct entity* current_entity = entities->entities + index;

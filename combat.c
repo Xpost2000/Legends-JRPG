@@ -1,11 +1,12 @@
 local void add_all_combat_participants(struct game_state* state, struct entity_list* entities) {
     /* TODO for now we don't have initiative so we'll just add in the same order */  
     struct game_state_combat_state* combat_state = &state->combat_state;
-
-    combat_state->participants[combat_state->count++] = player_id;
+    combat_state->count = 0;
 
     for (s32 index = 0; index < entities->capacity; ++index) {
         if (entities->entities[index].flags & ENTITY_FLAGS_ALIVE) {
+            entities->entities[index].waiting_on_turn         = true;
+            entities->entities[index].ai.wait_timer              = 0;
             combat_state->participants[combat_state->count++] = entity_list_get_id(entities, index);
         }
     }
@@ -45,5 +46,19 @@ local void determine_if_combat_should_begin(struct game_state* state, struct ent
 }
 
 void update_combat(struct game_state* state, f32 dt) {
-    /* idk */
+    struct game_state_combat_state* combat_state        = &state->combat_state;
+    entity_id                 active_combatant_id = combat_state->participants[combat_state->active_combatant];
+    struct entity*            combatant           = entity_list_dereference_entity(&state->entities, active_combatant_id);
+
+    if (combatant->waiting_on_turn) {
+        entity_think_combat_actions(combatant, state, dt);
+    } else {
+        combat_state->active_combatant += 1;
+
+        /* TODO next round. Should notify the UI. */
+        if (combat_state->active_combatant >= combat_state->count) {
+            /* or something like that anyways. */
+            add_all_combat_participants(state, &state->entities);
+        }
+    }
 }

@@ -99,6 +99,9 @@ struct entity_ai_data {
 
     s32                             tracked_attacker_write_cursor;
     struct entity_ai_attack_tracker tracked_attackers[MAXIMUM_REMEMBERED_ATTACKERS];
+
+    /* TODO DEBUG */
+    f32 wait_timer;
 };
 
 struct entity_stat_block {
@@ -135,6 +138,7 @@ struct entity {
     struct entity_stat_block      stat_block;
 
     struct entity_ai_data         ai;
+    bool                          waiting_on_turn;
 };
 
 void entity_inventory_use_item(struct entity_inventory* inventory, s32 item_index, struct entity* target);
