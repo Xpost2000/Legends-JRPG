@@ -7,4 +7,6 @@ void apply_save_data(struct game_state* state);
 void begin_save_entry(u32 hash);
 void end_save_entry(u32 hash);
 
+void finish_save_data(void);
+
 #endif

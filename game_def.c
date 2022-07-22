@@ -446,6 +446,12 @@ static string interactable_type_strings[] = {
 };
 #include "entities_def.c"
 
+struct game_state_combat_state {
+    bool active_combat;
+    s32       count;
+    /* sorted by initiative */
+    entity_id participants[512];
+};
 struct game_state {
     struct memory_arena* arena;
 
@@ -474,6 +480,9 @@ struct game_state {
     bool                is_conversation_active;
     bool                viewing_dialogue_choices;
     struct conversation current_conversation;
+
+    /* only player v world conflicts should happen. */
+    struct game_state_combat_state combat_state;
     /* TODO:
        
        Fill this buffer, and source all strings from here during

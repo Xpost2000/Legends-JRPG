@@ -23,7 +23,7 @@ struct save_area_record_entry {
 
 struct {
     u32 used_entries;
-    struct save_area_record_entry* entries[8192];
+    struct save_area_record_entry* entries[1024];
 } global_save_data = {};
 
 static struct memory_arena save_arena = {};
@@ -41,4 +41,8 @@ void apply_save_data(struct game_state* state) {
 
 void initialize_save_data(void) {
     save_arena = memory_arena_create_from_heap("Save Data Memory", Megabyte(8));
+}
+
+void finish_save_data(void) {
+    memory_arena_finish(&save_arena);
 }

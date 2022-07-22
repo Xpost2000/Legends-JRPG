@@ -637,7 +637,7 @@ void game_initialize(void) {
      */
     game_state->entities = entity_list_create(&game_arena, 512);
     player_id            = entity_list_create_player(&game_state->entities, v2f32(70, 70));
-    entity_list_create_badguy(&game_state->entities, v2f32(8 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE));
+    /* entity_list_create_badguy(&game_state->entities, v2f32(8 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE)); */
 
     editor_state                = memory_arena_push(&editor_arena, sizeof(*editor_state));
     editor_initialize(editor_state);
@@ -678,6 +678,7 @@ void game_initialize_game_world(void) {
 
 void game_deinitialize(void) {
     game_finish_conversation(game_state);
+    finish_save_data();
     memory_arena_finish(&scratch_arena);
     memory_arena_finish(&editor_arena);
     graphics_assets_finish(&graphics_assets);

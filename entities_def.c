@@ -79,7 +79,7 @@ struct entity_navigation_path {
     s32   full_path_count;
     s32   count;
     /* paths are supposed to be based on tile coordinates anyways... */
-    v2f32 path_points[32];
+    v2f32 path_points[16];
 };
 
 struct entity_ai_data {
