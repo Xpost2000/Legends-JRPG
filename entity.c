@@ -24,6 +24,18 @@ entity_id entity_list_create_entity(struct entity_list* entities) {
 
         if (!(current_entity->flags & ENTITY_FLAGS_ACTIVE)) {
             current_entity->flags |= ENTITY_FLAGS_ACTIVE;
+            {
+                struct entity_stat_block* stats = &current_entity->stat_block;
+                stats->level        = 1;
+                stats->vigor        = 100;
+                stats->strength     = 100;
+                stats->agility      = 100;
+                stats->speed        = 100;
+                stats->intelligence = 100;
+                stats->luck         = 100;
+                stats->experience   = 0;
+                stats->xp_value     = 0;
+            }
             entities->generation_count[index] += 1;
 
             return (entity_id){

@@ -136,9 +136,27 @@ entity_id entity_list_create_player(struct entity_list* entities, v2f32 position
     assertion(player->flags & ENTITY_FLAGS_ACTIVE);
     player->flags    |= ENTITY_FLAGS_ALIVE;
     player->flags    |= ENTITY_FLAGS_PLAYER_CONTROLLED;
+    player->health.value = 100;
+    player->health.min = 100;
+    player->health.max = 100;
     player->position  = position;
     player->scale.x = TILE_UNIT_SIZE-2;
     player->scale.y = TILE_UNIT_SIZE-2;
+
+    return result;
+}
+entity_id entity_list_create_badguy(struct entity_list* entities, v2f32 position) {
+    entity_id result = entity_list_create_entity(entities);
+    struct entity* e = entity_list_dereference_entity(entities, result);
+
+    e->flags    |= ENTITY_FLAGS_ALIVE;
+    e->position = position;
+    e->scale.x  = TILE_UNIT_SIZE-2;
+    e->scale.y  = TILE_UNIT_SIZE-2;
+    e->health.value = 100;
+    e->health.min = 100;
+    e->health.max = 100;
+    e->ai.flags = ENTITY_AI_FLAGS_AGGRESSIVE_TO_PLAYER;
 
     return result;
 }
@@ -619,6 +637,7 @@ void game_initialize(void) {
      */
     game_state->entities = entity_list_create(&game_arena, 512);
     player_id            = entity_list_create_player(&game_state->entities, v2f32(70, 70));
+    entity_list_create_badguy(&game_state->entities, v2f32(8 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE));
 
     editor_state                = memory_arena_push(&editor_arena, sizeof(*editor_state));
     editor_initialize(editor_state);

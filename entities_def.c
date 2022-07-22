@@ -88,6 +88,20 @@ struct entity_ai_data {
     struct entity_navigation_path navigation_path;
 };
 
+struct entity_stat_block {
+    s32 level;
+
+    s32 vigor;    /* hp per level */
+    s32 strength;
+    s32 agility;
+    s32 speed;
+    s32 intelligence;
+    s32 luck;
+
+    s32 experience;
+    s32 xp_value;
+};
+
 struct entity {
     /* These two fields should define an AABB */
     /* actual visual information is for now just handled by the rendering procedure */
@@ -96,10 +110,16 @@ struct entity {
     v2f32 scale;
     v2f32 velocity;
     u32   flags;
-    u32   team_id; /* not necessarily faction, just use it for AI reasons (0 means none.) */
+
+    /*
+      TODO: store a team data block to identify across factions.
+     */
+    u32   team_id;
 
     struct entity_actor_inventory inventory;
+
     s32_range                     health;
+    struct entity_stat_block      stat_block;
 
     struct entity_ai_data         ai;
 };
