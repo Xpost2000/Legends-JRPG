@@ -455,7 +455,8 @@ struct game_state {
 
     s32 in_editor;
 
-    /* in "open" regions, allow for regions to be streamed in... Have to set game mode state flag. */
+    /* name is saved here so we can hash it's name later... */
+    char              loaded_area_name[260];
     struct level_area loaded_area;
     struct random_state rng;
     struct camera camera;

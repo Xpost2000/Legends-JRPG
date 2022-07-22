@@ -43,6 +43,7 @@ image_id guy_img;
 image_id selection_sword_img;
 image_id chest_closed_img, chest_open_bottom_img, chest_open_top_img;
 
+/* TODO, use this */
 struct game_ui_nine_patch game_ui_nine_patch_load_from_directory(struct graphics_assets* graphics_assets, string directory, s32 tile_width, s32 tile_height) {
     struct game_ui_nine_patch ui_skin = {}; 
 
@@ -363,6 +364,9 @@ void serialize_level_area(struct game_state* state, struct binary_serializer* se
 void load_level_from_file(struct game_state* state, string filename) {
     struct binary_serializer serializer = open_read_file_serializer(string_concatenate(state->arena, string_literal("areas/"), filename));
     serialize_level_area(state, &serializer, &state->loaded_area, false);
+    {
+        cstring_copy(filename.data, state->loaded_area_name, filename.length);
+    }
     serializer_finish(&serializer);
 }
 
@@ -580,20 +584,15 @@ void game_initialize(void) {
     game_arena   = memory_arena_create_from_heap("Game Memory", Megabyte(32));
     editor_arena = memory_arena_create_from_heap("Editor Memory", Megabyte(32));
 
-    game_state = memory_arena_push(&game_arena, sizeof(*game_state));
+    game_state                     = memory_arena_push(&game_arena, sizeof(*game_state));
     game_state->conversation_arena = memory_arena_push_sub_arena(&game_arena, Kilobyte(64));
-#if 0
-    {
-        /* NOTE, not what I want to do, but I cannot figure out the cause of the segfault rn. */
-        game_state->loaded_area.tiles                     = memory_arena_push(&game_arena, sizeof(*game_state->loaded_area.tiles) * 8192);
-        game_state->loaded_area.trigger_level_transitions = memory_arena_push(&game_arena, sizeof(*game_state->loaded_area.trigger_level_transitions) * 1024);
-        game_state->loaded_area.chests                    = memory_arena_push(&game_arena, sizeof(*game_state->loaded_area.chests) * 256);
-    }
-#endif
+    
+    initialize_save_data();
+
     game_state->rng = random_state();
     game_state->arena = &game_arena;
 
-    graphics_assets = graphics_assets_create(&game_arena, 64, 512);
+    graphics_assets = graphics_assets_create(&game_arena, 64, 1024);
     scratch_arena = memory_arena_create_from_heap("Scratch Buffer", Megabyte(4));
 
     guy_img               = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/guy3.png"));
@@ -695,6 +694,8 @@ local void game_loot_chest(struct game_state* state, struct entity_chest* chest)
         }
 
         chest->flags |= ENTITY_CHEST_FLAGS_UNLOCKED;
+        /* write to save data here */
+        /* save_data_write_for(hash_bytes_fnv1a); */
     }
 }
 
@@ -1329,3 +1330,4 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
 }
 
 #include "game_script.c"
+#include "save_data.c"
