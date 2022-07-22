@@ -2,6 +2,16 @@
 #ifndef ENTITY_DEF_C
 #define ENTITY_DEF_C
 
+enum entity_ai_flags {
+    ENTITY_AI_FLAGS_NONE                 = 0,
+    ENTITY_AI_FLAGS_AGGRESSIVE_TO_PLAYER = BIT(0),
+    ENTITY_AI_FLAGS_AGGRESSIVE_TO_OTHERS = BIT(1),
+    ENTITY_AI_FLAGS_FRIENDLY_TO_PLAYER   = BIT(2),
+    ENTITY_AI_FLAGS_FRIENDLY_TO_OTHERS   = BIT(3),
+    ENTITY_AI_FLAGS_NEUTRAL_TO_OTHERS    = BIT(4),
+    ENTITY_AI_FLAGS_NEUTRAL_TO_PLAYER    = BIT(5),
+};
+
 enum entity_flags {
     ENTITY_FLAGS_NONE              = 0,
     
@@ -71,7 +81,9 @@ struct entity_navigation_path {
     /* paths are supposed to be based on tile coordinates anyways... */
     v2f32 path_points[32];
 };
+
 struct entity_ai_data {
+    u32                           flags;
     bool                          following_path;
     struct entity_navigation_path navigation_path;
 };
@@ -84,6 +96,7 @@ struct entity {
     v2f32 scale;
     v2f32 velocity;
     u32   flags;
+    u32   team_id; /* not necessarily faction, just use it for AI reasons (0 means none.) */
 
     struct entity_actor_inventory inventory;
     s32_range                     health;

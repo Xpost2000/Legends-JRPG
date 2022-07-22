@@ -14,7 +14,7 @@ enum region_zone_animation_phases {
 local f32  region_zone_animation_timer  = 0.0f;
 local s32  region_zone_animation_phase  = 0;
 
-local bool region_zone_animation_block_input = true;
+local bool region_zone_animation_block_input = false;
 
 void initialize_region_zone_change(void) {
     region_zone_animation_timer       = 1.5f;
@@ -22,6 +22,7 @@ void initialize_region_zone_change(void) {
     region_zone_animation_block_input = true;
     
 }
+
 void update_and_render_region_zone_change(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
     struct font_cache* font = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_STEEL]);
     switch (region_zone_animation_phase) {

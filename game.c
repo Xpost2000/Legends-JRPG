@@ -363,7 +363,7 @@ void serialize_level_area(struct game_state* state, struct binary_serializer* se
 /* this is used for cheating or to setup the game I suppose. */
 void load_level_from_file(struct game_state* state, string filename) {
     struct binary_serializer serializer = open_read_file_serializer(string_concatenate(state->arena, string_literal("areas/"), filename));
-    serialize_level_area(state, &serializer, &state->loaded_area, false);
+    serialize_level_area(state, &serializer, &state->loaded_area, true);
     {
         cstring_copy(filename.data, state->loaded_area_name, filename.length);
     }
@@ -643,14 +643,15 @@ void game_initialize_game_world(void) {
     entity_inventory_add((struct entity_inventory*)&game_state->inventory, MAX_PARTY_ITEMS, item_id_make(string_literal("item_trout_fish_5")));
     entity_inventory_add((struct entity_inventory*)&game_state->inventory, MAX_PARTY_ITEMS, item_id_make(string_literal("item_sardine_fish_5")));
 
-#if 1
+#if 0
     /* game_open_conversation_file(game_state, string_literal("./dlg/linear_test.txt")); */
     game_open_conversation_file(game_state, string_literal("./dlg/simple_choices.txt"));
-#endif
     load_level_from_file(game_state, string_literal("pf.area"));
+#endif
+    load_level_from_file(game_state, string_literal("bt.area"));
     /* load_level_from_file(game_state, string_literal("testisland.area")); */
     /* game_attempt_to_change_area_name(game_state, string_literal("Old Iyeila"), string_literal("Grave of Stars")); */
-#if 1
+#if 0
     int _game_sandbox_testing(void);
     _game_sandbox_testing();
 #endif
