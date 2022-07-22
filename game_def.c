@@ -447,11 +447,12 @@ static string interactable_type_strings[] = {
 #include "entities_def.c"
 
 struct game_state_combat_state {
-    bool active_combat;
+    bool      active_combat;
     s32       count;
     /* sorted by initiative */
     entity_id participants[512];
 };
+
 struct game_state {
     struct memory_arena* arena;
 
@@ -467,6 +468,7 @@ struct game_state {
     struct random_state rng;
     struct camera camera;
 
+    /* TODO, move these out, these don't have to be here. I'm just being inconsistent. */
     struct ui_pause_menu ui_pause;
     struct ui_sub_menu_inventory ui_inventory;
 
