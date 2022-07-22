@@ -65,8 +65,16 @@ struct entity_chest {
     struct entity_chest_inventory inventory;
     item_id                       key_item;
 };
-
-/* note because  */
+struct entity_navigation_path {
+    s32   full_path_count;
+    s32   count;
+    /* paths are supposed to be based on tile coordinates anyways... */
+    v2f32 path_points[32];
+};
+struct entity_ai_data {
+    bool                          following_path;
+    struct entity_navigation_path navigation_path;
+};
 
 struct entity {
     /* These two fields should define an AABB */
@@ -79,6 +87,8 @@ struct entity {
 
     struct entity_actor_inventory inventory;
     s32_range                     health;
+
+    struct entity_ai_data         ai;
 };
 
 void entity_inventory_use_item(struct entity_inventory* inventory, s32 item_index, struct entity* target);

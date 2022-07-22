@@ -607,8 +607,19 @@ void game_initialize(void) {
         menu_fonts[index] = graphics_assets_load_bitmap_font(&graphics_assets, current, 5, 12, 5, 20);
     }
 
-    game_state->entities = entity_list_create(&game_arena, 16384);
-    player_id = entity_list_create_player(&game_state->entities, v2f32(70, 70));
+    /* this should be the amount of entities/npcs I try to keep in active memory */
+    /* the rest are paged to disk, or based off their save delta record */
+    /*
+      NOTE:
+      IE: 
+      The main source of truth should go like this:
+
+      Game Active Memory (play zone, and maybe one adjacent level?),
+      Save Record        (Saves some delta about entities and map state),
+      Game Base Files    (Use if there is no existing save record on that level...)
+     */
+    game_state->entities = entity_list_create(&game_arena, 512);
+    player_id            = entity_list_create_player(&game_state->entities, v2f32(70, 70));
 
     editor_state                = memory_arena_push(&editor_arena, sizeof(*editor_state));
     editor_initialize(editor_state);
