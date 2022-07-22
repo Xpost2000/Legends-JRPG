@@ -132,6 +132,11 @@ local void update_and_render_battle_ui(struct game_state* state, struct software
         } break;
         case BATTLE_UI_IDLE: {
             draw_turn_panel(state, framebuffer, 10, 100);
+
+            if (is_key_pressed(KEY_RETURN)) {
+                struct entity* player_entity   = entity_list_dereference_entity(&state->entities, player_id);
+                player_entity->waiting_on_turn = false;
+            }
         } break;
     }
 }

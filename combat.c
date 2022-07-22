@@ -1,7 +1,8 @@
 local void add_all_combat_participants(struct game_state* state, struct entity_list* entities) {
     /* TODO for now we don't have initiative so we'll just add in the same order */  
     struct game_state_combat_state* combat_state = &state->combat_state;
-    combat_state->count = 0;
+    combat_state->count                          = 0;
+    combat_state->active_combatant               = 0;
 
     for (s32 index = 0; index < entities->capacity; ++index) {
         if (entities->entities[index].flags & ENTITY_FLAGS_ALIVE) {
