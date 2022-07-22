@@ -76,6 +76,11 @@ local void game_attempt_to_change_area_name(struct game_state* state, string nam
     }
 }
 
+void game_finish_conversation(struct game_state* state) {
+    state->is_conversation_active = false;
+    file_buffer_free(&state->conversation_file_buffer);
+}
+
 void render_area(struct render_commands* commands, struct level_area* area) {
     /* TODO do it lazy mode. Once only */
 

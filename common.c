@@ -506,7 +506,8 @@ struct file_buffer read_entire_file(IAllocator allocator, string path) {
 }
 
 void file_buffer_free(struct file_buffer* file) {
-    file->allocator.free(&file->allocator, file->buffer);
+    if (file->buffer)
+        file->allocator.free(&file->allocator, file->buffer);
 }
 
 /* if the order is confusing, most significant bit is first. */

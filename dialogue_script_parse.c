@@ -3,11 +3,6 @@
  * TODO error checking
  */
 
-void game_finish_conversation(struct game_state* state) {
-    state->is_conversation_active = false;
-    file_buffer_free(&state->conversation_file_buffer);
-}
-
 local void dialogue_node_evaluate_code(struct memory_arena* arena, struct conversation* conversation, u32 node_index, string code_string) {
     struct conversation_node* node = conversation->nodes + node_index;
 
