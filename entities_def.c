@@ -82,10 +82,18 @@ struct entity_navigation_path {
     v2f32 path_points[16];
 };
 
+struct entity_ai_attack_tracker {
+    entity_id attacker;
+    u16       times;
+};
+#define MAXIMUM_REMEMBERED_ATTACKERS (32)
 struct entity_ai_data {
     u32                           flags;
     bool                          following_path;
     struct entity_navigation_path navigation_path;
+
+    s32                             tracked_attacker_write_cursor;
+    struct entity_ai_attack_tracker tracked_attackers[MAXIMUM_REMEMBERED_ATTACKERS];
 };
 
 struct entity_stat_block {

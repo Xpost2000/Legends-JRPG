@@ -642,7 +642,8 @@ void game_initialize(void) {
      */
     game_state->entities = entity_list_create(&game_arena, 512);
     player_id            = entity_list_create_player(&game_state->entities, v2f32(70, 70));
-    /* entity_list_create_badguy(&game_state->entities, v2f32(8 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE)); */
+    entity_list_create_badguy(&game_state->entities, v2f32(8 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE));
+    entity_list_create_badguy(&game_state->entities, v2f32(11 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE));
 
     editor_state                = memory_arena_push(&editor_arena, sizeof(*editor_state));
     editor_initialize(editor_state);
@@ -1242,6 +1243,33 @@ void player_handle_radial_interactables(struct game_state* state, struct entity_
     if (!found_any_interactable) unmark_any_interactables(state);
 }
 
+/* check for any nearby conflicts for any reason */
+/* for now just check if there are any enemies in the play area. */
+/* no need for anything fancy right now. That comes later. */
+/* (hard coding data is a real pain in my ass, so until I can specify NPCs through data, I just
+   want the quickest way of doing stuff) */
+local void determine_if_combat_should_begin(struct game_state* state, struct entity_list* entities) {
+    struct entity* player = entity_list_dereference_entity(entities, player_id);
+
+    bool should_be_in_combat = false;
+
+    for (u32 index = 0; index < entities->count && !should_be_in_combat; ++index) {
+        struct entity* current_entity = entities->entities + index;
+
+        if (current_entity != player) {
+            struct entity_ai_data* ai = &current_entity->ai;
+
+            if (ai->flags & ENTITY_AI_FLAGS_AGGRESSIVE_TO_PLAYER) {
+                should_be_in_combat = true;
+            }
+        }
+    }
+
+    if (should_be_in_combat) {
+        state->combat_state.active_combat = true;
+    }
+}
+
 void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
     if (is_key_pressed(KEY_F12)) {
         image_buffer_write_to_disk((struct image_buffer*)framebuffer, string_literal("scr"));
@@ -1263,6 +1291,13 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
         render_area(&commands, &game_state->loaded_area);
         if (game_state->ui_state != UI_STATE_PAUSE) {
             entity_list_update_entities(game_state,&game_state->entities, dt, &game_state->loaded_area);
+
+            if (!state->combat_state.active_combat) {
+                determine_if_combat_should_begin(game_state, &game_state->entities);
+            } else {
+                update_combat(game_state, dt);
+            }
+
             game_state->weather.timer += dt;
         }
 

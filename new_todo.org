@@ -1,81 +1,30 @@
-NPCs and some combat next?
+Okay I'll just erase this at the end of each session and write new stuff
+into it everytime.
 
-Anyways, I realize it is incredibly naive and stupid to do this,
-however my games requirements are frankly not as complicated as larger
-scale games.
+Right now I am:
 
-Even then the level areas take up a pretty insignificant amount of memory.
+This is going to be quite a bit of work.
 
-If I really have to, I might just dynamically allocate them. However it might
-be quite feasible to literally just load them into game memory at almost all
-times.
+** Maybe consider fixing the editor UI for tiles????
+** Improve the dialogue UI
+** More focused dialogue? Focus on a specific entity
+** Nine Patch UI implementation
+   Use it to make stuff nicer
+** Setting up a main menu structure.
+   The main menu will have a function new game and load game
+   button.
 
-Just a thought...
+   We will have that much.
 
-Anyways I need to polish some things and make some new animations, after
-some combat stuff. Need to design some levels.
+   I want this to look nicer and more complete :)
+** Intro Storyboard.
+   Black screen / faded black screen storyboard with image behind?
+   Anyways this is going to be used for now.
+** Setting up Combat Infrastructure.
+   Allow entering combat, with aggroed enemies (not too many setups right now)
 
-** Lighting / Bloomy effects
-   That was the main point of using software rendering, to more easily take advantage
-   of these things.
+   And setup the basic combat UI as well as the turn based part.
 
-   I need more textures, but it should be fine. It's going to be a little expensive since we
-   are doing multiple bloom passes. (one on the main game to make it a little hazy and dreamy,
-   while a second one is for bloom.)
-   
-** Start polishing my current stuff (add more art, and animate the shit)
-** Start introducing our combat
-** Finish the Chest implementation (lots of menuing work...)
-** Add UI Pop Up messages
-** nine-patch squares... Please for the UI?
-** Consider cutscene system!
-** Finish Chest interactions!
-** Implement UI Layout for the dialogue system and any in-game text in general!
-** Draw some nine-patch UIs for the UI system :)
-** Combat!
-** Main Menu?
-** Little bits of code clean up.
-   While the camera does not technically do any projecting, it'd be very nice to just remove some dependencies to
-   the framebuffer. 
+   The AI doesn't need to be implemented for a little while.
 
-   the framebuffer has to render in the games resolution any how, so it might just be a global variable... A bit nasty
-   but simple, and nicer
-
-   make all editor_ functions take an editor state*.  Even if they're globally avaliable. Consistency is key. Either we go one way
-   or the opposite way. No in between (that's a clean up.)
-   
-** Inventory Animation
-   Same thing as the dialogue system animation code. Another day!
-
-   Core functionality first!
-** Dialogue System Animation Code
-   - [ ] Animate the dialogue boxes
-   - [ ] Gradually opening text
-   - [ ] Animated dialogues
-   - [ ] Dialogue file format to load from. (Accommodate this simple one for now...)
-
-** Also I guess, yeah I'll have random encounters and an over-world...
-** Dialogue Script !
-** Game Items / Inventory System!
-   We're going to take more JRPG approaches, so the inventory is more list-like,
-   we're going to try to allow unbounded player items, and obviously each item needs to be handled
-   in a relatively specific way...
-
-   Inventory will only ever just hold item ids anyways, we're not allowing customization. So it's pretty
-   simple from that front.
-
-   We need controls for that.
-
-   We are also going to probably introduce a shop system. Since we are taking after JRPGs, it's a relatively static
-   system, so shops are extensions of dialogues, and are not associated to any NPC inventories. Thank the gods.
-
-   Items are probably going to be defined through a basic text format, as to not make me want to shoot anyone. I do not need an item editor
-   for any reason whatsoever. Text works fine for stuff like that.
-
-** (Future) more scriptable behaviors...
-   We need more hookable things, and granted while I can most certainly hard code some special game
-   code into it. It'd be nice to not have to do that...
-   
-** World Interactables. (Lights!? Doors?! Keys?! Chests?!)
-   We're going to introduce an inventory system and look for keys I guess.
-   Doors and keys! Yay!
+** Weapon and Armor item types
