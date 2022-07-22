@@ -175,8 +175,10 @@ static string game_ui_nine_patch_id_strings[] = {
     string_literal("right"),
     string_literal("top"),
     string_literal("bottom"),
-    string_literal("top_left"),
-    string_literal("top_right"),
+    string_literal("top-left"),
+    string_literal("top-right"),
+    string_literal("bottom-left"),
+    string_literal("bottom-right"),
     string_literal("center"),
 };
 /* nine patches are only drawn in exact tile measurements*/

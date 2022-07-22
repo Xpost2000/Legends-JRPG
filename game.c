@@ -49,6 +49,8 @@ image_id selection_sword_img;
 image_id chest_closed_img, chest_open_bottom_img, chest_open_top_img;
 
 /* TODO, use this */
+struct game_ui_nine_patch ui_chunky;
+
 struct game_ui_nine_patch game_ui_nine_patch_load_from_directory(struct graphics_assets* graphics_assets, string directory, s32 tile_width, s32 tile_height) {
     struct game_ui_nine_patch ui_skin = {}; 
 
@@ -56,9 +58,9 @@ struct game_ui_nine_patch game_ui_nine_patch_load_from_directory(struct graphics
         s32 index = 0;
 
         Array_For_Each(it, string, game_ui_nine_patch_id_strings, array_count(game_ui_nine_patch_id_strings)) {
-            index++;
             string filepath         = string_from_cstring(format_temp("%.*s/%.*s.png", directory.length, directory.data, it->length, it->data));
             ui_skin.textures[index] = graphics_assets_load_image(graphics_assets, filepath);
+            index++;
         }
 
         ui_skin.tile_width  = tile_width;
@@ -66,6 +68,65 @@ struct game_ui_nine_patch game_ui_nine_patch_load_from_directory(struct graphics
     }
 
     return ui_skin;
+}
+/* NOTE: the nine patch can only be drawn in tile sizes since it won't look stupid that way. */
+void draw_nine_patch_ui(struct graphics_assets* graphics_assets, struct software_framebuffer* framebuffer, struct game_ui_nine_patch ui_skin, f32 scaling_factor, v2f32 xy, s32 tiles_width, s32 tiles_height, union color32f32 rgba) {
+    struct image_buffer* imgs[9] = {};
+    for (s32 index = 0; index < array_count(game_ui_nine_patch_id_strings); ++index) {
+        imgs[index] = graphics_assets_get_image_by_id(graphics_assets, ui_skin.textures[index]);
+    }
+
+    s32 img_width  = ui_skin.tile_width * scaling_factor;
+    s32 img_height = ui_skin.tile_height* scaling_factor;
+
+#if 1
+    software_framebuffer_draw_image_ex(framebuffer, imgs[NINE_PATCH_TOP_LEFT],
+                                       rectangle_f32(xy.x, xy.y, img_width, img_height),
+                                       RECTANGLE_F32_NULL,
+                                       rgba, NO_FLAGS, BLEND_MODE_ALPHA);
+    software_framebuffer_draw_image_ex(framebuffer, imgs[NINE_PATCH_TOP_RIGHT],
+                                       rectangle_f32(xy.x + tiles_width * img_width, xy.y, img_width, img_height),
+                                       RECTANGLE_F32_NULL,
+                                       rgba, NO_FLAGS, BLEND_MODE_ALPHA);
+    software_framebuffer_draw_image_ex(framebuffer, imgs[NINE_PATCH_BOTTOM_LEFT],
+                                       rectangle_f32(xy.x, xy.y + img_height * tiles_height, img_width, img_height),
+                                       RECTANGLE_F32_NULL,
+                                       rgba, NO_FLAGS, BLEND_MODE_ALPHA);
+    software_framebuffer_draw_image_ex(framebuffer, imgs[NINE_PATCH_BOTTOM_RIGHT],
+                                       rectangle_f32(xy.x + tiles_width * img_width, xy.y + img_height * tiles_height, img_width, img_height),
+                                       RECTANGLE_F32_NULL,
+                                       rgba, NO_FLAGS, BLEND_MODE_ALPHA);
+
+    for (s32 x = 1; x < tiles_width; ++x) {
+        software_framebuffer_draw_image_ex(framebuffer, imgs[NINE_PATCH_TOP],
+                                           rectangle_f32(xy.x + x * img_width, xy.y, img_width, img_height),
+                                           RECTANGLE_F32_NULL,
+                                           rgba, NO_FLAGS, BLEND_MODE_ALPHA);
+        software_framebuffer_draw_image_ex(framebuffer, imgs[NINE_PATCH_BOTTOM],
+                                           rectangle_f32(xy.x + x * img_width, xy.y + img_height * tiles_height, img_width, img_height),
+                                           RECTANGLE_F32_NULL,
+                                           rgba, NO_FLAGS, BLEND_MODE_ALPHA);
+    }
+    for (s32 y = 1; y < tiles_height; ++y) {
+        software_framebuffer_draw_image_ex(framebuffer, imgs[NINE_PATCH_LEFT],
+                                           rectangle_f32(xy.x, xy.y + img_height * y, img_width, img_height),
+                                           RECTANGLE_F32_NULL,
+                                           rgba, NO_FLAGS, BLEND_MODE_ALPHA);
+        software_framebuffer_draw_image_ex(framebuffer, imgs[NINE_PATCH_RIGHT],
+                                           rectangle_f32(xy.x + tiles_width * img_width, xy.y + img_height * y, img_width, img_height),
+                                           RECTANGLE_F32_NULL,
+                                           rgba, NO_FLAGS, BLEND_MODE_ALPHA);
+    }
+
+    for (s32 y = 1; y < tiles_height; ++y) {
+        for (s32 x = 1; x < tiles_width; ++x) {
+            software_framebuffer_draw_image_ex(framebuffer, imgs[NINE_PATCH_MIDDLE],
+                                               rectangle_f32(xy.x + (x) * img_width, xy.y + (y) * img_height, img_width, img_height),
+                                               RECTANGLE_F32_NULL,
+                                               rgba, NO_FLAGS, BLEND_MODE_ALPHA);
+        }
+    }
+#endif
 }
 
 struct tile_data_definition* tile_table_data;
@@ -628,6 +689,7 @@ void game_initialize(void) {
     chest_closed_img      = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/chestclosed.png"));
     chest_open_bottom_img = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/chestopenbottom.png"));
     chest_open_top_img    = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/chestopentop.png"));
+    ui_chunky             = game_ui_nine_patch_load_from_directory(&graphics_assets, string_literal("./res/img/ui/chunky/"), 16, 16);
     /* selection_sword_img   = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/selection_sword.png")); */
 
     for (unsigned index = 0; index < array_count(menu_font_variation_string_names); ++index) {
@@ -650,6 +712,7 @@ void game_initialize(void) {
     player_id            = entity_list_create_player(&game_state->entities, v2f32(70, 70));
     entity_list_create_badguy(&game_state->entities, v2f32(8 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE));
     entity_list_create_badguy(&game_state->entities, v2f32(11 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE));
+
 
     editor_state                = memory_arena_push(&editor_arena, sizeof(*editor_state));
     editor_initialize(editor_state);
