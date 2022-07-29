@@ -23,7 +23,7 @@ void initialize_region_zone_change(void) {
     
 }
 
-void update_and_render_region_zone_change(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
+s32 update_and_render_region_zone_change(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
     struct font_cache* font = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_STEEL]);
     switch (region_zone_animation_phase) {
         case REGION_ZONE_ANIMATION_PHASE_LINGER: {
@@ -92,4 +92,9 @@ void update_and_render_region_zone_change(struct game_state* state, struct softw
         } break;
     }
 
+    if (region_zone_animation_phase != REGION_ZONE_ANIMATION_PHASE_NONE) {
+        return 1;
+    }
+
+    return 0;
 }

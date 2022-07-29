@@ -1,7 +1,5 @@
 /* global main menu code */
 
-const f32 TITLE_FONT_SCALE  = 6.0;
-const f32 NORMAL_FONT_SCALE = 4.0;
 enum main_menu_animation_phase {
     MAIN_MENU_LIGHTNING_FLASHES,
     MAIN_MENU_TITLE_APPEAR,
@@ -64,6 +62,8 @@ local void initialize_main_menu(void) {
 }
 
 local s32 main_menu_do_menu_ui(v2f32 where, struct software_framebuffer* framebuffer, struct main_menu_option* options, s32 count, s32* option_ptr) {
+    const f32 TITLE_FONT_SCALE  = 6.0;
+    const f32 NORMAL_FONT_SCALE = 4.0;
     /* TODO gamepad */
     bool up    = is_key_down_with_repeat(KEY_UP)  ;
     bool down  = is_key_down_with_repeat(KEY_DOWN);
@@ -109,10 +109,19 @@ local s32 main_menu_do_menu_ui(v2f32 where, struct software_framebuffer* framebu
 }
 
 local void update_and_render_main_menu(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
+    const f32 TITLE_FONT_SCALE  = 6.0;
+    const f32 NORMAL_FONT_SCALE = 4.0;
+
     struct font_cache* font  = game_get_font(MENU_FONT_COLOR_GOLD);
     struct font_cache* font1 = game_get_font(MENU_FONT_COLOR_STEEL);
 
     software_framebuffer_clear_buffer(framebuffer, color32u8(0,0,0,255));
+
+    if (any_key_down()) {
+        if (main_menu.phase < MAIN_MENU_IDLE) {
+            main_menu.phase = MAIN_MENU_IDLE;
+        }
+    }
 
     f32 font_height = font_cache_text_height(font1);
     switch (main_menu.phase) {
@@ -188,6 +197,8 @@ local void update_and_render_main_menu(struct game_state* state, struct software
                 switch (choice) {
                     case 1: {
                         screen_mode = GAME_SCREEN_INGAME;
+                        void open_TEST_storyboard();
+                        /*TODO*/open_TEST_storyboard();
                     } break;
                     case 4: {
                         global_game_running = false;

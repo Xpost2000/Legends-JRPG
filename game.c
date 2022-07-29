@@ -6,6 +6,7 @@
 #include "save_data_def.c"
 #include "dialogue_script_parse.c"
 #include "game_script_def.c"
+#include "storyboard_presentation_def.c"
 
 struct game_state*   game_state = 0;
 struct editor_state* editor_state = 0;
@@ -720,7 +721,13 @@ local void dialogue_choice_try_to_execute_script_actions(struct game_state* stat
 #include "conversation_ui.c"
 
 local void update_and_render_ingame_game_menu_ui(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
+    if (game_display_and_update_storyboard(framebuffer, dt))
+        return;
+
     if (game_display_and_update_messages(framebuffer, dt))
+        return;
+
+    if (update_and_render_region_zone_change(state, framebuffer, dt))
         return;
 
     if (state->is_conversation_active) {
@@ -1046,7 +1053,6 @@ void update_and_render_game_menu_ui(struct game_state* state, struct software_fr
                 update_and_render_editor_game_menu_ui(state, framebuffer, dt);
             } else {
                 update_and_render_ingame_game_menu_ui(state, framebuffer, dt);
-                update_and_render_region_zone_change(state, framebuffer, dt);
             }
         } break;
         case UI_STATE_PAUSE: {
@@ -1222,12 +1228,14 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
 
                 render_area(&commands, &game_state->loaded_area);
                 if (game_state->ui_state != UI_STATE_PAUSE) {
-                    entity_list_update_entities(game_state,&game_state->entities, dt, &game_state->loaded_area);
+                    if (!storyboard_active) {
+                        entity_list_update_entities(game_state,&game_state->entities, dt, &game_state->loaded_area);
 
-                    if (!game_state->combat_state.active_combat) {
-                        determine_if_combat_should_begin(game_state, &game_state->entities);
-                    } else {
-                        update_combat(game_state, dt);
+                        if (!game_state->combat_state.active_combat) {
+                            determine_if_combat_should_begin(game_state, &game_state->entities);
+                        } else {
+                            update_combat(game_state, dt);
+                        }
                     }
 
                     game_state->weather.timer += dt;
@@ -1258,3 +1266,4 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
 
 #include "game_script.c"
 #include "save_data.c"
+#include "storyboard_presentation.c"

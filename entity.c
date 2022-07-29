@@ -77,18 +77,24 @@ void player_handle_radial_interactables(struct game_state* state, struct entity_
 void entity_handle_player_controlled(struct game_state* state, struct entity_list* entities, s32 entity_index, f32 dt) {
     struct entity* entity = entities->entities + entity_index;
 
-    /* combat has it's own special movement rules. */
-    if (state->combat_state.active_combat) {
-        return;
-    }
 
-    if (region_zone_animation_block_input) {
-        return;
-    }
+    /* all the input blockers. */
+    {
+        /* combat has it's own special movement rules. */
+        if (state->combat_state.active_combat) {
+            return;
+        }
 
-    /* conversations should be in it's own "module" like region_change_presentation.c */
-    if (state->is_conversation_active) {
-        return;
+        if (region_zone_animation_block_input) {
+            return;
+        }
+        if (storyboard_active) {
+            return;
+        }
+        /* conversations should be in it's own "module" like region_change_presentation.c */
+        if (state->is_conversation_active) {
+            return;
+        }
     }
 
     bool move_up    = is_key_down(KEY_UP);
