@@ -14,21 +14,11 @@ mostly as an engine demo.
 ** Draw some new sprites for actors and animals
    Yeah, we need them like now!
 ** More focused dialogue? Focus on a specific entity
-** Setting up a main menu structure.
-   The main menu will have a function new game and load game
-   button.
-
-   We will have that much.
-
-   I want this to look nicer and more complete :)
 ** Cutscene scripting capacity
    Our cutscenes, are really just going to be a product of our scripting system,
    and not a dedicated cutscene system...
 
    It's a bit of a pain but yeah
-** Intro Storyboard.
-   Black screen / faded black screen storyboard with image behind?
-   Anyways this is going to be used for now.
 ** Weapon and Armor item types
    We need an item equip screen as well, we would also preferably
    draw sprites for each weapon. However, I might avoid that since
@@ -60,4 +50,5 @@ mostly as an engine demo.
      - [ ] Blade Rush    (Sword)
      - [ ] Triple Strike (Fist)
 
+** FIx the word wrap
 ** Improve the dialogue UI

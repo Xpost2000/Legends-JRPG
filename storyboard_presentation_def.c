@@ -2,7 +2,7 @@
 #define STORYBOARD_PRESENTATION_DEF_C
 
 local bool storyboard_active = false;
-#define STORYBOARD_READ_SPEED (0.15f)
+#define STORYBOARD_READ_SPEED (0.04f)
 
 local void storyboard_next_page(void);
 local void start_storyboard(void);

@@ -29,6 +29,10 @@ local void storyboard_next_page(void) {
     storyboard.character_timer  = 0;
     storyboard.character_index  = 0;
     storyboard.timer            = 0;
+
+    if (storyboard.current_page >= storyboard.page_count) {
+        storyboard_active = false;
+    }
 }
 local void start_storyboard(void) {
     storyboard_active          = true;
@@ -45,22 +49,22 @@ void open_TEST_storyboard(void) {
     {
         struct storyboard_page* n = &storyboard.pages[storyboard.page_count++];
         n->string      = string_literal("Long ago, there was a great war over the home of the Elves.");
-        n->linger_time = 0.75f;
+        n->linger_time = 1.5;
     }
     {
         struct storyboard_page* n = &storyboard.pages[storyboard.page_count++];
         n->string      = string_literal("The humans came from across the sea. Lead by a warmongering ruler, all that was left in his stead was plumes of smoke and ashes.\nFor many long months it was said that the rings of Elven screams could be heard from coast to coast.");
-        n->linger_time = 0.75f;
+        n->linger_time = 1.5;
     }
     {
         struct storyboard_page* n = &storyboard.pages[storyboard.page_count++];
         n->string      = string_literal("The Elves prayed to their gods, and were blessed with the magics to defend themselves. Forming a small army and pushing the humans back. Barely managing to do so, due to such small numbers. The damage was irrevocable.\nThough that ruler had long since died, a great animosity between elves and humans would hold for many generations.");
-        n->linger_time = 0.75f;
+        n->linger_time = 1.5;
     }
     {
         struct storyboard_page* n = &storyboard.pages[storyboard.page_count++];
         n->string      = string_literal("An uneasy peace rested over the land.\n\nIt was not until fate forced a discord to mend the broken trust between kin.\n\nLet us unravel what happened.");
-        n->linger_time = 0.75f;
+        n->linger_time = 2.5;
     }
 }
 
@@ -71,7 +75,7 @@ s32 game_display_and_update_storyboard(struct software_framebuffer* framebuffer,
 
         struct storyboard_page* current_page = &storyboard.pages[storyboard.current_page];
 
-        const f32          NORMAL_FONT_SCALE = 4.0;
+        const f32          NORMAL_FONT_SCALE = 2;
         struct font_cache* font1             = game_get_font(MENU_FONT_COLOR_STEEL);
         {
             if (storyboard.character_index == current_page->string.length-1) {
@@ -86,15 +90,23 @@ s32 game_display_and_update_storyboard(struct software_framebuffer* framebuffer,
                     storyboard.character_index += 1;
                 }
 
-                storyboard.character_index += dt;
+                f32 modifier = 1;
+
+                if (any_key_down()) {
+                    modifier = 2.5f;
+                }
+
+                storyboard.character_timer += dt * modifier;
             }
         }
 
-        draw_ui_breathing_text_centered(framebuffer,
-                                        rectangle_f32(50,50,framebuffer->width-50, framebuffer->height-50),
-                                        font1,
-                                        NORMAL_FONT_SCALE,
-                                        string_slice(current_page->string, 0, storyboard.character_index), 0);
+        software_framebuffer_draw_text_bounds(framebuffer, font1, NORMAL_FONT_SCALE, v2f32(10,50), framebuffer->width-10,
+                                              string_slice(current_page->string, 0, storyboard.character_index), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+        /* draw_ui_breathing_text_centered(framebuffer, */
+        /*                                 rectangle_f32(50,50,framebuffer->width-50, framebuffer->height-50), */
+        /*                                 font1, */
+        /*                                 NORMAL_FONT_SCALE, */
+        /*                                 string_slice(current_page->string, 0, storyboard.character_index), 0); */
 
         return 1;
     } else {
