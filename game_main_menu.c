@@ -186,15 +186,14 @@ local void update_and_render_main_menu(struct game_state* state, struct software
                 /* play a transition if needed */
                 main_menu.currently_selected_option_choice = 0;
                 switch (choice) {
-                    
+                    case 1: {
+                        screen_mode = GAME_SCREEN_INGAME;
+                    } break;
+                    case 4: {
+                        global_game_running = false;
+                    } break;
                 }
             }
-            /* Array_For_Each(it, string, main_menu_first_page_options, array_count(main_menu_first_page_options)) { */
-            /*     draw_ui_breathing_text_centered(framebuffer,  rectangle_f32(0, y_cursor, framebuffer->width, framebuffer->height*0.1), font1, NORMAL_FONT_SCALE, *it, index); */
-
-            /*     y_cursor += font_height * (NORMAL_FONT_SCALE + 0.2); */
-            /*     index++; */
-            /* } */
         } break;
     }
 
