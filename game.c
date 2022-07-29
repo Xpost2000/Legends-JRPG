@@ -41,6 +41,11 @@ static string menu_font_variation_string_names[] = {
     string_literal("res/fonts/gnsh-bitmapfont-colour9.png"),
 };
 font_id menu_fonts[9];
+/* replace old occurances of this */
+local struct font_cache* game_get_font(s32 variation) {
+    struct font_cache* font = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[variation]);
+    return font;
+}
 
 image_id guy_img;
 image_id combat_square_unselected;
@@ -515,158 +520,9 @@ void game_postprocess_grayscale(struct software_framebuffer* framebuffer, f32 t)
 
 void editor_initialize(struct editor_state* state);
 #include "editor.c"
+#include "tile_data.c"
 
-static void initialize_static_table_data(void) {
-    /* a very generous amount of table data... */
-    tile_table_data = memory_arena_push(&game_arena, sizeof(*tile_table_data) * 2048);
-    auto_tile_info  = memory_arena_push(&game_arena, sizeof(*auto_tile_info)  * 1024);
-
-    s32 i = 0;
-    s32 j = 0;
-
-    /* NOTE this table may be subject to change, and a lot of things may explode? */
-#define insert(x)    tile_table_data[i++] = (x)
-#define AT_insert(x) auto_tile_info[j++] = (x)
-#define current_AT   &auto_tile_info[j] 
-    insert(
-        ((struct tile_data_definition){
-            .name                 = string_literal("(grass test(filled))"),
-            .image_asset_location = string_literal("./res/img/land/grass.png"),
-            .flags                = TILE_DATA_FLAGS_NONE,
-        })
-    );
-    insert(
-        ((struct tile_data_definition){
-            .name                 = string_literal("(brick test(filled))"),
-            .image_asset_location = string_literal("./res/img/brick.png"),
-            .flags                = TILE_DATA_FLAGS_SOLID,
-        })
-    );
-    insert(
-        ((struct tile_data_definition){
-            .name                 = string_literal("(dirt)"),
-            .image_asset_location = string_literal("./res/img/land/dirt.png"),
-            .flags                = TILE_DATA_FLAGS_NONE,
-        })
-    );
-    insert(
-        ((struct tile_data_definition){
-            .name                 = string_literal("(water (unpassable))"),
-            .image_asset_location = string_literal("./res/img/land/water.png"),
-            .flags                = TILE_DATA_FLAGS_SOLID,
-        })
-    );
-    insert(
-        ((struct tile_data_definition){
-            .name                 = string_literal("(water (passable))"),
-            .image_asset_location = string_literal("./res/img/land/water.png"),
-            .flags                = TILE_DATA_FLAGS_NONE,
-        })
-    );
-    insert(
-        ((struct tile_data_definition){
-            .name                 = string_literal("(cave wall)"),
-            .image_asset_location = string_literal("./res/img/cave/cavewall.png"),
-            .flags                = TILE_DATA_FLAGS_SOLID,
-        })
-    );
-    insert(
-        ((struct tile_data_definition){
-            .name                 = string_literal("(cave wall opening)"),
-            .image_asset_location = string_literal("./res/img/cave/cavewall_opening.png"),
-            .flags                = TILE_DATA_FLAGS_SOLID,
-        })
-    );
-    insert(
-        ((struct tile_data_definition){
-            .name                 = string_literal("(cave wall mossy"),
-            .image_asset_location = string_literal("./res/img/cave/cavewall1.png"),
-            .flags                = TILE_DATA_FLAGS_SOLID,
-        })
-    );
-    insert(
-        ((struct tile_data_definition){
-            .name                 = string_literal("(cobble floor1)"),
-            .image_asset_location = string_literal("./res/img/cave/cobble_floor1.png"),
-            .flags                = TILE_DATA_FLAGS_NONE,
-        })
-    );
-    insert(
-        ((struct tile_data_definition){
-            .name                 = string_literal("(bush)"),
-            .image_asset_location = string_literal("./res/img/land/bush.png"),
-            .flags                = TILE_DATA_FLAGS_SOLID,
-        })
-    );
-    insert(
-        ((struct tile_data_definition){
-            .name                 = string_literal("(house block)"),
-            .image_asset_location = string_literal("./res/img/building/home_block.png"),
-            .flags                = TILE_DATA_FLAGS_SOLID,
-        })
-    );
-    insert(
-        ((struct tile_data_definition){
-            .name                 = string_literal("(house block top)"),
-            .image_asset_location = string_literal("./res/img/building/home_top_block.png"),
-            .flags                = TILE_DATA_FLAGS_SOLID,
-        })
-    );
-    insert(
-        ((struct tile_data_definition){
-            .name                 = string_literal("(house block window)"),
-            .image_asset_location = string_literal("./res/img/building/home_block_window.png"),
-            .flags                = TILE_DATA_FLAGS_SOLID,
-        })
-    );
-    insert(
-        ((struct tile_data_definition){
-            .name                 = string_literal("(carpet red fuzz)"),
-            .image_asset_location = string_literal("./res/img/building/home_red_fuzz_pit.png"),
-            .flags                = TILE_DATA_FLAGS_SOLID,
-        })
-    );
-    insert(
-        ((struct tile_data_definition){
-            .name                 = string_literal("(home wood floor)"),
-            .image_asset_location = string_literal("./res/img/building/home_wood_floor.png"),
-            .flags                = TILE_DATA_FLAGS_SOLID,
-        })
-    );
-    insert(
-        ((struct tile_data_definition){
-            .name                 = string_literal("(home wood wall)"),
-            .image_asset_location = string_literal("./res/img/building/home_wood_wall.png"),
-            .flags                = TILE_DATA_FLAGS_SOLID,
-        })
-    );
-    insert(
-        ((struct tile_data_definition){
-            .name                 = string_literal("(home wood wall top)"),
-            .image_asset_location = string_literal("./res/img/building/home_wood_wall_top.png"),
-            .flags                = TILE_DATA_FLAGS_SOLID,
-        })
-    );
-    insert(
-        ((struct tile_data_definition){
-            .name                 = string_literal("(door)"),
-            .image_asset_location = string_literal("./res/img/building/door.png"),
-            .flags                = TILE_DATA_FLAGS_SOLID,
-        })
-    );
-    insert(
-        ((struct tile_data_definition){
-            .name                 = string_literal("(wood_log_side)"),
-            .image_asset_location = string_literal("./res/img/cave/wood_log_side.png"),
-            .flags                = TILE_DATA_FLAGS_NONE,
-        })
-    );
-#undef insert 
-#undef AT_insert 
-#undef current_AT 
-    tile_table_data_count = i;
-}
-
+local void initialize_main_menu(void);
 void game_initialize(void) {
     game_arena   = memory_arena_create_from_heap("Game Memory", Megabyte(32));
     editor_arena = memory_arena_create_from_heap("Editor Memory", Megabyte(32));
@@ -675,6 +531,7 @@ void game_initialize(void) {
     game_state->conversation_arena = memory_arena_push_sub_arena(&game_arena, Kilobyte(64));
     
     initialize_save_data();
+    initialize_main_menu();
 
     game_state->rng = random_state();
     game_state->arena = &game_arena;
@@ -737,7 +594,7 @@ void game_initialize_game_world(void) {
     entity_inventory_add((struct entity_inventory*)&game_state->inventory, MAX_PARTY_ITEMS, item_id_make(string_literal("item_trout_fish_5")));
     entity_inventory_add((struct entity_inventory*)&game_state->inventory, MAX_PARTY_ITEMS, item_id_make(string_literal("item_sardine_fish_5")));
 
-#if 0
+#if 1
     /* game_open_conversation_file(game_state, string_literal("./dlg/linear_test.txt")); */
     game_open_conversation_file(game_state, string_literal("./dlg/simple_choices.txt"));
     load_level_from_file(game_state, string_literal("pf.area"));
@@ -982,6 +839,18 @@ local void update_and_render_sub_menu_states(struct game_state* state, struct so
     }
 }
 
+local void draw_ui_breathing_text(struct software_framebuffer* framebuffer, v2f32 where, struct font_cache* font, f32 scale, string text, s32 seed_displacement) {
+    for (unsigned character_index = 0; character_index < text.length; ++character_index) {
+        f32 character_displacement_y = sinf((global_elapsed_time*2) + ((character_index+seed_displacement) * 2381.2318)) * 3;
+
+        v2f32 glyph_position = where;
+        glyph_position.y += character_displacement_y;
+        glyph_position.x += font->tile_width * scale * character_index;
+
+        software_framebuffer_draw_text(framebuffer, font, scale, glyph_position, string_slice(text, character_index, character_index+1), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+    }
+}
+
 local void update_and_render_pause_game_menu_ui(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
     /* needs a bit of cleanup */
     f32 font_scale = 3;
@@ -1062,18 +931,18 @@ local void update_and_render_pause_game_menu_ui(struct game_state* state, struct
                         } break;
                         case 2: {
                             {
-                                menu_state->animation_state = UI_PAUSE_MENU_TRANSITION_CLOSING;
-                                menu_state->last_sub_menu_state  = UI_PAUSE_MENU_SUB_MENU_STATE_NONE;
-                                menu_state->sub_menu_state  = UI_PAUSE_MENU_SUB_MENU_STATE_INVENTORY;
-                                menu_state->transition_t = 0;
+                                menu_state->animation_state     = UI_PAUSE_MENU_TRANSITION_CLOSING;
+                                menu_state->last_sub_menu_state = UI_PAUSE_MENU_SUB_MENU_STATE_NONE;
+                                menu_state->sub_menu_state      = UI_PAUSE_MENU_SUB_MENU_STATE_INVENTORY;
+                                menu_state->transition_t        = 0;
                             }
                         } break;
                         case 3: {
                             {
-                                menu_state->animation_state = UI_PAUSE_MENU_TRANSITION_CLOSING;
-                                menu_state->last_sub_menu_state  = UI_PAUSE_MENU_SUB_MENU_STATE_NONE;
-                                menu_state->sub_menu_state  = UI_PAUSE_MENU_SUB_MENU_STATE_INVENTORY;
-                                menu_state->transition_t = 0;
+                                menu_state->animation_state     = UI_PAUSE_MENU_TRANSITION_CLOSING;
+                                menu_state->last_sub_menu_state = UI_PAUSE_MENU_SUB_MENU_STATE_NONE;
+                                menu_state->sub_menu_state      = UI_PAUSE_MENU_SUB_MENU_STATE_INVENTORY;
+                                menu_state->transition_t        = 0;
                             }
                         } break;
                         case 4: {
@@ -1138,15 +1007,7 @@ local void update_and_render_pause_game_menu_ui(struct game_state* state, struct
                 font = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_GOLD]);
             }
 
-            for (unsigned character_index = 0; character_index < ui_pause_menu_strings[index].length; ++character_index) {
-                f32 character_displacement_y = sinf((global_elapsed_time*2) + ((character_index+index) * 2381.2318)) * 3;
-
-                v2f32 glyph_position = draw_position;
-                glyph_position.y += character_displacement_y;
-                glyph_position.x += font->tile_width * font_scale * character_index;
-
-                software_framebuffer_draw_text(framebuffer, font, font_scale, glyph_position, string_slice(ui_pause_menu_strings[index], character_index, character_index+1), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
-            }
+            draw_ui_breathing_text(framebuffer, draw_position, font, font_scale, ui_pause_menu_strings[index], index);
         }
     }
 }
@@ -1314,6 +1175,7 @@ void player_handle_radial_interactables(struct game_state* state, struct entity_
 }
 
 #include "combat.c"
+#include "game_main_menu.c"
 
 void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
     if (is_key_pressed(KEY_F12)) {
@@ -1325,43 +1187,50 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
     if (game_state->in_editor) {
         update_and_render_editor(framebuffer, dt);
     } else {
-        struct entity* player_entity = entity_list_dereference_entity(&game_state->entities, player_id);
-        update_game_camera(game_state, dt);
+        switch (screen_mode) {
+            case GAME_SCREEN_INGAME: {
+                struct entity* player_entity = entity_list_dereference_entity(&game_state->entities, player_id);
+                update_game_camera(game_state, dt);
 
-        struct render_commands commands = render_commands(game_state->camera);
+                struct render_commands commands = render_commands(game_state->camera);
 
-        commands.should_clear_buffer = true;
-        commands.clear_buffer_color  = color32u8(0, 0, 0, 255);
+                commands.should_clear_buffer = true;
+                commands.clear_buffer_color  = color32u8(0, 0, 0, 255);
 
-        render_area(&commands, &game_state->loaded_area);
-        if (game_state->ui_state != UI_STATE_PAUSE) {
-            entity_list_update_entities(game_state,&game_state->entities, dt, &game_state->loaded_area);
+                render_area(&commands, &game_state->loaded_area);
+                if (game_state->ui_state != UI_STATE_PAUSE) {
+                    entity_list_update_entities(game_state,&game_state->entities, dt, &game_state->loaded_area);
 
-            if (!game_state->combat_state.active_combat) {
-                determine_if_combat_should_begin(game_state, &game_state->entities);
-            } else {
-                update_combat(game_state, dt);
-            }
+                    if (!game_state->combat_state.active_combat) {
+                        determine_if_combat_should_begin(game_state, &game_state->entities);
+                    } else {
+                        update_combat(game_state, dt);
+                    }
 
-            game_state->weather.timer += dt;
+                    game_state->weather.timer += dt;
+                }
+
+                entity_list_render_entities(&game_state->entities, &graphics_assets, &commands, dt);
+                software_framebuffer_render_commands(framebuffer, &commands);
+                game_postprocess_blur_ingame(framebuffer, 2, 0.34, BLEND_MODE_ALPHA);
+
+                /* color "grading" */
+                software_framebuffer_draw_quad(framebuffer, rectangle_f32(0,0,999,999), color32u8(178,180,255,255), BLEND_MODE_MULTIPLICATIVE);
+                do_weather(framebuffer, game_state, dt);
+                update_and_render_game_menu_ui(game_state, framebuffer, dt);
+            } break;
+            case GAME_SCREEN_MAIN_MENU: {
+                update_and_render_main_menu(game_state, framebuffer, dt);
+            } break;
         }
-
-        entity_list_render_entities(&game_state->entities, &graphics_assets, &commands, dt);
-        software_framebuffer_render_commands(framebuffer, &commands);
-        game_postprocess_blur_ingame(framebuffer, 2, 0.34, BLEND_MODE_ALPHA);
-
-        /* color "grading" */
-        software_framebuffer_draw_quad(framebuffer, rectangle_f32(0,0,999,999), color32u8(178,180,255,255), BLEND_MODE_MULTIPLICATIVE);
     }
 
-    do_weather(framebuffer, game_state, dt);
 #if 0
     /* camera debug */
     {
         software_framebuffer_draw_quad(framebuffer, game_state->camera.travel_bounds, color32u8(0,0,255,100), BLEND_MODE_ALPHA);
     }
 #endif
-    update_and_render_game_menu_ui(game_state, framebuffer, dt);
 }
 
 #include "game_script.c"

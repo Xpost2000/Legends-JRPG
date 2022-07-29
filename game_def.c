@@ -458,6 +458,13 @@ struct game_state_combat_state {
     s32       active_combatant;
 };
 
+enum game_screen_mode {
+    GAME_SCREEN_MAIN_MENU,
+    GAME_SCREEN_INGAME,
+};
+
+s32 screen_mode = GAME_SCREEN_MAIN_MENU;
+
 struct game_state {
     struct memory_arena* arena;
 

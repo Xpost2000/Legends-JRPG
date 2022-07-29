@@ -5,11 +5,15 @@ Right now I am:
 
 This is going to be quite a bit of work.
 
-** Maybe consider fixing the editor UI for tiles????
-** Improve the dialogue UI
+So instead of using the kinda serious JRPG story I wanted to do, we're just going to make
+a small game about freeing a village from Orcs. It'll be like maybe an hour or two of play or something,
+mostly as an engine demo.
+
+** Do we need a world map?
+   Probably...
+** Draw some new sprites for actors and animals
+   Yeah, we need them like now!
 ** More focused dialogue? Focus on a specific entity
-** Nine Patch UI implementation
-   Use it to make stuff nicer
 ** Setting up a main menu structure.
    The main menu will have a function new game and load game
    button.
@@ -17,14 +21,43 @@ This is going to be quite a bit of work.
    We will have that much.
 
    I want this to look nicer and more complete :)
+** Cutscene scripting capacity
+   Our cutscenes, are really just going to be a product of our scripting system,
+   and not a dedicated cutscene system...
+
+   It's a bit of a pain but yeah
 ** Intro Storyboard.
    Black screen / faded black screen storyboard with image behind?
    Anyways this is going to be used for now.
-** Setting up Combat Infrastructure.
-   Allow entering combat, with aggroed enemies (not too many setups right now)
-
-   And setup the basic combat UI as well as the turn based part.
-
-   The AI doesn't need to be implemented for a little while.
-
 ** Weapon and Armor item types
+   We need an item equip screen as well, we would also preferably
+   draw sprites for each weapon. However, I might avoid that since
+   I don't have that capacity...
+   
+** Party Members
+   We need some party member actors, and obviously our new UI
+   has to be updated to account for the fact we have new party members.
+
+   Party members will be transferred from their level storage and auto-level?
+** Combat First Attacks!
+   We need to add ability lists for our characters! They are
+   also preferably animated, however that might be a PITA. I might
+   have to hard code the animations, I don't have the time to produce
+   a full editor UI for animations. So yeah...
+
+   I want it to allow us to have Disgaea Style Animations, so that's
+   why I kind of need this to work...
+
+   Each animation is just going to be a unique function. Unfortunately
+   that's the best way to do this as animation data otherwise would
+   be extraordinarily painful to program in for.
+
+   NOTE the combat is action-points based
+
+   - [ ] Basic Attack!
+   - [ ] Skip Turn
+   - [ ] Weapon Specific Abilities?! (add Sword, Fist)
+     - [ ] Blade Rush    (Sword)
+     - [ ] Triple Strike (Fist)
+
+** Improve the dialogue UI
