@@ -1,5 +1,7 @@
 /* global main menu code */
 
+const f32 TITLE_FONT_SCALE  = 6.0;
+const f32 NORMAL_FONT_SCALE = 4.0;
 enum main_menu_animation_phase {
     MAIN_MENU_LIGHTNING_FLASHES,
     MAIN_MENU_TITLE_APPEAR,
@@ -21,12 +23,31 @@ struct {
     s32 currently_selected_option_choice;
 } main_menu;
 
-local string main_menu_first_page_options[] = {
-    string_literal("continue"),
-    string_literal("new game"),
-    string_literal("load game"),
-    string_literal("options"),
-    string_literal("exit"),
+enum {
+    MAIN_MENU_OPTION_CHOICE,
+    MAIN_MENU_OPTION_SLIDER,
+    MAIN_MENU_OPTION_CHECKBOX,
+    MAIN_MENU_OPTION_SELECTOR,
+};
+struct main_menu_option {
+    char* choice;
+    s32    type;
+    union {
+        struct {
+            f32 slider_min;
+            f32 slider_max;
+        };
+        bool   value;
+        char*  selections[32];
+    };
+};
+
+local struct main_menu_option main_menu_first_page_options[] = {
+    (struct main_menu_option) { .choice = ("continue") },
+    (struct main_menu_option) { .choice = ("new game") },
+    (struct main_menu_option) { .choice = ("load game") },
+    (struct main_menu_option) { .choice = ("options") },
+    (struct main_menu_option) { .choice = ("exit") },
 };
 
 local void main_menu_next_lightning_time(void) {
@@ -42,10 +63,54 @@ local void initialize_main_menu(void) {
     return;
 }
 
+local s32 main_menu_do_menu_ui(v2f32 where, struct software_framebuffer* framebuffer, struct main_menu_option* options, s32 count, s32* option_ptr) {
+    /* TODO gamepad */
+    bool up    = is_key_down_with_repeat(KEY_UP)  ;
+    bool down  = is_key_down_with_repeat(KEY_DOWN);
+    bool left  = is_key_down_with_repeat(KEY_LEFT);
+    bool right = is_key_down_with_repeat(KEY_RIGHT);
+
+    struct font_cache* font1       = game_get_font(MENU_FONT_COLOR_STEEL);
+    struct font_cache* font2       = game_get_font(MENU_FONT_COLOR_ORANGE);
+    f32                font_height = font_cache_text_height(font1);
+
+    s32 index    = 0;
+    f32 y_cursor = where.y;
+    Array_For_Each(it, struct main_menu_option, options, count) {
+        struct font_cache* painting_font = font1;
+        if (index == (*option_ptr)) {
+            painting_font = font2;
+        }
+
+        draw_ui_breathing_text_centered(framebuffer, rectangle_f32(where.x, y_cursor, framebuffer->width, framebuffer->height*0.1), painting_font, NORMAL_FONT_SCALE, string_from_cstring(it->choice), index);
+        y_cursor += font_height * (NORMAL_FONT_SCALE + 0.2);
+        index++;
+    }
+
+    if (up) {
+        (*option_ptr) -= 1;
+    }
+
+    if (down) {
+        (*option_ptr) += 1;
+    }
+
+    if ((*option_ptr) < 0) {
+        *option_ptr = count-1;
+    } else if ((*option_ptr) >= count) {
+        *option_ptr = 0;
+    }
+
+    if (is_key_pressed(KEY_RETURN)) {
+        return *option_ptr;
+    }
+
+    return -1;
+}
+
 local void update_and_render_main_menu(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
     struct font_cache* font  = game_get_font(MENU_FONT_COLOR_GOLD);
     struct font_cache* font1 = game_get_font(MENU_FONT_COLOR_STEEL);
-    struct font_cache* font2 = game_get_font(MENU_FONT_COLOR_YELLOW);
 
     software_framebuffer_clear_buffer(framebuffer, color32u8(0,0,0,255));
 
@@ -78,7 +143,7 @@ local void update_and_render_main_menu(struct game_state* state, struct software
             if (t >= 1.0) t = 1.0;
             f32 y_cursor = lerp_f32(-999, 100, t);
 
-            software_framebuffer_draw_text_bounds_centered(framebuffer, font, 8.0, rectangle_f32(0, y_cursor, framebuffer->width, framebuffer->height*0.1),
+            software_framebuffer_draw_text_bounds_centered(framebuffer, font, TITLE_FONT_SCALE, rectangle_f32(0, y_cursor, framebuffer->width, framebuffer->height*0.1),
                                                            string_literal("Tendered Shadows"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
 
             if (main_menu.timer >= 4.3f) {
@@ -95,13 +160,14 @@ local void update_and_render_main_menu(struct game_state* state, struct software
             f32 y_cursor = 200;
             f32 x_cursor = cubic_ease_in_f32(-999, 0, t);
 
-            software_framebuffer_draw_text_bounds_centered(framebuffer, font, 8.0, rectangle_f32(0, 100, framebuffer->width, framebuffer->height*0.1),
+            software_framebuffer_draw_text_bounds_centered(framebuffer, font, TITLE_FONT_SCALE, rectangle_f32(0, 100, framebuffer->width, framebuffer->height*0.1),
                                                            string_literal("Tendered Shadows"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
 
-            Array_For_Each(it, string, main_menu_first_page_options, array_count(main_menu_first_page_options)) {
-                software_framebuffer_draw_text_bounds_centered(framebuffer, font1, 2.0, rectangle_f32(x_cursor, y_cursor, framebuffer->width, framebuffer->height*0.1),
-                                                               *it, color32f32(1,1,1,1), BLEND_MODE_ALPHA);
-                y_cursor += font_height * 2.3;
+            s32 index = 0;
+            Array_For_Each(it, struct main_menu_option, main_menu_first_page_options, array_count(main_menu_first_page_options)) {
+                draw_ui_breathing_text_centered(framebuffer,  rectangle_f32(x_cursor, y_cursor, framebuffer->width, framebuffer->height*0.1), font1, NORMAL_FONT_SCALE, string_from_cstring(it->choice), index);
+                y_cursor += font_height * (NORMAL_FONT_SCALE + 0.2);
+                index++;
             }
 
             if (main_menu.timer >= 3.8f) {
@@ -109,16 +175,26 @@ local void update_and_render_main_menu(struct game_state* state, struct software
             }
         } break;
         case MAIN_MENU_IDLE: {
-            software_framebuffer_draw_text_bounds_centered(framebuffer, font, 8.0, rectangle_f32(0, 100, framebuffer->width, framebuffer->height*0.1),
+            software_framebuffer_draw_text_bounds_centered(framebuffer, font, TITLE_FONT_SCALE, rectangle_f32(0, 100, framebuffer->width, framebuffer->height*0.1),
                                                            string_literal("Tendered Shadows"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
             
             f32 y_cursor = 200;
-            Array_For_Each(it, string, main_menu_first_page_options, array_count(main_menu_first_page_options)) {
-                software_framebuffer_draw_text_bounds_centered(framebuffer, font1, 2.0, rectangle_f32(0, y_cursor, framebuffer->width, framebuffer->height*0.1),
-                                                               *it, color32f32(1,1,1,1), BLEND_MODE_ALPHA);
 
-                y_cursor += font_height * 2.3;
+            s32 index = 0;
+            s32 choice = main_menu_do_menu_ui(v2f32(0, y_cursor), framebuffer, main_menu_first_page_options, array_count(main_menu_first_page_options), &main_menu.currently_selected_option_choice);
+            if (choice != -1) {
+                /* play a transition if needed */
+                main_menu.currently_selected_option_choice = 0;
+                switch (choice) {
+                    
+                }
             }
+            /* Array_For_Each(it, string, main_menu_first_page_options, array_count(main_menu_first_page_options)) { */
+            /*     draw_ui_breathing_text_centered(framebuffer,  rectangle_f32(0, y_cursor, framebuffer->width, framebuffer->height*0.1), font1, NORMAL_FONT_SCALE, *it, index); */
+
+            /*     y_cursor += font_height * (NORMAL_FONT_SCALE + 0.2); */
+            /*     index++; */
+            /* } */
         } break;
     }
 

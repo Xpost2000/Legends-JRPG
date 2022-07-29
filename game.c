@@ -839,6 +839,29 @@ local void update_and_render_sub_menu_states(struct game_state* state, struct so
     }
 }
 
+local void draw_ui_breathing_text_centered(struct software_framebuffer* framebuffer, struct rectangle_f32 bounds, struct font_cache* font, f32 scale, string text, s32 seed_displacement) {
+    f32 text_width  = font_cache_text_width(font, text, scale);
+    f32 text_height = font_cache_calculate_height_of(font, text, bounds.w, scale);
+
+    v2f32 centered_starting_position = v2f32(0,0);
+
+    centered_starting_position.x = bounds.x + (bounds.w/2) - (text_width/2);
+    centered_starting_position.y = bounds.y + (bounds.h/2) - (text_height/2);
+
+    f32 x_cursor = centered_starting_position.x;
+    f32 y_cursor = centered_starting_position.y;
+
+    for (unsigned character_index = 0; character_index < text.length; ++character_index) {
+        f32 character_displacement_y = sinf((global_elapsed_time*2) + ((character_index+seed_displacement) * 2381.2318)) * 3;
+
+        v2f32 glyph_position = v2f32(x_cursor, y_cursor);
+        glyph_position.y += character_displacement_y;
+        glyph_position.x += font->tile_width * scale * character_index;
+
+        software_framebuffer_draw_text(framebuffer, font, scale, glyph_position, string_slice(text, character_index, character_index+1), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+    }
+}
+
 local void draw_ui_breathing_text(struct software_framebuffer* framebuffer, v2f32 where, struct font_cache* font, f32 scale, string text, s32 seed_displacement) {
     for (unsigned character_index = 0; character_index < text.length; ++character_index) {
         f32 character_displacement_y = sinf((global_elapsed_time*2) + ((character_index+seed_displacement) * 2381.2318)) * 3;
