@@ -415,6 +415,7 @@ struct lisp_form lisp_read_form(struct memory_arena* arena, string code) {
             case TOKEN_TYPE_COLON:
             case TOKEN_TYPE_COMMA: {
                 result.type       = LISP_FORM_SYMBOL;
+                /* TODO intern these into a table! */
                 result.string     = string_clone(arena, first_token.str);
             } break;
             case TOKEN_TYPE_SINGLE_QUOTE: {

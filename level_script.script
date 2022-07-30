@@ -1,0 +1,45 @@
+# It's not a real lisp
+
+# anyways, the language should be basically an event
+# listener based thing. It's really more callback response.
+
+# the scripting language is entitled to an ability to draw game entities
+# which can be a bit interesting...
+# I have no idea how that will break things
+
+# On Enter event.
+# done before the level is loaded
+(on-enter
+
+)
+
+(per-frame
+)
+
+# yep
+(on-exit
+)
+
+# (ON-TOUCH ENTITY-ID *REST-BODY*)
+# When on touch
+# we are allowed the implicit arguments of who touched me
+# and also where their touch is relative to.
+
+# implicit variables are looked up in the game vars dictionary
+# we're not going to be cheap on storage, although we will avoid storing strings
+# in the dictionary.
+
+# so this is what I'll work on after the combat system.
+# mostly cause this is a non-backwards compatible change.
+# This will break existing levels since obviously I can't "rewire"
+# level transitions anymore.
+(on-touch (trigger 0)
+          (if finished_tutorial 
+              # symbols are not interned FYI, they're just strings for now.
+              (level-change "badlands" '(3 4) 'sad)
+              # I hope the engine has the capacity to read symbols...
+              (open-dialogue "still_busy_tutorial" (entity 'player))))
+
+# NPCs also have an on-activate
+# which is generally dedicated to giving them a conversation file...
+# so I'm not exactly sure what this will do.

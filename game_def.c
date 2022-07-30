@@ -1,3 +1,30 @@
+/* NOTE
+   proposal, to work with the amount of scripting that is inevitable in RPGS,
+   I think I should start pushing more of the work to my scripting language.
+   
+   Now if I were to release a more commercial, user friendly RPG engine or was otherwise
+   expecting to create content on a larger scale, I would probably create a block logic
+   language.
+
+   However, right now the lisp parser is robust enough to handle whatever dumb crap I shove
+   into it.
+   
+   read "level_script.script" for an example of what I'm needin
+   
+   Basically we're just going to leverge scripting and the trigger system to do most of the work
+   I would normally be doing.
+   
+   There are a few specialized entities, however for the most part. It would be simpler
+   to literally just do a lot of the game as part of the scripting language. This includes things like
+   puzzles.
+   
+   So my current idea is to turn the engine into a "kernel" that has the core game rules, and mechanics.
+   Maybe some hard-coded game specific things if I can't think of a great way to fit it into the scripting
+   language.
+   
+   However, a fair amount of effort will be done in the language script.
+ */
+
 /* TODO */
 /*
   Everything should be represented in terms of virtual tile coordinates.
@@ -83,8 +110,7 @@ struct activation_action {
 };
 #if 0
 struct trigger {
-    u8 activation_mode;
-    struct activation_action actions[MAX_ACTIVATION_EVENTS];
+    struct rectangle_f32 bounds;
 };
 /* not needed right now, we'll just be direct */
 #endif
