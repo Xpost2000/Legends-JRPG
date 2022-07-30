@@ -48,7 +48,7 @@ local game_script_function lookup_script_function(string name) {
 }
 #undef GAME_LISP_FUNCTION
 
-struct game_variable* lookup_game_variable(string name) {
+struct game_variable* lookup_game_variable(string name, bool create_when_not_found) {
     struct game_variables* variables = &game_state->variables;
 
     for (s32 index = 0; index < variables->count; ++index) {
@@ -59,28 +59,57 @@ struct game_variable* lookup_game_variable(string name) {
         }
     }
 
-    struct game_variable* new_variable = &variables->variables[variables->count++];
-    cstring_copy(name.data, new_variable->name, array_count(new_variable->name));
-    new_variable->float_value   = 0;
-    new_variable->integer_value = 0;
-    return new_variable;
+    if (create_when_not_found) {
+        struct game_variable* new_variable = &variables->variables[variables->count++];
+
+        cstring_copy(name.data, new_variable->name, array_count(new_variable->name));
+        new_variable->float_value   = 0;
+        new_variable->integer_value = 0;
+
+        return new_variable;
+    }
+    return NULL;
 }
 
 struct lisp_form game_script_look_up_dictionary_value(struct lisp_form name) {
-    struct game_variable* variable = lookup_game_variable(name.string);
+    struct game_variable* variable = lookup_game_variable(name.string, false);
 
-    if (variable->is_float) {
-        return lisp_form_real(variable->float_value);
-    } else {
-        return lisp_form_integer(variable->integer_value);
+    if (variable) {
+        if (variable->is_float) {
+            return lisp_form_real(variable->float_value);
+        } else {
+            return lisp_form_integer(variable->integer_value);
+        }
     }
 
     return LISP_nil;
 }
 
 /* TODO should allow us to flexibly change types though. */
-/* struct lisp_form game_script_set_dictionary_value(struct lisp_form name, struct lisp_form value) { */
-/* } */
+struct lisp_form game_script_set_dictionary_value(struct lisp_form name, struct lisp_form value) {
+    struct game_variable* variable = lookup_game_variable(name.string, false);
+
+    if (!variable) {
+        variable = lookup_game_variable(name.string, true);
+
+        /* there is a weird type system. Consider if I just want all integers? Probably. but who knows */
+        if (value.type == LISP_FORM_NUMBER) {
+            if (value.is_real) {
+                variable->is_float = true;
+            } else {
+                variable->is_float = false;
+            }
+        }
+    }
+
+    if (variable->is_float) {
+        lisp_form_get_f32(value, &variable->float_value);
+    } else {
+        lisp_form_get_s32(value, &variable->integer_value);
+    }
+
+    return value;
+}
 
 /* forward decls, functions recursively call each other */
 struct lisp_form game_script_evaluate_form(struct memory_arena* arena, struct game_state* state, struct lisp_form* form);
@@ -183,6 +212,68 @@ bool handle_builtin_game_script_functions(struct memory_arena* arena, struct gam
             *result = lisp_form_integer(integer_accumulator);
             return true;
         }
+    }
+    /* boolean logic (or and and) (equal) */
+    /* I don't need this to be ultra robust, I'll leave it as undefined behavior if you're not using boolean evaluable conditions */
+    {
+        bool evaled_boolean_result = false;
+
+        if (lisp_form_symbol_matching(first_form, string_literal("and"))) {
+            evaled_boolean_result = true;
+            for (s32 index = 1; index < form->list.count && evaled_boolean_result; ++index) {
+                struct lisp_form* child = form->list.forms + index;
+                struct lisp_form child_evaled = game_script_evaluate_form(arena, state, child);
+
+                if (child_evaled.type == LISP_FORM_T) {
+                    continue;
+                } else {
+                    /* short circuit */
+                    evaled_boolean_result = false;
+                }
+            }
+        } else if (lisp_form_symbol_matching(first_form, string_literal("or"))) {
+            evaled_boolean_result = false;
+            for (s32 index = 1; index < form->list.count && !evaled_boolean_result; ++index) {
+                struct lisp_form* child = form->list.forms + index;
+                struct lisp_form child_evaled = game_script_evaluate_form(arena, state, child);
+
+                if (child_evaled.type == LISP_FORM_T) {
+                    /* short circuit */
+                    evaled_boolean_result = true;
+                } else {
+                    continue;
+                }
+            }
+        } else if (lisp_form_symbol_matching(first_form, string_literal("equal"))) {
+            /* allow checking lots of equals */
+            if (form->list.count >= 2) {
+                evaled_boolean_result = false;
+
+                struct lisp_form child_first  = game_script_evaluate_form(arena, state, form->list.forms + 1);
+                {
+                    struct lisp_form child_second = game_script_evaluate_form(arena, state, form->list.forms + 2);
+                    evaled_boolean_result = lisp_form_check_equality(child_first, child_second);
+                }
+
+                for (s32 index = 3; index < form->list.count && !evaled_boolean_result; ++index) {
+                    struct lisp_form* child = form->list.forms + index;
+                    struct lisp_form child_evaled = game_script_evaluate_form(arena, state, child);
+
+                    /* if we know the first two are equal, just check against any of the already good ones. */
+                    evaled_boolean_result &= lisp_form_check_equality(child_first, child_evaled);
+                }
+            } else {
+                return false;
+            }
+        }
+
+        if (evaled_boolean_result) {
+            *result = LISP_t;
+        } else {
+            *result = LISP_nil;
+        }
+
+        return true;
     }
     /* hopefully a list */
     return false;

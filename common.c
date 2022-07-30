@@ -146,7 +146,9 @@ f32 quadratic_ease_out_f32(f32 a, f32 b, f32 normalized_t) {
 f32 fractional_f32(f32 x) {
     return x - floor(x);
 }
-
+f32 whole_f32(f32 x) {
+    return x - fractional_f32(x);
+}
 f32 step_f32(f32 x, f32 edge) {
     return (x < edge) ? 0 : 1;
 }

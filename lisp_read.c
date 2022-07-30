@@ -355,6 +355,54 @@ bool lisp_form_symbol_matching(struct lisp_form form, string symbol_value) {
     return false;
 }
 
+bool lisp_form_check_equality(struct lisp_form a, struct lisp_form b) {
+    if (a.type == b.type) {
+        switch (a.type) {
+            case LISP_FORM_SYMBOL: {return string_equal(a.string, b.string);} break;
+            case LISP_FORM_NUMBER: {
+                if (a.is_real) {
+                    if (b.is_real) {
+                        /* stupid but okay... Check episilon? */
+                        return a.real == b.real;
+                    } else {
+                        if (fractional_f32(a.real) == 0.0f) {
+                            return whole_f32(a.real) == b.integer;
+                        }
+                    }
+                } else {
+                    if (b.is_real) {
+                        /* stupid but okay... Check episilon? */
+                        if (fractional_f32(b.real) == 0.0f) {
+                            return whole_f32(b.real) == a.integer;
+                        }
+                    } else {
+                        return a.integer == b.integer;
+                    }
+                }
+            } break;
+            case LISP_FORM_STRING: {return string_equal(a.string, b.string);} break;
+            case LISP_FORM_LIST: {
+                if (a.list.count == b.list.count) {
+                    bool result = true;
+
+                    for (s32 index = 0; index < a.list.count && result; ++index) {
+                        /* the stack copying hurts */
+                        result &= lisp_form_check_equality(a.list.forms[index], b.list.forms[index]);
+                    }
+
+                    return result;
+                }
+            } break;
+            case LISP_FORM_T:
+            case LISP_FORM_NIL: {
+                return true;
+            } break;
+        }
+    }
+
+    return false;
+}
+
 static void _debug_print_out_lisp_code(struct lisp_form* code) {
     switch (code->type) {
         case LISP_FORM_LIST: {
