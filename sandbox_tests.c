@@ -11,7 +11,7 @@ void ___dialogue_testing(void) {
 
 static bool sandbox_testing(void) {
     _debugprintf("sandbox start");
-#if 1
+#if 0
     struct lisp_form code = lisp_read_form(&scratch_arena, string_literal("(not-quoted 'quoted 'sad)"));
     /* struct lisp_form code = lisp_read_form(&scratch_arena, string_literal("'sad")); */
     _debug_print_out_lisp_code(&code);
@@ -19,7 +19,7 @@ static bool sandbox_testing(void) {
 #endif
     _debugprintf("sandbox end");
 
-    return true;
+    return false;
 }
 
 /* I don't remember if the game has been initiated yet LOL */

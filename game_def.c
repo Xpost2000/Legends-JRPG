@@ -491,6 +491,19 @@ enum game_screen_mode {
 
 s32 screen_mode = GAME_SCREEN_MAIN_MENU;
 
+struct game_variable {
+    // big names ****************
+    char name[16];
+    u8   is_float;
+
+    s32  integer_value;
+    f32  float_value;
+};
+struct game_variables {
+    struct game_variable* variables;
+    s32                   count;
+};
+
 struct game_state {
     struct memory_arena* arena;
 
@@ -499,6 +512,8 @@ struct game_state {
     u32 ui_state;
 
     s32 in_editor;
+
+    struct game_variables variables;
 
     /* name is saved here so we can hash it's name later... */
     char              loaded_area_name[260];

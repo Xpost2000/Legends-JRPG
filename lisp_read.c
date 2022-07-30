@@ -294,10 +294,56 @@ struct lisp_form {
     union {
         struct lisp_list  list;
         string            string;
-        float             real;
+        f32               real;
         s32               integer;
     };
 };
+
+#define LISP_t   (struct lisp_form) { .type = LISP_FORM_T, .string = string_literal("t") }
+#define LISP_nil (struct lisp_form) { .type = LISP_FORM_NIL, .string = string_literal("nil") }
+
+struct lisp_form lisp_form_real(f32 value) {
+    struct lisp_form result = {};
+    result.type    = LISP_FORM_NUMBER;
+    result.is_real = true;
+    result.real    = value;
+    return result;
+}
+
+struct lisp_form lisp_form_integer(s32 value) {
+    struct lisp_form result = {};
+    result.type    = LISP_FORM_NUMBER;
+    result.integer = value;
+    return result;
+}
+
+bool lisp_form_get_f32(struct lisp_form form, f32* value) {
+    if (form.type == LISP_FORM_NUMBER) {
+        if (form.is_real) {
+            *value = form.real;
+        } else {
+            *value = (f32)form.integer;
+        }
+
+        return true;
+    }
+
+    return false;
+}
+
+bool lisp_form_get_s32(struct lisp_form form, s32* value) {
+    if (form.type == LISP_FORM_NUMBER) {
+        if (form.is_real) {
+            *value = (s32)form.real;
+        } else {
+            *value = form.integer;
+        }
+
+        return true;
+    }
+
+    return false;
+}
 
 bool lisp_form_symbol_matching(struct lisp_form form, string symbol_value) {
     if (form.type == LISP_FORM_SYMBOL) {
