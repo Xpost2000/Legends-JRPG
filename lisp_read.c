@@ -378,8 +378,12 @@ struct lisp_form lisp_read_list(struct memory_arena* arena, string code) {
             /* precount children to preallocate nodes. */
             {
                 while (!lexer_done(&lexer_state)) {
-                    if (!lexer_token_is_null(lexer_next_token(&lexer_state)))
-                        child_count++;
+                    struct lexer_token next_token = lexer_next_token(&lexer_state);
+                    if (!lexer_token_is_null(next_token)) {
+                        if (next_token.type != TOKEN_TYPE_SINGLE_QUOTE) {
+                            child_count++;
+                        }
+                    }
                 }
                 lexer_state.current_read_index = current_read_index;
             }
@@ -388,12 +392,27 @@ struct lisp_form lisp_read_list(struct memory_arena* arena, string code) {
             list_contents->count = child_count;
             list_contents->forms = memory_arena_push(arena, sizeof(*list_contents->forms) * list_contents->count);
 
-            for (unsigned index = 0; index < list_contents->count; ++index) {
-                struct lisp_form* current_form = list_contents->forms + index;
+            /* grr, I have to special case this a bit... Oh well */
+            bool previous_was_quote  = false;
+            s32  current_child_index = 0;
+
+            while (!lexer_done(&lexer_state)) {
+                struct lisp_form* current_form = list_contents->forms + current_child_index;
                 struct lexer_token token = lexer_next_token(&lexer_state);
 
-                _debug_print_token(token);
-                (*current_form) = lisp_read_form(arena, token.str);
+                if (token.type == TOKEN_TYPE_SINGLE_QUOTE) {
+                    previous_was_quote = true;
+                } else {
+                    _debug_print_token(token);
+                    (*current_form) = lisp_read_form(arena, token.str); 
+
+                    if (previous_was_quote) {
+                        current_form->quoted = true;
+                        previous_was_quote   = false;
+                    }
+
+                    current_child_index++;
+                }
             }
         }
     }
@@ -425,8 +444,13 @@ struct lisp_form lisp_read_form(struct memory_arena* arena, string code) {
             case TOKEN_TYPE_SINGLE_QUOTE: {
                 /* result.type       = LISP_FORM_QUOTE; */
                 /* result.string     = string_literal("\'"); */
-                struct lisp_form next_form = lisp_read_form(arena, string_slice(code, lexer_state.current_read_index, code.length - lexer_state.current_read_index));
+                /* string s = string_slice(code, lexer_state.current_read_index, code.length - lexer_state.current_read_index); */
+                /* _debugprintf("%.*s", s.length, s.data); */
+                struct lisp_form next_form = lisp_read_form(arena, string_slice(code, lexer_state.current_read_index, (code.length+1) - lexer_state.current_read_index));
                 next_form.quoted = true;
+                /* _debugprintf("test"); */
+                /* _debug_print_out_lisp_code(&next_form); */
+                /* _debugprintf("test end"); */
                 return next_form;
             } break;
             case TOKEN_TYPE_T: {
