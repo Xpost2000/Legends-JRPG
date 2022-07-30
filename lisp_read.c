@@ -290,6 +290,7 @@ struct lisp_list {
 struct lisp_form {
     s32 type;
     s8  is_real;
+    s8  quoted;
     union {
         struct lisp_list  list;
         string            string;
@@ -331,11 +332,14 @@ static void _debug_print_out_lisp_code(struct lisp_form* code) {
         case LISP_FORM_STRING: {
             _debugprintf1("\"%.*s\"", code->string.length, code->string.data);
         } break;
-        case LISP_FORM_QUOTE:
         case LISP_FORM_T:
         case LISP_FORM_NIL:
         case LISP_FORM_SYMBOL: {
-            _debugprintf1("%.*s", code->string.length, code->string.data);
+            char* flavor_text = "";
+            if (code->type == LISP_FORM_SYMBOL) {
+                if (code->quoted) flavor_text = "[quoted]";
+            }
+            _debugprintf1("%.*s(%s)", code->string.length, code->string.data, flavor_text);
         } break;
     }
 }
@@ -419,8 +423,11 @@ struct lisp_form lisp_read_form(struct memory_arena* arena, string code) {
                 result.string     = string_clone(arena, first_token.str);
             } break;
             case TOKEN_TYPE_SINGLE_QUOTE: {
-                result.type       = LISP_FORM_QUOTE;
-                result.string     = string_literal("\'");
+                /* result.type       = LISP_FORM_QUOTE; */
+                /* result.string     = string_literal("\'"); */
+                struct lisp_form next_form = lisp_read_form(arena, string_slice(code, lexer_state.current_read_index, code.length - lexer_state.current_read_index));
+                next_form.quoted = true;
+                return next_form;
             } break;
             case TOKEN_TYPE_T: {
                 result.type       = LISP_FORM_T;
