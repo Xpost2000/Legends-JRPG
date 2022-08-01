@@ -113,8 +113,11 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
         if (global_battle_ui_state.submode != BATTLE_UI_SUBMODE_NONE) {
             global_battle_ui_state.submode                             = BATTLE_UI_SUBMODE_NONE;
 
-            global_battle_ui_state.remembered_original_camera_position = false;
-            state->camera.xy                                           = global_battle_ui_state.prelooking_mode_camera_position;
+            if (global_battle_ui_state.remembered_original_camera_position) {
+                global_battle_ui_state.remembered_original_camera_position = false;
+                state->camera.xy                                           = global_battle_ui_state.prelooking_mode_camera_position;
+            }
+            _debugprintf("restore to previous menu state");
         }
     }
 
@@ -253,15 +256,15 @@ local string analyze_entity_and_display_tooltip(struct memory_arena* arena, v2f3
         if (target_entity_to_analyze == game_get_player(state)) {
             return string_literal("This is you.");
         } else {
-            char* r = format_temp("%.*s : HP : %d, %d/%d/%d/%d/%d/%d XP: %d",
+            char* r = format_temp("%.*s : HP : %d/%d, %d/%d/%d/%d/%d/%d",
                                   target_entity_to_analyze->name.length, target_entity_to_analyze->name.data,
+                                  target_entity_to_analyze->health.value, target_entity_to_analyze->health.max,
                                   target_entity_to_analyze->stat_block.vigor,
                                   target_entity_to_analyze->stat_block.strength,
                                   target_entity_to_analyze->stat_block.agility,
                                   target_entity_to_analyze->stat_block.speed,
                                   target_entity_to_analyze->stat_block.intelligence,
-                                  target_entity_to_analyze->stat_block.luck,
-                                  target_entity_to_analyze->stat_block.xp_value);
+                                  target_entity_to_analyze->stat_block.luck);
 
             return string_from_cstring(r);
         }
@@ -285,7 +288,7 @@ local void draw_battle_tooltips(struct game_state* state, struct software_frameb
     switch (global_battle_ui_state.submode) {
         case BATTLE_UI_SUBMODE_LOOKING: {
             tip = analyze_entity_and_display_tooltip(&scratch_arena,
-                                                     v2f32(framebuffer->width/2 - 4, framebuffer->height/2 - 4),
+                                                     v2f32(state->camera.xy.x - 4, state->camera.xy.y - 4),
                                                      state);
         } break;
         case BATTLE_UI_SUBMODE_NONE: {

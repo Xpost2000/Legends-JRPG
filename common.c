@@ -422,7 +422,7 @@ char* format_temp(const char* fmt, ...) {
     local char temporary_text_buffer[TEMPORARY_STORAGE_BUFFER_COUNT][TEMPORARY_STORAGE_BUFFER_SIZE] = {};
 
     char* target_buffer = temporary_text_buffer[current_buffer++];
-    zero_memory(target_buffer, TEMPORARY_STORAGE_BUFFER_SIZE+1);
+    zero_memory(target_buffer, TEMPORARY_STORAGE_BUFFER_SIZE);
     {
         va_list args;
         va_start(args, fmt);
