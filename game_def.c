@@ -255,6 +255,8 @@ struct level_area {
 
     /* runtime data */
     struct level_area_navigation_map navigation_data;
+    /* used for displaying what tiles you can walk to. */
+    u8*                              combat_movement_visibility_map;
 };
 
 struct navigation_path {

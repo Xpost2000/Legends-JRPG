@@ -154,9 +154,9 @@ void game_finish_conversation(struct game_state* state) {
     file_buffer_free(&state->conversation_file_buffer);
 }
 
-void render_area(struct render_commands* commands, struct level_area* area) {
+local void render_combat_area_information(struct game_state* state, struct render_commands* commands, struct level_area* area);
+void render_area(struct game_state* state, struct render_commands* commands, struct level_area* area) {
     /* TODO do it lazy mode. Once only */
-
     for (s32 index = 0; index < area->tile_count; ++index) {
         s32 tile_id = area->tiles[index].id;
         struct tile_data_definition* tile_data = tile_table_data + tile_id;
@@ -171,6 +171,11 @@ void render_area(struct render_commands* commands, struct level_area* area) {
                                                  TILE_UNIT_SIZE),
                                    tile_data->sub_rectangle,
                                    color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
+    }
+
+    if (state->combat_state.active_combat) {
+        /* eh could be named better */
+        render_combat_area_information(state, commands, area);
     }
 
     /* _debugprintf("%d chests", area->entity_chest_count); */
@@ -259,6 +264,7 @@ struct tile* level_area_find_tile(struct level_area* level, s32 x, s32 y) {
     return NULL;
 }
 
+/* NOTE: also builds other run time data but I don't want to change the name. */
 local void build_navigation_map_for_level_area(struct memory_arena* arena, struct level_area* level) {
     if (level->tile_count > 0) {
         struct level_area_navigation_map* navigation_map = &level->navigation_data;
@@ -283,7 +289,8 @@ local void build_navigation_map_for_level_area(struct memory_arena* arena, struc
         navigation_map->width  = (max_x - min_x)+1;
         navigation_map->height = (max_y - min_y)+1;
 
-        navigation_map->tiles = memory_arena_push_top(arena, sizeof(*navigation_map->tiles) * navigation_map->width * navigation_map->height);
+        navigation_map->tiles                 = memory_arena_push_top(arena, sizeof(*navigation_map->tiles) * navigation_map->width * navigation_map->height);
+        level->combat_movement_visibility_map = memory_arena_push_top(arena, navigation_map->width * navigation_map->height);
 
         for (s32 y_cursor = navigation_map->min_y; y_cursor < navigation_map->max_y; ++y_cursor) {
             for (s32 x_cursor = navigation_map->min_x; x_cursor < navigation_map->max_x; ++x_cursor) {
@@ -297,6 +304,43 @@ local void build_navigation_map_for_level_area(struct memory_arena* arena, struc
                 } else {
                     nav_tile->type           = 0;
                 }
+            }
+        }
+    }
+}
+
+local void level_area_clear_movement_visibility_map(struct level_area* level) {
+    struct level_area_navigation_map* navigation_map          = &level->navigation_data;
+    s32                               map_width               = navigation_map->width;
+    s32                               map_height              = navigation_map->height;
+
+    for (s32 y_cursor = 0; y_cursor < map_height; ++y_cursor) {
+        for (s32 x_cursor = 0; x_cursor < map_width; ++x_cursor) {
+            level->combat_movement_visibility_map[y_cursor * map_width + x_cursor] = 0;
+        }
+    }
+}
+
+local void level_area_build_movement_visibility_map(struct memory_arena* arena, struct level_area* level, s32 x, s32 y, s32 radius) {
+    /* not a BFS, just brute force checkings... */
+    struct level_area_navigation_map* navigation_map          = &level->navigation_data;
+    s32                               map_width               = navigation_map->width;
+    s32                               map_height              = navigation_map->height;
+
+    f32 radius_sq = radius*radius;
+
+    for (s32 y_cursor = 0; y_cursor < map_height; ++y_cursor) {
+        for (s32 x_cursor = 0; x_cursor < map_width; ++x_cursor) {
+            f32 distance = v2f32_distance_sq(v2f32(x_cursor, y_cursor), v2f32(x, y));
+
+            if (distance <= radius_sq) {
+                struct tile*                 t               = level_area_find_tile(level, x_cursor, y_cursor);
+                struct tile_data_definition* tile_data_entry = &tile_table_data[t->id];
+
+                if (tile_data_entry->flags & TILE_DATA_FLAGS_SOLID)
+                    continue;
+
+                level->combat_movement_visibility_map[y_cursor * map_width + x_cursor] = 1;
             }
         }
     }
@@ -1255,7 +1299,7 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                 commands.should_clear_buffer = true;
                 commands.clear_buffer_color  = color32u8(0, 0, 0, 255);
 
-                render_area(&commands, &game_state->loaded_area);
+                render_area(game_state, &commands, &game_state->loaded_area);
                 if (game_state->ui_state != UI_STATE_PAUSE) {
                     if (!storyboard_active) {
                         entity_list_update_entities(game_state,&game_state->entities, dt, &game_state->loaded_area);

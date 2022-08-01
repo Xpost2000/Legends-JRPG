@@ -1031,7 +1031,7 @@ void update_and_render_editor(struct software_framebuffer* framebuffer, f32 dt) 
 
     if (editor_state->viewing_loaded_area) {
         /* yeah this is a big mess */
-        render_area(&commands, &editor_state->loaded_area);
+        render_area(game_state, &commands, &editor_state->loaded_area);
         if (editor_state->last_selected && editor_state->tool_mode == EDITOR_TOOL_TRIGGER_PLACEMENT) {
             struct trigger_level_transition* trigger = editor_state->last_selected;
             render_commands_push_quad(&commands, rectangle_f32(trigger->spawn_location.x * TILE_UNIT_SIZE, trigger->spawn_location.y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE),

@@ -106,6 +106,8 @@ local void draw_turn_panel(struct game_state* state, struct software_framebuffer
 #define UI_BATTLE_COLOR (color32f32(34/255.0f, 37/255.0f, 143/255.0f, 1.0))
 
 local void do_battle_selection_menu(struct game_state* state, struct software_framebuffer* framebuffer, f32 x, f32 y, bool allow_input) {
+    struct game_state_combat_state* combat_state = &state->combat_state;
+
     struct font_cache* normal_font      = game_get_font(MENU_FONT_COLOR_WHITE);
     struct font_cache* highlighted_font = game_get_font(MENU_FONT_COLOR_GOLD);
 
@@ -117,6 +119,8 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                 global_battle_ui_state.remembered_original_camera_position = false;
                 state->camera.xy                                           = global_battle_ui_state.prelooking_mode_camera_position;
             }
+
+            level_area_clear_movement_visibility_map(&state->loaded_area);
             _debugprintf("restore to previous menu state");
         }
     }
@@ -168,6 +172,9 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                         } break;
                         case BATTLE_MOVE: {
                             global_battle_ui_state.submode = BATTLE_UI_SUBMODE_MOVING;
+                            
+                            struct entity* active_combatant_entity = entity_list_dereference_entity(&state->entities, combat_state->participants[combat_state->active_combatant]);
+                            level_area_build_movement_visibility_map(&scratch_arena, &state->loaded_area, active_combatant_entity->position.x / TILE_UNIT_SIZE, active_combatant_entity->position.y / TILE_UNIT_SIZE, 4);
                         } break;
                         case BATTLE_ATTACK: {
                             global_battle_ui_state.submode = BATTLE_UI_SUBMODE_ATTACKING;
@@ -205,6 +212,11 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                 f32 cursor_square_size = 4;
                 software_framebuffer_draw_quad(framebuffer, rectangle_f32(framebuffer->width/2-cursor_square_size/2, framebuffer->height/2-cursor_square_size/2, cursor_square_size, cursor_square_size), color32u8_WHITE, BLEND_MODE_NONE);
             }
+        } break;
+
+            /* allow picking a square */
+        case BATTLE_UI_SUBMODE_MOVING: {
+            _debugprintf("TODO finish!");
         } break;
     }
 }
@@ -398,5 +410,19 @@ local void update_and_render_battle_ui(struct game_state* state, struct software
                 /* } */
             }
         } break;
+    }
+}
+
+local void render_combat_area_information(struct game_state* state, struct render_commands* commands, struct level_area* area) {
+    struct level_area_navigation_map* navigation_map = &area->navigation_data;
+    s32                               map_width               = navigation_map->width;
+    s32                               map_height              = navigation_map->height;
+
+    for (s32 y_cursor = 0; y_cursor < map_height; ++y_cursor) {
+        for (s32 x_cursor = 0; x_cursor < map_width; ++x_cursor) {
+            if (area->combat_movement_visibility_map[y_cursor * map_width + x_cursor]) {
+                render_commands_push_quad(commands, rectangle_f32(x_cursor * TILE_UNIT_SIZE, y_cursor * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE), color32u8(0, 0, 255, 128), BLEND_MODE_ALPHA);
+            }
+        }
     }
 }
