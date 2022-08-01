@@ -82,7 +82,7 @@ local s32 main_menu_do_menu_ui(v2f32 where, struct software_framebuffer* framebu
             painting_font = font2;
         }
 
-        draw_ui_breathing_text_centered(framebuffer, rectangle_f32(where.x, y_cursor, framebuffer->width, framebuffer->height*0.1), painting_font, NORMAL_FONT_SCALE, string_from_cstring(it->choice), index);
+        draw_ui_breathing_text_centered(framebuffer, rectangle_f32(where.x, y_cursor, framebuffer->width, framebuffer->height*0.1), painting_font, NORMAL_FONT_SCALE, string_from_cstring(it->choice), index, color32f32_WHITE);
         y_cursor += font_height * (NORMAL_FONT_SCALE + 0.2);
         index++;
     }
@@ -174,7 +174,7 @@ local void update_and_render_main_menu(struct game_state* state, struct software
 
             s32 index = 0;
             Array_For_Each(it, struct main_menu_option, main_menu_first_page_options, array_count(main_menu_first_page_options)) {
-                draw_ui_breathing_text_centered(framebuffer,  rectangle_f32(x_cursor, y_cursor, framebuffer->width, framebuffer->height*0.1), font1, NORMAL_FONT_SCALE, string_from_cstring(it->choice), index);
+                draw_ui_breathing_text_centered(framebuffer,  rectangle_f32(x_cursor, y_cursor, framebuffer->width, framebuffer->height*0.1), font1, NORMAL_FONT_SCALE, string_from_cstring(it->choice), index, color32f32_WHITE);
                 y_cursor += font_height * (NORMAL_FONT_SCALE + 0.2);
                 index++;
             }

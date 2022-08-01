@@ -55,6 +55,7 @@ image_id selection_sword_img;
 image_id chest_closed_img, chest_open_bottom_img, chest_open_top_img;
 
 /* TODO, use this */
+/* I need a way to color the border and thingy separately... For nicer looks, since white border is better with blue.*/
 struct game_ui_nine_patch ui_chunky;
 
 struct game_ui_nine_patch game_ui_nine_patch_load_from_directory(struct graphics_assets* graphics_assets, string directory, s32 tile_width, s32 tile_height) {
@@ -518,6 +519,48 @@ void game_postprocess_grayscale(struct software_framebuffer* framebuffer, f32 t)
     }
 }
 
+local void draw_ui_breathing_text_centered(struct software_framebuffer* framebuffer, struct rectangle_f32 bounds, struct font_cache* font, f32 scale, string text, s32 seed_displacement, union color32f32 modulation) {
+    f32 text_width  = font_cache_text_width(font, text, scale);
+    f32 text_height = font_cache_calculate_height_of(font, text, bounds.w, scale);
+    f32 font_height = font_cache_text_height(font) * scale;
+
+    v2f32 centered_starting_position = v2f32(0,0);
+
+    centered_starting_position.x = bounds.x + (bounds.w/2) - (text_width/2);
+    centered_starting_position.y = bounds.y + (bounds.h/2) - (text_height/2);
+
+    f32 x_cursor = centered_starting_position.x;
+    f32 y_cursor = centered_starting_position.y;
+
+    for (unsigned character_index = 0; character_index < text.length; ++character_index) {
+        f32 character_displacement_y = sinf((global_elapsed_time*2) + ((character_index+seed_displacement) * 2381.2318)) * 3;
+
+        v2f32 glyph_position = v2f32(x_cursor, y_cursor);
+        glyph_position.y += character_displacement_y;
+        glyph_position.x += font->tile_width * scale * character_index;
+
+        /* TODO: fix this later */
+        /* while (glyph_position.x > bounds.w) { */
+        /*     glyph_position.x -= bounds.w; */
+        /*     glyph_position.y += font_height; */
+        /* } */
+
+        software_framebuffer_draw_text(framebuffer, font, scale, glyph_position, string_slice(text, character_index, character_index+1), modulation, BLEND_MODE_ALPHA);
+    }
+}
+
+local void draw_ui_breathing_text(struct software_framebuffer* framebuffer, v2f32 where, struct font_cache* font, f32 scale, string text, s32 seed_displacement, union color32f32 modulation) {
+    for (unsigned character_index = 0; character_index < text.length; ++character_index) {
+        f32 character_displacement_y = sinf((global_elapsed_time*2) + ((character_index+seed_displacement) * 2381.2318)) * 3;
+
+        v2f32 glyph_position = where;
+        glyph_position.y += character_displacement_y;
+        glyph_position.x += font->tile_width * scale * character_index;
+
+        software_framebuffer_draw_text(framebuffer, font, scale, glyph_position, string_slice(text, character_index, character_index+1), modulation, BLEND_MODE_ALPHA);
+    }
+}
+
 
 void editor_initialize(struct editor_state* state);
 #include "editor.c"
@@ -847,48 +890,6 @@ local void update_and_render_sub_menu_states(struct game_state* state, struct so
     }
 }
 
-local void draw_ui_breathing_text_centered(struct software_framebuffer* framebuffer, struct rectangle_f32 bounds, struct font_cache* font, f32 scale, string text, s32 seed_displacement) {
-    f32 text_width  = font_cache_text_width(font, text, scale);
-    f32 text_height = font_cache_calculate_height_of(font, text, bounds.w, scale);
-    f32 font_height = font_cache_text_height(font) * scale;
-
-    v2f32 centered_starting_position = v2f32(0,0);
-
-    centered_starting_position.x = bounds.x + (bounds.w/2) - (text_width/2);
-    centered_starting_position.y = bounds.y + (bounds.h/2) - (text_height/2);
-
-    f32 x_cursor = centered_starting_position.x;
-    f32 y_cursor = centered_starting_position.y;
-
-    for (unsigned character_index = 0; character_index < text.length; ++character_index) {
-        f32 character_displacement_y = sinf((global_elapsed_time*2) + ((character_index+seed_displacement) * 2381.2318)) * 3;
-
-        v2f32 glyph_position = v2f32(x_cursor, y_cursor);
-        glyph_position.y += character_displacement_y;
-        glyph_position.x += font->tile_width * scale * character_index;
-
-        /* TODO: fix this later */
-        /* while (glyph_position.x > bounds.w) { */
-        /*     glyph_position.x -= bounds.w; */
-        /*     glyph_position.y += font_height; */
-        /* } */
-
-        software_framebuffer_draw_text(framebuffer, font, scale, glyph_position, string_slice(text, character_index, character_index+1), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
-    }
-}
-
-local void draw_ui_breathing_text(struct software_framebuffer* framebuffer, v2f32 where, struct font_cache* font, f32 scale, string text, s32 seed_displacement) {
-    for (unsigned character_index = 0; character_index < text.length; ++character_index) {
-        f32 character_displacement_y = sinf((global_elapsed_time*2) + ((character_index+seed_displacement) * 2381.2318)) * 3;
-
-        v2f32 glyph_position = where;
-        glyph_position.y += character_displacement_y;
-        glyph_position.x += font->tile_width * scale * character_index;
-
-        software_framebuffer_draw_text(framebuffer, font, scale, glyph_position, string_slice(text, character_index, character_index+1), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
-    }
-}
-
 local void update_and_render_pause_game_menu_ui(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
     /* needs a bit of cleanup */
     f32 font_scale = 3;
@@ -1045,7 +1046,7 @@ local void update_and_render_pause_game_menu_ui(struct game_state* state, struct
                 font = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_GOLD]);
             }
 
-            draw_ui_breathing_text(framebuffer, draw_position, font, font_scale, ui_pause_menu_strings[index], index);
+            draw_ui_breathing_text(framebuffer, draw_position, font, font_scale, ui_pause_menu_strings[index], index, color32f32_WHITE);
         }
     }
 }

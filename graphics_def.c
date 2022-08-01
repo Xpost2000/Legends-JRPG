@@ -65,6 +65,11 @@ union color32f32 {
 #define color32u8(R,G,B,A)  (union color32u8){.r  = R,.g=G,.b=B,.a=A}
 #define color32f32(R,G,B,A) (union color32f32){.r = R,.g=G,.b=B,.a=A}
 
+#define color32u8_WHITE  color32u8(255,255,255,255)
+#define color32f32_WHITE color32f32(1,1,1,1)
+#define color32f32_BLACK color32f32(0,0,0,1)
+#define color32u8_BLACK  color32f32(0,0,0,255)
+
 /* Structured to work for both ttf and raster fonts, as they are both cached here */
 /* Built as a texture atlas. Should work with hardware acceleration if I'm feeling it */
 

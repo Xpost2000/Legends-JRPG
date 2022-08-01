@@ -8,7 +8,26 @@ enum battle_ui_animation_phase {
 struct battle_ui_state {
     f32 timer;
     u32 phase;
+
+    s32 selection;
 } global_battle_ui_state;
+
+local string battle_menu_main_options[] = {
+    string_literal("MOVE"),
+    string_literal("ATTACK"),
+    string_literal("ABILITY"),
+    string_literal("ITEM"),
+    string_literal("DEFEND"),
+    string_literal("WAIT"),
+};
+local string battle_menu_main_option_descriptions[] = {
+    string_literal("pick a space to move to."),
+    string_literal("use your weapons' basic attack."),
+    string_literal("use an ability from your list."),
+    string_literal("use an item from your party inventory."),
+    string_literal("lose AP on next turn, for higher DEF."),
+    string_literal("skip turn and conserve AP."),
+};
 
 local void start_combat_ui(void) {
     global_battle_ui_state.phase = 0;
@@ -57,9 +76,30 @@ local void draw_turn_panel(struct game_state* state, struct software_framebuffer
     }
 }
 
+local void draw_battle_selection_menu(struct game_state* state, struct software_framebuffer* framebuffer, f32 x, f32 y, bool allow_input) {
+    draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, v2f32(x, y), 8, 12, color32f32(34/255.0f, 37/255.0f, 143/255.0f, 1.0));
+
+    struct font_cache* normal_font      = game_get_font(MENU_FONT_COLOR_WHITE);
+    struct font_cache* highlighted_font = game_get_font(MENU_FONT_COLOR_GOLD);
+
+    for (unsigned index = 0; index < array_count(battle_menu_main_options); ++index) {
+        struct font_cache* painting_font = normal_font;
+
+        if (index == global_battle_ui_state.selection) {
+            painting_font = highlighted_font;
+        }
+
+        draw_ui_breathing_text(framebuffer, v2f32(x + 20, y + 15 + index * 32), painting_font,
+                               2, battle_menu_main_options[index], index, color32f32_WHITE);
+    }
+}
+
 local void update_and_render_battle_ui(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
     struct font_cache*              font         = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_STEEL]);
     struct game_state_combat_state* combat_state = &state->combat_state;
+
+    /* pixels */
+    const f32 BATTLE_SELECTIONS_WIDTH = 16 * 2 * 5;
 
     switch (global_battle_ui_state.phase) {
         case BATTLE_UI_FADE_IN_DARK: {
@@ -122,6 +162,10 @@ local void update_and_render_battle_ui(struct game_state* state, struct software
                 f32 x_cursor = lerp_f32(-80, 0, t);
                 draw_turn_panel(state, framebuffer, 10 + x_cursor, 100);
             }
+            {
+                f32 x_cursor = lerp_f32(framebuffer->width + BATTLE_SELECTIONS_WIDTH, framebuffer->width - BATTLE_SELECTIONS_WIDTH + 15, t);
+                draw_battle_selection_menu(state, framebuffer, x_cursor, 100, false);
+            }
 
             if (global_battle_ui_state.timer >= max_t) {
                 global_battle_ui_state.timer = 0;
@@ -132,6 +176,7 @@ local void update_and_render_battle_ui(struct game_state* state, struct software
         } break;
         case BATTLE_UI_IDLE: {
             draw_turn_panel(state, framebuffer, 10, 100);
+            draw_battle_selection_menu(state, framebuffer, framebuffer->width - BATTLE_SELECTIONS_WIDTH + 15, 100, true);
 
             if (is_key_pressed(KEY_RETURN)) {
                 struct entity* player_entity   = entity_list_dereference_entity(&state->entities, player_id);

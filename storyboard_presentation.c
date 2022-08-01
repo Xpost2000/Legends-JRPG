@@ -44,6 +44,7 @@ local void start_storyboard(void) {
 }
 
 void open_TEST_storyboard(void) {
+#if 0
     start_storyboard();
 
     {
@@ -66,6 +67,7 @@ void open_TEST_storyboard(void) {
         n->string      = string_literal("An uneasy peace rested over the land.\n\nIt was not until fate forced a discord to mend the broken trust between kin.\n\nLet us unravel what happened.");
         n->linger_time = 2.5;
     }
+#endif
 }
 
 /* I'm a bit too lazy to fully animate this right now so I'm just going to blurt some text. We'll animate it more later */
