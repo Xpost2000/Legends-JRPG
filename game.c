@@ -239,6 +239,9 @@ entity_id entity_list_create_badguy(struct entity_list* entities, v2f32 position
     return result;
 }
 
+struct entity* game_get_player(struct game_state* state) {
+    return entity_list_dereference_entity(&state->entities, player_id);
+}
 
 #include "weather.c"
 

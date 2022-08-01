@@ -12,7 +12,17 @@ struct battle_ui_state {
     s32 selection;
 } global_battle_ui_state;
 
+enum battle_options{
+    BATTLE_LOOK,
+    BATTLE_MOVE,
+    BATTLE_ATTACK,
+    BATTLE_ABILITY,
+    BATTLE_ITEM,
+    BATTLE_DEFEND,
+    BATTLE_WAIT,
+}
 local string battle_menu_main_options[] = {
+    string_literal("LOOK"),
     string_literal("MOVE"),
     string_literal("ATTACK"),
     string_literal("ABILITY"),
@@ -21,6 +31,7 @@ local string battle_menu_main_options[] = {
     string_literal("WAIT"),
 };
 local string battle_menu_main_option_descriptions[] = {
+    string_literal("scout the battle field."),
     string_literal("pick a space to move to."),
     string_literal("use your weapons' basic attack."),
     string_literal("use an ability from your list."),
@@ -34,7 +45,7 @@ local void start_combat_ui(void) {
     global_battle_ui_state.timer = 0;
 }
 
-local bool is_player_turn(struct game_state* state) {
+local bool is_player_combat_turn(struct game_state* state) {
     struct game_state_combat_state* combat_state            = &state->combat_state;
     struct entity*                  active_combatant_entity = entity_list_dereference_entity(&state->entities, combat_state->participants[combat_state->active_combatant]);
     struct entity*                  player_entity           = entity_list_dereference_entity(&state->entities, player_id);
@@ -49,7 +60,7 @@ local void draw_turn_panel(struct game_state* state, struct software_framebuffer
     struct game_state_combat_state* combat_state = &state->combat_state;
 
     struct entity* active_combatant_entity = entity_list_dereference_entity(&state->entities, combat_state->participants[combat_state->active_combatant]);
-    bool player_turn = is_player_turn(state);
+    bool player_turn = is_player_combat_turn(state);
 
     for (s32 index = combat_state->active_combatant; index < combat_state->count; ++index) {
         union color32u8 color = color32u8(128, 128, 128, 255);
@@ -75,13 +86,22 @@ local void draw_turn_panel(struct game_state* state, struct software_framebuffer
         software_framebuffer_draw_quad(framebuffer, rectangle_f32(x, y + (index - combat_state->active_combatant) * square_size * 1.3, square_size, square_size), color, BLEND_MODE_ALPHA);
     }
 }
+#define UI_BATTLE_COLOR (color32f32(34/255.0f, 37/255.0f, 143/255.0f, 1.0))
 
-local void draw_battle_selection_menu(struct game_state* state, struct software_framebuffer* framebuffer, f32 x, f32 y, bool allow_input) {
-    draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, v2f32(x, y), 8, 12, color32f32(34/255.0f, 37/255.0f, 143/255.0f, 1.0));
+local void do_battle_selection_menu(struct game_state* state, struct software_framebuffer* framebuffer, f32 x, f32 y, bool allow_input) {
 
     struct font_cache* normal_font      = game_get_font(MENU_FONT_COLOR_WHITE);
     struct font_cache* highlighted_font = game_get_font(MENU_FONT_COLOR_GOLD);
 
+    union color32f32 modulation_color = color32f32_WHITE;
+    union color32f32 ui_color         = UI_BATTLE_COLOR;
+
+    if (!allow_input) {
+        modulation_color = color32f32(0.5, 0.5, 0.5, 0.5);   
+        ui_color.a = 0.5;
+    }
+
+    draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, v2f32(x, y), 8, 14, ui_color);
     for (unsigned index = 0; index < array_count(battle_menu_main_options); ++index) {
         struct font_cache* painting_font = normal_font;
 
@@ -90,8 +110,74 @@ local void draw_battle_selection_menu(struct game_state* state, struct software_
         }
 
         draw_ui_breathing_text(framebuffer, v2f32(x + 20, y + 15 + index * 32), painting_font,
-                               2, battle_menu_main_options[index], index, color32f32_WHITE);
+                               2, battle_menu_main_options[index], index, modulation_color);
     }
+
+    if (allow_input) {
+        s32 options_count = array_count(battle_menu_main_options);
+        if (is_key_down_with_repeat(KEY_DOWN)) {
+            global_battle_ui_state.selection++;
+
+            if (global_battle_ui_state.selection >= options_count) {
+                global_battle_ui_state.selection = 0;
+            }
+        }
+        else if (is_key_down_with_repeat(KEY_UP)) {
+            global_battle_ui_state.selection--;
+
+            if (global_battle_ui_state.selection < 0) {
+                global_battle_ui_state.selection = options_count-1;
+            }
+        }
+
+        if (is_key_pressed(KEY_RETURN)) {
+            switch (global_battle_ui_state.selection) {
+                case BATTLE_LOOK: {
+                    
+                } break;
+                case BATTLE_MOVE: {
+                    
+                } break;
+                case BATTLE_ATTACK: {
+                    
+                } break;
+                case BATTLE_ABILITY: {
+                    
+                } break;
+                case BATTLE_ITEM: {
+                    
+                } break;
+                case BATTLE_DEFEND: {
+                    
+                } break;
+                case BATTLE_WAIT: {
+                    
+                } break;
+            }
+        }
+    }
+}
+
+local void draw_battle_tooltips(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt, f32 bottom_y, bool player_turn) {
+    struct font_cache* normal_font      = game_get_font(MENU_FONT_COLOR_WHITE);
+
+    union color32f32 modulation_color = color32f32_WHITE;
+    union color32f32 ui_color         = UI_BATTLE_COLOR;
+
+    if (!player_turn) {
+        modulation_color = color32f32(0.5, 0.5, 0.5, 0.5);   
+        ui_color.a = 0.5;
+    }
+
+    draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, v2f32(15, bottom_y - (16*4)), 36, 2, ui_color);
+
+    /* do context dependent text... */
+    { /* option tooltip */
+        draw_ui_breathing_text(framebuffer, v2f32(30, bottom_y - (16*4) + 15), normal_font, 2,
+                               battle_menu_main_option_descriptions[global_battle_ui_state.selection], 0, modulation_color);
+    }
+
+    if (!player_turn) return;
 }
 
 local void update_and_render_battle_ui(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
@@ -164,7 +250,7 @@ local void update_and_render_battle_ui(struct game_state* state, struct software
             }
             {
                 f32 x_cursor = lerp_f32(framebuffer->width + BATTLE_SELECTIONS_WIDTH, framebuffer->width - BATTLE_SELECTIONS_WIDTH + 15, t);
-                draw_battle_selection_menu(state, framebuffer, x_cursor, 100, false);
+                do_battle_selection_menu(state, framebuffer, x_cursor, 100, false);
             }
 
             if (global_battle_ui_state.timer >= max_t) {
@@ -176,7 +262,10 @@ local void update_and_render_battle_ui(struct game_state* state, struct software
         } break;
         case BATTLE_UI_IDLE: {
             draw_turn_panel(state, framebuffer, 10, 100);
-            draw_battle_selection_menu(state, framebuffer, framebuffer->width - BATTLE_SELECTIONS_WIDTH + 15, 100, true);
+            bool is_player_turn = is_player_combat_turn(state);
+
+            do_battle_selection_menu(state, framebuffer, framebuffer->width - BATTLE_SELECTIONS_WIDTH + 15, 100, is_player_turn);
+            draw_battle_tooltips(state, framebuffer, dt, framebuffer->height, is_player_turn);
 
             if (is_key_pressed(KEY_RETURN)) {
                 struct entity* player_entity   = entity_list_dereference_entity(&state->entities, player_id);

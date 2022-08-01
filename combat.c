@@ -46,19 +46,22 @@ local void determine_if_combat_should_begin(struct game_state* state, struct ent
     }
 }
 
-void update_combat(struct game_state* state, f32 dt) {
+local struct entity* find_current_combatant(struct game_state* state) {
     struct game_state_combat_state* combat_state        = &state->combat_state;
-    entity_id                 active_combatant_id = combat_state->participants[combat_state->active_combatant];
-    struct entity*            combatant           = entity_list_dereference_entity(&state->entities, active_combatant_id);
+    entity_id                       active_combatant_id = combat_state->participants[combat_state->active_combatant];
+    return entity_list_dereference_entity(&state->entities, active_combatant_id);
+}
+
+void update_combat(struct game_state* state, f32 dt) {
+    struct game_state_combat_state* combat_state = &state->combat_state;
+    struct entity* combatant = find_current_combatant(state);
 
     if (combatant->waiting_on_turn) {
         entity_think_combat_actions(combatant, state, dt);
     } else {
         combat_state->active_combatant += 1;
 
-        /* TODO next round. Should notify the UI. */
         if (combat_state->active_combatant >= combat_state->count) {
-            /* or something like that anyways. */
             add_all_combat_participants(state, &state->entities);
         }
     }
