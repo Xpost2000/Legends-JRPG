@@ -119,6 +119,7 @@ struct entity_stat_block {
 };
 
 struct entity {
+    string name;
     /* These two fields should define an AABB */
     /* actual visual information is for now just handled by the rendering procedure */
     /* TODO make this centered */

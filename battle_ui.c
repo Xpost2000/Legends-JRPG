@@ -5,11 +5,28 @@ enum battle_ui_animation_phase {
     BATTLE_UI_MOVE_IN_DETAILS,
     BATTLE_UI_IDLE,
 };
+
+enum battle_ui_submodes {
+    BATTLE_UI_SUBMODE_NONE,
+    BATTLE_UI_SUBMODE_LOOKING,
+    BATTLE_UI_SUBMODE_MOVING,
+    BATTLE_UI_SUBMODE_ATTACKING,
+    BATTLE_UI_SUBMODE_USING_ABILITY,
+    BATTLE_UI_SUBMODE_USING_ITEM,
+    /* the rest are not submodes, and are just registered actions. */
+    /* NOTE action point system. There is no cancelling. */
+};
 struct battle_ui_state {
     f32 timer;
     u32 phase;
 
     s32 selection;
+
+    /* Can be animated? */
+    s32 submode;
+
+    bool remembered_original_camera_position;
+    v2f32 prelooking_mode_camera_position;
 } global_battle_ui_state;
 
 enum battle_options{
@@ -20,7 +37,7 @@ enum battle_options{
     BATTLE_ITEM,
     BATTLE_DEFEND,
     BATTLE_WAIT,
-}
+};
 local string battle_menu_main_options[] = {
     string_literal("LOOK"),
     string_literal("MOVE"),
@@ -89,71 +106,164 @@ local void draw_turn_panel(struct game_state* state, struct software_framebuffer
 #define UI_BATTLE_COLOR (color32f32(34/255.0f, 37/255.0f, 143/255.0f, 1.0))
 
 local void do_battle_selection_menu(struct game_state* state, struct software_framebuffer* framebuffer, f32 x, f32 y, bool allow_input) {
-
     struct font_cache* normal_font      = game_get_font(MENU_FONT_COLOR_WHITE);
     struct font_cache* highlighted_font = game_get_font(MENU_FONT_COLOR_GOLD);
 
-    union color32f32 modulation_color = color32f32_WHITE;
-    union color32f32 ui_color         = UI_BATTLE_COLOR;
+    if (is_key_pressed(KEY_BACKSPACE)) {
+        if (global_battle_ui_state.submode != BATTLE_UI_SUBMODE_NONE) {
+            global_battle_ui_state.submode                             = BATTLE_UI_SUBMODE_NONE;
 
-    if (!allow_input) {
-        modulation_color = color32f32(0.5, 0.5, 0.5, 0.5);   
-        ui_color.a = 0.5;
+            global_battle_ui_state.remembered_original_camera_position = false;
+            state->camera.xy                                           = global_battle_ui_state.prelooking_mode_camera_position;
+        }
     }
 
-    draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, v2f32(x, y), 8, 14, ui_color);
-    for (unsigned index = 0; index < array_count(battle_menu_main_options); ++index) {
-        struct font_cache* painting_font = normal_font;
+    switch (global_battle_ui_state.submode) {
+        case BATTLE_UI_SUBMODE_NONE: {
+            union color32f32 modulation_color = color32f32_WHITE;
+            union color32f32 ui_color         = UI_BATTLE_COLOR;
 
-        if (index == global_battle_ui_state.selection) {
-            painting_font = highlighted_font;
+            if (!allow_input) {
+                modulation_color = color32f32(0.5, 0.5, 0.5, 0.5);   
+                ui_color.a = 0.5;
+            }
+
+            draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, v2f32(x, y), 8, 14, ui_color);
+            for (unsigned index = 0; index < array_count(battle_menu_main_options); ++index) {
+                struct font_cache* painting_font = normal_font;
+
+                if (index == global_battle_ui_state.selection) {
+                    painting_font = highlighted_font;
+                }
+
+                draw_ui_breathing_text(framebuffer, v2f32(x + 20, y + 15 + index * 32), painting_font,
+                                       2, battle_menu_main_options[index], index, modulation_color);
+            }
+
+            if (allow_input) {
+                s32 options_count = array_count(battle_menu_main_options);
+                if (is_key_down_with_repeat(KEY_DOWN)) {
+                    global_battle_ui_state.selection++;
+
+                    if (global_battle_ui_state.selection >= options_count) {
+                        global_battle_ui_state.selection = 0;
+                    }
+                }
+                else if (is_key_down_with_repeat(KEY_UP)) {
+                    global_battle_ui_state.selection--;
+
+                    if (global_battle_ui_state.selection < 0) {
+                        global_battle_ui_state.selection = options_count-1;
+                    }
+                }
+
+                if (is_key_pressed(KEY_RETURN)) {
+                    switch (global_battle_ui_state.selection) {
+                        /* NOTE: No ability is expected to really reach outside of your view... Hence the need for a separate view command */
+                        case BATTLE_LOOK: {
+                            global_battle_ui_state.submode = BATTLE_UI_SUBMODE_LOOKING;
+                        } break;
+                        case BATTLE_MOVE: {
+                            global_battle_ui_state.submode = BATTLE_UI_SUBMODE_MOVING;
+                        } break;
+                        case BATTLE_ATTACK: {
+                            global_battle_ui_state.submode = BATTLE_UI_SUBMODE_ATTACKING;
+                        } break;
+                        case BATTLE_ABILITY: {
+                            /* global_battle_ui_state.submode = BATTLE_UI_SUBMODE_USING_ABILITY; */
+                            _debugprintf("TODO: using abilities!");
+                        } break;
+                        case BATTLE_ITEM: {
+                            /* global_battle_ui_state.submode = BATTLE_UI_SUBMODE_USING_ITEM; */
+                            _debugprintf("TODO: using items!");
+                        } break;
+                        case BATTLE_DEFEND: {
+                            _debugprintf("TODO: using defending!");
+                        } break;
+                        case BATTLE_WAIT: {
+                            _debugprintf("TODO: using waiting!");
+                        } break;
+                    }
+                }
+            }
+        } break;
+
+        case BATTLE_UI_SUBMODE_LOOKING: {
+            /**/
+            {
+                if (!global_battle_ui_state.remembered_original_camera_position) {
+                    global_battle_ui_state.remembered_original_camera_position = true;
+                    global_battle_ui_state.prelooking_mode_camera_position     = state->camera.xy;
+                } 
+
+                /* mode should allow some basic analysis of opponents. */
+                /* NOTE: (I want this to darken everything except for the selected entities...) */
+                /* this is going to cause lots of hackery */
+                f32 cursor_square_size = 4;
+                software_framebuffer_draw_quad(framebuffer, rectangle_f32(framebuffer->width/2-cursor_square_size/2, framebuffer->height/2-cursor_square_size/2, cursor_square_size, cursor_square_size), color32u8_WHITE, BLEND_MODE_NONE);
+            }
+        } break;
+    }
+}
+
+local void update_game_camera_combat(struct game_state* state, f32 dt) {
+    if (global_battle_ui_state.submode == BATTLE_UI_SUBMODE_LOOKING) {
+        const f32 CAMERA_VELOCITY = 150;
+
+        if (is_key_down(KEY_W)) {
+            state->camera.xy.y -= CAMERA_VELOCITY * dt;
+        } else if (is_key_down(KEY_S)) {
+            state->camera.xy.y += CAMERA_VELOCITY * dt;
         }
 
-        draw_ui_breathing_text(framebuffer, v2f32(x + 20, y + 15 + index * 32), painting_font,
-                               2, battle_menu_main_options[index], index, modulation_color);
+        if (is_key_down(KEY_A)) {
+            state->camera.xy.x -= CAMERA_VELOCITY * dt;
+        } else if (is_key_down(KEY_D)) {
+            state->camera.xy.x += CAMERA_VELOCITY * dt;
+        }
+    }
+}
+
+local string analyze_entity_and_display_tooltip(struct memory_arena* arena, v2f32 cursor_at, struct game_state* state) {
+    struct entity* target_entity_to_analyze = 0;
+
+    struct rectangle_f32 cursor_rect = rectangle_f32(cursor_at.x, cursor_at.y, 8, 8);
+
+    for (s32 index = 0; index < state->entities.capacity && target_entity_to_analyze == 0; ++index) {
+        struct entity* current_entity = state->entities.entities + index;
+
+        if (current_entity->flags & ENTITY_FLAGS_ACTIVE) {
+            struct rectangle_f32 entity_rectangle = entity_rectangle_collision_bounds(current_entity);
+
+            if (rectangle_f32_intersect(entity_rectangle, cursor_rect)) {
+                target_entity_to_analyze = current_entity;
+            }
+        }
     }
 
-    if (allow_input) {
-        s32 options_count = array_count(battle_menu_main_options);
-        if (is_key_down_with_repeat(KEY_DOWN)) {
-            global_battle_ui_state.selection++;
+    if (!target_entity_to_analyze) {
+        return string_null;
+    }
 
-            if (global_battle_ui_state.selection >= options_count) {
-                global_battle_ui_state.selection = 0;
-            }
-        }
-        else if (is_key_down_with_repeat(KEY_UP)) {
-            global_battle_ui_state.selection--;
+    if (!(target_entity_to_analyze->flags & ENTITY_FLAGS_ALIVE)) {
+        char* r = format_temp("%.*s : is dead.", target_entity_to_analyze->name.length, target_entity_to_analyze->name.data);
+        return string_from_cstring(r);
+    }
+    else {
+        if (target_entity_to_analyze == game_get_player(state)) {
+            return string_literal("This is you.");
+        } else {
+            char* r = format_temp("%.*s : HP : %d, %d/%d/%d/%d/%d/%d XP: %d",
+                                  target_entity_to_analyze->name.length, target_entity_to_analyze->name.data,
+                                  target_entity_to_analyze->stat_block.vigor,
+                                  target_entity_to_analyze->stat_block.strength,
+                                  target_entity_to_analyze->stat_block.agility,
+                                  target_entity_to_analyze->stat_block.speed,
+                                  target_entity_to_analyze->stat_block.intelligence,
+                                  target_entity_to_analyze->stat_block.luck,
+                                  target_entity_to_analyze->stat_block.xp_value);
 
-            if (global_battle_ui_state.selection < 0) {
-                global_battle_ui_state.selection = options_count-1;
-            }
-        }
-
-        if (is_key_pressed(KEY_RETURN)) {
-            switch (global_battle_ui_state.selection) {
-                case BATTLE_LOOK: {
-                    
-                } break;
-                case BATTLE_MOVE: {
-                    
-                } break;
-                case BATTLE_ATTACK: {
-                    
-                } break;
-                case BATTLE_ABILITY: {
-                    
-                } break;
-                case BATTLE_ITEM: {
-                    
-                } break;
-                case BATTLE_DEFEND: {
-                    
-                } break;
-                case BATTLE_WAIT: {
-                    
-                } break;
-            }
+            return string_from_cstring(r);
         }
     }
 }
@@ -169,12 +279,23 @@ local void draw_battle_tooltips(struct game_state* state, struct software_frameb
         ui_color.a = 0.5;
     }
 
-    draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, v2f32(15, bottom_y - (16*4)), 36, 2, ui_color);
+    string tip = {};
 
     /* do context dependent text... */
-    { /* option tooltip */
-        draw_ui_breathing_text(framebuffer, v2f32(30, bottom_y - (16*4) + 15), normal_font, 2,
-                               battle_menu_main_option_descriptions[global_battle_ui_state.selection], 0, modulation_color);
+    switch (global_battle_ui_state.submode) {
+        case BATTLE_UI_SUBMODE_LOOKING: {
+            tip = analyze_entity_and_display_tooltip(&scratch_arena,
+                                                     v2f32(framebuffer->width/2 - 4, framebuffer->height/2 - 4),
+                                                     state);
+        } break;
+        case BATTLE_UI_SUBMODE_NONE: {
+            tip = battle_menu_main_option_descriptions[global_battle_ui_state.selection];
+        } break;
+    }
+
+    if (tip.length) {
+        draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, v2f32(15, bottom_y - (16*4)), 36, 2, ui_color);
+        draw_ui_breathing_text(framebuffer, v2f32(30, bottom_y - (16*4) + 15), normal_font, 2, tip, 0, modulation_color);
     }
 
     if (!player_turn) return;
@@ -267,9 +388,11 @@ local void update_and_render_battle_ui(struct game_state* state, struct software
             do_battle_selection_menu(state, framebuffer, framebuffer->width - BATTLE_SELECTIONS_WIDTH + 15, 100, is_player_turn);
             draw_battle_tooltips(state, framebuffer, dt, framebuffer->height, is_player_turn);
 
-            if (is_key_pressed(KEY_RETURN)) {
-                struct entity* player_entity   = entity_list_dereference_entity(&state->entities, player_id);
-                player_entity->waiting_on_turn = false;
+            if (global_battle_ui_state.submode == BATTLE_UI_SUBMODE_NONE) {
+                /* if (is_key_pressed(KEY_RETURN)) { */
+                /*     struct entity* player_entity   = entity_list_dereference_entity(&state->entities, player_id); */
+                /*     player_entity->waiting_on_turn = false; */
+                /* } */
             }
         } break;
     }

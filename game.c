@@ -221,6 +221,8 @@ entity_id entity_list_create_player(struct entity_list* entities, v2f32 position
     player->scale.x = TILE_UNIT_SIZE*0.8;
     player->scale.y = TILE_UNIT_SIZE*0.8;
 
+    player->name    = string_literal("Calamir");
+
     return result;
 }
 entity_id entity_list_create_badguy(struct entity_list* entities, v2f32 position) {
@@ -235,6 +237,7 @@ entity_id entity_list_create_badguy(struct entity_list* entities, v2f32 position
     e->health.min = 100;
     e->health.max = 100;
     e->ai.flags = ENTITY_AI_FLAGS_AGGRESSIVE_TO_PLAYER;
+    e->name    = string_literal("Ruffian");
 
     return result;
 }
@@ -1087,22 +1090,8 @@ local void recalculate_camera_shifting_bounds(struct software_framebuffer* frame
     }
 }
 
-local void update_game_camera(struct game_state* state, f32 dt) {
+local void update_game_camera_exploration_mode(struct game_state* state, f32 dt) {
     struct camera* camera = &state->camera;
-    struct entity* player = entity_list_dereference_entity(&state->entities, player_id);
-    camera->centered    = true;
-    camera->zoom        = 1;
-    camera->tracking_xy = player->position;
-
-    /* TODO hard coded sprite sizes */
-    {
-        static bool camera_init = false;
-        if (!camera_init) {
-            camera->xy.x = camera->tracking_xy.x + 16;
-            camera->xy.y = camera->tracking_xy.y + 32;
-            camera_init  = true;
-        }
-    }
 
     const f32 lerp_x_speed = 3;
     const f32 lerp_y_speed = 3;
@@ -1110,6 +1099,8 @@ local void update_game_camera(struct game_state* state, f32 dt) {
     const f32 lerp_component_speeds[3] = {
         2.45, 2.8, 1.5
     };
+
+    struct entity* player = entity_list_dereference_entity(&state->entities, player_id);
 
     {
         /* kind of like a project on everythign */
@@ -1140,19 +1131,45 @@ local void update_game_camera(struct game_state* state, f32 dt) {
                 camera->start_interpolation_values[1] = camera->xy.y;
             }
         }
+    }
 
-        for (unsigned component_index = 0; component_index < 3; ++component_index) {
-            if (camera->try_interpolation[component_index]) {
-                if (camera->interpolation_t[component_index] < 1.0) {
-                    camera->components[component_index] = quadratic_ease_in_f32(camera->start_interpolation_values[component_index],
-                                                                                camera->tracking_components[component_index],
-                                                                                camera->interpolation_t[component_index]);
-                    camera->interpolation_t[component_index] += dt * lerp_component_speeds[component_index];
-                } else {
-                    camera->try_interpolation[component_index] = false;
-                }
+    for (unsigned component_index = 0; component_index < 3; ++component_index) {
+        if (camera->try_interpolation[component_index]) {
+            if (camera->interpolation_t[component_index] < 1.0) {
+                camera->components[component_index] = quadratic_ease_in_f32(camera->start_interpolation_values[component_index],
+                                                                            camera->tracking_components[component_index],
+                                                                            camera->interpolation_t[component_index]);
+                camera->interpolation_t[component_index] += dt * lerp_component_speeds[component_index];
+            } else {
+                camera->try_interpolation[component_index] = false;
             }
         }
+    }
+}
+
+local void update_game_camera(struct game_state* state, f32 dt) {
+    struct camera* camera = &state->camera;
+
+    struct entity* player = entity_list_dereference_entity(&state->entities, player_id);
+    camera->centered    = true;
+    camera->zoom        = 1;
+
+    camera->tracking_xy = player->position;
+
+    /* TODO hard coded sprite sizes */
+    {
+        static bool camera_init = false;
+        if (!camera_init) {
+            camera->xy.x = camera->tracking_xy.x + 16;
+            camera->xy.y = camera->tracking_xy.y + 32;
+            camera_init  = true;
+        }
+    }
+
+    if (game_state->combat_state.active_combat) {
+        update_game_camera_combat(state, dt);
+    } else {
+        update_game_camera_exploration_mode(state, dt);
     }
 }
 
