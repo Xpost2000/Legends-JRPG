@@ -117,6 +117,7 @@ struct entity_ai_data {
 
     bool                          following_path;
     struct entity_navigation_path navigation_path;
+    s32                           current_path_point_index;
 
     s32                             tracked_attacker_write_cursor;
     struct entity_ai_attack_tracker tracked_attackers[MAXIMUM_REMEMBERED_ATTACKERS];

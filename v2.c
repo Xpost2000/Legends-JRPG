@@ -49,3 +49,9 @@ f32 v2f32_magnitude(v2f32 v) {
 v2f32 v2f32_floor(v2f32 a) {
     return v2f32(floorf(a.x), floorf(a.y));
 }
+
+v2f32 v2f32_normalize(v2f32 a) {
+    f32 magnitude = v2f32_magnitude(a);
+
+    return v2f32(a.x / magnitude, a.y / magnitude);
+}

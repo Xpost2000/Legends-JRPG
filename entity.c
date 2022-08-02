@@ -74,6 +74,8 @@ struct entity* entity_list_dereference_entity(struct entity_list* entities, enti
 /* requires tilemap world... */
 /* TODO fix implicit decls, linker hasn't killed game yet */
 void player_handle_radial_interactables(struct game_state* state, struct entity_list* entities, s32 entity_index, f32 dt);
+#define DEFAULT_VELOCITY (100)
+
 void entity_handle_player_controlled(struct game_state* state, struct entity_list* entities, s32 entity_index, f32 dt) {
     struct entity* entity = entities->entities + entity_index;
 
@@ -105,10 +107,11 @@ void entity_handle_player_controlled(struct game_state* state, struct entity_lis
     entity->velocity.x = 0;
     entity->velocity.y = 0;
 
-    if (move_up)    entity->velocity.y  = -100;
-    if (move_down)  entity->velocity.y  = 100;
-    if (move_left)  entity->velocity.x  = -100;
-    if (move_right) entity->velocity.x  = 100;
+    /* NOTE: should be normalized. This isn't right */
+    if (move_up)    entity->velocity.y  = -DEFAULT_VELOCITY;
+    if (move_down)  entity->velocity.y  = DEFAULT_VELOCITY;
+    if (move_left)  entity->velocity.x  = -DEFAULT_VELOCITY;
+    if (move_right) entity->velocity.x  = DEFAULT_VELOCITY;
 
     player_handle_radial_interactables(state, entities, entity_index, dt);
 }
@@ -124,6 +127,7 @@ void entity_list_update_entities(struct game_state* state, struct entity_list* e
         }
 
         if (!(current_entity->flags & ENTITY_FLAGS_NOCLIP)) {
+            _debugprintf("cx: %f, %f\n", current_entity->velocity.x, current_entity->velocity.y);
             /* tile intersection */
             {
                 current_entity->position.x += current_entity->velocity.x * dt;
@@ -420,11 +424,34 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
 
     switch (target_entity->ai.current_action) {
         case ENTITY_ACTION_NONE: {
-            
+            target_entity->velocity.x        = 0;
+            target_entity->velocity.y        = 0;
+            target_entity->ai.following_path = false;
         } break;
 
         case ENTITY_ACTION_MOVEMENT: {
-            
+            if (target_entity->ai.current_path_point_index >= target_entity->ai.navigation_path.count) {
+                _debugprintf("done with movement");
+                target_entity->ai.current_action = 0;
+                target_entity->ai.following_path = false;
+            } else {
+                v2f32 point              = target_entity->ai.navigation_path.path_points[target_entity->ai.current_path_point_index];
+                v2f32 tile_position      = target_entity->position;
+
+                tile_position.x /= TILE_UNIT_SIZE;
+                tile_position.y /= TILE_UNIT_SIZE;
+
+                v2f32 direction_to_point = v2f32_normalize(v2f32_sub(point, tile_position)); 
+
+                direction_to_point.x *= DEFAULT_VELOCITY;
+                direction_to_point.y *= DEFAULT_VELOCITY;
+
+                target_entity->velocity = direction_to_point;
+
+                if (v2f32_distance_sq(point, tile_position) <= sq_f32(0.25)) {
+                    target_entity->ai.current_path_point_index++;
+                }
+            }
         } break;
 
         case ENTITY_ACTION_ATTACK: {

@@ -69,6 +69,10 @@ static inline f32 normalized_cosf(f32 t) {
     return (cosf(t)+1)/2.0;
 }
 
+static inline f32 sq_f32(f32 x) {
+    return x*x;
+}
+
 static inline u32 hash_bytes_fnv1a(u8* bytes, size_t length) {
     u32 offset_basis = 2166136261;
     u32 prime        = 16777619;
