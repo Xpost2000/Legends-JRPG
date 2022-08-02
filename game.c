@@ -329,18 +329,21 @@ local void level_area_build_movement_visibility_map(struct memory_arena* arena, 
 
     f32 radius_sq = radius*radius;
 
-    for (s32 y_cursor = 0; y_cursor < map_height; ++y_cursor) {
-        for (s32 x_cursor = 0; x_cursor < map_width; ++x_cursor) {
+    for (s32 y_cursor = navigation_map->min_y; y_cursor < navigation_map->max_y; ++y_cursor) {
+        for (s32 x_cursor = navigation_map->min_x; x_cursor < navigation_map->max_x; ++x_cursor) {
             f32 distance = v2f32_distance_sq(v2f32(x_cursor, y_cursor), v2f32(x, y));
 
             if (distance <= radius_sq) {
-                struct tile*                 t               = level_area_find_tile(level, x_cursor, y_cursor);
-                struct tile_data_definition* tile_data_entry = &tile_table_data[t->id];
+                struct tile* t = level_area_find_tile(level, x_cursor, y_cursor);
 
-                if (tile_data_entry->flags & TILE_DATA_FLAGS_SOLID)
-                    continue;
+                if (t) {
+                    struct tile_data_definition* tile_data_entry = &tile_table_data[t->id];
 
-                level->combat_movement_visibility_map[y_cursor * map_width + x_cursor] = 1;
+                    if (tile_data_entry->flags & TILE_DATA_FLAGS_SOLID)
+                        continue;
+
+                    level->combat_movement_visibility_map[(y_cursor - navigation_map->min_y) * map_width + (x_cursor - navigation_map->min_x)] = 1;
+                }
             }
         }
     }

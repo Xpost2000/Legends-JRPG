@@ -434,7 +434,15 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
                 _debugprintf("done with movement");
                 target_entity->ai.current_action = 0;
                 target_entity->ai.following_path = false;
+
+            done_path:
+                target_entity->position.x = target_entity->ai.navigation_path.path_points[target_entity->ai.navigation_path.count-1].x * TILE_UNIT_SIZE;
+                target_entity->position.y = target_entity->ai.navigation_path.path_points[target_entity->ai.navigation_path.count-1].y * TILE_UNIT_SIZE;
             } else {
+                #if 1
+                /* I need to fix the path following later. It's a bit more tinkering and I don't want to waste my time on this. */
+                goto done_path;
+                #else
                 v2f32 point              = target_entity->ai.navigation_path.path_points[target_entity->ai.current_path_point_index];
                 v2f32 tile_position      = target_entity->position;
 
@@ -456,6 +464,7 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
                 if (v2f32_distance(point, tile_position) <= (0.10)) {
                     target_entity->ai.current_path_point_index++;
                 }
+                #endif
             }
         } break;
 
