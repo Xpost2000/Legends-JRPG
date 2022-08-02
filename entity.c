@@ -113,6 +113,7 @@ void entity_handle_player_controlled(struct game_state* state, struct entity_lis
     player_handle_radial_interactables(state, entities, entity_index, dt);
 }
 
+local void entity_update_and_perform_actions(struct game_state* state, struct entity_list* entities, s32 index, struct level_area* area, f32 dt);
 void entity_list_update_entities(struct game_state* state, struct entity_list* entities, f32 dt, struct level_area* area) {
 /* void entity_list_update_entities(struct entity_list* entities, f32 dt, s32* tilemap, s32 w, s32 h) { */
     for (s32 index = 0; index < entities->capacity; ++index) {
@@ -120,10 +121,6 @@ void entity_list_update_entities(struct game_state* state, struct entity_list* e
 
         if (!(current_entity->flags & ENTITY_FLAGS_ACTIVE)) {
             continue;
-        }
-
-        if (current_entity->flags & ENTITY_FLAGS_PLAYER_CONTROLLED) {
-            entity_handle_player_controlled(state, entities, index, dt);
         }
 
         if (!(current_entity->flags & ENTITY_FLAGS_NOCLIP)) {
@@ -263,6 +260,17 @@ void entity_list_update_entities(struct game_state* state, struct entity_list* e
                 }
             }
 
+
+            /* any existing actions or action queues will ALWAYS override manual control */
+            if (current_entity->ai.current_action) {
+                entity_update_and_perform_actions(state, entities, index, area, dt);
+            } else {
+                /* controller actions, for AI brains. */
+                if (current_entity->flags & ENTITY_FLAGS_PLAYER_CONTROLLED) {
+                    entity_handle_player_controlled(state, entities, index, dt);
+                }
+            }
+
             /* handle trigger interactions */
             /* NPCs should not be able to leave areas for now */
             handle_entity_level_trigger_interactions(state, current_entity, area->trigger_level_transition_count, area->trigger_level_transitions, dt);
@@ -381,4 +389,46 @@ void entity_inventory_use_item(struct entity_inventory* inventory, s32 item_inde
 
     /* or region? */
     item_apply_to_entity(item_base, target);
+}
+
+local void entity_copy_path_array_into_navigation_data(struct entity* entity, v2f32* path_points, s32 path_count) {
+    s32 minimum_count = 0;
+
+    if (path_count < array_count(entity->ai.navigation_path.path_points)) {
+        minimum_count = path_count;
+    } else {
+        array_count(entity->ai.navigation_path.path_points);
+    }
+
+    entity->ai.navigation_path.count = minimum_count;
+    for (s32 index = 0; index < minimum_count; ++index) {
+        entity->ai.navigation_path.path_points[index] = path_points[index];
+    }
+}
+
+void entity_combat_submit_movement_action(struct entity* entity, v2f32* path_points, s32 path_count) {
+    if (entity->ai.current_action != ENTITY_ACTION_NONE)
+        return;
+    
+    entity_copy_path_array_into_navigation_data(entity, path_points, path_count);
+    entity->ai.following_path = true;
+    entity->ai.current_action  = ENTITY_ACTION_MOVEMENT;
+}
+
+local void entity_update_and_perform_actions(struct game_state* state, struct entity_list* entities, s32 index, struct level_area* area, f32 dt) {
+    struct entity* target_entity = entities->entities + index;
+
+    switch (target_entity->ai.current_action) {
+        case ENTITY_ACTION_NONE: {
+            
+        } break;
+
+        case ENTITY_ACTION_MOVEMENT: {
+            
+        } break;
+
+        case ENTITY_ACTION_ATTACK: {
+            
+        } break;
+    }
 }

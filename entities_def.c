@@ -81,8 +81,11 @@ struct entity_chest {
     item_id                       key_item;
 };
 struct entity_navigation_path {
+    /* NOTE I am trying to design the game so that this is not needed... Implement this later if needed. */
+#if 0
     v2f32 end_point; /* so we can refetch the path if need be. */
     s32   full_path_count;
+#endif
     s32   count;
     /* paths are supposed to be based on tile coordinates anyways... */
     /* although hopefully we aren't using this up... */
@@ -94,8 +97,24 @@ struct entity_ai_attack_tracker {
     u16       times;
 };
 #define MAXIMUM_REMEMBERED_ATTACKERS (32)
+
+enum entity_combat_action {
+    ENTITY_ACTION_NONE,
+    ENTITY_ACTION_MOVEMENT,
+    ENTITY_ACTION_ATTACK,
+};
+
 struct entity_ai_data {
+    /*
+      NOTE()
+      
+      This should not actually be combat actions... However I'm not using
+      it for anything else right now.
+    */
+    s32                           current_action;
+
     u32                           flags;
+
     bool                          following_path;
     struct entity_navigation_path navigation_path;
 
@@ -145,6 +164,11 @@ struct entity {
 };
 
 void entity_inventory_use_item(struct entity_inventory* inventory, s32 item_index, struct entity* target);
+
+void entity_combat_submit_movement_action(struct entity* entity, v2f32* path_points, s32 path_count);
+#if 0
+void entity_combat_submit_item_use_action(struct entity* entity, s32 item_index, struct entity* target);
+#endif
 
 struct entity_list {
     s32*           generation_count;

@@ -76,8 +76,13 @@ local bool is_player_combat_turn(struct game_state* state) {
     struct entity*                  active_combatant_entity = entity_list_dereference_entity(&state->entities, combat_state->participants[combat_state->active_combatant]);
     struct entity*                  player_entity           = entity_list_dereference_entity(&state->entities, player_id);
 
-    if (player_entity == active_combatant_entity)
-        return true;
+    if (player_entity == active_combatant_entity) {
+        /* check if player entity can do anything */
+        if (player_entity->ai.current_action == 0)
+            return true;
+
+        return false;
+    }
 
     return false;
 }
@@ -281,6 +286,15 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                     global_battle_ui_state.max_remembered_path_points[index] = new_path.points[index];
                 }
             }
+
+            /* would like to do action points but not right now. */
+
+            if (is_key_pressed(KEY_RETURN)) {
+                /* submit movement */
+                struct entity* active_combatant_entity = entity_list_dereference_entity(&state->entities, combat_state->participants[combat_state->active_combatant]);
+                entity_combat_submit_movement_action(active_combatant_entity, global_battle_ui_state.max_remembered_path_points, global_battle_ui_state.max_remembered_path_points_count);
+            }
+            
         } break;
 
         case BATTLE_UI_SUBMODE_LOOKING: {
@@ -484,10 +498,6 @@ local void update_and_render_battle_ui(struct game_state* state, struct software
             draw_battle_tooltips(state, framebuffer, dt, framebuffer->height, is_player_turn);
 
             if (global_battle_ui_state.submode == BATTLE_UI_SUBMODE_NONE) {
-                /* if (is_key_pressed(KEY_RETURN)) { */
-                /*     struct entity* player_entity   = entity_list_dereference_entity(&state->entities, player_id); */
-                /*     player_entity->waiting_on_turn = false; */
-                /* } */
             }
         } break;
     }
