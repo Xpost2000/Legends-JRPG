@@ -135,7 +135,6 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
             }
 
             global_battle_ui_state.max_remembered_path_points_count = 0;
-
             level_area_clear_movement_visibility_map(&state->loaded_area);
             _debugprintf("restore to previous menu state");
         }
@@ -293,6 +292,23 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                 global_battle_ui_state.max_remembered_path_points_count = 0;
                 global_battle_ui_state.submode = BATTLE_UI_SUBMODE_NONE;
                 level_area_clear_movement_visibility_map(&state->loaded_area);
+                /* register camera lerp */
+                /* NOTE: the camera is in a weird intermediary position
+                 during this action, however when waiting for the path to finish,
+                 there is no issue. Right now we're doing instant teleport. Either way I should wait for the camera to finish...
+                */
+                {
+                    struct camera* camera = &state->camera;
+                    camera->interpolation_t[0] = 0;
+                    camera->try_interpolation[0] = true;
+                    camera->start_interpolation_values[0] = camera->xy.x;
+
+                    camera->interpolation_t[1] = 0;
+                    camera->try_interpolation[1] = true;
+                    camera->start_interpolation_values[1] = camera->xy.y;
+
+                    camera->tracking_xy = active_combatant_entity->position;
+                }
             }
             
         } break;

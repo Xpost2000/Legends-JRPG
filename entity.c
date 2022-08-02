@@ -431,11 +431,11 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
 
         case ENTITY_ACTION_MOVEMENT: {
             if (target_entity->ai.current_path_point_index >= target_entity->ai.navigation_path.count) {
+            done_path:
                 _debugprintf("done with movement");
                 target_entity->ai.current_action = 0;
                 target_entity->ai.following_path = false;
 
-            done_path:
                 target_entity->position.x = target_entity->ai.navigation_path.path_points[target_entity->ai.navigation_path.count-1].x * TILE_UNIT_SIZE;
                 target_entity->position.y = target_entity->ai.navigation_path.path_points[target_entity->ai.navigation_path.count-1].y * TILE_UNIT_SIZE;
             } else {
