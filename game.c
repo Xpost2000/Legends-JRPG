@@ -365,6 +365,7 @@ struct navigation_path navigation_path_find(struct memory_arena* arena, struct l
 
 
     /* we can only path find between two points that exist on our map. If you're out of bounds AI will not work (for obvious reasons...) */
+    /* _debugprintf("finding path from <%d, %d> to <%d, %d>", (s32)start.x, (s32)start.y, (s32)end.x, (s32)end.y); */
     if (level_area_navigation_map_is_point_in_bounds(navigation_map, start) &&
         level_area_navigation_map_is_point_in_bounds(navigation_map, end)) {
         s32                               map_width               = navigation_map->width;
@@ -396,7 +397,7 @@ struct navigation_path navigation_path_find(struct memory_arena* arena, struct l
 
             /* add neighbors */
             /* might have to make four neighbors. We can configure it anyhow */
-            _debugprintf("try to find neighbors");
+            /* _debugprintf("try to find neighbors"); */
             for (s32 y_cursor = -1; y_cursor <= 1; ++y_cursor) {
                 for (s32 x_cursor = -1; x_cursor <= 1; ++x_cursor) {
                     v2f32 proposed_point  = current_point;
@@ -417,7 +418,7 @@ struct navigation_path navigation_path_find(struct memory_arena* arena, struct l
                                 /* _debugprintf("refused, already visited") ; */
                             }
                         } else {
-                            /* _debugprintf("refused, solid!") */
+                            /* _debugprintf("refused, solid!"); */
                         }
                     } else {
                         /* _debugprintf("refused... Not in bounds"); */
@@ -462,6 +463,8 @@ struct navigation_path navigation_path_find(struct memory_arena* arena, struct l
             }
         }
 
+    } else {
+        _debugprintf("there's a point that's outside the map... Can't nav!");
     }
 
     return results;

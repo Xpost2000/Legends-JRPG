@@ -27,6 +27,15 @@ struct battle_ui_state {
 
     bool remembered_original_camera_position;
     v2f32 prelooking_mode_camera_position;
+
+    s32 movement_start_x;
+    s32 movement_start_y;
+    s32 movement_end_x;
+    s32 movement_end_y;
+
+    /* wasteful? Maybe. Easy? Yes. */
+    s32   max_remembered_path_points_count;
+    v2f32 max_remembered_path_points[256];
 } global_battle_ui_state;
 
 enum battle_options{
@@ -45,7 +54,7 @@ local string battle_menu_main_options[] = {
     string_literal("ABILITY"),
     string_literal("ITEM"),
     string_literal("DEFEND"),
-    string_literal("WAIT"),
+    string_literal("END TURN"),
 };
 local string battle_menu_main_option_descriptions[] = {
     string_literal("scout the battle field."),
@@ -53,8 +62,8 @@ local string battle_menu_main_option_descriptions[] = {
     string_literal("use your weapons' basic attack."),
     string_literal("use an ability from your list."),
     string_literal("use an item from your party inventory."),
-    string_literal("lose AP on next turn, for higher DEF."),
-    string_literal("skip turn and conserve AP."),
+    string_literal("finish turn, lose AP on next turn for higher DEF."),
+    string_literal("finish turn, conserving AP."),
 };
 
 local void start_combat_ui(void) {
@@ -120,6 +129,8 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                 state->camera.xy                                           = global_battle_ui_state.prelooking_mode_camera_position;
             }
 
+            global_battle_ui_state.max_remembered_path_points_count = 0;
+
             level_area_clear_movement_visibility_map(&state->loaded_area);
             _debugprintf("restore to previous menu state");
         }
@@ -174,10 +185,16 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                             global_battle_ui_state.submode = BATTLE_UI_SUBMODE_MOVING;
                             
                             struct entity* active_combatant_entity = entity_list_dereference_entity(&state->entities, combat_state->participants[combat_state->active_combatant]);
-                            level_area_build_movement_visibility_map(&scratch_arena, &state->loaded_area, active_combatant_entity->position.x / TILE_UNIT_SIZE, active_combatant_entity->position.y / TILE_UNIT_SIZE, 4);
+                            level_area_build_movement_visibility_map(&scratch_arena, &state->loaded_area, active_combatant_entity->position.x / TILE_UNIT_SIZE, active_combatant_entity->position.y / TILE_UNIT_SIZE, 6);
+
+                            global_battle_ui_state.movement_start_x = active_combatant_entity->position.x / TILE_UNIT_SIZE;
+                            global_battle_ui_state.movement_start_y = active_combatant_entity->position.y / TILE_UNIT_SIZE;
+                            global_battle_ui_state.movement_end_x   = active_combatant_entity->position.x / TILE_UNIT_SIZE;
+                            global_battle_ui_state.movement_end_y   = active_combatant_entity->position.y / TILE_UNIT_SIZE;
                         } break;
                         case BATTLE_ATTACK: {
                             global_battle_ui_state.submode = BATTLE_UI_SUBMODE_ATTACKING;
+
                         } break;
                         case BATTLE_ABILITY: {
                             /* global_battle_ui_state.submode = BATTLE_UI_SUBMODE_USING_ABILITY; */
@@ -198,6 +215,74 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
             }
         } break;
 
+        case BATTLE_UI_SUBMODE_MOVING: {
+            struct level_area* area = &state->loaded_area;
+
+            s32 proposed_y = global_battle_ui_state.movement_end_y;
+            s32 proposed_x = global_battle_ui_state.movement_end_x;
+
+            bool should_find_new_path = false;
+
+            {
+                if (is_key_pressed(KEY_W)) {
+                    _debugprintf("nani?");
+                    proposed_y--;
+                } else if (is_key_pressed(KEY_S)) {
+                    _debugprintf("nani?");
+                    proposed_y++;
+                }
+
+                if (area->combat_movement_visibility_map[proposed_y * area->navigation_data.width + proposed_x]) {
+                    if (proposed_y != global_battle_ui_state.movement_end_y) {
+                        _debugprintf("okay, new y is fine");
+                        should_find_new_path = true;
+                    }
+
+                    global_battle_ui_state.movement_end_y = proposed_y;
+                }
+            }
+
+            {
+                if (is_key_pressed(KEY_A)) {
+                    _debugprintf("nani?");
+                    proposed_x--;
+                } else if (is_key_pressed(KEY_D)) {
+                    _debugprintf("nani?");
+                    proposed_x++;
+                }
+
+                if (area->combat_movement_visibility_map[proposed_y * area->navigation_data.width + proposed_x]) {
+                    if (proposed_x != global_battle_ui_state.movement_end_x) {
+                        _debugprintf("okay, new x is fine");
+                        should_find_new_path = true;
+                    }
+
+                    global_battle_ui_state.movement_end_x = proposed_x;
+                }
+            }
+
+            if (should_find_new_path) {
+                struct navigation_path new_path = navigation_path_find(&scratch_arena, area,
+                                                                       v2f32(global_battle_ui_state.movement_start_x, global_battle_ui_state.movement_start_y),
+                                                                       v2f32(global_battle_ui_state.movement_end_x, global_battle_ui_state.movement_end_y));
+                s32 minimum_count = 0;
+
+                if (new_path.count < array_count(global_battle_ui_state.max_remembered_path_points)) {
+                    minimum_count = new_path.count;
+                } else {
+                    minimum_count = array_count(global_battle_ui_state.max_remembered_path_points);
+                }
+
+                _debugprintf("%d path count", new_path.count);
+
+                global_battle_ui_state.max_remembered_path_points_count = minimum_count;
+
+                for (s32 index = 0; index < minimum_count; ++index) {
+                    global_battle_ui_state.max_remembered_path_points[index] = new_path.points[index];
+                }
+            }
+        } break;
+
         case BATTLE_UI_SUBMODE_LOOKING: {
             /**/
             {
@@ -212,11 +297,6 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                 f32 cursor_square_size = 4;
                 software_framebuffer_draw_quad(framebuffer, rectangle_f32(framebuffer->width/2-cursor_square_size/2, framebuffer->height/2-cursor_square_size/2, cursor_square_size, cursor_square_size), color32u8_WHITE, BLEND_MODE_NONE);
             }
-        } break;
-
-            /* allow picking a square */
-        case BATTLE_UI_SUBMODE_MOVING: {
-            _debugprintf("TODO finish!");
         } break;
     }
 }
@@ -423,6 +503,18 @@ local void render_combat_area_information(struct game_state* state, struct rende
             if (area->combat_movement_visibility_map[y_cursor * map_width + x_cursor]) {
                 render_commands_push_quad(commands, rectangle_f32(x_cursor * TILE_UNIT_SIZE, y_cursor * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE), color32u8(0, 0, 255, 128), BLEND_MODE_ALPHA);
             }
+        }
+    }
+
+    if (global_battle_ui_state.submode == BATTLE_UI_SUBMODE_MOVING) {
+        render_commands_push_quad(commands, rectangle_f32(global_battle_ui_state.movement_end_x * TILE_UNIT_SIZE, global_battle_ui_state.movement_end_y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE), color32u8(255, 0, 0, 128), BLEND_MODE_ALPHA);
+    }
+
+    /* draw nav path */
+    {
+        for (s32 index = 0; index < global_battle_ui_state.max_remembered_path_points_count; ++index) {
+            v2f32 point = global_battle_ui_state.max_remembered_path_points[index];
+            render_commands_push_quad(commands, rectangle_f32(point.x * TILE_UNIT_SIZE, point.y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE), color32u8(255, 0, 255, 128), BLEND_MODE_ALPHA);
         }
     }
 }

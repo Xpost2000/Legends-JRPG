@@ -81,10 +81,12 @@ struct entity_chest {
     item_id                       key_item;
 };
 struct entity_navigation_path {
+    v2f32 end_point; /* so we can refetch the path if need be. */
     s32   full_path_count;
     s32   count;
     /* paths are supposed to be based on tile coordinates anyways... */
-    v2f32 path_points[16];
+    /* although hopefully we aren't using this up... */
+    v2f32 path_points[64];
 };
 
 struct entity_ai_attack_tracker {

@@ -29,10 +29,12 @@ void memory_arena_finish(struct memory_arena* arena) {
 }
 
 void memory_arena_clear_top(struct memory_arena* arena) {
+    zero_memory(arena->memory+arena->capacity - arena->used_top, arena->used_top);
     arena->used_top = 0;
 }
 
 void memory_arena_clear_bottom(struct memory_arena* arena) {
+    zero_memory(arena->memory, arena->used);
     arena->used = 0;
 }
 
