@@ -559,15 +559,59 @@ local void load_area_script(struct memory_arena* arena, struct level_area* area,
 
     if (file_exists(script_name)) {
         script_data->buffer = read_entire_file(heap_allocator(), script_name);
-        struct lisp_list code_as_forms = lisp_read_string_into_forms(arena, file_buffer_as_string(&script_data->buffer));
-        struct lisp_form s = {};
-        s.type = LISP_FORM_LIST;
-        s.list = code_as_forms;
-        _debugprintf("LOAD AREA SCRIPT CODE?");
-        fprintf(stderr, "\n");
-        _debug_print_out_lisp_code(&s);
-        fprintf(stderr, "\n");
-        _debugprintf("END?");
+        script_data->code_forms        = lisp_read_string_into_forms(arena, file_buffer_as_string(&script_data->buffer));
+
+        /* search for on_enter, on_frame, on_exit */
+        {
+            for (s32 index = 0;
+                 index < script_data->code_forms &&
+                     ((!script_data->on_enter) ||
+                      (!script_data->on_frame) ||
+                      (!script_data->on_exit));
+                 ++index) {
+                struct lisp_form* form = script_data->code_forms.forms + index;
+
+                if (lisp_form_as_function_list_check_fn_name(form, string_literal("on-enter"))) {
+                    if (script_data->on_enter) {
+                        _debugprintf("already assigned event on-enter!");
+                    } else {
+                        script_data->on_enter = form;
+                    }
+                } else if (lisp_form_as_function_list_check_fn_name(form, string_literal("on-frame"))) {
+                    if (script_data->on_frame) {
+                        _debugprintf("already assigned event on-frame");
+                    } else {
+                        script_data->on_frame = form;
+                    }
+                } else if (lisp_form_as_function_list_check_fn_name(form, string_literal("on-ext"))) {
+                    if (script_data->on_exit) {
+                        _debugprintf("already assigned event on-exit");
+                    } else {
+                        script_data->on_exit = form;
+                    }
+                }
+            }
+        }
+        /* count the event listeners and handle them */
+        /* TODO: handle event listeners */
+        {
+            s32 event_listener_type_counters[LEVEL_AREA_LISTEN_EVENT_COUNT] = {};
+
+            for (s32 index = 0; index < script_data->code_forms; ++index) {
+                struct lisp_form* form = script_data->code_forms.forms + index;
+
+                for (s32 name_index = 0; name_index < LEVEL_AREA_LISTEN_EVENT_COUNT; ++name_index) {
+                    if (lisp_form_as_function_list_check_fn_name(form, level_area_listen_event_form_names[name_index])) {
+                        event_listener_type_counters[name_index] += 1;
+                    }
+                }
+            }
+
+            for (s32 event_listener_type = 0; event_listener_type < LEVEL_AREA_LISTEN_EVENT_COUNT; ++event_listener_type) {
+                script_data->listeners[event_listener_type] =
+                    memory_arena_push(arena, sizeof(*script_data->listeners) * event_listener_type_counters[event_listener_type]);
+            }
+        }
     } else {
         _debugprintf("NOTE: %.*s does not exist! No script for this level.", script_name.length, script_name.data);
     }

@@ -52,6 +52,8 @@ local string level_area_listen_event_form_names[] = {
 struct level_area_script_data {
     bool present;
     struct file_buffer buffer;
+    struct lisp_list   code_forms;
+
     struct lisp_form*  on_enter;
     struct lisp_form*  on_frame;
     struct lisp_form*  on_exit;

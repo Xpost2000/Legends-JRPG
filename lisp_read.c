@@ -678,3 +678,30 @@ struct lisp_list lisp_read_string_into_forms(struct memory_arena* arena, string 
 
     return result;
 }
+
+struct lisp_form* lisp_list_nth(struct lisp_form* f, s32 index) {
+    if (f->type != LISP_FORM_LIST) {
+        return NULL;
+    }
+
+    if (index < 0) {
+        index = (f->list.count + index);
+    }
+
+    if (f->list.count < index) {
+        return NULL;
+    }
+
+    return f->list.forms + index;
+}
+
+/* oddly specific manipulation functions, but I kind of need these */
+bool lisp_form_as_function_list_check_fn_name(struct lisp_form* f, string name) {
+    struct lisp_form* first = lisp_list_nth(f, 0);
+
+    if (first) {
+        return lisp_form_symbol_matching(*first, name);
+    }
+
+    return false;
+}
