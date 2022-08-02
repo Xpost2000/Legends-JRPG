@@ -1,2 +1,2 @@
-# (on-enter (print "Hello this is on enter! " (+ 3 4)))
+(on-enter (print "Hello this is on enter! " (+ 3 4)))
 (on-enter (sad))

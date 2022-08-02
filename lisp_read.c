@@ -531,7 +531,7 @@ struct lisp_form lisp_read_list(struct memory_arena* arena, string code) {
     {
         struct lexer_token first_token = lexer_peek_token(&lexer_state);
 
-        if (lexer_token_is_null(first_token)) {
+        if (lexer_token_is_null(first_token) || first_token.type == TOKEN_TYPE_NONE) {
             result.type   = LISP_FORM_NIL;
             result.string = string_literal("nil");
         } else {
@@ -569,15 +569,17 @@ struct lisp_form lisp_read_list(struct memory_arena* arena, string code) {
                 if (token.type == TOKEN_TYPE_SINGLE_QUOTE) {
                     previous_was_quote = true;
                 } else {
-                    /* _debug_print_token(token); */
-                    (*current_form) = lisp_read_form(arena, token.str); 
+                    if (token.type != TOKEN_TYPE_NONE) {
+                        _debug_print_token(token);
+                        (*current_form) = lisp_read_form(arena, token.str); 
 
-                    if (previous_was_quote) {
-                        current_form->quoted = true;
-                        previous_was_quote   = false;
+                        if (previous_was_quote) {
+                            current_form->quoted = true;
+                            previous_was_quote   = false;
+                        }
+
+                        current_child_index++;
                     }
-
-                    current_child_index++;
                 }
             }
         }
@@ -595,7 +597,7 @@ struct lisp_form lisp_read_form(struct memory_arena* arena, string code) {
 
     if (first_token.type == TOKEN_TYPE_LIST) {
         string inner_list_string = string_slice(first_token.str, 1, first_token.str.length-1);
-        _debugprintf("Inner code \"%.*s\"", inner_list_string.length, inner_list_string.data);
+        /* _debugprintf("Inner code \"%.*s\"", inner_list_string.length, inner_list_string.data); */
         result                   = lisp_read_list(arena, inner_list_string);
     } else {
         /* read form */
