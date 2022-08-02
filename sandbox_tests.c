@@ -19,7 +19,7 @@ static bool sandbox_testing(void) {
 #endif
     _debugprintf("sandbox end");
 
-    return true;
+    return false;
 }
 
 /* I don't remember if the game has been initiated yet LOL */

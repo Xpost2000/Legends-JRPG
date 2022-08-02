@@ -1,6 +1,13 @@
 /* TODO Need to clean up  */
 
 /*
+  Level testing behavior may no longer work, as they may now require dependence on a script file,
+  which bares their name.
+  
+  I can modify it slightly I guess...
+*/
+
+/*
   NOTE:
 
   Doesn't technically account for a different screen resolution.

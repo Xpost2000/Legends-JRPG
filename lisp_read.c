@@ -443,6 +443,63 @@ static void _debug_print_out_lisp_code(struct lisp_form* code) {
     }
 }
 
+/* NOTE: strings are escaped */
+static void lisp_form_output(struct lisp_form* code) {
+    switch (code->type) {
+        case LISP_FORM_LIST: {
+            printf("( ");
+
+            struct lisp_list* list_contents = &code->list;
+            for (unsigned index = 0; index < list_contents->count; ++index) {
+                lisp_form_output(&list_contents->forms[index]);
+                printf(" ");
+            }
+
+            printf(" )");
+        } break;
+        case LISP_FORM_NUMBER: {
+            if (code->is_real) {
+                printf("%f", code->real);
+            } else {
+                printf("%d", code->integer);
+            }
+        } break;
+        case LISP_FORM_STRING: {
+            s32 index = 0;
+
+            while (index < code->string.length) {
+                switch (code->string.data[index]) {
+                    case '\\': {
+                        index++;
+                        char escape = code->string.data[index++];
+
+                        switch (escape) {
+                            case 'n': {
+                                putc('\n', stdout);
+                            } break;
+                            case 't': {
+                                putc('\t', stdout);
+                            } break;
+                            case '\"': {
+                                putc('\n', stdout);
+                            } break;
+                        }
+                    } break;
+                    default: {
+                        putc(code->string.data[index], stdout);
+                        index++;
+                    } break;
+                }
+            }
+        } break;
+        case LISP_FORM_T:
+        case LISP_FORM_NIL:
+        case LISP_FORM_SYMBOL: {
+            printf("%.*s", code->string.length, code->string.data);
+        } break;
+    }
+}
+
 /* you can use this to try and read a top level I guess... (reads multiple forms I guess) */
 struct lisp_form lisp_read_form(struct memory_arena* arena, string code);
 struct lisp_form lisp_read_list(struct memory_arena* arena, string code);

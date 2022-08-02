@@ -9,6 +9,9 @@ So instead of using the kinda serious JRPG story I wanted to do, we're just goin
 a small game about freeing a village from Orcs. It'll be like maybe an hour or two of play or something,
 mostly as an engine demo.
 
+** Fix the steering behavior for the pathfinder.
+** Also add a game start up script.
+** Add level scripts!
 ** Do we need a world map?
    Probably...
 ** Draw some new sprites for actors and animals

@@ -275,6 +275,19 @@ bool handle_builtin_game_script_functions(struct memory_arena* arena, struct gam
 
         return true;
     }
+
+    {
+        if (lisp_form_symbol_matching(first_form, string_literal("print"))) {
+            for (s32 index = 1; index < form->list.count; ++index) {
+                lisp_form_output(form->list.forms+index);
+                printf(" ");
+            }
+            printf("\n");
+
+            *result = LISP_nil;
+            return true;
+        }
+    }
     /* hopefully a list */
     return false;
 }
