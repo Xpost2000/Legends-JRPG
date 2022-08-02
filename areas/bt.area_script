@@ -1,3 +1,8 @@
+# parenthesis appear to break the parser.
+# TODO fix!
 (on-enter
     (game_start_rain)
-    (game_set_environment_colors 'midnight))
+    (game_set_environment_colors 'midnight)
+    (game_message_queue "Let's fight!")
+    (game_message_queue "Ordering should work...")
+    (game_message_queue "Welcome to some test messages"))

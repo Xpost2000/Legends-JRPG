@@ -64,6 +64,17 @@ GAME_LISP_FUNCTION(GAME_SET_ENVIRONMENT_COLORS) {
 
     return LISP_nil;
 }
+GAME_LISP_FUNCTION(GAME_MESSAGE_QUEUE) {
+    if (argument_count == 1) {
+        struct lisp_form* argument = &arguments[0];
+
+        if (argument->type == LISP_FORM_STRING) {
+            game_message_queue(argument->string);
+        }
+    }
+
+    return LISP_nil;
+}
 
 #undef GAME_LISP_FUNCTION
 
@@ -75,6 +86,7 @@ static struct game_script_function_builtin script_function_table[] = {
     GAME_LISP_FUNCTION(GAME_START_RAIN),
     GAME_LISP_FUNCTION(GAME_STOP_RAIN),
     GAME_LISP_FUNCTION(GAME_SET_ENVIRONMENT_COLORS),
+    GAME_LISP_FUNCTION(GAME_MESSAGE_QUEUE),
 };
 
 local game_script_function lookup_script_function(string name) {

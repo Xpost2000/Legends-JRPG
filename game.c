@@ -900,6 +900,9 @@ local void game_loot_chest(struct game_state* state, struct entity_chest* chest)
     }
 }
 
+/* TODO: Add more advanced type of messages, or specific tutorial prompts.
+   (Popups with titles, and images and fun stuff)
+*/
 void game_message_queue(string message) {
     assertion(global_popup_state.message_count < array_count(global_popup_state.messages));
     struct ui_popup_message_box* current_message = &global_popup_state.messages[global_popup_state.message_count++];
