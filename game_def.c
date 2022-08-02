@@ -479,6 +479,8 @@ struct game_state {
     /* name is saved here so we can hash it's name later... */
     char              loaded_area_name[260];
     struct level_area loaded_area;
+    bool   level_area_on_enter_triggered;
+
     struct random_state rng;
     struct camera camera;
 

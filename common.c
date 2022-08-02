@@ -33,8 +33,10 @@
 #define Terabyte(x)                 (uint64_t)(x * 1024LL * 1024LL * 1024LL * 1024LL)
 
 #ifndef RELEASE
-#define _debugprintf(fmt, args...)   fprintf(stderr, "[%s:%d:%s()]: " fmt "\n", __FILE__, __LINE__, __func__, ##args)
-#define _debugprintf1(fmt, args...)  fprintf(stderr,  fmt, ##args)
+/* #define _debugprintf(fmt, args...)   fprintf(stderr, "[%s:%d:%s()]: " fmt "\n", __FILE__, __LINE__, __func__, ##args) */
+/* #define _debugprintf1(fmt, args...)  fprintf(stderr,  fmt, ##args) */
+#define _debugprintf(fmt, args...)  
+#define _debugprintf1(fmt, args...)
 #else
 #define _debugprintf(fmt, args...)  
 #define _debugprintf1(fmt, args...)

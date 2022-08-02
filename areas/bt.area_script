@@ -1,6 +1,5 @@
 # AREA: BT : Battle Test
 # obligatory battle testing map.
 (on-enter
-        (print "Hello this is on enter! " (+ 3 4)))
-(on-frame
-        (print "hi kelly"))
+(print "hi" 23)
+        )

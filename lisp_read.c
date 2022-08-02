@@ -505,7 +505,7 @@ static void lisp_form_output(struct lisp_form* code) {
         case LISP_FORM_T:
         case LISP_FORM_NIL:
         case LISP_FORM_SYMBOL: {
-            printf("%.*s", code->string.length, code->string.data);
+            printf("[symbol]%.*s", code->string.length, code->string.data);
         } break;
     }
 }

@@ -655,6 +655,8 @@ void load_level_from_file(struct game_state* state, string filename) {
     level_area_clean_up(&state->loaded_area);
     memory_arena_clear_top(state->arena);
 
+    state->level_area_on_enter_triggered = false;
+
     string fullpath = string_concatenate(&scratch_arena, string_literal("areas/"), filename);
     struct binary_serializer serializer = open_read_file_serializer(fullpath);
     serialize_level_area(state, &serializer, &state->loaded_area, true);
@@ -853,6 +855,7 @@ void game_initialize_game_world(void) {
 }
 
 void game_deinitialize(void) {
+    level_area_clean_up(&game_state->loaded_area);
     game_finish_conversation(game_state);
     finish_save_data();
     memory_arena_finish(&scratch_arena);
@@ -1429,6 +1432,31 @@ void player_handle_radial_interactables(struct game_state* state, struct entity_
 #include "combat.c"
 #include "game_main_menu.c"
 
+local void execute_current_area_scripts(struct game_state* state, f32 dt) {
+    /* _debugprintf("START EXECUTING AREA SCRIPTS"); */
+    struct level_area_script_data* script_data = &state->loaded_area.script;
+
+    struct lisp_form* on_frame_script    = script_data->on_frame;
+
+    if (!state->level_area_on_enter_triggered) {
+        state->level_area_on_enter_triggered = true;
+        struct lisp_form* on_enter_script    = script_data->on_enter;
+
+        if (on_enter_script) {
+            _debugprintf("Executing on-enter script (%d forms)", on_enter_script->list.count);
+            for (s32 index = 1; index < on_enter_script->list.count; ++index) {
+                struct lisp_form* current_form = lisp_list_nth(on_enter_script, index);
+                /* TODO: use dt */
+                game_script_evaluate_form(&scratch_arena, state, current_form);
+            }
+        }
+    }
+
+    /* onframe is going to hurt but I'm not kidding about this. */
+    /* I could invoke multiple every-n-seconds blocks? */
+    /* _debugprintf("END EXECUTING AREA SCRIPTS"); */
+}
+
 void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
     if (is_key_pressed(KEY_F12)) {
         image_buffer_write_to_disk((struct image_buffer*)framebuffer, string_literal("scr"));
@@ -1448,6 +1476,8 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
 
                 commands.should_clear_buffer = true;
                 commands.clear_buffer_color  = color32u8(0, 0, 0, 255);
+
+                execute_current_area_scripts(game_state, dt);
 
                 render_area(game_state, &commands, &game_state->loaded_area);
                 if (game_state->ui_state != UI_STATE_PAUSE) {

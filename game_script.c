@@ -16,10 +16,12 @@ GAME_LISP_FUNCTION(DLG_NEXT) {
     return LISP_nil;
 }
 GAME_LISP_FUNCTION(GAME_START_RAIN) {
+    _debugprintf("game_start_rain script");
     weather_start_rain(state);
     return LISP_nil;
 }
 GAME_LISP_FUNCTION(GAME_STOP_RAIN) {
+    _debugprintf("game_stop_rain script");
     weather_stop_rain(state);
     return LISP_nil;
 }
@@ -115,6 +117,7 @@ struct lisp_form game_script_set_dictionary_value(struct lisp_form name, struct 
 struct lisp_form game_script_evaluate_form(struct memory_arena* arena, struct game_state* state, struct lisp_form* form);
 bool handle_builtin_game_script_functions(struct memory_arena* arena, struct game_state* state, struct lisp_form* to_evaluate, struct lisp_form* result);
 
+/* Why is this separate? Must've been smoking something. Undo this later. */
 bool handle_builtin_game_script_functions(struct memory_arena* arena, struct game_state* state, struct lisp_form* form, struct lisp_form* result) {
     /* math */
     struct lisp_form first_form = form->list.forms[0];
@@ -123,7 +126,10 @@ bool handle_builtin_game_script_functions(struct memory_arena* arena, struct gam
         f32 real_accumulator    = 0;
         bool should_be_real = false;
 
+        bool is_mathematical_operator = false;
+
         if (lisp_form_symbol_matching(first_form, string_literal("+"))) {
+            is_mathematical_operator = true;
             for (s32 index = 1; index < form->list.count; ++index) {
                 struct lisp_form* child = form->list.forms + index;
                 struct lisp_form child_evaled = game_script_evaluate_form(arena, state, child);
@@ -144,6 +150,7 @@ bool handle_builtin_game_script_functions(struct memory_arena* arena, struct gam
                 }
             }
         } else if (lisp_form_symbol_matching(first_form, string_literal("-"))) {
+            is_mathematical_operator = true;
             for (s32 index = 1; index < form->list.count; ++index) {
                 struct lisp_form* child = form->list.forms + index;
                 struct lisp_form child_evaled = game_script_evaluate_form(arena, state, child);
@@ -184,6 +191,7 @@ bool handle_builtin_game_script_functions(struct memory_arena* arena, struct gam
                 }
             }
         } else if (lisp_form_symbol_matching(first_form, string_literal("/"))) {
+            is_mathematical_operator = true;
             for (s32 index = 1; index < form->list.count; ++index) {
                 struct lisp_form* child = form->list.forms + index;
                 struct lisp_form child_evaled = game_script_evaluate_form(arena, state, child);
@@ -207,9 +215,11 @@ bool handle_builtin_game_script_functions(struct memory_arena* arena, struct gam
 
         if (should_be_real) {
             *result = lisp_form_real(real_accumulator);
-            return true;
         } else {
             *result = lisp_form_integer(integer_accumulator);
+        }
+
+        if (is_mathematical_operator) {
             return true;
         }
     }
@@ -217,6 +227,7 @@ bool handle_builtin_game_script_functions(struct memory_arena* arena, struct gam
     /* I don't need this to be ultra robust, I'll leave it as undefined behavior if you're not using boolean evaluable conditions */
     {
         bool evaled_boolean_result = false;
+        bool is_boolean_operator   = false;
 
         if (lisp_form_symbol_matching(first_form, string_literal("and"))) {
             evaled_boolean_result = true;
@@ -231,6 +242,7 @@ bool handle_builtin_game_script_functions(struct memory_arena* arena, struct gam
                     evaled_boolean_result = false;
                 }
             }
+            is_boolean_operator = true;
         } else if (lisp_form_symbol_matching(first_form, string_literal("or"))) {
             evaled_boolean_result = false;
             for (s32 index = 1; index < form->list.count && !evaled_boolean_result; ++index) {
@@ -244,6 +256,7 @@ bool handle_builtin_game_script_functions(struct memory_arena* arena, struct gam
                     continue;
                 }
             }
+            is_boolean_operator = true;
         } else if (lisp_form_symbol_matching(first_form, string_literal("equal"))) {
             /* allow checking lots of equals */
             if (form->list.count >= 2) {
@@ -265,6 +278,7 @@ bool handle_builtin_game_script_functions(struct memory_arena* arena, struct gam
             } else {
                 return false;
             }
+            is_boolean_operator = true;
         }
 
         if (evaled_boolean_result) {
@@ -273,13 +287,15 @@ bool handle_builtin_game_script_functions(struct memory_arena* arena, struct gam
             *result = LISP_nil;
         }
 
-        return true;
+        if (is_boolean_operator) return true;
     }
 
     {
         if (lisp_form_symbol_matching(first_form, string_literal("print"))) {
+            printf("printing: %d forms\n", form->list.count - 1);
             for (s32 index = 1; index < form->list.count; ++index) {
-                lisp_form_output(form->list.forms+index);
+                struct lisp_form child_evaled = game_script_evaluate_form(arena, state, form->list.forms+index);
+                lisp_form_output(&child_evaled);
                 printf(" ");
             }
             printf("\n");
@@ -293,8 +309,10 @@ bool handle_builtin_game_script_functions(struct memory_arena* arena, struct gam
 }
 
 struct lisp_form game_script_evaluate_form(struct memory_arena* arena, struct game_state* state, struct lisp_form* form) {
+    _debugprintf("begin");
     if (form) {
         if (form->quoted) {
+            _debugprintf("quoted eval");
             return (*form);
         }
 
@@ -319,12 +337,13 @@ struct lisp_form game_script_evaluate_form(struct memory_arena* arena, struct ga
                 */
 
                 if (!handle_builtin_game_script_functions(arena, state, form, &result)) {
+                    _debugprintf("calling from function table");
                     game_script_function function = lookup_script_function(form->list.forms[0].string);
 
                     if (function) {
                         struct lisp_form* evaluated_params = memory_arena_push(arena, form->list.count-1 * sizeof(*form->list.forms));
 
-                        for (s32 index = 0; index < form->list.forms.count-1; ++index) {
+                        for (s32 index = 0; index < form->list.count-1; ++index) {
                             evaluated_params[index] = game_script_evaluate_form(arena, state, form->list.forms + index);
                         }
 
@@ -332,11 +351,14 @@ struct lisp_form game_script_evaluate_form(struct memory_arena* arena, struct ga
                     } else {
                         _debugprintf("(no function called \"%.*s\")", form->list.forms[0].string.length, form->list.forms[0].string.data);
                     }
+                } else {
+                    _debugprintf("built in handled");
                 }
 
                 return result;
             }
         } else {
+            _debugprintf("self evaluating");
             if (form->type == LISP_FORM_SYMBOL) {
                 /* look up in the game variable list */
                 return game_script_look_up_dictionary_value(*form);
@@ -345,8 +367,10 @@ struct lisp_form game_script_evaluate_form(struct memory_arena* arena, struct ga
             }
         }
     } else {
+        _debugprintf("no form?");
         return LISP_nil;
     }
 
+    _debugprintf("end");
     return LISP_nil;
 }
