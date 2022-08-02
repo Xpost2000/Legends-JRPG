@@ -65,8 +65,10 @@ static void _debug_print_token(struct lexer_token token) {
 
 
 bool lexer_done(struct lexer* lexer) {
-    if (lexer->current_read_index <= lexer->buffer.length) {
-        return false;
+    if (lexer->buffer.data && lexer->buffer.length) {
+        if (lexer->current_read_index <= lexer->buffer.length) {
+            return false;
+        }
     }
 
     return true;
@@ -203,7 +205,7 @@ struct lexer_token lexer_try_to_eat_identifier_symbol_or_number(struct lexer* le
     }
 
     if (result.str.length == 0) {
-        _debugprintf("empty token");
+        /* _debugprintf("empty token"); */
         return NULL_TOKEN;
     }
     return result;
@@ -446,7 +448,7 @@ static void _debug_print_out_lisp_code(struct lisp_form* code) {
             _debugprintf1("%.*s(%s)", code->string.length, code->string.data, flavor_text);
         } break;
         default: {
-            _debugprintf("%.*s", lisp_form_type_strings[code->type].length, lisp_form_type_strings[code->type].data);
+            _debugprintf1("%.*s", lisp_form_type_strings[code->type].length, lisp_form_type_strings[code->type].data);
         } break;
     }
 }
@@ -567,7 +569,7 @@ struct lisp_form lisp_read_list(struct memory_arena* arena, string code) {
                 if (token.type == TOKEN_TYPE_SINGLE_QUOTE) {
                     previous_was_quote = true;
                 } else {
-                    _debug_print_token(token);
+                    /* _debug_print_token(token); */
                     (*current_form) = lisp_read_form(arena, token.str); 
 
                     if (previous_was_quote) {
@@ -647,9 +649,10 @@ struct lisp_form lisp_read_form(struct memory_arena* arena, string code) {
 
 struct lisp_list lisp_read_string_into_forms(struct memory_arena* arena, string code_string) {
     struct lisp_list result = {};
+    s32 forms_read = 0;
+
     {
         struct lexer lexer_state = { .buffer = code_string };
-        s32 forms_read = 0;
         {
             struct lexer_token token = {};
             while (token = lexer_next_token(&lexer_state), token.type != TOKEN_TYPE_NONE) {
@@ -662,10 +665,12 @@ struct lisp_list lisp_read_string_into_forms(struct memory_arena* arena, string 
 
     {
         struct lexer lexer_state = { .buffer = code_string };
-        struct lexer_token token = {};
-        while (token = lexer_next_token(&lexer_state), token.type != TOKEN_TYPE_NONE) {
+        for (s32 index = 0; index < forms_read; ++index) {
+            struct lexer_token token = lexer_next_token(&lexer_state);
             _debugprintf("%.*s", token.str.length, token.str.data);
-            /* lisp_read_form(arena, token.str); */
+            struct lisp_form read_form = lisp_read_form(arena, token.str);
+            lisp_form_output(&read_form);
+            result.forms[result.count++] = read_form;
         }
     }
 

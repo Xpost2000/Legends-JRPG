@@ -1,11 +1,2 @@
-(on-enter
-        (print "Hello this is on enter! " (+ 3 4))
-)
-
-(on-frame
- (print "Hello this is on frame! " (+ 3 4))
-)
-
-# I don't think this trigger is actually needed
-#(on-combat-start
-#)
+# (on-enter (print "Hello this is on enter! " (+ 3 4)))
+(on-enter (sad))

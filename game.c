@@ -560,6 +560,14 @@ local void load_area_script(struct memory_arena* arena, struct level_area* area,
     if (file_exists(script_name)) {
         script_data->buffer = read_entire_file(heap_allocator(), script_name);
         struct lisp_list code_as_forms = lisp_read_string_into_forms(arena, file_buffer_as_string(&script_data->buffer));
+        struct lisp_form s = {};
+        s.type = LISP_FORM_LIST;
+        s.list = code_as_forms;
+        _debugprintf("LOAD AREA SCRIPT CODE?");
+        fprintf(stderr, "\n");
+        _debug_print_out_lisp_code(&s);
+        fprintf(stderr, "\n");
+        _debugprintf("END?");
     } else {
         _debugprintf("NOTE: %.*s does not exist! No script for this level.", script_name.length, script_name.data);
     }
