@@ -199,7 +199,6 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                         } break;
                         case BATTLE_ATTACK: {
                             global_battle_ui_state.submode = BATTLE_UI_SUBMODE_ATTACKING;
-
                         } break;
                         case BATTLE_ABILITY: {
                             /* global_battle_ui_state.submode = BATTLE_UI_SUBMODE_USING_ABILITY; */
@@ -278,8 +277,6 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                     minimum_count = array_count(global_battle_ui_state.max_remembered_path_points);
                 }
 
-                _debugprintf("%d path count", new_path.count);
-
                 global_battle_ui_state.max_remembered_path_points_count = minimum_count;
 
                 for (s32 index = 0; index < minimum_count; ++index) {
@@ -293,6 +290,8 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                 /* submit movement */
                 struct entity* active_combatant_entity = entity_list_dereference_entity(&state->entities, combat_state->participants[combat_state->active_combatant]);
                 entity_combat_submit_movement_action(active_combatant_entity, global_battle_ui_state.max_remembered_path_points, global_battle_ui_state.max_remembered_path_points_count);
+                global_battle_ui_state.max_remembered_path_points_count = 0;
+                global_battle_ui_state.submode = BATTLE_UI_SUBMODE_NONE;
             }
             
         } break;

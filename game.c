@@ -398,11 +398,25 @@ struct navigation_path navigation_path_find(struct memory_arena* arena, struct l
             /* add neighbors */
             /* might have to make four neighbors. We can configure it anyhow */
             /* _debugprintf("try to find neighbors"); */
-            for (s32 y_cursor = -1; y_cursor <= 1; ++y_cursor) {
-                for (s32 x_cursor = -1; x_cursor <= 1; ++x_cursor) {
+            {
+                local struct {
+                    s32 x;
+                    s32 y;
+                }  neighbor_offsets[] = {
+                    [0] = {1, 0},
+                    [1] = {0, 1},
+                    [2] = {-1, 0},
+                    [3] = {0, -1},
+                    [4] = {1, 1},
+                    [5] = {-1, 1},
+                    [6] = {1, -1},
+                    [7] = {-1, -1},
+                };
+
+                for (s32 index = 0; index < array_count(neighbor_offsets); ++index) {
                     v2f32 proposed_point  = current_point;
-                    proposed_point.x     += x_cursor;
-                    proposed_point.y     += y_cursor;
+                    proposed_point.x     += neighbor_offsets[index].x;
+                    proposed_point.y     += neighbor_offsets[index].y;
 
                     /* _debugprintf("neighbor <%d, %d> (origin as: <%d, %d>) (%d, %d offset) proposed", (s32)proposed_point.x, (s32)proposed_point.y, (s32)current_point.x, (s32)current_point.y, x_cursor, y_cursor); */
                     if (level_area_navigation_map_is_point_in_bounds(navigation_map, proposed_point)) {
@@ -423,8 +437,36 @@ struct navigation_path navigation_path_find(struct memory_arena* arena, struct l
                     } else {
                         /* _debugprintf("refused... Not in bounds"); */
                     }
+
                 }
             }
+            /* for (s32 y_cursor = -1; y_cursor <= 1; ++y_cursor) { */
+            /*     for (s32 x_cursor = -1; x_cursor <= 1; ++x_cursor) { */
+            /*         v2f32 proposed_point  = current_point; */
+            /*         proposed_point.x     += x_cursor; */
+            /*         proposed_point.y     += y_cursor; */
+
+            /*         /\* _debugprintf("neighbor <%d, %d> (origin as: <%d, %d>) (%d, %d offset) proposed", (s32)proposed_point.x, (s32)proposed_point.y, (s32)current_point.x, (s32)current_point.y, x_cursor, y_cursor); *\/ */
+            /*         if (level_area_navigation_map_is_point_in_bounds(navigation_map, proposed_point)) { */
+            /*             struct level_area_navigation_map_tile* tile = &navigation_map->tiles[((s32)proposed_point.y - navigation_map->min_y) * map_width + ((s32)proposed_point.x - navigation_map->min_x)]; */
+
+            /*             if (tile->type == 0) { */
+            /*                 if (!(explored_points[((s32)proposed_point.y - navigation_map->min_y) * map_width + ((s32)proposed_point.x - navigation_map->min_x)])) { */
+            /*                     origin_paths     [((s32)proposed_point.y - navigation_map->min_y) * map_width + ((s32)proposed_point.x - navigation_map->min_x)] = current_point; */
+            /*                     explored_points  [((s32)proposed_point.y - navigation_map->min_y) * map_width + ((s32)proposed_point.x - navigation_map->min_x)] = true; */
+            /*                     exploration_queue[exploration_queue_end++]                                                                                       = proposed_point; */
+            /*                     /\* _debugprintf("neighbor <%d, %d> (origin as: <%d, %d>) (%d, %d offset) is okay to add", (s32)proposed_point.x, (s32)proposed_point.y, (s32)current_point.x, (s32)current_point.y, x_cursor, y_cursor); *\/ */
+            /*                 } else { */
+            /*                     /\* _debugprintf("refused, already visited") ; *\/ */
+            /*                 } */
+            /*             } else { */
+            /*                 /\* _debugprintf("refused, solid!"); *\/ */
+            /*             } */
+            /*         } else { */
+            /*             /\* _debugprintf("refused... Not in bounds"); *\/ */
+            /*         } */
+            /*     } */
+            /* } */
 
             if (current_point.x == end.x && current_point.y == end.y) {
                 found_end = true;

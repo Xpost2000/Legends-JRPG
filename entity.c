@@ -127,7 +127,7 @@ void entity_list_update_entities(struct game_state* state, struct entity_list* e
         }
 
         if (!(current_entity->flags & ENTITY_FLAGS_NOCLIP)) {
-            _debugprintf("cx: %f, %f\n", current_entity->velocity.x, current_entity->velocity.y);
+            /* _debugprintf("cx: %f, %f\n", current_entity->velocity.x, current_entity->velocity.y); */
             /* tile intersection */
             {
                 current_entity->position.x += current_entity->velocity.x * dt;
@@ -266,9 +266,9 @@ void entity_list_update_entities(struct game_state* state, struct entity_list* e
 
 
             /* any existing actions or action queues will ALWAYS override manual control */
-            if (current_entity->ai.current_action) {
-                entity_update_and_perform_actions(state, entities, index, area, dt);
-            } else {
+            entity_update_and_perform_actions(state, entities, index, area, dt);
+
+            if (!current_entity->ai.current_action) {
                 /* controller actions, for AI brains. */
                 if (current_entity->flags & ENTITY_FLAGS_PLAYER_CONTROLLED) {
                     entity_handle_player_controlled(state, entities, index, dt);
@@ -448,7 +448,12 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
 
                 target_entity->velocity = direction_to_point;
 
-                if (v2f32_distance_sq(point, tile_position) <= sq_f32(0.25)) {
+                /* if ((s32)tile_position.x == (s32)point.x && */
+                /*     (s32)tile_position.y == (s32)point.y) { */
+                /*     target_entity->ai.current_path_point_index++; */
+                /* } */
+                _debugprintf("dist: %f", v2f32_distance(point, tile_position));
+                if (v2f32_distance(point, tile_position) <= (0.10)) {
                     target_entity->ai.current_path_point_index++;
                 }
             }
