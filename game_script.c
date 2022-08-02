@@ -313,12 +313,22 @@ struct lisp_form game_script_evaluate_form(struct memory_arena* arena, struct ga
                 }
             } else {
                 struct lisp_form result = LISP_nil;
+                /* NOTE: 
+                   builtins technically evalute their children on their own time... 
+                   I should change this...
+                */
 
                 if (!handle_builtin_game_script_functions(arena, state, form, &result)) {
                     game_script_function function = lookup_script_function(form->list.forms[0].string);
 
                     if (function) {
-                        result = function(arena, state, form->list.forms + 1, form->list.count-1);   
+                        struct lisp_form* evaluated_params = memory_arena_push(arena, form->list.count-1 * sizeof(*form->list.forms));
+
+                        for (s32 index = 0; index < form->list.forms.count-1; ++index) {
+                            evaluated_params[index] = game_script_evaluate_form(arena, state, form->list.forms + index);
+                        }
+
+                        result = function(arena, state, evaluated_params, form->list.count-1);
                     } else {
                         _debugprintf("(no function called \"%.*s\")", form->list.forms[0].string.length, form->list.forms[0].string.data);
                     }
