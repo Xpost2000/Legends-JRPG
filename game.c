@@ -907,7 +907,14 @@ void game_message_queue(string message) {
     assertion(global_popup_state.message_count < array_count(global_popup_state.messages));
     struct ui_popup_message_box* current_message = &global_popup_state.messages[global_popup_state.message_count++];
     /* NOTE, in this case this works since I just casted a message from a cstring. This is not really secure */
-    cstring_copy(message.data, current_message->message_storage, array_count(current_message->message_storage));
+    s32 min_length = 0;
+    if (message.length < array_count(current_message->message_storage)) {
+        min_length = message.length;
+    } else {
+        min_length = array_count(current_message->message_storage);
+    }
+
+    cstring_copy(message.data, current_message->message_storage, min_length);
 }
 
 bool game_display_and_update_messages(struct software_framebuffer* framebuffer, f32 dt) {
