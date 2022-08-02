@@ -25,6 +25,44 @@ GAME_LISP_FUNCTION(GAME_STOP_RAIN) {
     weather_stop_rain(state);
     return LISP_nil;
 }
+GAME_LISP_FUNCTION(GAME_SET_ENVIRONMENT_COLORS) {
+    if (argument_count == 1) {
+        struct lisp_form* argument = lisp_list_nth(arguments, 0);
+
+        if (argument->type == LISP_FORM_SYMBOL) {
+            if (lisp_form_symbol_matching(*argument, string_literal("night"))) {
+                global_color_grading_filter = COLOR_GRADING_NIGHT;
+            } else if (lisp_form_symbol_matching(*argument, string_literal("dawn"))) {
+                global_color_grading_filter = COLOR_GRADING_DAWN;
+            } else if (lisp_form_symbol_matching(*argument, string_literal("midnight"))) {
+                global_color_grading_filter = COLOR_GRADING_DARKEST;
+            } else if (lisp_form_symbol_matching(*argument, string_literal("day"))) {
+                global_color_grading_filter = COLOR_GRADING_DAY;
+            }
+        } else {
+            struct lisp_form* r = lisp_list_nth(argument, 0);
+            struct lisp_form* g = lisp_list_nth(argument, 1);
+            struct lisp_form* b = lisp_list_nth(argument, 2);
+            struct lisp_form* a = lisp_list_nth(argument, 3);
+            f32 color_r;
+            f32 color_g;
+            f32 color_b;
+            f32 color_a;
+
+            if (!(r && lisp_form_get_f32(*r, &color_r))) color_r = 255.0f;
+            if (!(g && lisp_form_get_f32(*g, &color_g))) color_g = 255.0f;
+            if (!(b && lisp_form_get_f32(*b, &color_b))) color_b = 255.0f;
+            if (!(a && lisp_form_get_f32(*a, &color_a))) color_a = 255.0f;
+
+            global_color_grading_filter.r = color_r;
+            global_color_grading_filter.g = color_g;
+            global_color_grading_filter.b = color_b;
+            global_color_grading_filter.a = color_a;
+        }
+    }
+
+    return LISP_nil;
+}
 
 #undef GAME_LISP_FUNCTION
 
@@ -34,7 +72,8 @@ GAME_LISP_FUNCTION(GAME_STOP_RAIN) {
 static struct game_script_function_builtin script_function_table[] = {
     GAME_LISP_FUNCTION(DLG_NEXT),
     GAME_LISP_FUNCTION(GAME_START_RAIN),
-    GAME_LISP_FUNCTION(GAME_STOP_RAIN)
+    GAME_LISP_FUNCTION(GAME_STOP_RAIN),
+    GAME_LISP_FUNCTION(GAME_SET_ENVIRONMENT_COLORS),
 };
 
 local game_script_function lookup_script_function(string name) {
@@ -341,13 +380,22 @@ struct lisp_form game_script_evaluate_form(struct memory_arena* arena, struct ga
                     game_script_function function = lookup_script_function(form->list.forms[0].string);
 
                     if (function) {
-                        struct lisp_form* evaluated_params = memory_arena_push(arena, form->list.count-1 * sizeof(*form->list.forms));
+                        s32 argument_count;
+                        struct lisp_form* evaluated_params;
 
-                        for (s32 index = 0; index < form->list.count-1; ++index) {
-                            evaluated_params[index] = game_script_evaluate_form(arena, state, form->list.forms + index);
+                        if (form->list.count == 0) {
+                            argument_count   = 0;
+                            evaluated_params = 0;
+                        } else {
+                            argument_count   = form->list.count-1;
+                            evaluated_params = memory_arena_push(arena, argument_count * sizeof(*form->list.forms));
+
+                            for (s32 index = 0; index < argument_count; ++index) {
+                                evaluated_params[index] = game_script_evaluate_form(arena, state, form->list.forms + index);
+                            }
                         }
 
-                        result = function(arena, state, evaluated_params, form->list.count-1);
+                        result = function(arena, state, evaluated_params, argument_count);
                     } else {
                         _debugprintf("(no function called \"%.*s\")", form->list.forms[0].string.length, form->list.forms[0].string.data);
                     }

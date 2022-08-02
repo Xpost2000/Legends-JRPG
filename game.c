@@ -559,6 +559,7 @@ local void load_area_script(struct memory_arena* arena, struct level_area* area,
     struct level_area_script_data* script_data = &area->script;
 
     if (file_exists(script_name)) {
+        script_data->present     = true;
         script_data->buffer      = read_entire_file(heap_allocator(), script_name);
         script_data->code_forms  = memory_arena_push(arena, sizeof(*script_data->code_forms));
         *script_data->code_forms = lisp_read_string_into_forms(arena, file_buffer_as_string(&script_data->buffer));
@@ -1435,26 +1436,27 @@ void player_handle_radial_interactables(struct game_state* state, struct entity_
 local void execute_current_area_scripts(struct game_state* state, f32 dt) {
     /* _debugprintf("START EXECUTING AREA SCRIPTS"); */
     struct level_area_script_data* script_data = &state->loaded_area.script;
+    if (script_data->present) {
+        struct lisp_form* on_frame_script    = script_data->on_frame;
 
-    struct lisp_form* on_frame_script    = script_data->on_frame;
+        if (!state->level_area_on_enter_triggered) {
+            state->level_area_on_enter_triggered = true;
+            struct lisp_form* on_enter_script    = script_data->on_enter;
 
-    if (!state->level_area_on_enter_triggered) {
-        state->level_area_on_enter_triggered = true;
-        struct lisp_form* on_enter_script    = script_data->on_enter;
-
-        if (on_enter_script) {
-            _debugprintf("Executing on-enter script (%d forms)", on_enter_script->list.count);
-            for (s32 index = 1; index < on_enter_script->list.count; ++index) {
-                struct lisp_form* current_form = lisp_list_nth(on_enter_script, index);
-                /* TODO: use dt */
-                game_script_evaluate_form(&scratch_arena, state, current_form);
+            if (on_enter_script) {
+                _debugprintf("Executing on-enter script (%d forms)", on_enter_script->list.count);
+                for (s32 index = 1; index < on_enter_script->list.count; ++index) {
+                    struct lisp_form* current_form = lisp_list_nth(on_enter_script, index);
+                    /* TODO: use dt */
+                    game_script_evaluate_form(&scratch_arena, state, current_form);
+                }
             }
         }
-    }
 
-    /* onframe is going to hurt but I'm not kidding about this. */
-    /* I could invoke multiple every-n-seconds blocks? */
-    /* _debugprintf("END EXECUTING AREA SCRIPTS"); */
+        /* onframe is going to hurt but I'm not kidding about this. */
+        /* I could invoke multiple every-n-seconds blocks? */
+        /* _debugprintf("END EXECUTING AREA SCRIPTS"); */
+    }
 }
 
 void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
@@ -1499,7 +1501,7 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                 game_postprocess_blur_ingame(framebuffer, 2, 0.34, BLEND_MODE_ALPHA);
 
                 /* color "grading" */
-                software_framebuffer_draw_quad(framebuffer, rectangle_f32(0,0,999,999), color32u8(178,180,255,255), BLEND_MODE_MULTIPLICATIVE);
+                software_framebuffer_draw_quad(framebuffer, rectangle_f32(0,0,999,999), global_color_grading_filter, BLEND_MODE_MULTIPLICATIVE);
                 do_weather(framebuffer, game_state, dt);
                 update_and_render_game_menu_ui(game_state, framebuffer, dt);
             } break;

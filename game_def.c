@@ -63,51 +63,13 @@ static string ui_pause_editor_menu_strings[] = {
     string_literal("QUIT"),
 };
 
-/* START OF NON-CHECKED CODE*/
-/* TODO level editor for more things, mostly doors as a start. */
-/* TODO door/lever test art for activations */
+#define COLOR_GRADING_DAY     color32u8(255,255,255,255)
+#define COLOR_GRADING_NIGHT   color32u8(178,180,255,255)
+#define COLOR_GRADING_DARKEST color32u8(42,42,110,255)
+#define COLOR_GRADING_DAWN    color32u8(240,105,26,255)
 
-/* NOTE, all the code written right now has not been tested, I don't actually want to really code anything today, but I should write something... */
-/* I will not offer hierachical objects, which makes things a bit more complicated */
-/* I might have to offer modal selection which can be a bit painful... (sprites and stuff like that) */
-/* Generic triggers can be used to produce levers and doors and the like, however */
-/* Or I might just offer an image property, and allow it to load it's own images, _activated, _inactive mode (there'd have to be a lot of engine data work for this) */
-/* If I'm especially lazy, I can do this and also have a separate "object/prop" type which is just a bunch of hardcoded objects... */
-/* Use this for every generic kind of activatable item? */
-enum activation_mode {
-    ACTIVATION_NONE,
-    ACTIVATION_WORLD_ATTACKED, /* attack in the world, for like hidden walls or something */
-    ACTIVATION_TOUCH,    /* Actiate on touch */
-    ACTIVATION_ACTIVATE, /* Actiate on button activation */
-    ACTIVATION_TYPE_COUNT,
-};
-static string activation_mode_strings[] = {
-    string_literal("(none)"),
-    string_literal("(world attack)"),
-    string_literal("(touch)"),
-    string_literal("(activate)"),
-    string_literal("(count)"),
-};
-enum activation_action_type {
-    ACTIVATION_ACTION_NONE,
-    ACTIVATION_ACTION_MOVE_LEVEL,
-    ACTIVATION_ACTION_MOVE_POSITION,
-    ACTIVATION_ACTION_OPEN_DIALOGUE,
-    ACTIVATION_ACTION_TYPE_COUNT
-    /* NOTE more, but okay for now */
-};
-static string activation_action_type_strings[] = {
-    string_literal("(none)"),
-    string_literal("(level move)"),
-    string_literal("(pos move)"),
-    string_literal("(open conversation)"),
-    string_literal("(count)"),
-};
-#define MAX_ACTIVATION_EVENTS 8
-struct activation_action {
-    /* NOTE, the functions these events call should just accept raw data as doors and levers or what have you may not have these things? */
-    u32 event_type;
-};
+local union color32u8 global_color_grading_filter = COLOR_GRADING_DAY;
+
 #if 0
 struct trigger {
     struct rectangle_f32 bounds;
