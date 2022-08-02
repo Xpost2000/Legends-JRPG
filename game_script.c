@@ -27,7 +27,7 @@ GAME_LISP_FUNCTION(GAME_STOP_RAIN) {
 }
 GAME_LISP_FUNCTION(GAME_SET_ENVIRONMENT_COLORS) {
     if (argument_count == 1) {
-        struct lisp_form* argument = lisp_list_nth(arguments, 0);
+        struct lisp_form* argument = &arguments[0];
 
         if (argument->type == LISP_FORM_SYMBOL) {
             if (lisp_form_symbol_matching(*argument, string_literal("night"))) {
@@ -44,6 +44,7 @@ GAME_LISP_FUNCTION(GAME_SET_ENVIRONMENT_COLORS) {
             struct lisp_form* g = lisp_list_nth(argument, 1);
             struct lisp_form* b = lisp_list_nth(argument, 2);
             struct lisp_form* a = lisp_list_nth(argument, 3);
+
             f32 color_r;
             f32 color_g;
             f32 color_b;
@@ -380,10 +381,10 @@ struct lisp_form game_script_evaluate_form(struct memory_arena* arena, struct ga
                     game_script_function function = lookup_script_function(form->list.forms[0].string);
 
                     if (function) {
-                        s32 argument_count;
-                        struct lisp_form* evaluated_params;
+                        s32 argument_count = 0;
+                        struct lisp_form* evaluated_params = 0;
 
-                        if (form->list.count == 0) {
+                        if (form->list.count == 1) {
                             argument_count   = 0;
                             evaluated_params = 0;
                         } else {
@@ -391,7 +392,8 @@ struct lisp_form game_script_evaluate_form(struct memory_arena* arena, struct ga
                             evaluated_params = memory_arena_push(arena, argument_count * sizeof(*form->list.forms));
 
                             for (s32 index = 0; index < argument_count; ++index) {
-                                evaluated_params[index] = game_script_evaluate_form(arena, state, form->list.forms + index);
+                                _debugprintf("evaluating arg");
+                                evaluated_params[index] = game_script_evaluate_form(arena, state, form->list.forms + (index+1));
                             }
                         }
 

@@ -682,19 +682,23 @@ struct lisp_list lisp_read_string_into_forms(struct memory_arena* arena, string 
 }
 
 struct lisp_form* lisp_list_nth(struct lisp_form* f, s32 index) {
-    if (f->type != LISP_FORM_LIST) {
-        return NULL;
+    if (f) {
+        if (f->type != LISP_FORM_LIST) {
+            return NULL;
+        }
+
+        if (index < 0) {
+            index = (f->list.count + index);
+        }
+
+        if (f->list.count < index) {
+            return NULL;
+        }
+
+        return f->list.forms + index;
     }
 
-    if (index < 0) {
-        index = (f->list.count + index);
-    }
-
-    if (f->list.count < index) {
-        return NULL;
-    }
-
-    return f->list.forms + index;
+    return NULL;
 }
 
 /* oddly specific manipulation functions, but I kind of need these */
