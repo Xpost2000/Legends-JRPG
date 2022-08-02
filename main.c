@@ -255,7 +255,7 @@ void deinitialize(void) {
     if (system_heap_memory_leak_check())
         _debugprintf("no leaked memory");
     else
-        _debugprintf("leaked memory somewhere");
+        _debugprintf("leaked memory somewhere: %d bytes", system_heap_currently_allocated_amount());
     /* assertion(system_heap_memory_leak_check()); */
 }
 
