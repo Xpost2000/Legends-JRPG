@@ -52,7 +52,7 @@ local void main_menu_next_lightning_time(void) {
     if (main_menu.lightning_flashing == true) {
         main_menu.lightning_delay_timer = random_float(&main_menu.rnd) * 0.05 + 0.07;
     } else {
-        main_menu.lightning_delay_timer = random_float(&main_menu.rnd) * 0.65 + 0.1;
+        main_menu.lightning_delay_timer = random_float(&main_menu.rnd) * 0.95 + 0.1;
     }
 }
 local void initialize_main_menu(void) {

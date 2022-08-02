@@ -3,6 +3,8 @@ enum battle_ui_animation_phase {
     BATTLE_UI_FLASH_IN_BATTLE_TEXT,
     BATTLE_UI_FADE_OUT,
     BATTLE_UI_MOVE_IN_DETAILS,
+    BATTLE_UI_FLASH_IN_END_TURN_TEXT,
+    BATTLE_UI_FADE_OUT_END_TURN_TEXT,
     BATTLE_UI_IDLE,
 };
 
@@ -191,10 +193,11 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                             struct entity* active_combatant_entity = entity_list_dereference_entity(&state->entities, combat_state->participants[combat_state->active_combatant]);
                             level_area_build_movement_visibility_map(&scratch_arena, &state->loaded_area, active_combatant_entity->position.x / TILE_UNIT_SIZE, active_combatant_entity->position.y / TILE_UNIT_SIZE, 6);
 
-                            global_battle_ui_state.movement_start_x = active_combatant_entity->position.x / TILE_UNIT_SIZE;
-                            global_battle_ui_state.movement_start_y = active_combatant_entity->position.y / TILE_UNIT_SIZE;
-                            global_battle_ui_state.movement_end_x   = active_combatant_entity->position.x / TILE_UNIT_SIZE;
-                            global_battle_ui_state.movement_end_y   = active_combatant_entity->position.y / TILE_UNIT_SIZE;
+                            global_battle_ui_state.movement_start_x                 = active_combatant_entity->position.x / TILE_UNIT_SIZE;
+                            global_battle_ui_state.movement_start_y                 = active_combatant_entity->position.y / TILE_UNIT_SIZE;
+                            global_battle_ui_state.movement_end_x                   = active_combatant_entity->position.x / TILE_UNIT_SIZE;
+                            global_battle_ui_state.movement_end_y                   = active_combatant_entity->position.y / TILE_UNIT_SIZE;
+                            global_battle_ui_state.max_remembered_path_points_count = 0;
                         } break;
                         case BATTLE_ATTACK: {
                             global_battle_ui_state.submode = BATTLE_UI_SUBMODE_ATTACKING;
@@ -287,27 +290,34 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
 
             if (is_key_pressed(KEY_RETURN)) {
                 /* submit movement */
+
                 struct entity* active_combatant_entity = entity_list_dereference_entity(&state->entities, combat_state->participants[combat_state->active_combatant]);
-                entity_combat_submit_movement_action(active_combatant_entity, global_battle_ui_state.max_remembered_path_points, global_battle_ui_state.max_remembered_path_points_count);
-                global_battle_ui_state.max_remembered_path_points_count = 0;
+
                 global_battle_ui_state.submode = BATTLE_UI_SUBMODE_NONE;
-                level_area_clear_movement_visibility_map(&state->loaded_area);
-                /* register camera lerp */
-                /* NOTE: the camera is in a weird intermediary position
-                 during this action, however when waiting for the path to finish,
-                 there is no issue. Right now we're doing instant teleport. Either way I should wait for the camera to finish...
-                */
-                {
-                    struct camera* camera = &state->camera;
-                    camera->interpolation_t[0] = 0;
-                    camera->try_interpolation[0] = true;
-                    camera->start_interpolation_values[0] = camera->xy.x;
 
-                    camera->interpolation_t[1] = 0;
-                    camera->try_interpolation[1] = true;
-                    camera->start_interpolation_values[1] = camera->xy.y;
+                if (global_battle_ui_state.movement_start_x != global_battle_ui_state.movement_end_x ||
+                    global_battle_ui_state.movement_start_y != global_battle_ui_state.movement_end_y) {
+                    entity_combat_submit_movement_action(active_combatant_entity, global_battle_ui_state.max_remembered_path_points, global_battle_ui_state.max_remembered_path_points_count);
 
-                    camera->tracking_xy = active_combatant_entity->position;
+                    global_battle_ui_state.max_remembered_path_points_count = 0;
+                    level_area_clear_movement_visibility_map(&state->loaded_area);
+                    /* register camera lerp */
+                    /* NOTE: the camera is in a weird intermediary position
+                       during this action, however when waiting for the path to finish,
+                       there is no issue. Right now we're doing instant teleport. Either way I should wait for the camera to finish...
+                    */
+                    {
+                        struct camera* camera = &state->camera;
+                        camera->interpolation_t[0] = 0;
+                        camera->try_interpolation[0] = true;
+                        camera->start_interpolation_values[0] = camera->xy.x;
+
+                        camera->interpolation_t[1] = 0;
+                        camera->try_interpolation[1] = true;
+                        camera->start_interpolation_values[1] = camera->xy.y;
+
+                        camera->tracking_xy = active_combatant_entity->position;
+                    }
                 }
             }
             
