@@ -263,6 +263,7 @@ struct lexer_token lexer_peek_token(struct lexer* lexer) {
 }
 struct lisp_form;
 enum lisp_form_type {
+    LISP_FORM_EOF, /* Special none token. */
     LISP_FORM_NIL,
     LISP_FORM_T,
     LISP_FORM_STRING,
@@ -273,6 +274,7 @@ enum lisp_form_type {
     LISP_FORM_COUNT,
 };
 static string lisp_form_type_strings[] = {
+    string_literal("(EOF)"),
     string_literal("(nil)"),
     string_literal("(t)"),
     string_literal("(string)"),
@@ -434,6 +436,9 @@ static void _debug_print_out_lisp_code(struct lisp_form* code) {
                 if (code->quoted) flavor_text = "[quoted]";
             }
             _debugprintf1("%.*s(%s)", code->string.length, code->string.data, flavor_text);
+        } break;
+        default: {
+            _debugprintf("%.*s", lisp_form_type_strings[code->type].length, lisp_form_type_strings[code->type].data);
         } break;
     }
 }
