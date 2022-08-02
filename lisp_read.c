@@ -289,6 +289,7 @@ struct lisp_list {
     s32               count;
     struct lisp_form* forms;
 };
+
 struct lisp_form {
     s32 type;
     s8  is_real;
@@ -631,6 +632,19 @@ struct lisp_form lisp_read_form(struct memory_arena* arena, string code) {
                     result.integer = string_to_s32(first_token.str);
                 }
             } break;
+        }
+    }
+
+    return result;
+}
+
+struct lisp_list lisp_read_string_into_forms(struct memory_arena* arena, string code_string) {
+    struct lisp_list result = {};
+    s32 forms_read = {};
+    {
+        struct lisp_read_form f;
+        while (f = lisp_read_form(arena, code_string)) {
+            
         }
     }
 

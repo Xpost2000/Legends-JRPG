@@ -554,10 +554,31 @@ void serialize_level_area(struct game_state* state, struct binary_serializer* se
     _debugprintf("%d memory used", state->arena->used + state->arena->used_top);
 }
 
+local void load_area_script(struct level_area* area, string script_name) {
+    if (file_exists(script_name)) {
+        s32 form_count = 0;
+
+    } else {
+        _debugprintf("NOTE: %.*s does not exist! No script for this level.", script_name.length, script_name.data);
+    }
+}
+
 /* this is used for cheating or to setup the game I suppose. */
+local void level_area_clean_up(struct level_area* area) {
+    if (area->script.present) {
+        file_buffer_free(&area->buffer);
+        area->script.present = false;
+    }
+}
+
 void load_level_from_file(struct game_state* state, string filename) {
-    struct binary_serializer serializer = open_read_file_serializer(string_concatenate(state->arena, string_literal("areas/"), filename));
+    level_area_clean_up(&state->loaded_area);
+    memory_arena_clear_top(state->arena);
+
+    string fullpath = string_concatenate(&scratch_arena, string_literal("areas/"), filename);
+    struct binary_serializer serializer = open_read_file_serializer(fullpath);
     serialize_level_area(state, &serializer, &state->loaded_area, true);
+    load_area_script(&state->loaded_area, string_concatenate(&scratch_arena, string_slice(fullpath, 0, fullpath.length-sizeof("area")), string_literal("area_script")));
     {
         cstring_copy(filename.data, state->loaded_area_name, filename.length);
     }

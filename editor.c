@@ -533,7 +533,15 @@ local void update_and_render_pause_editor_menu_ui(struct game_state* state, stru
                                 menu_state->transition_t = 0;
                             } break;
                             case 1: {
-                                /* who knows about this one */ 
+                                /*NOTE: 
+                                  level testing code
+                                  
+                                  as the engine now understands the notion of scripting,
+                                  I need to add some functionality to force the scripting to work as intended...
+                                  
+                                  Just add some barrier code to only allow testing after a savename has been
+                                  determined, as the savename is used to find the script.
+                                */
                                 u8* data;
                                 u64 amount;
 
@@ -550,29 +558,18 @@ local void update_and_render_pause_editor_menu_ui(struct game_state* state, stru
                                 menu_state->animation_state = UI_PAUSE_MENU_TRANSITION_CLOSING;
                                 menu_state->transition_t    = 0;
                             } break;
+                                /* oh my. */
                             case 2: {
-#if 0
-                                struct binary_serializer serializer = open_write_file_serializer(string_literal("edit.area"));
-                                editor_serialize_area(&serializer);
-                                serializer_finish(&serializer);
-#else
                                 menu_state->animation_state     = UI_PAUSE_MENU_TRANSITION_CLOSING;
                                 menu_state->transition_t        = 0;
                                 editor_state->serialize_menu_mode = 1;
                                 editor_state->serialize_menu_reason = 0;
-#endif
                             } break;
                             case 3: {
-#if 0
-                                struct binary_serializer serializer = open_read_file_serializer(string_literal("edit.area"));
-                                editor_serialize_area(&serializer);
-                                serializer_finish(&serializer);
-#else
                                 menu_state->animation_state     = UI_PAUSE_MENU_TRANSITION_CLOSING;
                                 menu_state->transition_t        = 0;
                                 editor_state->serialize_menu_mode = 2;
                                 editor_state->serialize_menu_reason = 0;
-#endif
                             } break;
                             case 4: {
                             } break;
