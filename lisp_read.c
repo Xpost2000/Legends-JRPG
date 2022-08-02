@@ -669,6 +669,7 @@ struct lisp_list lisp_read_string_into_forms(struct memory_arena* arena, string 
         struct lexer lexer_state = { .buffer = code_string };
         for (s32 index = 0; index < forms_read; ++index) {
             struct lexer_token token = lexer_next_token(&lexer_state);
+            printf("token type: %d (%.*s)\n", token.type, token.str.length, token.str.data);
             _debugprintf("%.*s", token.str.length, token.str.data);
             struct lisp_form read_form = lisp_read_form(arena, token.str);
             lisp_form_output(&read_form);
