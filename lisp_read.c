@@ -566,6 +566,14 @@ struct lisp_form lisp_read_list(struct memory_arena* arena, string code) {
                 struct lisp_form* current_form = list_contents->forms + current_child_index;
                 struct lexer_token token = lexer_next_token(&lexer_state);
 
+                /* NOTE: little shoe horn hack. Strings skip their quote so the mutually recursive call
+                   to lisp_read_form later will think it's a symbol. We're just going to reexpand the token
+                   to have the quotes again to fix this.*/
+                if (token.type == TOKEN_TYPE_STRING) {
+                    token.str.data   -= 1;
+                    token.str.length += 1;
+                }
+
                 if (token.type == TOKEN_TYPE_SINGLE_QUOTE) {
                     previous_was_quote = true;
                 } else {
@@ -610,15 +618,8 @@ struct lisp_form lisp_read_form(struct memory_arena* arena, string code) {
                 result.string     = string_clone(arena, first_token.str);
             } break;
             case TOKEN_TYPE_SINGLE_QUOTE: {
-                /* result.type       = LISP_FORM_QUOTE; */
-                /* result.string     = string_literal("\'"); */
-                /* string s = string_slice(code, lexer_state.current_read_index, code.length - lexer_state.current_read_index); */
-                /* _debugprintf("%.*s", s.length, s.data); */
                 struct lisp_form next_form = lisp_read_form(arena, string_slice(code, lexer_state.current_read_index, (code.length+1) - lexer_state.current_read_index));
                 next_form.quoted = true;
-                /* _debugprintf("test"); */
-                /* _debug_print_out_lisp_code(&next_form); */
-                /* _debugprintf("test end"); */
                 return next_form;
             } break;
             case TOKEN_TYPE_T: {
