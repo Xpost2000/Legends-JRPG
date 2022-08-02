@@ -13,7 +13,6 @@ static bool sandbox_testing(void) {
     _debugprintf("sandbox start");
 #if 1
     struct lisp_form code = lisp_read_form(&scratch_arena, string_literal(""));
-    /* struct lisp_form code = lisp_read_form(&scratch_arena, string_literal("'sad")); */
     _debug_print_out_lisp_code(&code);
     fprintf(stderr, "\n");
 #endif

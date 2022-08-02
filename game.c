@@ -554,10 +554,12 @@ void serialize_level_area(struct game_state* state, struct binary_serializer* se
     _debugprintf("%d memory used", state->arena->used + state->arena->used_top);
 }
 
-local void load_area_script(struct level_area* area, string script_name) {
-    if (file_exists(script_name)) {
-        s32 form_count = 0;
+local void load_area_script(struct memory_arena* arena, struct level_area* area, string script_name) {
+    struct level_area_script_data* script_data = &area->script;
 
+    if (file_exists(script_name)) {
+        script_data->buffer = read_entire_file(heap_allocator(), script_name);
+        struct lisp_list code_as_forms = lisp_read_string_into_forms(arena, file_buffer_as_string(&script_data->buffer));
     } else {
         _debugprintf("NOTE: %.*s does not exist! No script for this level.", script_name.length, script_name.data);
     }
@@ -566,7 +568,7 @@ local void load_area_script(struct level_area* area, string script_name) {
 /* this is used for cheating or to setup the game I suppose. */
 local void level_area_clean_up(struct level_area* area) {
     if (area->script.present) {
-        file_buffer_free(&area->buffer);
+        file_buffer_free(&area->script.buffer);
         area->script.present = false;
     }
 }
@@ -578,7 +580,7 @@ void load_level_from_file(struct game_state* state, string filename) {
     string fullpath = string_concatenate(&scratch_arena, string_literal("areas/"), filename);
     struct binary_serializer serializer = open_read_file_serializer(fullpath);
     serialize_level_area(state, &serializer, &state->loaded_area, true);
-    load_area_script(&state->loaded_area, string_concatenate(&scratch_arena, string_slice(fullpath, 0, fullpath.length-sizeof("area")), string_literal("area_script")));
+    load_area_script(game_state->arena, &state->loaded_area, string_concatenate(&scratch_arena, string_slice(fullpath, 0, (fullpath.length+1)-sizeof("area")), string_literal("area_script")));
     {
         cstring_copy(filename.data, state->loaded_area_name, filename.length);
     }

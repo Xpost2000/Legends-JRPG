@@ -3,7 +3,7 @@
 )
 
 (on-frame
-# (print "Hello this is on frame! " (+ 3 4))
+ (print "Hello this is on frame! " (+ 3 4))
 )
 
 # I don't think this trigger is actually needed

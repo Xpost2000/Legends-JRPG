@@ -1,4 +1,11 @@
 /*
+  NOTE: I think I was very slightly confused with the way this worked,
+  and I separated responsibilities too much...
+
+  Not too big of a deal, it's not super duper confusing, just not what you might
+  expect at first for API usage.
+ */
+/*
   A lisp style form reader, and
   a lexer that is useful for reading lisp but can be used to read some
   other formats. With some modifications anyways.
@@ -640,11 +647,25 @@ struct lisp_form lisp_read_form(struct memory_arena* arena, string code) {
 
 struct lisp_list lisp_read_string_into_forms(struct memory_arena* arena, string code_string) {
     struct lisp_list result = {};
-    s32 forms_read = {};
     {
-        struct lisp_read_form f;
-        while (f = lisp_read_form(arena, code_string)) {
-            
+        struct lexer lexer_state = { .buffer = code_string };
+        s32 forms_read = 0;
+        {
+            struct lexer_token token = {};
+            while (token = lexer_next_token(&lexer_state), token.type != TOKEN_TYPE_NONE) {
+                forms_read += 1;
+            }
+        }
+        _debugprintf("There are %d forms!", forms_read);
+        result.forms = memory_arena_push(arena, forms_read * sizeof(*result.forms));
+    }
+
+    {
+        struct lexer lexer_state = { .buffer = code_string };
+        struct lexer_token token = {};
+        while (token = lexer_next_token(&lexer_state), token.type != TOKEN_TYPE_NONE) {
+            _debugprintf("%.*s", token.str.length, token.str.data);
+            /* lisp_read_form(arena, token.str); */
         }
     }
 

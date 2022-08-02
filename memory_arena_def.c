@@ -1,6 +1,19 @@
 #ifndef MEMORY_ARENA_DEF_C
 #define MEMORY_ARENA_DEF_C
 
+/*
+  Hmmm... a better consideration for the API would
+  actually be to make top allocation a flag, instead of a separate
+  function call so that way you can inject allocation choices, instead
+  of "hard-coding" them...
+  
+  TODO: but this requires a fair amount of changes so we'll wait on that... (this weekend?)
+  
+  Now fortunately, we're not likely to run out of allocated memory since I don't have long test sessions,
+  and nor do I expect my player testers to play for more than an hour maybe, so this is okay. Obviously this
+  needs to be fixed for releasing in any way shape or form though.
+*/
+
 /* double ended stack memory arena, does not grow */
 /* TODO: memory allocator interface for seamless usage. */
 #define MEMORY_ARENA_DEFAULT_NAME ("(no-name)")
