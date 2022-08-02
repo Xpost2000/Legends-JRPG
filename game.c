@@ -555,21 +555,23 @@ void serialize_level_area(struct game_state* state, struct binary_serializer* se
 }
 
 local void load_area_script(struct memory_arena* arena, struct level_area* area, string script_name) {
+    /* NOTE: all of this stuff needs to allocate memory from the top!!! */
     struct level_area_script_data* script_data = &area->script;
 
     if (file_exists(script_name)) {
-        script_data->buffer = read_entire_file(heap_allocator(), script_name);
-        script_data->code_forms        = lisp_read_string_into_forms(arena, file_buffer_as_string(&script_data->buffer));
+        script_data->buffer      = read_entire_file(heap_allocator(), script_name);
+        script_data->code_forms  = memory_arena_push(arena, sizeof(*script_data->code_forms));
+        *script_data->code_forms = lisp_read_string_into_forms(arena, file_buffer_as_string(&script_data->buffer));
 
         /* search for on_enter, on_frame, on_exit */
         {
             for (s32 index = 0;
-                 index < script_data->code_forms &&
+                 index < script_data->code_forms->count &&
                      ((!script_data->on_enter) ||
                       (!script_data->on_frame) ||
                       (!script_data->on_exit));
                  ++index) {
-                struct lisp_form* form = script_data->code_forms.forms + index;
+                struct lisp_form* form = script_data->code_forms->forms + index;
 
                 if (lisp_form_as_function_list_check_fn_name(form, string_literal("on-enter"))) {
                     if (script_data->on_enter) {
@@ -597,19 +599,38 @@ local void load_area_script(struct memory_arena* arena, struct level_area* area,
         {
             s32 event_listener_type_counters[LEVEL_AREA_LISTEN_EVENT_COUNT] = {};
 
-            for (s32 index = 0; index < script_data->code_forms; ++index) {
-                struct lisp_form* form = script_data->code_forms.forms + index;
+            /* count */
+            {
+                for (s32 index = 0; index < script_data->code_forms->count; ++index) {
+                    struct lisp_form* form = script_data->code_forms->forms + index;
 
-                for (s32 name_index = 0; name_index < LEVEL_AREA_LISTEN_EVENT_COUNT; ++name_index) {
-                    if (lisp_form_as_function_list_check_fn_name(form, level_area_listen_event_form_names[name_index])) {
-                        event_listener_type_counters[name_index] += 1;
+                    for (s32 name_index = 0; name_index < LEVEL_AREA_LISTEN_EVENT_COUNT; ++name_index) {
+                        if (lisp_form_as_function_list_check_fn_name(form, level_area_listen_event_form_names[name_index])) {
+                            event_listener_type_counters[name_index] += 1;
+                        }
                     }
                 }
             }
 
-            for (s32 event_listener_type = 0; event_listener_type < LEVEL_AREA_LISTEN_EVENT_COUNT; ++event_listener_type) {
-                script_data->listeners[event_listener_type] =
-                    memory_arena_push(arena, sizeof(*script_data->listeners) * event_listener_type_counters[event_listener_type]);
+            /* allocate */
+            {
+                for (s32 event_listener_type = 0; event_listener_type < LEVEL_AREA_LISTEN_EVENT_COUNT; ++event_listener_type) {
+                    script_data->listeners[event_listener_type].subscriber_codes =
+                        memory_arena_push(arena, sizeof(*script_data->listeners->subscriber_codes) * event_listener_type_counters[event_listener_type]);
+                }
+            }
+
+            /* assign */
+            {
+                for (s32 index = 0; index < script_data->code_forms->count; ++index) {
+                    struct lisp_form* form = script_data->code_forms->forms + index;
+
+                    for (s32 name_index = 0; name_index < LEVEL_AREA_LISTEN_EVENT_COUNT; ++name_index) {
+                        if (lisp_form_as_function_list_check_fn_name(form, level_area_listen_event_form_names[name_index])) {
+                            script_data->listeners[name_index].subscriber_codes[script_data->listeners[name_index].subscribers++] = *form;
+                        }
+                    }
+                }
             }
         }
     } else {
@@ -622,6 +643,11 @@ local void level_area_clean_up(struct level_area* area) {
     if (area->script.present) {
         file_buffer_free(&area->script.buffer);
         area->script.present = false;
+
+        area->script.code_forms = 0;
+        area->script.on_enter = 0;
+        area->script.on_frame = 0;
+        area->script.on_exit = 0;
     }
 }
 

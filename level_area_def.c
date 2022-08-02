@@ -36,8 +36,14 @@ enum level_area_listen_event {
     LEVEL_AREA_LISTEN_EVENT_COUNT
 };
 struct level_area_listener {
-    s32 listen_for;
-    struct lisp_form* event_code;
+    /*
+      Should record trigger target here,
+      
+      Although it can be interpreted live as everything else... Might be easier
+      to prestore targets later. However for now I guess I'll interpret it.
+    */
+    s32 subscribers;
+    struct lisp_form* subscriber_codes;
 };
 local string level_area_listen_event_form_names[] = {
     string_literal("on-touch"),
@@ -52,13 +58,13 @@ local string level_area_listen_event_form_names[] = {
 struct level_area_script_data {
     bool present;
     struct file_buffer buffer;
-    struct lisp_list   code_forms;
+    struct lisp_list*  code_forms;
 
     struct lisp_form*  on_enter;
     struct lisp_form*  on_frame;
     struct lisp_form*  on_exit;
 
-    struct level_area_listener* listeners[LEVEL_AREA_LISTEN_EVENT_COUNT];
+    struct level_area_listener listeners[LEVEL_AREA_LISTEN_EVENT_COUNT];
 };
 
 struct level_area {
