@@ -77,6 +77,13 @@ struct game_ui_nine_patch game_ui_nine_patch_load_from_directory(struct graphics
     return ui_skin;
 }
 /* NOTE: the nine patch can only be drawn in tile sizes since it won't look stupid that way. */
+v2f32 nine_patch_estimate_extents(struct game_ui_nine_patch ui_skin, f32 scaling_factor, s32 tiles_width, s32 tiles_height) {
+    v2f32 result = {};
+    result.x = ui_skin.tile_width * tiles_width * scaling_factor;
+    result.y = ui_skin.tile_height * tiles_height * scaling_factor;
+    return result;
+}
+
 void draw_nine_patch_ui(struct graphics_assets* graphics_assets, struct software_framebuffer* framebuffer, struct game_ui_nine_patch ui_skin, f32 scaling_factor, v2f32 xy, s32 tiles_width, s32 tiles_height, union color32f32 rgba) {
     struct image_buffer* imgs[9] = {};
     for (s32 index = 0; index < array_count(game_ui_nine_patch_id_strings); ++index) {

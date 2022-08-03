@@ -38,6 +38,8 @@ struct battle_ui_state {
     /* wasteful? Maybe. Easy? Yes. */
     s32   max_remembered_path_points_count;
     v2f32 max_remembered_path_points[256];
+
+    s32 currently_selected_entity_index;
 } global_battle_ui_state;
 
 enum battle_options{
@@ -127,7 +129,12 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
     struct font_cache* normal_font      = game_get_font(MENU_FONT_COLOR_WHITE);
     struct font_cache* highlighted_font = game_get_font(MENU_FONT_COLOR_GOLD);
 
-    if (is_key_pressed(KEY_BACKSPACE)) {
+    bool selection_down    = is_key_down_with_repeat(KEY_DOWN);
+    bool selection_up      = is_key_down_with_repeat(KEY_UP);
+    bool selection_confirm = is_key_pressed(KEY_RETURN);
+    bool selection_cancel  = is_key_pressed(KEY_BACKSPACE);
+
+    if (selection_cancel) {
         if (global_battle_ui_state.submode != BATTLE_UI_SUBMODE_NONE) {
             global_battle_ui_state.submode                             = BATTLE_UI_SUBMODE_NONE;
 
@@ -142,6 +149,7 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
         }
     }
 
+    /* These all need to be animated and polished much more in the future. */
     switch (global_battle_ui_state.submode) {
         case BATTLE_UI_SUBMODE_NONE: {
             union color32f32 modulation_color = color32f32_WHITE;
@@ -193,7 +201,7 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
             if (allow_input) {
                 s32 options_count = array_count(battle_menu_main_options);
 
-                if (is_key_down_with_repeat(KEY_DOWN)) {
+                if (selection_down) {
                     do {
                         global_battle_ui_state.selection++;
 
@@ -202,7 +210,7 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                         }
                     } while (disabled_actions[global_battle_ui_state.selection]);
                 }
-                else if (is_key_down_with_repeat(KEY_UP)) {
+                else if (selection_up) {
                     do {
                         global_battle_ui_state.selection--;
 
@@ -212,7 +220,7 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                     } while (disabled_actions[global_battle_ui_state.selection]);
                 }
 
-                if (is_key_pressed(KEY_RETURN)) {
+                if (selection_confirm) {
                     if (!disabled_actions[global_battle_ui_state.selection]) {
                         switch (global_battle_ui_state.selection) {
                             /* NOTE: No ability is expected to really reach outside of your view... Hence the need for a separate view command */
@@ -249,8 +257,88 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                                 _debugprintf("TODO: using waiting!");
                             } break;
                         }
+
+                        global_battle_ui_state.selection = 0;
                     }
                 }
+            }
+        } break;
+
+            /* This is a simple menu for now, I may want to expand on this a little but for now this is it. */
+            /* Attacking will just instantly apply some damage, we don't care about animating right now. That can be like next week. */
+            
+            /* TODO make attacking highlight the target obviously! Or focus on the target would work too. */
+        case BATTLE_UI_SUBMODE_ATTACKING: {
+            f32 attack_radius = 3;
+            struct entity_query_list nearby_potential_targets = find_entities_within_radius(&scratch_arena, &state->entities, game_get_player(state)->position, attack_radius * TILE_UNIT_SIZE);
+
+            /* I mean, there's no battle this large... Ever */
+            s32 target_list_count                = 0;
+            s32 target_display_list_indices[512] = {};
+
+            for (s32 index = 0; index < nearby_potential_targets.count; ++index) {
+                struct entity* current_entity = &state->entities.entities[nearby_potential_targets.indices[index]];
+
+                if (current_entity == game_get_player(state)) {
+                    continue;
+                }
+
+                target_display_list_indices[target_list_count++] = nearby_potential_targets.indices[index];
+            }
+
+            s32 BOX_WIDTH  = 8;
+            /* should be dynamically sized but okay. */
+            s32 BOX_HEIGHT = 12;
+
+            v2f32 ui_box_size     = nine_patch_estimate_extents(ui_chunky, 1, BOX_WIDTH, BOX_HEIGHT);
+            v2f32 ui_box_position = v2f32(framebuffer->width*0.9-ui_box_size.x, 50);
+            draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, ui_box_position, BOX_WIDTH, BOX_HEIGHT, UI_BATTLE_COLOR);
+
+            for (s32 index = 0; index < target_list_count; ++index) {
+                struct entity* target_entity = &state->entities.entities[target_display_list_indices[index]];
+
+                string entity_name = target_entity->name;
+                v2f32 draw_point = ui_box_position;
+                draw_point.x    += 8;
+                draw_point.y    += 15 + index * 16 * 1.3;
+
+                struct font_cache* painted_font = normal_font;
+
+                if (global_battle_ui_state.selection == index) {
+                    painted_font = highlighted_font;
+                }
+
+                draw_ui_breathing_text(framebuffer, draw_point, painted_font, 2, entity_name, 0, color32f32_WHITE);
+            }
+
+            if (selection_up) {
+                global_battle_ui_state.selection--;
+                if (global_battle_ui_state.selection >= target_list_count) {
+                    global_battle_ui_state.selection = 0;
+                }
+            } else if (selection_down) {
+                global_battle_ui_state.selection++;
+                if (global_battle_ui_state.selection < 0) {
+                    global_battle_ui_state.selection = target_list_count-1;
+                }
+            }
+
+            s32 enemy_index = target_display_list_indices[global_battle_ui_state.selection];
+
+            if (enemy_index != global_battle_ui_state.currently_selected_entity_index) {
+                global_battle_ui_state.currently_selected_entity_index = enemy_index;
+
+                {
+                    struct camera* camera = &state->camera;
+                    struct entity* target_entity = state->entities.entities + enemy_index;
+
+                    camera_set_point_to_interpolate(camera, target_entity->position);
+                }
+            }
+
+            /* ATTACK ENEMY! */
+            if (selection_confirm) {
+                
             }
         } break;
 
@@ -341,15 +429,7 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                     */
                     {
                         struct camera* camera = &state->camera;
-                        camera->interpolation_t[0] = 0;
-                        camera->try_interpolation[0] = true;
-                        camera->start_interpolation_values[0] = camera->xy.x;
-
-                        camera->interpolation_t[1] = 0;
-                        camera->try_interpolation[1] = true;
-                        camera->start_interpolation_values[1] = camera->xy.y;
-
-                        camera->tracking_xy = v2f32(global_battle_ui_state.movement_end_x * TILE_UNIT_SIZE, global_battle_ui_state.movement_end_y * TILE_UNIT_SIZE);
+                        camera_set_point_to_interpolate(camera, v2f32(global_battle_ui_state.movement_end_x * TILE_UNIT_SIZE, global_battle_ui_state.movement_end_y * TILE_UNIT_SIZE));
                     }
                 }
             }
@@ -375,20 +455,25 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
 }
 
 local void update_game_camera_combat(struct game_state* state, f32 dt) {
-    if (global_battle_ui_state.submode == BATTLE_UI_SUBMODE_LOOKING) {
-        const f32 CAMERA_VELOCITY = 150;
+    switch (global_battle_ui_state.submode) {
+        case BATTLE_UI_SUBMODE_LOOKING: {
+            const f32 CAMERA_VELOCITY = 150;
 
-        if (is_key_down(KEY_W)) {
-            state->camera.xy.y -= CAMERA_VELOCITY * dt;
-        } else if (is_key_down(KEY_S)) {
-            state->camera.xy.y += CAMERA_VELOCITY * dt;
-        }
+            if (is_key_down(KEY_W)) {
+                state->camera.xy.y -= CAMERA_VELOCITY * dt;
+            } else if (is_key_down(KEY_S)) {
+                state->camera.xy.y += CAMERA_VELOCITY * dt;
+            }
 
-        if (is_key_down(KEY_A)) {
-            state->camera.xy.x -= CAMERA_VELOCITY * dt;
-        } else if (is_key_down(KEY_D)) {
-            state->camera.xy.x += CAMERA_VELOCITY * dt;
-        }
+            if (is_key_down(KEY_A)) {
+                state->camera.xy.x -= CAMERA_VELOCITY * dt;
+            } else if (is_key_down(KEY_D)) {
+                state->camera.xy.x += CAMERA_VELOCITY * dt;
+            }
+        } break;
+        default: {
+            
+        } break;
     }
 }
 

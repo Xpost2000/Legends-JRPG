@@ -43,6 +43,17 @@ struct camera {
     bool                 try_interpolation[3];
 };
 
+void camera_set_point_to_interpolate(struct camera* camera, v2f32 point) {
+    camera->interpolation_t[0] = 0;
+    camera->interpolation_t[1] = 0;
+    camera->try_interpolation[0] = true;
+    camera->try_interpolation[1] = true;
+    camera->start_interpolation_values[0] = camera->xy.x;
+    camera->start_interpolation_values[1] = camera->xy.y;
+
+    camera->tracking_xy = point;
+}
+
 v2f32 camera_project(struct camera* camera, v2f32 point, s32 screen_width, s32 screen_height) {
 #if 0
     point.x *= camera->zoom;
