@@ -320,6 +320,31 @@ void entity_list_render_entities(struct entity_list* entities, struct graphics_a
     }
 }
 
+struct entity_query_list find_entities_within_radius(struct memory_arena* arena, struct entity_list* list, v2f32 position, f32 radius) {
+    struct entity_query_list result = {};
+
+    /* marker pointer */
+    result.indices = memory_arena_push(arena, 0);
+
+    f32 radius_sq = radius * radius;
+
+    for (s32 index = 0; index < list->capacity; ++index) {
+        struct entity* target = list->entities + index;
+
+        if (!(target->flags & ENTITY_FLAGS_ACTIVE))
+            continue;
+
+        f32 entity_distance_sq = v2f32_distance_sq(position, target->position);
+
+        if (entity_distance_sq <= radius_sq) {
+            memory_arena_push(arena, sizeof(s32));
+            result.indices[result.count++] = index;
+        }
+    }
+
+    return result;
+}
+
 void entity_inventory_add(struct entity_inventory* inventory, s32 limits, item_id item) {
     struct item_def* item_base = item_database_find_by_id(item);
 

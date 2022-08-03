@@ -175,4 +175,10 @@ void                 entity_list_update_entities(struct game_state* state, struc
 void                 entity_list_render_entities(struct entity_list* entities, struct graphics_assets* graphics_assets, struct render_commands* commands, f32 dt);
 struct rectangle_f32 entity_rectangle_collision_bounds(struct entity* entity);
 
+struct entity_query_list {
+    s32* indices;
+    s32  count;
+};
+struct entity_query_list find_entities_within_radius(struct memory_arena* arena, struct entity_list* list, v2f32 position, f32 radius);
+
 #endif
