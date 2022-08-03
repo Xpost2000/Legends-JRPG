@@ -2,6 +2,8 @@
 #ifndef ENTITY_DEF_C
 #define ENTITY_DEF_C
 
+#include "entity_stat_block_def.c"
+
 typedef struct entity_id {
     s32 index;
     s32 generation;
@@ -124,20 +126,6 @@ struct entity_ai_data {
 
     /* TODO DEBUG */
     f32 wait_timer;
-};
-
-struct entity_stat_block {
-    s32 level;
-
-    s32 vigor;    /* hp per level */
-    s32 strength;
-    s32 agility;
-    s32 speed;
-    s32 intelligence;
-    s32 luck;
-
-    s32 experience;
-    s32 xp_value;
 };
 
 struct entity {

@@ -1,6 +1,8 @@
 #ifndef ITEM_DEF_C
 #define ITEM_DEF_C
 
+#include "entity_stat_block_def.c"
+
 /*
   NOTE: FNV1-A hasn't really failed me yet...
 */
@@ -56,6 +58,17 @@ struct item_def {
     s32 type;
 
     s32 health_restoration_value;
+    s32 damage_value;
+
+    /* multiplication is always applied in order first. */
+    struct {
+        s32 health;
+        s32 spell_points;
+
+        Entity_Stat_Block_Base(s32);
+    } stats;
+
+    struct entity_stat_block_modifiers modifiers;
 
     s32 flags;
     s32 max_stack_value;
@@ -68,6 +81,9 @@ struct item_def {
        Have to expose lots of things to a lisp DSL I guess...
     */
     /* ironically a script usage file might be "cheaper?" */
+    string script_file_name;
+    /* have some code hooks for on combat */
+    /* need to have temporary bindings (such as HIT/IT/SELF) for context sensitive hooks */
 };
 
 item_id item_get_id(struct item_def* item) {
