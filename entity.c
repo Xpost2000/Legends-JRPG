@@ -74,7 +74,7 @@ struct entity* entity_list_dereference_entity(struct entity_list* entities, enti
 /* requires tilemap world... */
 /* TODO fix implicit decls, linker hasn't killed game yet */
 void player_handle_radial_interactables(struct game_state* state, struct entity_list* entities, s32 entity_index, f32 dt);
-#define DEFAULT_VELOCITY (1000)
+#define DEFAULT_VELOCITY (TILE_UNIT_SIZE * 6)
 
 void entity_handle_player_controlled(struct game_state* state, struct entity_list* entities, s32 entity_index, f32 dt) {
     struct entity* entity = entities->entities + entity_index;
@@ -130,9 +130,10 @@ void entity_list_update_entities(struct game_state* state, struct entity_list* e
             /* _debugprintf("cx: %f, %f\n", current_entity->velocity.x, current_entity->velocity.y); */
             /* tile intersection */
             {
-                current_entity->position.x += current_entity->velocity.x * dt;
+                bool stop_horizontal_movement = false;
+
                 {
-                    bool stop_horizontal_movement = false;
+                    current_entity->position.x += current_entity->velocity.x * dt;
 
                     if (!stop_horizontal_movement) {
                         for (s32 index = 0; index < area->tile_count; ++index) {
@@ -192,9 +193,8 @@ void entity_list_update_entities(struct game_state* state, struct entity_list* e
                             }
                         }
                     }
-
-                    if (stop_horizontal_movement) current_entity->velocity.x = 0;
                 }
+                if (stop_horizontal_movement) current_entity->velocity.x = 0;
 
                 current_entity->position.y += current_entity->velocity.y * dt;
                 {
@@ -422,7 +422,7 @@ void entity_combat_submit_movement_action(struct entity* entity, v2f32* path_poi
 local void entity_update_and_perform_actions(struct game_state* state, struct entity_list* entities, s32 index, struct level_area* area, f32 dt) {
     struct entity* target_entity = entities->entities + index;
 
-    const f32 CLOSE_ENOUGH_EPISILON = 0.09856;
+    const f32 CLOSE_ENOUGH_EPISILON = 0.1156;
 
     switch (target_entity->ai.current_action) {
         case ENTITY_ACTION_NONE: {
