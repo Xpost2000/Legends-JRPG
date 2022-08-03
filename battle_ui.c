@@ -183,8 +183,19 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                 f32 attack_radius = 3;
                 struct entity_query_list nearby_potential_targets = find_entities_within_radius(&scratch_arena, &state->entities, game_get_player(state)->position, attack_radius * TILE_UNIT_SIZE);
 
-                /* the player is likely the first. */
-                if (nearby_potential_targets.count <= 1) 
+                s32 living_targets = 0;
+
+                for (s32 index = 0; index < nearby_potential_targets.count; ++index) {
+                    struct entity* potential_target = state->entities.entities + nearby_potential_targets.indices[index];
+
+                    if (!(potential_target->flags & ENTITY_FLAGS_PLAYER_CONTROLLED)) {
+                        if ((potential_target->flags & ENTITY_FLAGS_ALIVE)) {
+                            living_targets += 1;
+                        }
+                    }
+                }
+
+                if (living_targets <= 0) 
                     disabled_actions[BATTLE_ATTACK] = true;
             }
             {
@@ -294,6 +305,10 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                 struct entity* current_entity = &state->entities.entities[nearby_potential_targets.indices[index]];
 
                 if (current_entity == game_get_player(state)) {
+                    continue;
+                }
+
+                if (!(current_entity->flags & ENTITY_FLAGS_ALIVE)) {
                     continue;
                 }
 

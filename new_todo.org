@@ -9,15 +9,13 @@ So instead of using the kinda serious JRPG story I wanted to do, we're just goin
 a small game about freeing a village from Orcs. It'll be like maybe an hour or two of play or something,
 mostly as an engine demo.
 
+** Need a normal game UI
 ** Start writing a GDD
 ** Add more game "kernel" features
    The core of the game is not done but we're getting closer to
    my revengence
 ** End Turn
-** Attack!
-** Fix the steering behavior for the pathfinder.
 ** Also add a game start up script.
-** Add level scripts!
 ** Do we need a world map?
    Probably...
 ** Draw some new sprites for actors and animals
@@ -59,5 +57,5 @@ mostly as an engine demo.
      - [ ] Blade Rush    (Sword)
      - [ ] Triple Strike (Fist)
 
-** FIx the word wrap
+** Fix the word wrap
 ** Improve the dialogue UI
