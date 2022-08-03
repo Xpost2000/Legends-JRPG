@@ -6,6 +6,19 @@ enum battle_ui_animation_phase {
     BATTLE_UI_FLASH_IN_END_TURN_TEXT,
     BATTLE_UI_FADE_OUT_END_TURN_TEXT,
     BATTLE_UI_IDLE,
+
+    BATTLE_UI_FADE_OUT_DETAILS_AFTER_BATTLE_COMPLETION,
+    /* 
+       I would add more animation phases but I don't have infinite time or patience right now,
+       I've mostly done nothing but UI code, and while some of it is kind of cool, it's also a bit
+       soul retching sometimes.
+       
+       I need to do some crappy script writing to have a nice time I guess.
+       
+       TODO add remaining animated phases.
+    */
+    BATTLE_UI_AFTER_ACTION_REPORT_IDLE,
+    /* BATTLE_UI_AFTER_ACTION_BYE, */
 };
 
 enum battle_ui_submodes {
@@ -453,6 +466,46 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
     }
 }
 
+local void do_after_action_report_screen(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt, f32 y, bool allow_input) {
+    struct font_cache* normal_font      = game_get_font(MENU_FONT_COLOR_WHITE);
+    struct font_cache* highlighted_font = game_get_font(MENU_FONT_COLOR_GOLD);
+
+    bool selection_down    = is_key_down_with_repeat(KEY_DOWN);
+    bool selection_up      = is_key_down_with_repeat(KEY_UP);
+    bool selection_confirm = is_key_pressed(KEY_RETURN);
+    bool selection_cancel  = is_key_pressed(KEY_BACKSPACE);
+
+    union color32f32 modulation_color = color32f32_WHITE;
+    union color32f32 ui_color         = UI_BATTLE_COLOR;
+
+    if (!allow_input) {
+        modulation_color = color32f32(0.5, 0.5, 0.5, 0.5);   
+        ui_color.a = 0.5;
+    }
+
+    s32 BOX_WIDTH  = 20;
+    s32 BOX_HEIGHT = 16;
+
+    /* DISPLAY XP Gain */ 
+    /* and party member stuff */
+    v2f32 ui_box_size     = nine_patch_estimate_extents(ui_chunky, 1, BOX_WIDTH, BOX_HEIGHT);
+    v2f32 ui_box_position = v2f32(framebuffer->width/2-ui_box_size.x/2, y);
+
+    /* TODO */
+    draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, ui_box_position, BOX_WIDTH, BOX_HEIGHT, UI_BATTLE_COLOR);
+    draw_ui_breathing_text(framebuffer, v2f32(ui_box_position.x+15, ui_box_position.y+15), normal_font, 3, string_literal("Battle Complete!"), 0, modulation_color);
+    draw_ui_breathing_text(framebuffer, v2f32(ui_box_position.x+15, ui_box_position.y+60), normal_font, 3, string_literal("Nothing for now. Just dismiss this."), 0, modulation_color);
+
+    if (selection_confirm) {
+        global_battle_ui_state.phase = 0;
+
+        state->combat_state.active_combat = false;
+
+        struct entity* player = game_get_player(state);
+        camera_set_point_to_interpolate(&state->camera, player->position);
+    }
+}
+
 local void update_game_camera_combat(struct game_state* state, f32 dt) {
     switch (global_battle_ui_state.submode) {
         case BATTLE_UI_SUBMODE_LOOKING: {
@@ -575,6 +628,7 @@ local void update_and_render_battle_ui(struct game_state* state, struct software
                 global_battle_ui_state.phase = BATTLE_UI_FLASH_IN_BATTLE_TEXT;
             }
         } break;
+
         case BATTLE_UI_FLASH_IN_BATTLE_TEXT: {
             const f32 max_t = 0.45;
             f32 t = global_battle_ui_state.timer / max_t;
@@ -594,6 +648,7 @@ local void update_and_render_battle_ui(struct game_state* state, struct software
                 global_battle_ui_state.phase = BATTLE_UI_FADE_OUT;
             }
         } break;
+
         case BATTLE_UI_FADE_OUT: {
             const f32 max_t = 1;
             f32 t = global_battle_ui_state.timer / max_t;
@@ -609,6 +664,7 @@ local void update_and_render_battle_ui(struct game_state* state, struct software
                 global_battle_ui_state.phase = BATTLE_UI_MOVE_IN_DETAILS;
             }
         } break;
+
         case BATTLE_UI_MOVE_IN_DETAILS: {
             /* move in battle UI in a fancy way. */ 
 
@@ -633,15 +689,36 @@ local void update_and_render_battle_ui(struct game_state* state, struct software
 
             global_battle_ui_state.timer += dt;
         } break;
+
         case BATTLE_UI_IDLE: {
             draw_turn_panel(state, framebuffer, 10, 100);
             bool is_player_turn = is_player_combat_turn(state);
 
             do_battle_selection_menu(state, framebuffer, framebuffer->width - BATTLE_SELECTIONS_WIDTH + 15, 100, is_player_turn);
             draw_battle_tooltips(state, framebuffer, dt, framebuffer->height, is_player_turn);
+        } break;
 
-            if (global_battle_ui_state.submode == BATTLE_UI_SUBMODE_NONE) {
+        case BATTLE_UI_FADE_OUT_DETAILS_AFTER_BATTLE_COMPLETION: {
+            const f32 linger_t = 0.1;
+            const f32 max_t = 0.4;
+            f32 t = (global_battle_ui_state.timer-linger_t) / max_t;
+            if (t <= 0.0) t = 0.0;
+            if (t >= 1.0) t = 1.0;
+
+            if (global_battle_ui_state.timer > max_t+linger_t) {
+                global_battle_ui_state.phase = BATTLE_UI_AFTER_ACTION_REPORT_IDLE;
             }
+
+            draw_turn_panel(state, framebuffer, lerp_f32(10, -300, t), 100);
+
+            do_battle_selection_menu(state, framebuffer, lerp_f32(framebuffer->width - BATTLE_SELECTIONS_WIDTH + 15, framebuffer->width + 300, t), 100, false);
+            draw_battle_tooltips(state, framebuffer, dt, lerp_f32(framebuffer->height, framebuffer->height + 300, t), false);
+
+            global_battle_ui_state.timer += dt;
+        } break;
+
+        case BATTLE_UI_AFTER_ACTION_REPORT_IDLE: {
+            do_after_action_report_screen(state, framebuffer, dt, 50, true);
         } break;
     }
 }
@@ -669,5 +746,12 @@ local void render_combat_area_information(struct game_state* state, struct rende
             v2f32 point = global_battle_ui_state.max_remembered_path_points[index];
             render_commands_push_quad(commands, rectangle_f32(point.x * TILE_UNIT_SIZE, point.y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE), color32u8(255, 0, 255, 128), BLEND_MODE_ALPHA);
         }
+    }
+}
+
+local void end_combat_ui(void) {
+    if (global_battle_ui_state.phase < BATTLE_UI_FADE_OUT_DETAILS_AFTER_BATTLE_COMPLETION) {
+        global_battle_ui_state.timer = 0;
+        global_battle_ui_state.phase = BATTLE_UI_FADE_OUT_DETAILS_AFTER_BATTLE_COMPLETION;
     }
 }

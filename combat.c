@@ -65,7 +65,7 @@ void update_combat(struct game_state* state, f32 dt) {
 
             if (player != potential_combatant) {
                 bool aggressive = is_entity_aggressive_to_player(potential_combatant);
-                _debugprintf("%d", aggressive);
+
                 if (aggressive) {
                     should_end_combat = false;
                 }
@@ -74,7 +74,7 @@ void update_combat(struct game_state* state, f32 dt) {
     }
 
     if (should_end_combat) {
-        combat_state->active_combat = false;
+        end_combat_ui();
         /* Notify the Battle UI to display the after action report. */
     } else {
         if (!(combatant->flags & ENTITY_FLAGS_ALIVE)) {

@@ -466,10 +466,10 @@ bool entity_validate_death(struct entity* entity) {
 
 void entity_do_physical_hurt(struct entity* entity, s32 damage) {
     /* maybe do a funny animation */
-    if (!entity_validate_death(entity)) {
-        entity->health.value -= damage;
-        notify_damage(entity->position, damage);
-    }
+    entity->health.value -= damage;
+
+    notify_damage(entity->position, damage);
+    (entity_validate_death(entity));
 }
 
 /* NOTE: does not really do turns. */
@@ -547,7 +547,7 @@ for now just do a fixed amount of damage
                  */
                   
                 struct entity* attacked_entity = entities->entities + target_entity->ai.attack_target_index;
-                entity_do_physical_hurt(attacked_entity, 25);
+                entity_do_physical_hurt(attacked_entity, 9999);
             }
         } break;
     }
