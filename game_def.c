@@ -334,6 +334,37 @@ struct ui_popup_state {
     struct ui_popup_message_box messages[256];
 };
 
+/* flashing floating texts that represent damage! */
+#define DAMAGE_NOTIFIER_LINGER_TIME (0.15f)
+#define DAMAGE_NOTIFIER_MAX_TIME (0.6)
+#define DAMAGE_NOTIFIER_FLICKER_TIME (0.075)
+struct damage_notifier {
+    v2f32 position;
+    /* u8  type; /\* 0 - PHYSICAL, 1 - MAGIC *\/ */
+
+    s32 amount;
+    f32 timer;
+
+    f32 flicker_timer;
+    u8  alternative_color;
+};
+s32                    global_damage_notification_count  = 0;
+struct damage_notifier global_damage_notifications[1024] = {};
+void notify_damage(/* u8 type, */v2f32 position, s32 amount) {
+    if (global_damage_notification_count >= 1024) {
+        return;
+    }
+
+    struct damage_notifier* notifier = &global_damage_notifications[global_damage_notification_count++];
+    zero_memory(notifier, sizeof(*notifier));
+
+    notifier->position               = position;
+    notifier->amount                 = amount;
+}
+
+/* NOTE: does not render through render commands. Manually does camera projection (no scaling though) */
+void game_display_and_update_damage_notifications(struct software_framebuffer* framebuffer, f32 dt);
+
 struct ui_popup_state global_popup_state = {};
 void game_message_queue(string message);
 bool game_display_and_update_messages(struct software_framebuffer* framebuffer, f32 dt);
@@ -395,6 +426,7 @@ static string interactable_type_strings[] = {
     string_literal("(chest)"),
     string_literal("(count)"),
 };
+
 #include "entities_def.c"
 
 struct game_state_combat_state {

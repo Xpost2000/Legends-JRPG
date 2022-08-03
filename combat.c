@@ -56,13 +56,39 @@ void update_combat(struct game_state* state, f32 dt) {
     struct game_state_combat_state* combat_state = &state->combat_state;
     struct entity* combatant = find_current_combatant(state);
 
-    if (combatant->waiting_on_turn) {
-        entity_think_combat_actions(combatant, state, dt);
-    } else {
-        combat_state->active_combatant += 1;
+    bool should_end_combat = true;
 
-        if (combat_state->active_combatant >= combat_state->count) {
-            add_all_combat_participants(state, &state->entities);
+    {
+        struct entity* player = game_get_player(state);
+        for (s32 index = 0; index < combat_state->count; ++index) {
+            struct entity* potential_combatant = entity_list_dereference_entity(&state->entities, combat_state->participants[index]);
+
+            if (player != potential_combatant) {
+                bool aggressive = is_entity_aggressive_to_player(potential_combatant);
+                _debugprintf("%d", aggressive);
+                if (aggressive) {
+                    should_end_combat = false;
+                }
+            }
+        }
+    }
+
+    if (should_end_combat) {
+        combat_state->active_combat = false;
+        /* Notify the Battle UI to display the after action report. */
+    } else {
+        if (!(combatant->flags & ENTITY_FLAGS_ALIVE)) {
+            combat_state->active_combatant += 1;
+        }
+
+        if (combatant->waiting_on_turn) {
+            entity_think_combat_actions(combatant, state, dt);
+        } else {
+            combat_state->active_combatant += 1;
+
+            if (combat_state->active_combatant >= combat_state->count) {
+                add_all_combat_participants(state, &state->entities);
+            }
         }
     }
 }

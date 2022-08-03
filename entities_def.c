@@ -74,7 +74,6 @@ enum entity_chest_flags {
 };
 /* in tiles */
 #define ENTITY_CHEST_INTERACTIVE_RADIUS ((f32)1.8565 * TILE_UNIT_SIZE)
-/* TODO implement */
 struct entity_chest {
     v2f32                         position;
     v2f32                         scale;
@@ -104,6 +103,7 @@ enum entity_combat_action {
     ENTITY_ACTION_NONE,
     ENTITY_ACTION_MOVEMENT,
     ENTITY_ACTION_ATTACK,
+    /* ENTITY_ACTION_SKIP_TURN, */
 };
 
 struct entity_ai_data {
@@ -116,23 +116,25 @@ struct entity_ai_data {
     s32                           current_action;
 
     u32                           flags;
+    s32                           attack_target_index;
 
     bool                          following_path;
     struct entity_navigation_path navigation_path;
     s32                           current_path_point_index;
 
+    /* TODO, unused! */
     s32                             tracked_attacker_write_cursor;
     struct entity_ai_attack_tracker tracked_attackers[MAXIMUM_REMEMBERED_ATTACKERS];
 
-    /* TODO DEBUG */
+    /* used for determining when to aggro. */
+    s32                             aggro_tolerance;
+
     f32 wait_timer;
 };
 
 struct entity {
     string name;
-    /* These two fields should define an AABB */
-    /* actual visual information is for now just handled by the rendering procedure */
-    /* TODO make this centered */
+
     v2f32 position;
     v2f32 scale;
     v2f32 velocity;
@@ -152,9 +154,11 @@ struct entity {
     bool                          waiting_on_turn;
 };
 
+bool is_entity_aggressive_to_player(struct entity* entity);
 void entity_inventory_use_item(struct entity_inventory* inventory, s32 item_index, struct entity* target);
 
 void entity_combat_submit_movement_action(struct entity* entity, v2f32* path_points, s32 path_count);
+void entity_combat_submit_attack_action(struct entity* entity, s32 attack_index);
 #if 0
 void entity_combat_submit_item_use_action(struct entity* entity, s32 item_index, struct entity* target);
 #endif

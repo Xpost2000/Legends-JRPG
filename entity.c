@@ -286,6 +286,7 @@ void entity_list_update_entities(struct game_state* state, struct entity_list* e
 }
 
 void entity_think_combat_actions(struct entity* entity, struct game_state* state, f32 dt) {
+    /* This should only think about submitting actions... Oh well */
     if (entity->flags & ENTITY_FLAGS_PLAYER_CONTROLLED) {
         /* let the UI handle this thing */
     } else {
@@ -444,6 +445,35 @@ void entity_combat_submit_movement_action(struct entity* entity, v2f32* path_poi
     entity->ai.current_action  = ENTITY_ACTION_MOVEMENT;
 }
 
+void entity_combat_submit_attack_action(struct entity* entity, s32 attack_index) {
+    if (entity->ai.current_action != ENTITY_ACTION_NONE)
+        return;
+
+    entity->ai.current_action      = ENTITY_ACTION_ATTACK;
+    entity->ai.attack_target_index = attack_index;
+    entity->waiting_on_turn     = 0;
+    _debugprintf("attacku");
+}
+
+bool entity_validate_death(struct entity* entity) {
+    if (entity->health.value <= 0) {
+        entity->flags &= ~ENTITY_FLAGS_ALIVE;
+        return true;
+    }
+
+    return false;
+}
+
+void entity_do_physical_hurt(struct entity* entity, s32 damage) {
+    /* maybe do a funny animation */
+    if (!entity_validate_death(entity)) {
+        entity->health.value -= damage;
+        notify_damage(entity->position, damage);
+    }
+}
+
+/* NOTE: does not really do turns. */
+/* set the entity->waiting_on_turn flag to 0 to finish their turn in the combat system. Not done right now cause I need all the actions. */
 local void entity_update_and_perform_actions(struct game_state* state, struct entity_list* entities, s32 index, struct level_area* area, f32 dt) {
     struct entity* target_entity = entities->entities + index;
 
@@ -459,6 +489,7 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
         case ENTITY_ACTION_MOVEMENT: {
             if (target_entity->ai.current_path_point_index >= target_entity->ai.navigation_path.count) {
                 target_entity->ai.current_action = 0;
+
                 target_entity->ai.following_path = false;
 
                 target_entity->position.x = target_entity->ai.navigation_path.path_points[target_entity->ai.navigation_path.count-1].x * TILE_UNIT_SIZE;
@@ -504,7 +535,32 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
         } break;
 
         case ENTITY_ACTION_ATTACK: {
-            
+            target_entity->ai.wait_timer += dt;
+
+            if (target_entity->ai.wait_timer >= 1.0) {
+                target_entity->ai.current_action = 0;
+                /*
+                  NOTE: Need to handle attack animations? Damn.
+                  Lots of hardcoding I forsee.
+                  
+for now just do a fixed amount of damage
+                 */
+                  
+                struct entity* attacked_entity = entities->entities + target_entity->ai.attack_target_index;
+                entity_do_physical_hurt(attacked_entity, 25);
+            }
         } break;
     }
+}
+
+bool is_entity_aggressive_to_player(struct entity* entity) {
+    if (!(entity->flags & ENTITY_FLAGS_ALIVE))
+        return false;
+
+    if (entity->ai.flags & ENTITY_AI_FLAGS_AGGRESSIVE_TO_PLAYER) {
+        return true;
+    }
+
+
+    return false;
 }

@@ -124,7 +124,8 @@ local void draw_turn_panel(struct game_state* state, struct software_framebuffer
 #define UI_BATTLE_COLOR (color32f32(34/255.0f, 37/255.0f, 143/255.0f, 1.0))
 
 local void do_battle_selection_menu(struct game_state* state, struct software_framebuffer* framebuffer, f32 x, f32 y, bool allow_input) {
-    struct game_state_combat_state* combat_state = &state->combat_state;
+    struct game_state_combat_state* combat_state            = &state->combat_state;
+    struct entity*                  active_combatant_entity = entity_list_dereference_entity(&state->entities, combat_state->participants[combat_state->active_combatant]);
 
     struct font_cache* normal_font      = game_get_font(MENU_FONT_COLOR_WHITE);
     struct font_cache* highlighted_font = game_get_font(MENU_FONT_COLOR_GOLD);
@@ -338,7 +339,8 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
 
             /* ATTACK ENEMY! */
             if (selection_confirm) {
-                
+                global_battle_ui_state.submode = BATTLE_UI_SUBMODE_NONE;
+                entity_combat_submit_attack_action(active_combatant_entity, enemy_index);
             }
         } break;
 
@@ -411,9 +413,6 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
 
             if (is_key_pressed(KEY_RETURN)) {
                 /* submit movement */
-
-                struct entity* active_combatant_entity = entity_list_dereference_entity(&state->entities, combat_state->participants[combat_state->active_combatant]);
-
                 global_battle_ui_state.submode = BATTLE_UI_SUBMODE_NONE;
 
                 if (global_battle_ui_state.movement_start_x != global_battle_ui_state.movement_end_x ||

@@ -991,6 +991,43 @@ bool game_display_and_update_messages(struct software_framebuffer* framebuffer, 
     return false;
 }
 
+void game_display_and_update_damage_notifications(struct software_framebuffer* framebuffer, f32 dt) {
+    struct font_cache* font       = game_get_font(MENU_FONT_COLOR_STEEL);
+    struct font_cache* other_font = game_get_font(MENU_FONT_COLOR_ORANGE);
+
+    struct camera* camera = &game_state->camera;
+
+    for (s32 index = 0; index < global_damage_notification_count; ++index) {
+        struct damage_notifier* notifier = global_damage_notifications + index;
+
+        struct font_cache* painting_font = font;
+        if (notifier->alternative_color) painting_font = other_font;
+
+        {
+            notifier->position.y -= 50 * dt;
+            notifier->timer         += dt;
+            notifier->flicker_timer += dt;
+
+            if (notifier->timer >= DAMAGE_NOTIFIER_MAX_TIME) {
+                global_damage_notifications[index] = global_damage_notifications[--global_damage_notification_count];
+                continue;
+            }
+
+            if (notifier->flicker_timer >= DAMAGE_NOTIFIER_FLICKER_TIME) {
+                notifier->alternative_color ^= 1;
+                notifier->flicker_timer      = 0;
+            }
+        }
+
+        v2f32 draw_position = notifier->position;
+        draw_position       = camera_project(camera, draw_position, framebuffer->width, framebuffer->height);
+
+        _debugprintf("%f, %f", draw_position.x, draw_position.y);
+
+        draw_ui_breathing_text(framebuffer, notifier->position, painting_font, 3, string_from_cstring(format_temp("%d!", notifier->amount)), index, color32f32_WHITE);
+    }
+}
+
 local void dialogue_try_to_execute_script_actions(struct game_state* state, struct conversation_node* node) {
     /* 
        scratch arena is okay for evaluation
@@ -1024,6 +1061,8 @@ local void dialogue_choice_try_to_execute_script_actions(struct game_state* stat
 #include "conversation_ui.c"
 
 local void update_and_render_ingame_game_menu_ui(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
+    game_display_and_update_damage_notifications(framebuffer, dt);
+
     if (game_display_and_update_storyboard(framebuffer, dt))
         return;
 
