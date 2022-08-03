@@ -193,10 +193,10 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                             struct entity* active_combatant_entity = entity_list_dereference_entity(&state->entities, combat_state->participants[combat_state->active_combatant]);
                             level_area_build_movement_visibility_map(&scratch_arena, &state->loaded_area, active_combatant_entity->position.x / TILE_UNIT_SIZE, active_combatant_entity->position.y / TILE_UNIT_SIZE, 6);
 
-                            global_battle_ui_state.movement_start_x                 = active_combatant_entity->position.x / TILE_UNIT_SIZE;
-                            global_battle_ui_state.movement_start_y                 = active_combatant_entity->position.y / TILE_UNIT_SIZE;
-                            global_battle_ui_state.movement_end_x                   = active_combatant_entity->position.x / TILE_UNIT_SIZE;
-                            global_battle_ui_state.movement_end_y                   = active_combatant_entity->position.y / TILE_UNIT_SIZE;
+                            global_battle_ui_state.movement_start_x                 = floorf((active_combatant_entity->position.x + active_combatant_entity->scale.x/2) / TILE_UNIT_SIZE);
+                            global_battle_ui_state.movement_start_y                 = floorf((active_combatant_entity->position.y + active_combatant_entity->scale.y/2) / TILE_UNIT_SIZE);
+                            global_battle_ui_state.movement_end_x                   = global_battle_ui_state.movement_start_x;
+                            global_battle_ui_state.movement_end_y                   = global_battle_ui_state.movement_start_y;
                             global_battle_ui_state.max_remembered_path_points_count = 0;
                         } break;
                         case BATTLE_ATTACK: {

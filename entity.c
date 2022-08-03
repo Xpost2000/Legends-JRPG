@@ -2,9 +2,9 @@
 
 struct rectangle_f32 entity_rectangle_collision_bounds(struct entity* entity) {
     return rectangle_f32(entity->position.x,
-                         entity->position.y,
-                         entity->scale.x,
-                         entity->scale.y);
+                         entity->position.y+4,
+                         entity->scale.x-3,
+                         entity->scale.y-4);
 }
 
 struct entity_list entity_list_create(struct memory_arena* arena, s32 capacity) {
@@ -74,7 +74,7 @@ struct entity* entity_list_dereference_entity(struct entity_list* entities, enti
 /* requires tilemap world... */
 /* TODO fix implicit decls, linker hasn't killed game yet */
 void player_handle_radial_interactables(struct game_state* state, struct entity_list* entities, s32 entity_index, f32 dt);
-#define DEFAULT_VELOCITY (100)
+#define DEFAULT_VELOCITY (1000)
 
 void entity_handle_player_controlled(struct game_state* state, struct entity_list* entities, s32 entity_index, f32 dt) {
     struct entity* entity = entities->entities + entity_index;
@@ -422,49 +422,59 @@ void entity_combat_submit_movement_action(struct entity* entity, v2f32* path_poi
 local void entity_update_and_perform_actions(struct game_state* state, struct entity_list* entities, s32 index, struct level_area* area, f32 dt) {
     struct entity* target_entity = entities->entities + index;
 
+    const f32 CLOSE_ENOUGH_EPISILON = 0.09856;
+
     switch (target_entity->ai.current_action) {
         case ENTITY_ACTION_NONE: {
-            target_entity->velocity.x        = 0;
-            target_entity->velocity.y        = 0;
-            target_entity->ai.following_path = false;
+            target_entity->velocity.x                  = 0;
+            target_entity->velocity.y                  = 0;
+            target_entity->ai.following_path           = false;
         } break;
 
         case ENTITY_ACTION_MOVEMENT: {
             if (target_entity->ai.current_path_point_index >= target_entity->ai.navigation_path.count) {
-            done_path:
-                _debugprintf("done with movement");
                 target_entity->ai.current_action = 0;
                 target_entity->ai.following_path = false;
 
                 target_entity->position.x = target_entity->ai.navigation_path.path_points[target_entity->ai.navigation_path.count-1].x * TILE_UNIT_SIZE;
                 target_entity->position.y = target_entity->ai.navigation_path.path_points[target_entity->ai.navigation_path.count-1].y * TILE_UNIT_SIZE;
+
+                target_entity->ai.current_path_point_index = 0;
+                target_entity->ai.navigation_path.count = 0;
             } else {
-                #if 1
-                /* I need to fix the path following later. It's a bit more tinkering and I don't want to waste my time on this. */
-                goto done_path;
-                #else
                 v2f32 point              = target_entity->ai.navigation_path.path_points[target_entity->ai.current_path_point_index];
                 v2f32 tile_position      = target_entity->position;
 
                 tile_position.x /= TILE_UNIT_SIZE;
                 tile_position.y /= TILE_UNIT_SIZE;
 
-                v2f32 direction_to_point = v2f32_normalize(v2f32_sub(point, tile_position)); 
+                v2f32 displacement_to_point = v2f32_sub(point, tile_position);
+                v2f32 direction_to_point    = v2f32_normalize(displacement_to_point); 
 
-                direction_to_point.x *= DEFAULT_VELOCITY;
-                direction_to_point.y *= DEFAULT_VELOCITY;
+                bool already_at_next_point = false;
+                
+                {
+                    if (v2f32_magnitude_sq(displacement_to_point) == 0.0f) {
+                        already_at_next_point = true;
+                    }
 
-                target_entity->velocity = direction_to_point;
-
-                /* if ((s32)tile_position.x == (s32)point.x && */
-                /*     (s32)tile_position.y == (s32)point.y) { */
-                /*     target_entity->ai.current_path_point_index++; */
-                /* } */
-                _debugprintf("dist: %f", v2f32_distance(point, tile_position));
-                if (v2f32_distance(point, tile_position) <= (0.10)) {
-                    target_entity->ai.current_path_point_index++;
+                    if (v2f32_distance(point, tile_position) <= (CLOSE_ENOUGH_EPISILON)) {
+                        already_at_next_point = true;
+                    }
                 }
-                #endif
+
+                if (!already_at_next_point) {
+                    direction_to_point.x *= DEFAULT_VELOCITY;
+                    direction_to_point.y *= DEFAULT_VELOCITY;
+
+                    target_entity->velocity = direction_to_point;
+                } else {
+                    target_entity->position.x = target_entity->ai.navigation_path.path_points[target_entity->ai.current_path_point_index].x * TILE_UNIT_SIZE;
+                    target_entity->position.y = target_entity->ai.navigation_path.path_points[target_entity->ai.current_path_point_index].y * TILE_UNIT_SIZE;
+
+                    target_entity->ai.current_path_point_index++;
+                    target_entity->velocity = v2f32(0,0);
+                }
             }
         } break;
 
