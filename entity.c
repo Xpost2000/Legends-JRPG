@@ -2,9 +2,9 @@
 
 struct rectangle_f32 entity_rectangle_collision_bounds(struct entity* entity) {
     return rectangle_f32(entity->position.x-4,
-                         entity->position.y+4,
+                         entity->position.y+20,
                          entity->scale.x-8,
-                         entity->scale.y-8);
+                         entity->scale.y-16);
 }
 
 struct entity_list entity_list_create(struct memory_arena* arena, s32 capacity) {
