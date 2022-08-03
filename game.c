@@ -406,14 +406,10 @@ struct navigation_path navigation_path_find(struct memory_arena* arena, struct l
                     s32 x;
                     s32 y;
                 }  neighbor_offsets[] = {
-                    [0] = {1, 0},
-                    [1] = {0, 1},
-                    [2] = {-1, 0},
-                    [3] = {0, -1},
-                    [4] = {1, 1},
-                    [5] = {-1, 1},
-                    [6] = {1, -1},
-                    [7] = {-1, -1},
+                    {1, 0},
+                    {0, 1},
+                    {-1, 0},
+                    {0, -1},
                 };
 
                 for (s32 index = 0; index < array_count(neighbor_offsets); ++index) {
@@ -1300,6 +1296,7 @@ local void update_game_camera_exploration_mode(struct game_state* state, f32 dt)
     struct camera* camera = &state->camera;
 
     struct entity* player = entity_list_dereference_entity(&state->entities, player_id);
+    camera->tracking_xy = player->position;
 
     {
         /* kind of like a project on everythign */
@@ -1340,15 +1337,14 @@ local void update_game_camera(struct game_state* state, f32 dt) {
     camera->centered    = true;
     camera->zoom        = 1;
 
-    camera->tracking_xy = player->position;
-
     /* TODO hard coded sprite sizes */
     {
         static bool camera_init = false;
         if (!camera_init) {
-            camera->xy.x = camera->tracking_xy.x + 16;
-            camera->xy.y = camera->tracking_xy.y + 32;
-            camera_init  = true;
+            camera->tracking_xy = player->position;
+            camera->xy.x        = camera->tracking_xy.x + 16;
+            camera->xy.y        = camera->tracking_xy.y + 32;
+            camera_init         = true;
         }
     }
 

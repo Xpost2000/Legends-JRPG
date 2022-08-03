@@ -316,7 +316,7 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                         camera->try_interpolation[1] = true;
                         camera->start_interpolation_values[1] = camera->xy.y;
 
-                        camera->tracking_xy = active_combatant_entity->position;
+                        camera->tracking_xy = v2f32(global_battle_ui_state.movement_end_x * TILE_UNIT_SIZE, global_battle_ui_state.movement_end_y * TILE_UNIT_SIZE);
                     }
                 }
             }

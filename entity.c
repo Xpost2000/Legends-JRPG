@@ -1,10 +1,10 @@
 #include "entities_def.c"
 
 struct rectangle_f32 entity_rectangle_collision_bounds(struct entity* entity) {
-    return rectangle_f32(entity->position.x,
+    return rectangle_f32(entity->position.x-4,
                          entity->position.y+4,
-                         entity->scale.x-3,
-                         entity->scale.y-4);
+                         entity->scale.x-8,
+                         entity->scale.y-8);
 }
 
 struct entity_list entity_list_create(struct memory_arena* arena, s32 capacity) {
@@ -422,7 +422,7 @@ void entity_combat_submit_movement_action(struct entity* entity, v2f32* path_poi
 local void entity_update_and_perform_actions(struct game_state* state, struct entity_list* entities, s32 index, struct level_area* area, f32 dt) {
     struct entity* target_entity = entities->entities + index;
 
-    const f32 CLOSE_ENOUGH_EPISILON = 0.1156;
+    const f32 CLOSE_ENOUGH_EPISILON = 0.1556;
 
     switch (target_entity->ai.current_action) {
         case ENTITY_ACTION_NONE: {
