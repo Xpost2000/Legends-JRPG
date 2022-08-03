@@ -153,11 +153,37 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
             }
 
             draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, v2f32(x, y), 8, 14, ui_color);
+
+            bool disabled_actions[array_count(battle_menu_main_options)] = {};
+
+            /* disable selecting attack if we don't have anyone within attack range */
+            {
+                f32 attack_radius = 3;
+                struct entity_query_list nearby_potential_targets = find_entities_within_radius(&scratch_arena, &state->entities, game_get_player(state)->position, attack_radius * TILE_UNIT_SIZE);
+
+                /* the player is likely the first. */
+                if (nearby_potential_targets.count <= 1) 
+                    disabled_actions[BATTLE_ATTACK] = true;
+            }
+            {
+                /* when the user is ability locked... TODO */
+                disabled_actions[BATTLE_ABILITY];
+            }
+
+
             for (unsigned index = 0; index < array_count(battle_menu_main_options); ++index) {
                 struct font_cache* painting_font = normal_font;
 
                 if (index == global_battle_ui_state.selection) {
                     painting_font = highlighted_font;
+                }
+
+                if (allow_input) {
+                    if (disabled_actions[index]) {
+                        modulation_color = color32f32(0.5, 0.5, 0.5, 1.0);
+                    } else {
+                        modulation_color = color32f32_WHITE;
+                    }
                 }
 
                 draw_ui_breathing_text(framebuffer, v2f32(x + 20, y + 15 + index * 32), painting_font,
@@ -166,56 +192,63 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
 
             if (allow_input) {
                 s32 options_count = array_count(battle_menu_main_options);
-                if (is_key_down_with_repeat(KEY_DOWN)) {
-                    global_battle_ui_state.selection++;
 
-                    if (global_battle_ui_state.selection >= options_count) {
-                        global_battle_ui_state.selection = 0;
-                    }
+                if (is_key_down_with_repeat(KEY_DOWN)) {
+                    do {
+                        global_battle_ui_state.selection++;
+
+                        if (global_battle_ui_state.selection >= options_count) {
+                            global_battle_ui_state.selection = 0;
+                        }
+                    } while (disabled_actions[global_battle_ui_state.selection]);
                 }
                 else if (is_key_down_with_repeat(KEY_UP)) {
-                    global_battle_ui_state.selection--;
+                    do {
+                        global_battle_ui_state.selection--;
 
-                    if (global_battle_ui_state.selection < 0) {
-                        global_battle_ui_state.selection = options_count-1;
-                    }
+                        if (global_battle_ui_state.selection < 0) {
+                            global_battle_ui_state.selection = options_count-1;
+                        }
+                    } while (disabled_actions[global_battle_ui_state.selection]);
                 }
 
                 if (is_key_pressed(KEY_RETURN)) {
-                    switch (global_battle_ui_state.selection) {
-                        /* NOTE: No ability is expected to really reach outside of your view... Hence the need for a separate view command */
-                        case BATTLE_LOOK: {
-                            global_battle_ui_state.submode = BATTLE_UI_SUBMODE_LOOKING;
-                        } break;
-                        case BATTLE_MOVE: {
-                            global_battle_ui_state.submode = BATTLE_UI_SUBMODE_MOVING;
+                    if (!disabled_actions[global_battle_ui_state.selection]) {
+                        switch (global_battle_ui_state.selection) {
+                            /* NOTE: No ability is expected to really reach outside of your view... Hence the need for a separate view command */
+                            case BATTLE_LOOK: {
+                                global_battle_ui_state.submode = BATTLE_UI_SUBMODE_LOOKING;
+                            } break;
+                            case BATTLE_MOVE: {
+                                global_battle_ui_state.submode = BATTLE_UI_SUBMODE_MOVING;
                             
-                            struct entity* active_combatant_entity = entity_list_dereference_entity(&state->entities, combat_state->participants[combat_state->active_combatant]);
-                            level_area_build_movement_visibility_map(&scratch_arena, &state->loaded_area, active_combatant_entity->position.x / TILE_UNIT_SIZE, active_combatant_entity->position.y / TILE_UNIT_SIZE, 6);
+                                struct entity* active_combatant_entity = entity_list_dereference_entity(&state->entities, combat_state->participants[combat_state->active_combatant]);
+                                level_area_build_movement_visibility_map(&scratch_arena, &state->loaded_area, active_combatant_entity->position.x / TILE_UNIT_SIZE, active_combatant_entity->position.y / TILE_UNIT_SIZE, 6);
 
-                            global_battle_ui_state.movement_start_x                 = floorf((active_combatant_entity->position.x + active_combatant_entity->scale.x/2) / TILE_UNIT_SIZE);
-                            global_battle_ui_state.movement_start_y                 = floorf((active_combatant_entity->position.y + active_combatant_entity->scale.y/2) / TILE_UNIT_SIZE);
-                            global_battle_ui_state.movement_end_x                   = global_battle_ui_state.movement_start_x;
-                            global_battle_ui_state.movement_end_y                   = global_battle_ui_state.movement_start_y;
-                            global_battle_ui_state.max_remembered_path_points_count = 0;
-                        } break;
-                        case BATTLE_ATTACK: {
-                            global_battle_ui_state.submode = BATTLE_UI_SUBMODE_ATTACKING;
-                        } break;
-                        case BATTLE_ABILITY: {
-                            /* global_battle_ui_state.submode = BATTLE_UI_SUBMODE_USING_ABILITY; */
-                            _debugprintf("TODO: using abilities!");
-                        } break;
-                        case BATTLE_ITEM: {
-                            /* global_battle_ui_state.submode = BATTLE_UI_SUBMODE_USING_ITEM; */
-                            _debugprintf("TODO: using items!");
-                        } break;
-                        case BATTLE_DEFEND: {
-                            _debugprintf("TODO: using defending!");
-                        } break;
-                        case BATTLE_WAIT: {
-                            _debugprintf("TODO: using waiting!");
-                        } break;
+                                global_battle_ui_state.movement_start_x                 = floorf((active_combatant_entity->position.x + active_combatant_entity->scale.x/2) / TILE_UNIT_SIZE);
+                                global_battle_ui_state.movement_start_y                 = floorf((active_combatant_entity->position.y + active_combatant_entity->scale.y/2) / TILE_UNIT_SIZE);
+                                global_battle_ui_state.movement_end_x                   = global_battle_ui_state.movement_start_x;
+                                global_battle_ui_state.movement_end_y                   = global_battle_ui_state.movement_start_y;
+                                global_battle_ui_state.max_remembered_path_points_count = 0;
+                            } break;
+                            case BATTLE_ATTACK: {
+                                global_battle_ui_state.submode = BATTLE_UI_SUBMODE_ATTACKING;
+                            } break;
+                            case BATTLE_ABILITY: {
+                                /* global_battle_ui_state.submode = BATTLE_UI_SUBMODE_USING_ABILITY; */
+                                _debugprintf("TODO: using abilities!");
+                            } break;
+                            case BATTLE_ITEM: {
+                                /* global_battle_ui_state.submode = BATTLE_UI_SUBMODE_USING_ITEM; */
+                                _debugprintf("TODO: using items!");
+                            } break;
+                            case BATTLE_DEFEND: {
+                                _debugprintf("TODO: using defending!");
+                            } break;
+                            case BATTLE_WAIT: {
+                                _debugprintf("TODO: using waiting!");
+                            } break;
+                        }
                     }
                 }
             }
