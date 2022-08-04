@@ -5,10 +5,6 @@ Right now I am:
 
 This is going to be quite a bit of work.
 
-So instead of using the kinda serious JRPG story I wanted to do, we're just going to make
-a small game about freeing a village from Orcs. It'll be like maybe an hour or two of play or something,
-mostly as an engine demo.
-
 ** Need a normal game UI
 ** Start writing a GDD
 ** Add more game "kernel" features

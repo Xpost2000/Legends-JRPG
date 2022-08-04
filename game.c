@@ -738,6 +738,8 @@ void game_postprocess_blur(struct software_framebuffer* framebuffer, s32 quality
 
     struct software_framebuffer blur_buffer = software_framebuffer_create(&scratch_arena, framebuffer->width/quality_scale, framebuffer->height/quality_scale);
     software_framebuffer_copy_into(&blur_buffer, framebuffer);
+    /* TODO Kernel Convolve needs to be with multithreading in particular... A simple job system for the graphics backend is required...  */
+    /* Only for this. The SIMD optimized pixel blitting isn't an issue (frankly the non-SIMD optimized pixel blitter isn't an issue either...) */
     software_framebuffer_kernel_convolution_ex(&scratch_arena, &blur_buffer, box_blur, 3, 3, 12, t, 2);
     software_framebuffer_draw_image_ex(framebuffer, (struct image_buffer*)&blur_buffer, RECTANGLE_F32_NULL, RECTANGLE_F32_NULL, color32f32(1,1,1,1), NO_FLAGS, blend_mode);
 }
@@ -754,6 +756,7 @@ void game_postprocess_blur_ingame(struct software_framebuffer* framebuffer, s32 
     software_framebuffer_draw_image_ex(framebuffer, (struct image_buffer*)&blur_buffer, RECTANGLE_F32_NULL, RECTANGLE_F32_NULL, color32f32(1,1,1,1), NO_FLAGS, blend_mode);
 }
 
+/* TODO: I want to add a shader argument into draw_image_ex... It might be too slow though... */
 void game_postprocess_grayscale(struct software_framebuffer* framebuffer, f32 t) {
     for (s32 y_cursor = 0; y_cursor < framebuffer->height; ++y_cursor) {
         for (s32 x_cursor = 0; x_cursor < framebuffer->width; ++x_cursor) {
@@ -861,8 +864,8 @@ void game_initialize(void) {
      */
     game_state->entities = entity_list_create(&game_arena, 512);
     player_id            = entity_list_create_player(&game_state->entities, v2f32(70, 70));
-    entity_list_create_badguy(&game_state->entities, v2f32(8 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE));
-    entity_list_create_badguy(&game_state->entities, v2f32(11 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE));
+    /* entity_list_create_badguy(&game_state->entities, v2f32(8 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE)); */
+    /* entity_list_create_badguy(&game_state->entities, v2f32(11 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE)); */
 
     editor_state                = memory_arena_push(&editor_arena, sizeof(*editor_state));
     editor_initialize(editor_state);
@@ -1593,7 +1596,7 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
 
                 entity_list_render_entities(&game_state->entities, &graphics_assets, &commands, dt);
                 software_framebuffer_render_commands(framebuffer, &commands);
-                game_postprocess_blur_ingame(framebuffer, 2, 0.34, BLEND_MODE_ALPHA);
+                game_postprocess_blur_ingame(framebuffer, 2, 0.54, BLEND_MODE_ALPHA);
 
                 /* color "grading" */
                 software_framebuffer_draw_quad(framebuffer, rectangle_f32(0,0,999,999), global_color_grading_filter, BLEND_MODE_MULTIPLICATIVE);

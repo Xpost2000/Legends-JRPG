@@ -1,10 +1,10 @@
 #include "entities_def.c"
 
 struct rectangle_f32 entity_rectangle_collision_bounds(struct entity* entity) {
-    return rectangle_f32(entity->position.x-4,
-                         entity->position.y+20,
-                         entity->scale.x-8,
-                         entity->scale.y-16);
+    return rectangle_f32(entity->position.x,
+                         entity->position.y,
+                         entity->scale.x,
+                         entity->scale.y-10);
 }
 
 struct entity_list entity_list_create(struct memory_arena* arena, s32 capacity) {
@@ -116,6 +116,58 @@ void entity_handle_player_controlled(struct game_state* state, struct entity_lis
     player_handle_radial_interactables(state, entities, entity_index, dt);
 }
 
+bool entity_push_out_horizontal_edges(struct entity* entity, struct rectangle_f32 collidant) {
+    struct rectangle_f32 entity_bounds = entity_rectangle_collision_bounds(entity);
+
+    f32 entity_left_edge   = entity_bounds.x;
+    f32 entity_right_edge  = entity_bounds.x + entity_bounds.w;
+    f32 entity_top_edge    = entity_bounds.y;
+    f32 entity_bottom_edge = entity_bounds.y + entity_bounds.h;
+
+    f32 collidant_left_edge   = collidant.x;
+    f32 collidant_top_edge    = collidant.y;
+    f32 collidant_bottom_edge = collidant.y + collidant.h;
+    f32 collidant_right_edge  = collidant.x + collidant.w;
+
+    if (rectangle_f32_intersect(entity_bounds, collidant)) {
+        if (entity_right_edge > collidant_right_edge) {
+            entity->position.x = collidant_right_edge;
+        } else if (entity_right_edge > collidant_left_edge) {
+            entity->position.x = collidant_left_edge - entity_bounds.w;
+        }
+
+        return true;
+    }
+
+    return false;
+}
+
+bool entity_push_out_vertical_edges(struct entity* entity, struct rectangle_f32 collidant) {
+    struct rectangle_f32 entity_bounds = entity_rectangle_collision_bounds(entity);
+
+    f32 entity_left_edge   = entity_bounds.x;
+    f32 entity_right_edge  = entity_bounds.x + entity_bounds.w;
+    f32 entity_top_edge    = entity_bounds.y;
+    f32 entity_bottom_edge = entity_bounds.y + entity_bounds.h;
+
+    f32 collidant_left_edge   = collidant.x;
+    f32 collidant_top_edge    = collidant.y;
+    f32 collidant_bottom_edge = collidant.y + collidant.h;
+    f32 collidant_right_edge  = collidant.x + collidant.w;
+
+    if (rectangle_f32_intersect(entity_bounds, collidant)) {
+        if (entity_bottom_edge > collidant_top_edge && entity_bottom_edge < collidant_bottom_edge) {
+            entity->position.y = collidant_top_edge - entity_bounds.h;
+        } else if (entity_top_edge < collidant_bottom_edge && entity_bottom_edge > collidant_bottom_edge) {
+            entity->position.y = collidant_bottom_edge;
+        }
+
+        return true;
+    }
+
+    return false;
+}
+
 local void entity_update_and_perform_actions(struct game_state* state, struct entity_list* entities, s32 index, struct level_area* area, f32 dt);
 void entity_list_update_entities(struct game_state* state, struct entity_list* entities, f32 dt, struct level_area* area) {
 /* void entity_list_update_entities(struct entity_list* entities, f32 dt, s32* tilemap, s32 w, s32 h) { */
@@ -135,129 +187,46 @@ void entity_list_update_entities(struct game_state* state, struct entity_list* e
                 {
                     current_entity->position.x += current_entity->velocity.x * dt;
 
-                    if (!stop_horizontal_movement) {
-                        for (s32 index = 0; index < area->tile_count; ++index) {
-                            struct tile* current_tile = area->tiles + index;
-                            struct tile_data_definition* tile_data = tile_table_data + current_tile->id;
+                    for (s32 index = 0; index < area->tile_count && !stop_horizontal_movement; ++index) {
+                        
+                        struct tile* current_tile = area->tiles + index;
+                        struct tile_data_definition* tile_data = tile_table_data + current_tile->id;
 
-                            if (Get_Bit(tile_data->flags, TILE_DATA_FLAGS_SOLID)) {
-                                f32 tile_right_edge  = (current_tile->x + 1) * TILE_UNIT_SIZE;
-                                f32 tile_left_edge   = (current_tile->x) * TILE_UNIT_SIZE;
-                                f32 tile_top_edge    = (current_tile->y) * TILE_UNIT_SIZE;
-                                f32 tile_bottom_edge = (current_tile->y + 1) * TILE_UNIT_SIZE;
-
-                                f32 entity_left_edge   = current_entity->position.x;
-                                f32 entity_right_edge  = current_entity->position.x + current_entity->scale.x;
-                                f32 entity_top_edge    = current_entity->position.y;
-                                f32 entity_bottom_edge = current_entity->position.y + current_entity->scale.y;
-
-                                /* x */
-                                if (rectangle_f32_intersect(entity_rectangle_collision_bounds(current_entity),
-                                                            rectangle_f32(tile_left_edge, tile_top_edge, tile_right_edge - tile_left_edge, tile_bottom_edge - tile_top_edge)))
-                                {
-                                    if (entity_right_edge > tile_right_edge) {
-                                        current_entity->position.x = tile_right_edge;
-                                    } else if (entity_right_edge > tile_left_edge) {
-                                        current_entity->position.x = tile_left_edge - current_entity->scale.x;
-                                    }
-
-                                    stop_horizontal_movement = true;
-                                }
-                            }
+                        if (Get_Bit(tile_data->flags, TILE_DATA_FLAGS_SOLID)) {
+                            stop_horizontal_movement |=
+                                entity_push_out_horizontal_edges(current_entity, rectangle_f32(current_tile->x * TILE_UNIT_SIZE, current_tile->y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE));
                         }
                     }
 
-                    if (!stop_horizontal_movement) {
-                        for (s32 index = 0; index < area->entity_chest_count; ++index) {
-                            struct entity_chest* chest = area->chests + index;
+                    for (s32 index = 0; index < area->entity_chest_count && !stop_horizontal_movement; ++index) {
+                        struct entity_chest* chest = area->chests + index;
 
-                            f32 chest_right_edge  = (chest->position.x + 1) * TILE_UNIT_SIZE;
-                            f32 chest_left_edge   = (chest->position.x)     * TILE_UNIT_SIZE;
-                            f32 chest_bottom_edge = (chest->position.y + 1) * TILE_UNIT_SIZE;
-                            f32 chest_top_edge    = (chest->position.y)     * TILE_UNIT_SIZE;
-
-                            f32 entity_left_edge   = current_entity->position.x;
-                            f32 entity_right_edge  = current_entity->position.x + current_entity->scale.x;
-                            f32 entity_top_edge    = current_entity->position.y;
-                            f32 entity_bottom_edge = current_entity->position.y + current_entity->scale.y;
-
-                            if (rectangle_f32_intersect(entity_rectangle_collision_bounds(current_entity),
-                                                        rectangle_f32(chest_left_edge, chest_top_edge, chest_right_edge - chest_left_edge, chest_bottom_edge - chest_top_edge))) {
-                                if (entity_right_edge > chest_right_edge) {
-                                    current_entity->position.x = chest_right_edge;
-                                } else if (entity_right_edge > chest_left_edge) {
-                                    current_entity->position.x = chest_left_edge - current_entity->scale.x;
-                                }
-
-                                stop_horizontal_movement = true;
-                            }
-                        }
+                        stop_horizontal_movement |=
+                            entity_push_out_horizontal_edges(current_entity, rectangle_f32(chest->position.x * TILE_UNIT_SIZE, chest->position.y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE));
                     }
                 }
+
                 if (stop_horizontal_movement) current_entity->velocity.x = 0;
 
                 current_entity->position.y += current_entity->velocity.y * dt;
                 {
                     bool stop_vertical_movement = false;
 
-                    if (!stop_vertical_movement) {
-                        for (s32 index = 0; index < area->tile_count; ++index) {
-                            struct tile* current_tile = area->tiles + index;
-                            struct tile_data_definition* tile_data = tile_table_data + current_tile->id;
+                    for (s32 index = 0; index < area->tile_count && !stop_vertical_movement; ++index) {
+                        struct tile* current_tile = area->tiles + index;
+                        struct tile_data_definition* tile_data = tile_table_data + current_tile->id;
 
-                            if (Get_Bit(tile_data->flags, TILE_DATA_FLAGS_SOLID)) {
-                                f32 tile_right_edge  = (current_tile->x + 1) * TILE_UNIT_SIZE;
-                                f32 tile_left_edge   = (current_tile->x) * TILE_UNIT_SIZE;
-                                f32 tile_top_edge    = (current_tile->y) * TILE_UNIT_SIZE;
-                                f32 tile_bottom_edge = (current_tile->y + 1) * TILE_UNIT_SIZE;
-
-                                f32 entity_left_edge   = current_entity->position.x;
-                                f32 entity_right_edge  = current_entity->position.x + current_entity->scale.x;
-                                f32 entity_top_edge    = current_entity->position.y;
-                                f32 entity_bottom_edge = current_entity->position.y + current_entity->scale.y;
-
-                                /* x */
-                                if (rectangle_f32_intersect(rectangle_f32(current_entity->position.x, current_entity->position.y, current_entity->scale.x, current_entity->scale.y),
-                                                            rectangle_f32(tile_left_edge, tile_top_edge, tile_right_edge - tile_left_edge, tile_bottom_edge - tile_top_edge)))
-                                {
-                                    if (entity_bottom_edge > tile_top_edge && entity_bottom_edge < tile_bottom_edge) {
-                                        current_entity->position.y = tile_top_edge - current_entity->scale.y;
-                                    } else if (entity_top_edge < tile_bottom_edge && entity_bottom_edge > tile_bottom_edge) {
-                                        current_entity->position.y = tile_bottom_edge;
-                                    }
-
-                                    stop_vertical_movement = true;
-                                }
-                            }
+                        if (Get_Bit(tile_data->flags, TILE_DATA_FLAGS_SOLID)) {
+                            stop_vertical_movement |=
+                                entity_push_out_vertical_edges(current_entity, rectangle_f32(current_tile->x * TILE_UNIT_SIZE, current_tile->y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE));
                         }
                     }
 
-                    if (!stop_vertical_movement) {
-                        for (s32 index = 0; index < area->entity_chest_count; ++index) {
-                            struct entity_chest* chest = area->chests + index;
+                    for (s32 index = 0; index < area->entity_chest_count && !stop_vertical_movement; ++index) {
+                        struct entity_chest* chest = area->chests + index;
 
-                            f32 chest_right_edge  = (chest->position.x + 1) * TILE_UNIT_SIZE;
-                            f32 chest_left_edge   = (chest->position.x)     * TILE_UNIT_SIZE;
-                            f32 chest_bottom_edge = (chest->position.y + 1) * TILE_UNIT_SIZE;
-                            f32 chest_top_edge    = (chest->position.y)     * TILE_UNIT_SIZE;
-
-                            f32 entity_left_edge   = current_entity->position.x;
-                            f32 entity_right_edge  = current_entity->position.x + current_entity->scale.x;
-                            f32 entity_top_edge    = current_entity->position.y;
-                            f32 entity_bottom_edge = current_entity->position.y + current_entity->scale.y;
-
-                            if (rectangle_f32_intersect(entity_rectangle_collision_bounds(current_entity),
-                                                        rectangle_f32(chest_left_edge, chest_top_edge,
-                                                                      chest_right_edge - chest_left_edge, chest_bottom_edge - chest_top_edge))) {
-                                if (entity_bottom_edge > chest_top_edge && entity_bottom_edge < chest_bottom_edge) {
-                                    current_entity->position.y = chest_top_edge - current_entity->scale.y;
-                                } else if (entity_top_edge < chest_bottom_edge && entity_bottom_edge > chest_bottom_edge) {
-                                    current_entity->position.y = chest_bottom_edge;
-                                }
-
-                                stop_vertical_movement = true;
-                            }
-                        }
+                        stop_vertical_movement |=
+                            entity_push_out_vertical_edges(current_entity, rectangle_f32(chest->position.x * TILE_UNIT_SIZE, chest->position.y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE));
                     }
 
                     if (stop_vertical_movement) current_entity->velocity.y = 0;
@@ -310,13 +279,15 @@ void entity_list_render_entities(struct entity_list* entities, struct graphics_a
         render_commands_push_image(commands,
                                    graphics_assets_get_image_by_id(graphics_assets, guy_img),
                                    rectangle_f32(current_entity->position.x,
-                                                 current_entity->position.y - (TILE_UNIT_SIZE),
+                                                 current_entity->position.y - (TILE_UNIT_SIZE*1.5),
                                                  TILE_UNIT_SIZE,
                                                  TILE_UNIT_SIZE * 2),
                                    RECTANGLE_F32_NULL, color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
 
 #ifndef RELEASE
-        render_commands_push_quad(commands, rectangle_f32(current_entity->position.x, current_entity->position.y, current_entity->scale.x, current_entity->scale.y), color32u8(255, 0, 0, 64), BLEND_MODE_ALPHA);
+        struct rectangle_f32 collision_bounds = entity_rectangle_collision_bounds(current_entity);
+        
+        render_commands_push_quad(commands, collision_bounds, color32u8(255, 0, 0, 64), BLEND_MODE_ALPHA);
 #endif
     }
 }
