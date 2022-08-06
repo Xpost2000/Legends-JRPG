@@ -135,6 +135,9 @@ struct entity_ai_data {
 struct entity {
     string name;
 
+    s32   model_index;
+    u8    facing_direction;
+
     v2f32 position;
     v2f32 scale;
     v2f32 velocity;

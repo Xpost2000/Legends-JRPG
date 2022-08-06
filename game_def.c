@@ -82,13 +82,21 @@ enum facing_direction {
     DIRECTION_LEFT,
     DIRECTION_RIGHT,
     DIRECTION_RETAINED,
-    DIRECTION_COUNT,
+    DIRECTION_COUNT = 4,
 };
 static string facing_direction_strings[] = {
     string_literal("(down)"),
     string_literal("(up)"),
     string_literal("(left)"),
     string_literal("(right)"),
+    string_literal("(retained)"),
+    string_literal("(count)"),
+};
+static string facing_direction_strings_normal[] = {
+    string_literal("down"),
+    string_literal("up"),
+    string_literal("left"),
+    string_literal("right"),
     string_literal("(retained)"),
     string_literal("(count)"),
 };
@@ -427,6 +435,7 @@ static string interactable_type_strings[] = {
     string_literal("(count)"),
 };
 
+#include "entity_model_def.c"
 #include "entities_def.c"
 
 struct game_state_combat_state {

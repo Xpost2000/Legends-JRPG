@@ -107,6 +107,24 @@ void entity_handle_player_controlled(struct game_state* state, struct entity_lis
     entity->velocity.x = 0;
     entity->velocity.y = 0;
 
+    {
+        if (move_left || move_right) {
+            if (move_left) {
+                entity->facing_direction = DIRECTION_LEFT;
+            } else {
+                entity->facing_direction = DIRECTION_RIGHT;
+            }
+        }
+
+        if (move_up || move_down) {
+            if (move_up) {
+                entity->facing_direction = DIRECTION_UP;
+            } else {
+                entity->facing_direction = DIRECTION_DOWN;
+            }
+        }
+    }
+
     /* NOTE: should be normalized. This isn't right */
     if (move_up)    entity->velocity.y  = -DEFAULT_VELOCITY;
     if (move_down)  entity->velocity.y  = DEFAULT_VELOCITY;
@@ -271,13 +289,19 @@ void entity_list_render_entities(struct entity_list* entities, struct graphics_a
     for (s32 index = 0; index < entities->capacity; ++index) {
         struct entity* current_entity = entities->entities + index;
 
+        s32 facing_direction = current_entity->facing_direction;
+        s32 model_index      = current_entity->model_index;
+
         if (!(current_entity->flags & ENTITY_FLAGS_ACTIVE)) {
             continue;
         }
 
+        struct entity_model* model = &global_entity_models.models[model_index];
+        /* _debugprintf("%d, %d, %d, %d\n", model->sprites[0].index, model->sprites[1].index, model->sprites[2].index, model->sprites[3].index); */
+
         /* TODO sprite model anchor */
         render_commands_push_image(commands,
-                                   graphics_assets_get_image_by_id(graphics_assets, guy_img),
+                                   graphics_assets_get_image_by_id(graphics_assets, model->sprites[current_entity->facing_direction]),
                                    rectangle_f32(current_entity->position.x,
                                                  current_entity->position.y - (TILE_UNIT_SIZE*1.5),
                                                  TILE_UNIT_SIZE,
@@ -445,6 +469,50 @@ void entity_do_physical_hurt(struct entity* entity, s32 damage) {
 
 /* NOTE: does not really do turns. */
 /* set the entity->waiting_on_turn flag to 0 to finish their turn in the combat system. Not done right now cause I need all the actions. */
+
+/* TODO: slightly broken. */
+local s32 find_best_direction_index(v2f32 direction) {
+    /* truncate direction here to account for lack of 8 directions */
+    _debugprintf("original dir: <%f, %f>", direction.x, direction.y);
+    {
+        {
+            f32 sign = sign_f32(direction.x);
+            direction.x = fabs(direction.x);
+            direction.x += 0.5;
+            direction.x = (s32)direction.x * sign;
+        }
+        {
+            f32 sign = sign_f32(direction.y);
+            direction.y = fabs(direction.y);
+            direction.y += 0.5;
+            direction.y = (s32)direction.y * sign;
+        }
+    }
+
+    local v2f32 direction_vectors[] = {
+        [DIRECTION_DOWN]  = v2f32(0,1),
+        [DIRECTION_UP]    = v2f32(0,-1),
+        [DIRECTION_LEFT]  = v2f32(-1,0),
+        [DIRECTION_RIGHT] = v2f32(1,0),
+    };
+
+    f32 best_distance = v2f32_distance_sq(direction, direction_vectors[0]);
+    s32 best_index    = 0;
+
+    for (s32 index = 1; index < array_count(direction_vectors); ++index) {
+        f32 distance_sq = v2f32_distance_sq(direction, direction_vectors[index]);
+
+        _debugprintf("best dir: <%f, %f>, v D<%f, %f>", direction.x, direction.y, direction_vectors[index].x, direction_vectors[index].y);
+
+        if (distance_sq <= best_distance) {
+            best_distance = distance_sq;
+            best_index    = index;
+        }
+    }
+
+    return best_index;
+}
+
 local void entity_update_and_perform_actions(struct game_state* state, struct entity_list* entities, s32 index, struct level_area* area, f32 dt) {
     struct entity* target_entity = entities->entities + index;
 
@@ -458,6 +526,7 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
         } break;
 
         case ENTITY_ACTION_MOVEMENT: {
+
             if (target_entity->ai.current_path_point_index >= target_entity->ai.navigation_path.count) {
                 target_entity->ai.current_action = 0;
 
@@ -477,6 +546,7 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
 
                 v2f32 displacement_to_point = v2f32_sub(point, tile_position);
                 v2f32 direction_to_point    = v2f32_normalize(displacement_to_point); 
+
 
                 bool already_at_next_point = false;
                 
@@ -500,6 +570,19 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
                     target_entity->position.y = target_entity->ai.navigation_path.path_points[target_entity->ai.current_path_point_index].y * TILE_UNIT_SIZE;
 
                     target_entity->ai.current_path_point_index++;
+
+                    if (target_entity->ai.current_path_point_index < target_entity->ai.navigation_path.count) {
+                        v2f32 point              = target_entity->ai.navigation_path.path_points[target_entity->ai.current_path_point_index];
+                        v2f32 tile_position      = target_entity->position;
+
+                        tile_position.x /= TILE_UNIT_SIZE;
+                        tile_position.y /= TILE_UNIT_SIZE;
+
+                        v2f32 displacement_to_point = v2f32_sub(point, tile_position);
+                        v2f32 direction_to_point    = v2f32_normalize(displacement_to_point); 
+                        target_entity->facing_direction    = find_best_direction_index(direction_to_point);
+                    }
+
                     target_entity->velocity = v2f32(0,0);
                 }
             }

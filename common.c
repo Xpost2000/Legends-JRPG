@@ -75,6 +75,14 @@ static inline f32 sq_f32(f32 x) {
     return x*x;
 }
 
+static inline f32 sign_f32(f32 x) {
+    if      (x > 0)   return 1;
+    else if (x == 0)  return 0;
+    else if (x < 0)   return -1;
+
+    return 1;
+}
+
 static inline u32 hash_bytes_fnv1a(u8* bytes, size_t length) {
     u32 offset_basis = 2166136261;
     u32 prime        = 16777619;

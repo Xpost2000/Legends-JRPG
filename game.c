@@ -839,12 +839,13 @@ void game_initialize(void) {
     combat_square_unselected = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/cmbt/cmbt_grid_sq.png"));
     combat_square_selected   = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/cmbt/cmbt_selected_sq.png"));
 
-    guy_img               = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/guy3.png"));
+    guy_img               = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/guy/down.png"));
     chest_closed_img      = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/chestclosed.png"));
     chest_open_bottom_img = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/chestopenbottom.png"));
     chest_open_top_img    = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/chestopentop.png"));
     ui_chunky             = game_ui_nine_patch_load_from_directory(&graphics_assets, string_literal("./res/img/ui/chunky/"), 16, 16);
     /* selection_sword_img   = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/selection_sword.png")); */
+    global_entity_models = entity_model_database_create(&game_arena, 512);
 
     for (unsigned index = 0; index < array_count(menu_font_variation_string_names); ++index) {
         string current = menu_font_variation_string_names[index];
@@ -864,8 +865,12 @@ void game_initialize(void) {
      */
     game_state->entities = entity_list_create(&game_arena, 512);
     player_id            = entity_list_create_player(&game_state->entities, v2f32(70, 70));
-    /* entity_list_create_badguy(&game_state->entities, v2f32(8 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE)); */
-    /* entity_list_create_badguy(&game_state->entities, v2f32(11 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE)); */
+    entity_list_create_badguy(&game_state->entities, v2f32(8 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE));
+    entity_list_create_badguy(&game_state->entities, v2f32(11 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE));
+
+    {
+        entity_model_database_add_model(&game_arena, string_literal("guy"));
+    }
 
     editor_state                = memory_arena_push(&editor_arena, sizeof(*editor_state));
     editor_initialize(editor_state);
@@ -1620,3 +1625,4 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
 #include "game_script.c"
 #include "save_data.c"
 #include "storyboard_presentation.c"
+#include "entity_model.c"
