@@ -872,8 +872,10 @@ void game_initialize(void) {
         entity_model_database_add_model(&game_arena, string_literal("guy"));
     }
 
+#ifdef USE_EDITOR
     editor_state                = memory_arena_push(&editor_arena, sizeof(*editor_state));
     editor_initialize(editor_state);
+#endif
     initialize_static_table_data();
     initialize_items_database();
 
@@ -914,7 +916,9 @@ void game_deinitialize(void) {
     game_finish_conversation(game_state);
     finish_save_data();
     memory_arena_finish(&scratch_arena);
+#ifdef USE_EDITOR
     memory_arena_finish(&editor_arena);
+#endif
     graphics_assets_finish(&graphics_assets);
     memory_arena_finish(&game_arena);
 }
@@ -1358,24 +1362,34 @@ local void update_and_render_pause_game_menu_ui(struct game_state* state, struct
 }
 
 void update_and_render_game_menu_ui(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
+#ifdef USE_EDITOR
     if (is_key_pressed(KEY_F1)) {
         state->in_editor ^= 1;
     }
+#endif
 
     switch (state->ui_state) {
         case UI_STATE_INGAME: {
+#ifdef USE_EDITOR
             if (state->in_editor) {
                 update_and_render_editor_game_menu_ui(state, framebuffer, dt);
             } else {
                 update_and_render_ingame_game_menu_ui(state, framebuffer, dt);
             }
+#else
+            update_and_render_ingame_game_menu_ui(state, framebuffer, dt);
+#endif
         } break;
         case UI_STATE_PAUSE: {
+#ifdef USE_EDITOR
             if (state->in_editor) {
                 update_and_render_pause_editor_menu_ui(state, framebuffer, dt);
             } else {
                 update_and_render_pause_game_menu_ui(state, framebuffer, dt);
             }
+#else
+            update_and_render_pause_game_menu_ui(state, framebuffer, dt);
+#endif
         } break;
             bad_case;
     }
@@ -1576,9 +1590,14 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
 
     recalculate_camera_shifting_bounds(framebuffer);
 
+#ifdef USE_EDITOR
     if (game_state->in_editor) {
         update_and_render_editor(framebuffer, dt);
-    } else {
+        return;
+    }
+#endif
+    
+    {
         switch (screen_mode) {
             case GAME_SCREEN_INGAME: {
                 struct entity* player_entity = entity_list_dereference_entity(&game_state->entities, player_id);

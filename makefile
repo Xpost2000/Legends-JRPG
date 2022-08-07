@@ -12,7 +12,7 @@ all: game.exe game-debug.exe
 game.exe: $(wildcard *.c *.h)
 	$(CC) $(SOURCE_FILE_MODULES) -DRELEASE -o $@ $(CFLAGS) $(CLIBS) -O2
 game-debug.exe: $(wildcard *.c *.h)
-	$(CC) $(SOURCE_FILE_MODULES) -o $@ $(CFLAGS) $(CLIBS) -ggdb3
+	$(CC) $(SOURCE_FILE_MODULES) -DUSE_EDITOR -o $@ $(CFLAGS) $(CLIBS) -ggdb3
 run: game.exe
 	./game.exe
 run-debug: game-debug.exe
