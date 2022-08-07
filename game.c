@@ -1362,36 +1362,25 @@ local void update_and_render_pause_game_menu_ui(struct game_state* state, struct
     }
 }
 
-void update_and_render_game_menu_ui(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
-#ifdef USE_EDITOR
-    if (is_key_pressed(KEY_F1)) {
-        state->in_editor ^= 1;
-        _debugprintf("crying");
-    }
-#endif
-
+void update_and_render_editor_menu_ui(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
     switch (state->ui_state) {
         case UI_STATE_INGAME: {
-#ifdef USE_EDITOR
-            if (state->in_editor) {
-                update_and_render_editor_game_menu_ui(state, framebuffer, dt);
-            } else {
-                update_and_render_ingame_game_menu_ui(state, framebuffer, dt);
-            }
-#else
-            update_and_render_ingame_game_menu_ui(state, framebuffer, dt);
-#endif
+            update_and_render_editor_game_menu_ui(state, framebuffer, dt);
         } break;
         case UI_STATE_PAUSE: {
-#ifdef USE_EDITOR
-            if (state->in_editor) {
-                update_and_render_pause_editor_menu_ui(state, framebuffer, dt);
-            } else {
-                update_and_render_pause_game_menu_ui(state, framebuffer, dt);
-            }
-#else
+            update_and_render_pause_editor_menu_ui(state, framebuffer, dt);
+        } break;
+            bad_case;
+    }
+}
+
+void update_and_render_game_menu_ui(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
+    switch (state->ui_state) {
+        case UI_STATE_INGAME: {
+            update_and_render_ingame_game_menu_ui(state, framebuffer, dt);
+        } break;
+        case UI_STATE_PAUSE: {
             update_and_render_pause_game_menu_ui(state, framebuffer, dt);
-#endif
         } break;
             bad_case;
     }
@@ -1590,11 +1579,18 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
         image_buffer_write_to_disk((struct image_buffer*)framebuffer, string_literal("scr"));
     }
 
+#ifdef USE_EDITOR
+    if (is_key_pressed(KEY_F1)) {
+        game_state->in_editor ^= 1;
+    }
+#endif
+
     recalculate_camera_shifting_bounds(framebuffer);
 
 #ifdef USE_EDITOR
     if (game_state->in_editor) {
         update_and_render_editor(framebuffer, dt);
+        update_and_render_editor_menu_ui(game_state, framebuffer, dt);
         return;
     }
 #endif
