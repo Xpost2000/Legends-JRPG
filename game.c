@@ -585,7 +585,7 @@ void serialize_level_area(struct game_state* state, struct binary_serializer* se
     }
     if (level->version >= 3) {
         _debugprintf("reading scriptable triggers");
-        Serialize_Fixed_Array_And_Allocate_From_Arena_Top(serializer, state->arena, s32, level->generic_trigger_count, level->generic_triggers);
+        Serialize_Fixed_Array_And_Allocate_From_Arena_Top(serializer, state->arena, s32, level->script_trigger_count, level->script_triggers);
     }
 
     /* until we have new area transititons or whatever. */
