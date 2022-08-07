@@ -154,14 +154,21 @@ void editor_remove_tile_at(v2f32 point_in_tilespace) {
         }
     }
 }
+void editor_remove_scriptable_transition_trigger_at(v2f32 point_in_tilespace) {
+    for (s32 index = 0; index < editor_state->generic_trigger_count; ++index) {
+        struct trigger* current_trigger = editor_state->generic_triggers + index;
+
+        if (rectangle_f32_intersect(current_trigger->bounds, rectangle_f32(point_in_tilespace.x, point_in_tilespace.y, 0.25, 0.25))) {
+            editor_state->generic_triggers[index] = editor_state->generic_triggers[--editor_state->generic_trigger_count];
+            return;
+        }
+    }
+}
 void editor_remove_level_transition_trigger_at(v2f32 point_in_tilespace) {
     for (s32 index = 0; index < editor_state->trigger_level_transition_count; ++index) {
         struct trigger_level_transition* current_trigger = editor_state->trigger_level_transitions + index;
 
-        if (rectangle_f32_intersect(
-                current_trigger->bounds,
-                rectangle_f32(point_in_tilespace.x, point_in_tilespace.y, 0.25, 0.25)
-            )) {
+        if (rectangle_f32_intersect(current_trigger->bounds, rectangle_f32(point_in_tilespace.x, point_in_tilespace.y, 0.25, 0.25))) {
             editor_state->trigger_level_transitions[index] = editor_state->trigger_level_transitions[--editor_state->trigger_level_transition_count];
             return;
         }
@@ -200,11 +207,7 @@ void editor_place_or_drag_level_transition_trigger(v2f32 point_in_tilespace) {
         for (s32 index = 0; index < editor_state->trigger_level_transition_count; ++index) {
             struct trigger_level_transition* current_trigger = editor_state->trigger_level_transitions + index;
 
-            if (rectangle_f32_intersect(
-                    current_trigger->bounds,
-                    rectangle_f32(point_in_tilespace.x, point_in_tilespace.y, 0.25, 0.25)
-                )) {
-                /* TODO drag candidate */
+            if (rectangle_f32_intersect(current_trigger->bounds, rectangle_f32(point_in_tilespace.x, point_in_tilespace.y, 0.25, 0.25))) {
                 editor_state->last_selected = current_trigger;
                 set_drag_candidate_rectangle(current_trigger, get_mouse_in_tile_space(&editor_state->camera, REAL_SCREEN_WIDTH, REAL_SCREEN_HEIGHT),
                                              v2f32(current_trigger->bounds.x, current_trigger->bounds.y),
@@ -221,6 +224,35 @@ void editor_place_or_drag_level_transition_trigger(v2f32 point_in_tilespace) {
         new_transition_trigger->bounds.w = 1;
         new_transition_trigger->bounds.h = 1;
         editor_state->last_selected      = new_transition_trigger;
+    }
+}
+
+void editor_place_or_drag_scriptable_transition_trigger(v2f32 point_in_tilespace) {
+    if (is_dragging()) {
+        return; 
+    }
+
+    {
+        for (s32 index = 0; index < editor_state->generic_trigger_count; ++index) {
+            struct trigger* current_trigger = editor_state->generic_triggers + index;
+
+            if (rectangle_f32_intersect(current_trigger->bounds, rectangle_f32(point_in_tilespace.x, point_in_tilespace.y, 0.25, 0.25))) {
+                editor_state->last_selected = current_trigger;
+                set_drag_candidate_rectangle(current_trigger, get_mouse_in_tile_space(&editor_state->camera, REAL_SCREEN_WIDTH, REAL_SCREEN_HEIGHT),
+                                             v2f32(current_trigger->bounds.x, current_trigger->bounds.y),
+                                             v2f32(current_trigger->bounds.w, current_trigger->bounds.h));
+                return;
+            }
+        }
+
+
+        /* otherwise no touch, place a new one at default size 1 1 */
+        struct trigger* new_trigger = &editor_state->generic_triggers[editor_state->generic_trigger_count++];
+        new_trigger->bounds.x       = point_in_tilespace.x;
+        new_trigger->bounds.y       = point_in_tilespace.y;
+        new_trigger->bounds.w       = 1;
+        new_trigger->bounds.h       = 1;
+        editor_state->last_selected = new_trigger;
     }
 }
 
@@ -427,6 +459,7 @@ local void handle_editor_tool_mode_input(struct software_framebuffer* framebuffe
                             s32 mouse_location[2];
                             get_mouse_location(mouse_location, mouse_location+1);
 
+                            /* Is there a reason this is here? */
                             v2f32 world_space_mouse_location =
                                 camera_project(&editor_state->camera, v2f32(mouse_location[0], mouse_location[1]), REAL_SCREEN_WIDTH, REAL_SCREEN_HEIGHT);
 
@@ -442,6 +475,14 @@ local void handle_editor_tool_mode_input(struct software_framebuffer* framebuffe
                         if (is_key_pressed(KEY_RETURN)) {
                             editor_state->viewing_loaded_area = false;
                         }
+                    }
+                } break;
+                case TRIGGER_PLACEMENT_TYPE_SCRIPTABLE_TRIGGER: {
+                    if (left_clicked) {
+                        /* NOTE check the trigger mode */
+                        editor_place_or_drag_scriptable_transition_trigger(tile_space_mouse_location);
+                    } else if (right_clicked) {
+                        editor_remove_scriptable_transition_trigger_at(tile_space_mouse_location);
                     }
                 } break;
             }
@@ -893,6 +934,15 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
                                 if (trigger->new_facing_direction > 4) trigger->new_facing_direction = 0;
                             }
                         } break;
+                        case TRIGGER_PLACEMENT_TYPE_SCRIPTABLE_TRIGGER: {
+                            f32 draw_cursor_y = 30;
+                            struct trigger* trigger = editor_state->last_selected;
+                            s32 trigger_id          = trigger - editor_state->generic_triggers;
+
+                            if(EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(16, draw_cursor_y), string_from_cstring(format_temp("in a script file address (trigger %d)", trigger_id)))) {
+                                editor_state->tab_menu_open = 0;
+                            }
+                        } break;
                     }
                 } break;
                 case EDITOR_TOOL_ENTITY_PLACEMENT: {
@@ -1124,6 +1174,23 @@ void update_and_render_editor(struct software_framebuffer* framebuffer, f32 dt) 
                 }
                 /* NOTE display a visual denoting facing direction on transition */
                 render_commands_push_text(&commands, font, 1, v2f32(current_trigger->bounds.x * TILE_UNIT_SIZE, current_trigger->bounds.y * TILE_UNIT_SIZE), string_literal("(level\ntransition\ntrigger)"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+            }
+
+            for (s32 generic_trigger_index; generic_trigger_index < editor_state->generic_trigger_count; ++generic_trigger_index) {
+                struct trigger* current_trigger = editor_state->generic_triggers + generic_trigger_index;
+
+                if (editor_state->last_selected == current_trigger) {
+                    render_commands_push_quad(&commands, rectangle_f32(current_trigger->bounds.x * TILE_UNIT_SIZE, current_trigger->bounds.y * TILE_UNIT_SIZE,
+                                                                       current_trigger->bounds.w * TILE_UNIT_SIZE, current_trigger->bounds.h * TILE_UNIT_SIZE),
+                                              color32u8(255, 255, 255, normalized_sinf(global_elapsed_time*2) * 0.5*255 + 64), BLEND_MODE_ALPHA);
+                } else {
+                    render_commands_push_quad(&commands, rectangle_f32(current_trigger->bounds.x * TILE_UNIT_SIZE, current_trigger->bounds.y * TILE_UNIT_SIZE,
+                                                                       current_trigger->bounds.w * TILE_UNIT_SIZE, current_trigger->bounds.h * TILE_UNIT_SIZE),
+                                              color32u8(255, 0, 0, normalized_sinf(global_elapsed_time*2) * 0.5*255 + 64), BLEND_MODE_ALPHA);
+                }
+                s32 trigger_id          = current_trigger - editor_state->generic_triggers;
+                render_commands_push_text(&commands, font, 1, v2f32(current_trigger->bounds.x * TILE_UNIT_SIZE, current_trigger->bounds.y * TILE_UNIT_SIZE),
+                                          string_from_cstring(format_temp("(trigger %d)", trigger_id)), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
             }
 
             for (s32 chest_index = 0; chest_index < editor_state->entity_chest_count; ++chest_index) {

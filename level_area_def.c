@@ -107,6 +107,8 @@ struct level_area_script_data {
 };
 
 struct trigger {
+    /* NOTE: reserve this for the future, in case I need this */
+    char                 unique_name[32];
     struct rectangle_f32 bounds;
     u32                  activations;
     u8                   activation_method;

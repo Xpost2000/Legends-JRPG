@@ -201,10 +201,12 @@ static string editor_tool_mode_strings[]=  {
 };
 enum trigger_placement_type {
     TRIGGER_PLACEMENT_TYPE_LEVEL_TRANSITION,
+    TRIGGER_PLACEMENT_TYPE_SCRIPTABLE_TRIGGER,
     TRIGGER_PLACEMENT_TYPE_COUNT
 };
 static string trigger_placement_type_strings[] = {
     string_literal("Level Transition"),
+    string_literal("Scriptable Triggers"),
     string_literal("(count)")
 };
 enum entity_placement_type {
