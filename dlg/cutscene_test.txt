@@ -1,0 +1,7 @@
+"Calamir": "It's been a long journey..."
+"Calamir": "Jeez, I hope it doesn't snow or something." => (DO (GAME_START_SNOW) (DLG_NEXT))
+"Calamir": "Okay... I hope it doesn't rain..." => (DO (GAME_START_RAIN) (DLG_NEXT))
+"Calamir": "..."
+"Calamir": "HOW THE HELL IS THIS EVEN POSSIBLE?"
+"Calamir": "Oh whatever..."
+

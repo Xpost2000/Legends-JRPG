@@ -1,0 +1,29 @@
+# Testing cutscene, with only one entity.
+# all cutscenes should follow block sequentially
+# until it's done...
+
+# "By cutscene, I mean scripted sequence"
+
+# Basically in cutscene land all these functions should be returning
+# float values to help figure out how complete things are to facilitate
+# certain complex actions.
+# True/False is also fine.
+
+# the touch part is waiting for everything.
+
+(fade_black_start)
+(wait 0.5)
+(game_set_environment_colors 'night)
+(fade_black_finish)
+
+# This is cutscene state. Will undo when camera is done.
+(camera_follow 'player)
+
+(follow_path 'player
+    '(right right right down down))
+
+(open_conversation "cutscene_test")
+
+(follow_path 'player '(right right))
+(open_conversation "cutscene_test_end")
+# The cutscene ends when all of this is over.
