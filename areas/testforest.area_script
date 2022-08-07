@@ -1,7 +1,7 @@
 # Figure out a way to make conversations block execution.
 # Might need to change the evaluation method.
 (on-enter
-        (game_set_region_name "Darkwood Forest")        
+        #(game_set_region_name "Darkwood Forest")        
         (game_set_environment_colors 'night))
 
 (on-touch (trigger 0)

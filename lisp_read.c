@@ -701,6 +701,24 @@ struct lisp_form* lisp_list_nth(struct lisp_form* f, s32 index) {
     return NULL;
 }
 
+struct lisp_form lisp_list_sliced(struct lisp_form* original, s32 start, s32 end) {
+    if (start == -1) {
+        start = 0;
+    }
+
+    if (end == -1) {
+        end = original->list.count - start;
+    }
+
+    struct lisp_form result = {};
+    result.type = LISP_FORM_LIST;
+
+    result.list.forms = original->list.forms + start;
+    result.list.count = end - start;
+
+    return result;
+}
+
 /* oddly specific manipulation functions, but I kind of need these */
 bool lisp_form_as_function_list_check_fn_name(struct lisp_form* f, string name) {
     struct lisp_form* first = lisp_list_nth(f, 0);

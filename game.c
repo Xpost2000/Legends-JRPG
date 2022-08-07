@@ -693,6 +693,18 @@ local void load_area_script(struct memory_arena* arena, struct level_area* area,
 }
 
 struct lisp_form level_area_find_listener_for_object(struct game_state* state, struct level_area* area, s32 listener_type, s32 listener_target_type, s32 listener_target_id) {
+    struct level_area_listener* listener_lists = area->script.listeners + listener_type;
+
+    _debugprintf("Finding a listener for script referencing!");
+    for (s32 subscriber_index = 0; subscriber_index < listener_lists->subscribers; ++subscriber_index) {
+        struct lisp_form* event_action_form = listener_lists->subscriber_codes + subscriber_index;
+        struct lisp_form* object_handle     = lisp_list_nth(event_action_form, 1);
+
+        /* if (game_script_object_handle_matches_object(object_handle, listener_target_type, listener_target_id)) { */
+            
+        /* } */
+    }
+
     return LISP_nil;
 }
 
