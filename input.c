@@ -31,6 +31,11 @@ void register_mouse_position(s32 x, s32 y) {
     global_input.current_state.mouse_y = y;
 }
 
+void register_mouse_wheel(s32 x, s32 y) {
+    global_input.current_state.mouse_wheel_relative_x = x;
+    global_input.current_state.mouse_wheel_relative_y = y;
+}
+
 void register_mouse_button(s32 button_id, bool state) {
     assertion((button_id >= 0 && button_id < MOUSE_BUTTON_COUNT) && "wtf?");
     global_input.current_state.mouse_buttons[button_id] = state;
@@ -91,6 +96,7 @@ struct game_controller* get_gamepad(s32 index) {
 }
 
 void begin_input_frame(void) {
+    /* nope */
 }
 
 void end_input_frame(void) {
@@ -106,6 +112,9 @@ void end_input_frame(void) {
             memcpy(controller->last_buttons, controller->buttons, sizeof(controller->buttons));
         }
     }
+
+    global_input.current_state.mouse_wheel_relative_x = 0;
+    global_input.current_state.mouse_wheel_relative_y = 0;
 
     zero_array(global_input.keys_receiving_events);
 }
@@ -168,4 +177,32 @@ v2f32 mouse_location(void) {
     get_mouse_location(mouse_positions, mouse_positions+1);
 
     return v2f32(mouse_positions[0], mouse_positions[1]);
+}
+
+s32 mouse_wheel_x(void) {
+    return global_input.current_state.mouse_wheel_relative_x;
+}
+
+s32 mouse_wheel_y(void) {
+    return global_input.current_state.mouse_wheel_relative_y;
+}
+
+bool is_mouse_wheel_up(void) {
+    s32 y = mouse_wheel_y();
+
+    if (y > 0) {
+        return true;
+    }
+
+    return false;
+}
+
+bool is_mouse_wheel_down(void) {
+    s32 y = mouse_wheel_y();
+
+    if (y < 0) {
+        return true;
+    }
+
+    return false;
 }

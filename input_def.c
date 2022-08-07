@@ -182,6 +182,8 @@ struct input_state {
     s32  mouse_x;
     s32  mouse_y;
     bool mouse_buttons[MOUSE_BUTTON_COUNT];
+    s32  mouse_wheel_relative_x;
+    s32  mouse_wheel_relative_y;
 
     bool editing_text;
     s32  text_edit_cursor;
@@ -213,7 +215,14 @@ void register_key_down(s32 keyid);
 void register_key_up(s32 keyid);
 
 void register_mouse_position(s32 x, s32 y);
+void register_mouse_wheel(s32 x, s32 y);
 void register_mouse_button(s32 button_id, bool state);
+
+/* NOTE: I have no idea when I've cared about the mouse wheel relative x/y but ok */
+s32  mouse_wheel_x(void);
+s32  mouse_wheel_y(void);
+bool is_mouse_wheel_up(void);
+bool is_mouse_wheel_down(void);
 
 bool is_key_down(s32 keyid);
 /*

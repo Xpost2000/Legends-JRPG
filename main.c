@@ -187,7 +187,7 @@ void handle_sdl_events(void) {
                 } break;
 
                 case SDL_MOUSEWHEEL: {
-                        
+                    register_mouse_wheel(current_event.wheel.x, current_event.wheel.y);
                 } break;
                 case SDL_MOUSEMOTION: {
                     register_mouse_position(current_event.motion.x, current_event.motion.y);

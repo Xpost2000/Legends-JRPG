@@ -5,6 +5,28 @@ Right now I am:
 
 This is going to be quite a bit of work.
 
+I might need to consider writing an opengl renderer very soon, after the game act 1 demo can get
+completed.
+
+I mean until then I should consider multithreading the fucking things.
+
+I mean I could kind of easily render into separate image contexts and we can use OpenGL to speed up some post processing?
+Who knows?
+
+(The threading is fortunately only in very select circumstances, as we don't need to split up the rendering into tiles. Infact the only
+thing that requires any multithreading is post-processing as it requires a shitton of work. Rendering sprites is relatively cheap all things considered,
+although obviously we can use multithreading to speed it up, I won't deem it very necessary...
+
+We'll think about how it should work later. However we're just going to exclusively make post processing the only thing that actually requires multithreading. For
+game rendering, since our sprites are extraordinarily small, I'm going to just make a mega texture atlas at load time. (all of the sprites are 16x16, or basically just like that,
+and we can just shove as many sprites into that as we want. If we hit a limit of about 4096x4096 on our texture atlas for some reason, I might have to split pages. That's a problem
+for the future though. After some game logic is done))
+
+** Consider making the editor a bit more advanced (relative to the main game),
+   IE: We should probably allow editor resolution resizing so that way I can actually
+   see the world...
+** SDL Mixer Audio
+   Too lazy to do real audio mixing (also I don't know how to.)
 ** Need a normal game UI
 ** Start writing a GDD
 ** Add more game "kernel" features
