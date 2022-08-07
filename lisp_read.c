@@ -707,7 +707,7 @@ struct lisp_form lisp_list_sliced(struct lisp_form original, s32 start, s32 end)
     }
 
     if (end == -1) {
-        end = original.list.count - start;
+        end = original.list.count;
     }
 
     struct lisp_form result = {};
