@@ -983,20 +983,58 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
                 /* I would show images, but this is easier for now */
                 case EDITOR_TOOL_TILE_PAINTING: {
                     f32 draw_cursor_y = 30 + editor_state->tile_painting_property_menu.item_list_scroll_y;
-                    if (is_key_down(KEY_UP)) {
-                        editor_state->tile_painting_property_menu.item_list_scroll_y -= 100 * dt;
-                    } else if (is_key_down(KEY_DOWN)) {
-                        editor_state->tile_painting_property_menu.item_list_scroll_y += 100 * dt;
-                    } else if (is_key_pressed(KEY_HOME)) {
+
+                    const s32 SCROLL_AMOUNT = 45;
+                    if (is_mouse_wheel_up()) {
+                        if (editor_state->tile_painting_property_menu.item_list_scroll_y < 0)
+                            editor_state->tile_painting_property_menu.item_list_scroll_y += SCROLL_AMOUNT;
+                    } else if (is_mouse_wheel_down()) {
+                        editor_state->tile_painting_property_menu.item_list_scroll_y -= SCROLL_AMOUNT;
+                    }
+
+                    if (is_key_pressed(KEY_HOME)) {
                         editor_state->tile_painting_property_menu.item_list_scroll_y = 0;
                     }
+
+
+                    const f32 text_scale = 1;
+
+                    f32 largest_name_width = 0;
+
+                    /* TODO should be lazy init */
                     for (s32 index = 0; index < tile_table_data_count; ++index) {
-                        if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(16, draw_cursor_y), tile_table_data[index].name)) {
-                            editor_state->tab_menu_open    = 0;
-                            editor_state->painting_tile_id = index;
-                            break;
+                        s32 tile_data_index = index;
+                        struct tile_data_definition* tile_data = tile_table_data + tile_data_index;
+
+                        f32 candidate = font_cache_text_width(font, tile_data->name, text_scale);
+                        if (largest_name_width < candidate) {
+                            largest_name_width = candidate;
                         }
-                        draw_cursor_y += 12 * 1.2 * 2;
+                    }
+
+                    s32 TILES_PER_ROW = (500 / largest_name_width);
+                    s32 row_count     = tile_table_data_count / TILES_PER_ROW;
+
+                    for (s32 row_index = 0; row_index < row_count; ++row_index) {
+                        f32 draw_cursor_x = 0;
+
+                        for (s32 index = 0; index < TILES_PER_ROW; ++index) {
+                            s32 tile_data_index = row_index * TILES_PER_ROW + index;
+                            struct tile_data_definition* tile_data = tile_table_data + tile_data_index;
+                            image_id tex = graphics_assets_get_image_by_filepath(&graphics_assets, tile_data->image_asset_location); 
+
+                            software_framebuffer_draw_image_ex(framebuffer, graphics_assets_get_image_by_id(&graphics_assets, tex),
+                                                               rectangle_f32(draw_cursor_x, draw_cursor_y-16, 32, 32), RECTANGLE_F32_NULL, color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
+
+                            if (EDITOR_imgui_button(framebuffer, font, highlighted_font, text_scale, v2f32(draw_cursor_x, draw_cursor_y), tile_data->name)) {
+                                editor_state->tab_menu_open    = 0;
+                                editor_state->painting_tile_id = tile_data_index;
+                            }
+
+                            draw_cursor_x += largest_name_width * 1.1;
+                        }
+
+                        draw_cursor_y += 24 * 1.2 * 2;
                     }
                 } break;
                 case EDITOR_TOOL_ENTITY_PLACEMENT: {
@@ -1046,55 +1084,58 @@ void update_and_render_editor(struct software_framebuffer* framebuffer, f32 dt) 
         /* TODO do it lazy mode. Once only */
         qsort(editor_state->tiles, editor_state->tile_count, sizeof(*editor_state->tiles), _qsort_tile);
 
-        for (s32 tile_index = 0; tile_index < editor_state->tile_count; ++tile_index) {
-            struct tile*                 current_tile = editor_state->tiles + tile_index;
-            s32                          tile_id      = current_tile->id;
-            struct tile_data_definition* tile_data    = tile_table_data + tile_id;
-            image_id                     tex          = graphics_assets_get_image_by_filepath(&graphics_assets, tile_data->image_asset_location); 
+        /* Render world */
+        {
+            for (s32 tile_index = 0; tile_index < editor_state->tile_count; ++tile_index) {
+                struct tile*                 current_tile = editor_state->tiles + tile_index;
+                s32                          tile_id      = current_tile->id;
+                struct tile_data_definition* tile_data    = tile_table_data + tile_id;
+                image_id                     tex          = graphics_assets_get_image_by_filepath(&graphics_assets, tile_data->image_asset_location); 
 
-            render_commands_push_image(&commands,
-                                       graphics_assets_get_image_by_id(&graphics_assets, tex),
-                                       rectangle_f32(current_tile->x * TILE_UNIT_SIZE,
-                                                     current_tile->y * TILE_UNIT_SIZE,
-                                                     TILE_UNIT_SIZE,
-                                                     TILE_UNIT_SIZE),
-                                       tile_data->sub_rectangle,
-                                       color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
-        }
-        struct font_cache* font = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_BLUE]);
-        for (s32 trigger_level_transition_index = 0; trigger_level_transition_index < editor_state->trigger_level_transition_count; ++trigger_level_transition_index) {
-            struct trigger_level_transition* current_trigger = editor_state->trigger_level_transitions + trigger_level_transition_index;
-            if (editor_state->last_selected == current_trigger) {
-                render_commands_push_quad(&commands, rectangle_f32(current_trigger->bounds.x * TILE_UNIT_SIZE, current_trigger->bounds.y * TILE_UNIT_SIZE,
-                                                                   current_trigger->bounds.w * TILE_UNIT_SIZE, current_trigger->bounds.h * TILE_UNIT_SIZE),
-                                          color32u8(255, 255, 255, normalized_sinf(global_elapsed_time*2) * 0.5*255 + 64), BLEND_MODE_ALPHA);
-            } else {
-                render_commands_push_quad(&commands, rectangle_f32(current_trigger->bounds.x * TILE_UNIT_SIZE, current_trigger->bounds.y * TILE_UNIT_SIZE,
-                                                                   current_trigger->bounds.w * TILE_UNIT_SIZE, current_trigger->bounds.h * TILE_UNIT_SIZE),
-                                          color32u8(255, 0, 0, normalized_sinf(global_elapsed_time*2) * 0.5*255 + 64), BLEND_MODE_ALPHA);
+                render_commands_push_image(&commands,
+                                           graphics_assets_get_image_by_id(&graphics_assets, tex),
+                                           rectangle_f32(current_tile->x * TILE_UNIT_SIZE,
+                                                         current_tile->y * TILE_UNIT_SIZE,
+                                                         TILE_UNIT_SIZE,
+                                                         TILE_UNIT_SIZE),
+                                           tile_data->sub_rectangle,
+                                           color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
             }
-            /* NOTE display a visual denoting facing direction on transition */
-            render_commands_push_text(&commands, font, 1, v2f32(current_trigger->bounds.x * TILE_UNIT_SIZE, current_trigger->bounds.y * TILE_UNIT_SIZE), string_literal("(level\ntransition\ntrigger)"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
-        }
+            struct font_cache* font = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_BLUE]);
+            for (s32 trigger_level_transition_index = 0; trigger_level_transition_index < editor_state->trigger_level_transition_count; ++trigger_level_transition_index) {
+                struct trigger_level_transition* current_trigger = editor_state->trigger_level_transitions + trigger_level_transition_index;
+                if (editor_state->last_selected == current_trigger) {
+                    render_commands_push_quad(&commands, rectangle_f32(current_trigger->bounds.x * TILE_UNIT_SIZE, current_trigger->bounds.y * TILE_UNIT_SIZE,
+                                                                       current_trigger->bounds.w * TILE_UNIT_SIZE, current_trigger->bounds.h * TILE_UNIT_SIZE),
+                                              color32u8(255, 255, 255, normalized_sinf(global_elapsed_time*2) * 0.5*255 + 64), BLEND_MODE_ALPHA);
+                } else {
+                    render_commands_push_quad(&commands, rectangle_f32(current_trigger->bounds.x * TILE_UNIT_SIZE, current_trigger->bounds.y * TILE_UNIT_SIZE,
+                                                                       current_trigger->bounds.w * TILE_UNIT_SIZE, current_trigger->bounds.h * TILE_UNIT_SIZE),
+                                              color32u8(255, 0, 0, normalized_sinf(global_elapsed_time*2) * 0.5*255 + 64), BLEND_MODE_ALPHA);
+                }
+                /* NOTE display a visual denoting facing direction on transition */
+                render_commands_push_text(&commands, font, 1, v2f32(current_trigger->bounds.x * TILE_UNIT_SIZE, current_trigger->bounds.y * TILE_UNIT_SIZE), string_literal("(level\ntransition\ntrigger)"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+            }
 
-        for (s32 chest_index = 0; chest_index < editor_state->entity_chest_count; ++chest_index) {
-            struct entity_chest* current_chest = editor_state->entity_chests + chest_index;
+            for (s32 chest_index = 0; chest_index < editor_state->entity_chest_count; ++chest_index) {
+                struct entity_chest* current_chest = editor_state->entity_chests + chest_index;
 
-            render_commands_push_image(&commands,
-                                       graphics_assets_get_image_by_id(&graphics_assets, chest_closed_img),
-                                       rectangle_f32(current_chest->position.x * TILE_UNIT_SIZE,
-                                                     current_chest->position.y * TILE_UNIT_SIZE,
-                                                     current_chest->scale.x * TILE_UNIT_SIZE,
-                                                     current_chest->scale.y * TILE_UNIT_SIZE),
-                                       RECTANGLE_F32_NULL,
-                                       color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
+                render_commands_push_image(&commands,
+                                           graphics_assets_get_image_by_id(&graphics_assets, chest_closed_img),
+                                           rectangle_f32(current_chest->position.x * TILE_UNIT_SIZE,
+                                                         current_chest->position.y * TILE_UNIT_SIZE,
+                                                         current_chest->scale.x * TILE_UNIT_SIZE,
+                                                         current_chest->scale.y * TILE_UNIT_SIZE),
+                                           RECTANGLE_F32_NULL,
+                                           color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
 
-            if (editor_state->last_selected == current_chest) {
-                render_commands_push_quad(&commands, rectangle_f32(current_chest->position.x * TILE_UNIT_SIZE,
-                                                                   current_chest->position.y * TILE_UNIT_SIZE,
-                                                                   current_chest->scale.x    * TILE_UNIT_SIZE,
-                                                                   current_chest->scale.y    * TILE_UNIT_SIZE),
-                                          color32u8(255, 0, 0, normalized_sinf(global_elapsed_time*2) * 0.5 *255 + 64), BLEND_MODE_ALPHA);
+                if (editor_state->last_selected == current_chest) {
+                    render_commands_push_quad(&commands, rectangle_f32(current_chest->position.x * TILE_UNIT_SIZE,
+                                                                       current_chest->position.y * TILE_UNIT_SIZE,
+                                                                       current_chest->scale.x    * TILE_UNIT_SIZE,
+                                                                       current_chest->scale.y    * TILE_UNIT_SIZE),
+                                              color32u8(255, 0, 0, normalized_sinf(global_elapsed_time*2) * 0.5 *255 + 64), BLEND_MODE_ALPHA);
+                }
             }
         }
         

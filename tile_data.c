@@ -1,3 +1,5 @@
+/* I think we'll probably change this a lot more later... But anyways... */
+
 static void initialize_static_table_data(void) {
     /* a very generous amount of table data... */
     tile_table_data = memory_arena_push(&game_arena, sizeof(*tile_table_data) * 2048);
@@ -12,140 +14,140 @@ static void initialize_static_table_data(void) {
 #define current_AT   &auto_tile_info[j] 
     insert(
         ((struct tile_data_definition){
-            .name                 = string_literal("(grass test(filled))"),
+            .name                 = string_literal("grass"),
             .image_asset_location = string_literal("./res/img/land/grass.png"),
             .flags                = TILE_DATA_FLAGS_NONE,
         })
     );
     insert(
         ((struct tile_data_definition){
-            .name                 = string_literal("(brick test(filled))"),
+            .name                 = string_literal("brick"),
             .image_asset_location = string_literal("./res/img/brick.png"),
             .flags                = TILE_DATA_FLAGS_SOLID,
         })
     );
     insert(
         ((struct tile_data_definition){
-            .name                 = string_literal("(dirt)"),
+            .name                 = string_literal("dirt"),
             .image_asset_location = string_literal("./res/img/land/dirt.png"),
             .flags                = TILE_DATA_FLAGS_NONE,
         })
     );
     insert(
         ((struct tile_data_definition){
-            .name                 = string_literal("(water (unpassable))"),
+            .name                 = string_literal("water (solid)"),
             .image_asset_location = string_literal("./res/img/land/water.png"),
             .flags                = TILE_DATA_FLAGS_SOLID,
         })
     );
     insert(
         ((struct tile_data_definition){
-            .name                 = string_literal("(water (passable))"),
+            .name                 = string_literal("(water)"),
             .image_asset_location = string_literal("./res/img/land/water.png"),
             .flags                = TILE_DATA_FLAGS_NONE,
         })
     );
     insert(
         ((struct tile_data_definition){
-            .name                 = string_literal("(cave wall)"),
+            .name                 = string_literal("cave wall"),
             .image_asset_location = string_literal("./res/img/cave/cavewall.png"),
             .flags                = TILE_DATA_FLAGS_SOLID,
         })
     );
     insert(
         ((struct tile_data_definition){
-            .name                 = string_literal("(cave wall opening)"),
+            .name                 = string_literal("cave wall opening"),
             .image_asset_location = string_literal("./res/img/cave/cavewall_opening.png"),
             .flags                = TILE_DATA_FLAGS_SOLID,
         })
     );
     insert(
         ((struct tile_data_definition){
-            .name                 = string_literal("(cave wall mossy"),
+            .name                 = string_literal("cave wall mossy"),
             .image_asset_location = string_literal("./res/img/cave/cavewall1.png"),
             .flags                = TILE_DATA_FLAGS_SOLID,
         })
     );
     insert(
         ((struct tile_data_definition){
-            .name                 = string_literal("(cobble floor1)"),
+            .name                 = string_literal("cobble floor"),
             .image_asset_location = string_literal("./res/img/cave/cobble_floor1.png"),
             .flags                = TILE_DATA_FLAGS_NONE,
         })
     );
     insert(
         ((struct tile_data_definition){
-            .name                 = string_literal("(bush)"),
+            .name                 = string_literal("bush"),
             .image_asset_location = string_literal("./res/img/land/bush.png"),
             .flags                = TILE_DATA_FLAGS_SOLID,
         })
     );
     insert(
         ((struct tile_data_definition){
-            .name                 = string_literal("(house block)"),
+            .name                 = string_literal("house block"),
             .image_asset_location = string_literal("./res/img/building/home_block.png"),
             .flags                = TILE_DATA_FLAGS_SOLID,
         })
     );
     insert(
         ((struct tile_data_definition){
-            .name                 = string_literal("(house block top)"),
+            .name                 = string_literal("house block top"),
             .image_asset_location = string_literal("./res/img/building/home_top_block.png"),
             .flags                = TILE_DATA_FLAGS_SOLID,
         })
     );
     insert(
         ((struct tile_data_definition){
-            .name                 = string_literal("(house block window)"),
+            .name                 = string_literal("house block window"),
             .image_asset_location = string_literal("./res/img/building/home_block_window.png"),
             .flags                = TILE_DATA_FLAGS_SOLID,
         })
     );
     insert(
         ((struct tile_data_definition){
-            .name                 = string_literal("(carpet red fuzz)"),
+            .name                 = string_literal("carpet red fuzz"),
             .image_asset_location = string_literal("./res/img/building/home_red_fuzz_pit.png"),
             .flags                = TILE_DATA_FLAGS_SOLID,
         })
     );
     insert(
         ((struct tile_data_definition){
-            .name                 = string_literal("(home wood floor)"),
+            .name                 = string_literal("home wood floor"),
             .image_asset_location = string_literal("./res/img/building/home_wood_floor.png"),
             .flags                = TILE_DATA_FLAGS_SOLID,
         })
     );
     insert(
         ((struct tile_data_definition){
-            .name                 = string_literal("(home wood wall)"),
+            .name                 = string_literal("home wood wall"),
             .image_asset_location = string_literal("./res/img/building/home_wood_wall.png"),
             .flags                = TILE_DATA_FLAGS_SOLID,
         })
     );
     insert(
         ((struct tile_data_definition){
-            .name                 = string_literal("(home wood wall top)"),
+            .name                 = string_literal("home wood wall top"),
             .image_asset_location = string_literal("./res/img/building/home_wood_wall_top.png"),
             .flags                = TILE_DATA_FLAGS_SOLID,
         })
     );
     insert(
         ((struct tile_data_definition){
-            .name                 = string_literal("(door)"),
+            .name                 = string_literal("door"),
             .image_asset_location = string_literal("./res/img/building/door.png"),
             .flags                = TILE_DATA_FLAGS_SOLID,
         })
     );
     insert(
         ((struct tile_data_definition){
-            .name                 = string_literal("(wood_log_side)"),
+            .name                 = string_literal("wood log side"),
             .image_asset_location = string_literal("./res/img/cave/wood_log_side.png"),
             .flags                = TILE_DATA_FLAGS_NONE,
         })
     );
     insert(
         ((struct tile_data_definition){
-            .name                 = string_literal("(small tree)"),
+            .name                 = string_literal("small tree"),
             .image_asset_location = string_literal("./res/img/land/tree_small.png"),
             .flags                = TILE_DATA_FLAGS_SOLID,
         })
