@@ -36,6 +36,20 @@
 #define GAME_DEF_C
 /* shared structure definitions for both editor and game */
 
+enum activation_type {
+    ACTIVATION_TYPE_TOUCH,
+    ACTIVATION_TYPE_ACTIVATE,
+    ACTIVATION_TYPE_HIT,
+    ACTIVATION_TYPE_COUNT,
+};
+
+local string activation_type_strings[] = {
+    string_literal("(on-touch)"),
+    string_literal("(on-activate)"),
+    string_literal("(on-hit?)"),
+    string_literal("(count)"),
+};
+
 enum ui_state {
     UI_STATE_INGAME,
     UI_STATE_PAUSE,
@@ -70,12 +84,6 @@ static string ui_pause_editor_menu_strings[] = {
 
 local union color32u8 global_color_grading_filter = COLOR_GRADING_DAY;
 
-#if 0
-struct trigger {
-    struct rectangle_f32 bounds;
-};
-/* not needed right now, we'll just be direct */
-#endif
 enum facing_direction {
     DIRECTION_DOWN,
     DIRECTION_UP,
@@ -100,15 +108,6 @@ static string facing_direction_strings_normal[] = {
     string_literal("(retained)"),
     string_literal("(count)"),
 };
-struct trigger_level_transition {
-    /* assume to be in tile coordinates. */
-    struct rectangle_f32 bounds;
-    /* for binary structs, I need cstrings unfortunately. Otherwise they are a little too inconvenient to serialize...*/
-    char  target_level[128];
-    /* anchoring to an object, might be very niche... */
-    u8    new_facing_direction;
-    v2f32 spawn_location;
-};
 /* loaded from a table at runtime or compile time? */
 /* Since this isn't serialized, I can change this pretty often. */
 enum tile_data_flags {
@@ -128,23 +127,6 @@ struct tile_data_definition {
 };
 static s32 tile_table_data_count = 0;
 /* tiles.c */
-
-struct tile {
-    s32 id;
-    /* NOTE, remove? */
-    s32 flags; /* acts as a XOR against it's parent? (tile definitions elsewhere.) */
-    s16 x;
-    s16 y;
-    s16 layer;
-};
-
-s32 _qsort_tile(const void* a, const void* b) {
-    const struct tile* a_tile = a;
-    const struct tile* b_tile = b;
-    if (a_tile->layer < b_tile->layer) return -1;
-    else if (a_tile->layer > b_tile->layer) return 1;
-    return 0;
-}
 
 #include "conversation_def.c"
 #include "weather_def.c"

@@ -1,3 +1,33 @@
+#ifndef LEVEL_AREA_DEF_C
+#define LEVEL_AREA_DEF_C
+
+struct tile {
+    s32 id;
+    /* NOTE, remove? */
+    s32 flags; /* acts as a XOR against it's parent? (tile definitions elsewhere.) */
+    s16 x;
+    s16 y;
+    s16 layer;
+};
+
+s32 _qsort_tile(const void* a, const void* b) {
+    const struct tile* a_tile = a;
+    const struct tile* b_tile = b;
+    if (a_tile->layer < b_tile->layer) return -1;
+    else if (a_tile->layer > b_tile->layer) return 1;
+    return 0;
+}
+
+struct trigger_level_transition {
+    /* assume to be in tile coordinates. */
+    struct rectangle_f32 bounds;
+    /* for binary structs, I need cstrings unfortunately. Otherwise they are a little too inconvenient to serialize...*/
+    char  target_level[128];
+    /* anchoring to an object, might be very niche... */
+    u8    new_facing_direction;
+    v2f32 spawn_location;
+};
+
 struct level_area_navigation_map_tile {
     f32 score_modifier; 
     s32 type;          /* 0 ground, 1 solid, 2 obstacle(removable?) */
@@ -67,6 +97,13 @@ struct level_area_script_data {
     struct level_area_listener listeners[LEVEL_AREA_LISTEN_EVENT_COUNT];
 };
 
+struct trigger {
+    struct rectangle_f32 bounds;
+    u32                  activations;
+    u8                   activation_method;
+    u8                   active;
+};
+
 struct level_area {
     /* keep reference of a name. */
     u32          version;
@@ -78,6 +115,12 @@ struct level_area {
     s32 trigger_level_transition_count;
     struct trigger_level_transition* trigger_level_transitions;
 
+    /*
+      Address in script file as (trigger (id) or (name-string?(when supported.)))
+     */
+    s32 script_trigger_count;
+    struct trigger* script_triggers;
+
     s32 entity_chest_count;
     struct entity_chest* chests;
 
@@ -87,3 +130,5 @@ struct level_area {
     /* used for displaying what tiles you can walk to. */
     u8*                              combat_movement_visibility_map;
 };
+
+#endif
