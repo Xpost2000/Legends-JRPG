@@ -2,6 +2,7 @@
 # TODO fix!
 (on-enter
     (game_start_rain)
+    (game_set_region_name "Grassland Plains")
     (game_set_environment_colors 'night)
     (game_message_queue "Let's fight!")
     (game_message_queue "Ordering should work...")

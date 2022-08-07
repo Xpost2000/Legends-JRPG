@@ -903,7 +903,8 @@ void game_initialize_game_world(void) {
     /* game_open_conversation_file(game_state, string_literal("./dlg/simple_choices.txt")); */
     load_level_from_file(game_state, string_literal("pf.area"));
 #endif
-    load_level_from_file(game_state, string_literal("bt.area"));
+    /* load_level_from_file(game_state, string_literal("bt.area")); */
+    load_level_from_file(game_state, string_literal("testforest.area"));
     /* load_level_from_file(game_state, string_literal("testisland.area")); */
     /* game_attempt_to_change_area_name(game_state, string_literal("Old Iyeila"), string_literal("Grave of Stars")); */
 #if 0
@@ -1079,10 +1080,10 @@ local void update_and_render_ingame_game_menu_ui(struct game_state* state, struc
     if (game_display_and_update_storyboard(framebuffer, dt))
         return;
 
-    if (game_display_and_update_messages(framebuffer, dt))
+    if (update_and_render_region_zone_change(state, framebuffer, dt))
         return;
 
-    if (update_and_render_region_zone_change(state, framebuffer, dt))
+    if (game_display_and_update_messages(framebuffer, dt))
         return;
 
     if (state->is_conversation_active) {

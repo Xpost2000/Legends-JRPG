@@ -25,6 +25,23 @@ GAME_LISP_FUNCTION(GAME_STOP_RAIN) {
     weather_stop_rain(state);
     return LISP_nil;
 }
+GAME_LISP_FUNCTION(GAME_SET_REGION_NAME) {
+    _debugprintf("set region name");
+    struct lisp_form* str_name = &arguments[0];
+    struct lisp_form* str_sub_name = &arguments[1];
+
+    string area_name     = {};
+    string area_sub_name = {};
+
+    area_name = str_name->string;
+    if (argument_count == 2) {
+        area_sub_name = str_sub_name->string;
+    }
+    /* no check */
+    game_attempt_to_change_area_name(state, string_literal("Does not work yet!"), string_literal("The development zone"));
+    return LISP_nil;
+}
+
 GAME_LISP_FUNCTION(GAME_SET_ENVIRONMENT_COLORS) {
     if (argument_count == 1) {
         struct lisp_form* argument = &arguments[0];
@@ -87,6 +104,7 @@ static struct game_script_function_builtin script_function_table[] = {
     GAME_LISP_FUNCTION(GAME_STOP_RAIN),
     GAME_LISP_FUNCTION(GAME_SET_ENVIRONMENT_COLORS),
     GAME_LISP_FUNCTION(GAME_MESSAGE_QUEUE),
+    GAME_LISP_FUNCTION(GAME_SET_REGION_NAME),
 };
 
 local game_script_function lookup_script_function(string name) {
