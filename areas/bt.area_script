@@ -4,6 +4,8 @@
     (game_start_rain)
     (game_set_region_name "Grassland Plains")
     (game_set_environment_colors 'night)
+
+# remember message queueing order
     (game_message_queue "Let's fight!")
     (game_message_queue "Ordering should work...")
     (game_message_queue "Welcome to some test messages"))
