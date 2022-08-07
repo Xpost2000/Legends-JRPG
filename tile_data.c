@@ -143,6 +143,13 @@ static void initialize_static_table_data(void) {
             .flags                = TILE_DATA_FLAGS_NONE,
         })
     );
+    insert(
+        ((struct tile_data_definition){
+            .name                 = string_literal("(small tree)"),
+            .image_asset_location = string_literal("./res/img/land/tree_small.png"),
+            .flags                = TILE_DATA_FLAGS_SOLID,
+        })
+    );
 #undef insert 
 #undef AT_insert 
 #undef current_AT 

@@ -866,8 +866,8 @@ void game_initialize(void) {
      */
     game_state->entities = entity_list_create(&game_arena, 512);
     player_id            = entity_list_create_player(&game_state->entities, v2f32(70, 70));
-    entity_list_create_badguy(&game_state->entities, v2f32(8 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE));
-    entity_list_create_badguy(&game_state->entities, v2f32(11 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE));
+    /* entity_list_create_badguy(&game_state->entities, v2f32(8 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE)); */
+    /* entity_list_create_badguy(&game_state->entities, v2f32(11 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE)); */
 
     {
         entity_model_database_add_model(&game_arena, string_literal("guy"));
