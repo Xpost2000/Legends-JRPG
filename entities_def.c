@@ -151,10 +151,17 @@ struct entity {
     struct entity_actor_inventory inventory;
 
     s32_range                     health;
+    s32_range                     magic;
     struct entity_stat_block      stat_block;
 
+    /* mostly runtime data. */
     struct entity_ai_data         ai;
     bool                          waiting_on_turn;
+    /* to avoid double fires */
+    /* NOTE: ids are internally (index+1), it's a bit confusing as the editor and engine otherwise have id as 0 indices */
+    /* this is just so I can zero out this thing and have expected behavior. */
+    s32                           interacted_script_trigger_write_index;
+    s32                           interacted_script_trigger_ids[32];
 };
 
 bool is_entity_aggressive_to_player(struct entity* entity);

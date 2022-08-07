@@ -266,6 +266,7 @@ void entity_list_update_entities(struct game_state* state, struct entity_list* e
             /* handle trigger interactions */
             /* NPCs should not be able to leave areas for now */
             handle_entity_level_trigger_interactions(state, current_entity, area->trigger_level_transition_count, area->trigger_level_transitions, dt);
+            handle_entity_scriptable_trigger_interactions(state, current_entity, area->script_trigger_count, area->script_triggers, dt);
         } else {
             current_entity->position.x += current_entity->velocity.x * dt;
             current_entity->position.y += current_entity->velocity.y * dt;

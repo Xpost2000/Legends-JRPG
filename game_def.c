@@ -36,6 +36,12 @@
 #define GAME_DEF_C
 /* shared structure definitions for both editor and game */
 
+enum entity_game_script_target_types {
+    GAME_SCRIPT_TARGET_TRIGGER,
+    GAME_SCRIPT_TARGET_ENTITY,
+    GAME_SCRIPT_TARGET_CHEST,
+};
+
 enum activation_type {
     ACTIVATION_TYPE_TOUCH,
     ACTIVATION_TYPE_ACTIVATE,
@@ -511,6 +517,7 @@ struct game_state {
 
 #include "save_data_def.c"
 void handle_entity_level_trigger_interactions(struct game_state* state, struct entity* entity, s32 trigger_level_transition_count, struct trigger_level_transition* trigger_level_transitions, f32 dt);
+void handle_entity_scriptable_trigger_interactions(struct game_state* state, struct entity* entity, s32 trigger_count, struct trigger* triggers, f32 dt);
 
 local v2f32 get_mouse_in_world_space(struct camera* camera, s32 screen_width, s32 screen_height) {
     return camera_project(camera, mouse_location(), screen_width, screen_height);

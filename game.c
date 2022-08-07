@@ -660,6 +660,7 @@ local void load_area_script(struct memory_arena* arena, struct level_area* area,
                     for (s32 name_index = 0; name_index < LEVEL_AREA_LISTEN_EVENT_COUNT; ++name_index) {
                         if (lisp_form_as_function_list_check_fn_name(form, level_area_listen_event_form_names[name_index])) {
                             event_listener_type_counters[name_index] += 1;
+                            _debugprintf("found an event listener");
                         }
                     }
                 }
@@ -689,6 +690,10 @@ local void load_area_script(struct memory_arena* arena, struct level_area* area,
     } else {
         _debugprintf("NOTE: %.*s does not exist! No script for this level.", script_name.length, script_name.data);
     }
+}
+
+struct lisp_form level_area_find_listener_for_object(struct game_state* state, struct level_area* area, s32 listener_type, s32 listener_target_type, s32 listener_target_id) {
+    return LISP_nil;
 }
 
 /* this is used for cheating or to setup the game I suppose. */
@@ -1488,12 +1493,12 @@ void handle_entity_level_trigger_interactions(struct game_state* state, struct e
     if (!(entity->flags & ENTITY_FLAGS_PLAYER_CONTROLLED))
         return;
 
+    struct rectangle_f32 entity_collision_bounds = rectangle_f32_scale(entity_rectangle_collision_bounds(entity), 1.0/TILE_UNIT_SIZE);
     for (s32 index = 0; index < trigger_level_transition_count; ++index) {
         struct trigger_level_transition* current_trigger = trigger_level_transitions + index;
         v2f32 spawn_location       = current_trigger->spawn_location;
         u8    new_facing_direction = current_trigger->new_facing_direction;
 
-        struct rectangle_f32 entity_collision_bounds = rectangle_f32_scale(entity_rectangle_collision_bounds(entity), 1.0/TILE_UNIT_SIZE);
         if (rectangle_f32_intersect(current_trigger->bounds, entity_collision_bounds)) {
             /* queue a level transition, animation (god animation sucks... For now instant transition) */
             struct binary_serializer serializer = open_read_file_serializer(string_concatenate(&scratch_arena, string_literal("areas/"), string_from_cstring(current_trigger->target_level)));
@@ -1504,6 +1509,58 @@ void handle_entity_level_trigger_interactions(struct game_state* state, struct e
 
             return;
         }
+    }
+}
+
+void handle_entity_scriptable_trigger_interactions(struct game_state* state, struct entity* entity, s32 trigger_count, struct trigger* triggers, f32 dt) {
+    if (!(entity->flags & ENTITY_FLAGS_PLAYER_CONTROLLED))
+        return;
+
+    struct rectangle_f32 entity_collision_bounds = rectangle_f32_scale(entity_rectangle_collision_bounds(entity), 1.0/TILE_UNIT_SIZE);
+
+    bool any_intersections = false;
+    for (s32 index = 0; index < trigger_count; ++index) {
+        struct trigger*      current_trigger         = triggers + index;
+
+        switch (current_trigger->activation_method) {
+            case ACTIVATION_TYPE_TOUCH: {
+                if (rectangle_f32_intersect(current_trigger->bounds, entity_collision_bounds)) {
+                    any_intersections = true;
+                    bool already_activated_trigger = false;
+
+                    for (s32 activated_index = 0; activated_index < array_count(entity->interacted_script_trigger_ids) && !already_activated_trigger; ++activated_index) {
+                        if (entity->interacted_script_trigger_ids[activated_index] == (index+1)) {
+                            already_activated_trigger = true;
+                        }
+                    }
+
+                    if (!already_activated_trigger) {
+                        if (entity->interacted_script_trigger_write_index < array_count(entity->interacted_script_trigger_ids)) {
+                            entity->interacted_script_trigger_ids[entity->interacted_script_trigger_write_index++] = index+1;
+                            struct level_area* area = &state->loaded_area;
+
+                            struct lisp_form listener = level_area_find_listener_for_object(state, area, LEVEL_AREA_LISTEN_EVENT_ON_TOUCH, GAME_SCRIPT_TARGET_TRIGGER, index);
+                            _debug_print_out_lisp_code(&listener);
+                        }
+                    }
+
+                    /* NOTE: I think how I want to handle the evaluation system is to do a 
+                       and send lisp forms that are evaluated all together.
+                       
+                       This applies to everything except for dialogue, which is kind of not expected to wait for anything.
+                       Dialogue is generally expected to be very simple, although this can always change...?
+                       game_script_request_evaluation_of_script();
+                       
+                       Anyways later for now.
+                    */
+                }
+            } break;
+        }
+    }
+
+    if (!any_intersections) {
+        entity->interacted_script_trigger_write_index = 0;
+        zero_array(entity->interacted_script_trigger_ids);
     }
 }
 
