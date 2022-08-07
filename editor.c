@@ -939,8 +939,13 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
                             struct trigger* trigger = editor_state->last_selected;
                             s32 trigger_id          = trigger - editor_state->generic_triggers;
 
-                            if(EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(16, draw_cursor_y), string_from_cstring(format_temp("in a script file address (trigger %d)", trigger_id)))) {
-                                editor_state->tab_menu_open = 0;
+                            string activation_type_string = activation_type_strings[trigger->activation_method];
+                            if(EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(16, draw_cursor_y),
+                                                   string_from_cstring(format_temp("Activation Type: %.*s", activation_type_string.length, activation_type_string.data)))) {
+                                trigger->activation_method += 1;
+                                if (trigger->activation_method >= ACTIVATION_TYPE_COUNT) {
+                                    trigger->activation_method = 0;
+                                }
                             }
                         } break;
                     }

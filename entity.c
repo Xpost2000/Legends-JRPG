@@ -131,6 +131,7 @@ void entity_handle_player_controlled(struct game_state* state, struct entity_lis
     if (move_left)  entity->velocity.x  = -DEFAULT_VELOCITY;
     if (move_right) entity->velocity.x  = DEFAULT_VELOCITY;
 
+    /* like chests or something */
     player_handle_radial_interactables(state, entities, entity_index, dt);
 }
 
