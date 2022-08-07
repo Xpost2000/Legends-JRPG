@@ -1556,6 +1556,13 @@ local void execute_current_area_scripts(struct game_state* state, f32 dt) {
             }
         }
 
+        if (on_frame_script) {
+            for (s32 index = 1; index < on_frame_script->list.count; ++index) {
+                struct lisp_form* current_form = lisp_list_nth(on_frame_script, index);
+                game_script_evaluate_form(&scratch_arena, state, current_form);
+            }
+        }
+
         /* onframe is going to hurt but I'm not kidding about this. */
         /* I could invoke multiple every-n-seconds blocks? */
         /* _debugprintf("END EXECUTING AREA SCRIPTS"); */
