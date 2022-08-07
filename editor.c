@@ -87,6 +87,7 @@ void editor_clear_all_allocations(struct editor_state* state) {
     state->tile_count                     = 0;
     state->trigger_level_transition_count = 0;
     state->entity_chest_count             = 0;
+    state->generic_trigger_count          = 0;
 }
 
 void editor_clear_all(struct editor_state* state) {
@@ -103,9 +104,11 @@ void editor_initialize(struct editor_state* state) {
     editor_state->tile_capacity                     = 8192;
     editor_state->trigger_level_transition_capacity = 1024;
     editor_state->entity_chest_capacity             = 1024;
+    editor_state->generic_trigger_capacity          = 1024;
     state->tiles                                    = memory_arena_push(state->arena, state->tile_capacity                     * sizeof(*state->tiles));
     state->trigger_level_transitions                = memory_arena_push(state->arena, state->trigger_level_transition_capacity * sizeof(*state->trigger_level_transitions));
     state->entity_chests                            = memory_arena_push(state->arena, state->entity_chest_capacity             * sizeof(*state->entity_chests));
+    state->generic_triggers                         = memory_arena_push(state->arena, state->generic_trigger_capacity          * sizeof(*state->generic_triggers));
     editor_clear_all(state);
 }
 
@@ -125,9 +128,12 @@ void editor_serialize_area(struct binary_serializer* serializer) {
 
     if (version_id >= 1) {
         Serialize_Fixed_Array(serializer, s32, editor_state->trigger_level_transition_count, editor_state->trigger_level_transitions);
-        if (version_id >= 2) {
-            Serialize_Fixed_Array(serializer, s32, editor_state->entity_chest_count, editor_state->entity_chests);
-        }
+    }
+    if (version_id >= 2) {
+        Serialize_Fixed_Array(serializer, s32, editor_state->entity_chest_count, editor_state->entity_chests);
+    }
+    if (version_id >= 3) {
+        Serialize_Fixed_Array(serializer, s32, editor_state->generic_trigger_count, editor_state->generic_triggers);
     }
 }
 
@@ -541,6 +547,9 @@ local void update_and_render_pause_editor_menu_ui(struct game_state* state, stru
                                   
                                   Just add some barrier code to only allow testing after a savename has been
                                   determined, as the savename is used to find the script.
+                                  
+                                  Or allow a separate script name to be selected outside of whatever is defaultly
+                                  assumed (filename + script extension.) Which would also work fine?
                                 */
                                 u8* data;
                                 u64 amount;

@@ -135,7 +135,6 @@ struct game_state;
 
 #include "item_def.c"
 
-#define CURRENT_LEVEL_AREA_VERSION (2)
 
 enum game_ui_nine_patch_id {
     NINE_PATCH_LEFT,
@@ -258,6 +257,9 @@ struct editor_state {
     s32                              entity_chest_count;
     s32                              entity_chest_capacity;
     struct entity_chest*             entity_chests;
+    s32                              generic_trigger_count;
+    s32                              generic_trigger_capacity;
+    struct trigger*                  generic_triggers;
     
     struct camera camera;
 

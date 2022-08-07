@@ -578,10 +578,14 @@ void serialize_level_area(struct game_state* state, struct binary_serializer* se
         _debugprintf("reading level transitions");
         Serialize_Fixed_Array_And_Allocate_From_Arena_Top(serializer, state->arena, s32, level->trigger_level_transition_count, level->trigger_level_transitions);
         /* this thing is allergic to chest updates. Unfortunately it might happen a lot... */
-        if (level->version >= 2) {
-            _debugprintf("reading containers");
-            Serialize_Fixed_Array_And_Allocate_From_Arena_Top(serializer, state->arena, s32, level->entity_chest_count, level->chests);
-        }
+    }
+    if (level->version >= 2) {
+        _debugprintf("reading containers");
+        Serialize_Fixed_Array_And_Allocate_From_Arena_Top(serializer, state->arena, s32, level->entity_chest_count, level->chests);
+    }
+    if (level->version >= 3) {
+        _debugprintf("reading scriptable triggers");
+        Serialize_Fixed_Array_And_Allocate_From_Arena_Top(serializer, state->arena, s32, level->generic_trigger_count, level->generic_triggers);
     }
 
     /* until we have new area transititons or whatever. */

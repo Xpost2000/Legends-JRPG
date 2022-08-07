@@ -1,6 +1,15 @@
 #ifndef LEVEL_AREA_DEF_C
 #define LEVEL_AREA_DEF_C
 
+/* NOTE: 
+   Change incoming from version >= 4
+   
+   Expecting to separate the tiles into layers! This
+   is to allow level complexity! All old tiles are assumed to
+   operate on the "object" tile level.
+*/
+#define CURRENT_LEVEL_AREA_VERSION (3)
+
 struct tile {
     s32 id;
     /* NOTE, remove? */
