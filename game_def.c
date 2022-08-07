@@ -39,7 +39,12 @@
 enum entity_game_script_target_types {
     GAME_SCRIPT_TARGET_TRIGGER,
     GAME_SCRIPT_TARGET_ENTITY,
-    GAME_SCRIPT_TARGET_CHEST,
+    GAME_SCRIPT_TARGET_CHEST, /* add an "on-loot" trigger */
+};
+local string entity_game_script_target_type_name[] = {
+    string_literal("trigger"),
+    string_literal("entity"),
+    string_literal("chest"),
 };
 
 enum activation_type {

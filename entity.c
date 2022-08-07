@@ -82,6 +82,10 @@ void entity_handle_player_controlled(struct game_state* state, struct entity_lis
 
     /* all the input blockers. */
     {
+        if (global_popup_state.message_count > 0) {
+            return;
+        }
+
         /* combat has it's own special movement rules. */
         if (state->combat_state.active_combat) {
             return;

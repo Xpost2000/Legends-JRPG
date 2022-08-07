@@ -700,9 +700,11 @@ struct lisp_form level_area_find_listener_for_object(struct game_state* state, s
         struct lisp_form* event_action_form = listener_lists->subscriber_codes + subscriber_index;
         struct lisp_form* object_handle     = lisp_list_nth(event_action_form, 1);
 
-        /* if (game_script_object_handle_matches_object(object_handle, listener_target_type, listener_target_id)) { */
-            
-        /* } */
+        if (game_script_object_handle_matches_object(*object_handle, listener_target_type, listener_target_id)) {
+            _debugprintf("found correct listener");
+            /* return only the code bodies. */
+            return lisp_list_sliced(*event_action_form, 2, -1);
+        }
     }
 
     return LISP_nil;
@@ -1551,8 +1553,12 @@ void handle_entity_scriptable_trigger_interactions(struct game_state* state, str
                             entity->interacted_script_trigger_ids[entity->interacted_script_trigger_write_index++] = index+1;
                             struct level_area* area = &state->loaded_area;
 
-                            struct lisp_form listener = level_area_find_listener_for_object(state, area, LEVEL_AREA_LISTEN_EVENT_ON_TOUCH, GAME_SCRIPT_TARGET_TRIGGER, index);
-                            _debug_print_out_lisp_code(&listener);
+                            struct lisp_form listener_body = level_area_find_listener_for_object(state, area, LEVEL_AREA_LISTEN_EVENT_ON_TOUCH, GAME_SCRIPT_TARGET_TRIGGER, index);
+
+                            for (s32 index = 0; index < listener_body.list.count; ++index) {
+                                game_script_evaluate_form(&scratch_arena, state, listener_body.list.forms + index);
+                            }
+                            /* _debug_print_out_lisp_code(&listener); */
                         }
                     }
 

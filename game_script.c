@@ -9,8 +9,13 @@ struct game_script_function_builtin {
     game_script_function function;
 };
 
+/* considering this is so patternized, is it worth writing a mini metaprogramming thing that just automates this? Who knows */
+
 #define GAME_LISP_FUNCTION(name) struct lisp_form name ## __script_proc (struct memory_arena* arena, struct game_state* state, struct lisp_form* arguments, s32 argument_count)
 
+GAME_LISP_FUNCTION(OBJ_ACTIVATIONS) {
+    return LISP_nil;
+}
 GAME_LISP_FUNCTION(DLG_NEXT) {
     _debugprintf("NOT IMPLEMENTED YET!");
     return LISP_nil;
@@ -23,6 +28,16 @@ GAME_LISP_FUNCTION(GAME_START_RAIN) {
 GAME_LISP_FUNCTION(GAME_STOP_RAIN) {
     _debugprintf("game_stop_rain script");
     weather_stop_rain(state);
+    return LISP_nil;
+}
+GAME_LISP_FUNCTION(GAME_START_SNOW) {
+    _debugprintf("game_start_snow script");
+    weather_start_snow(state);
+    return LISP_nil;
+}
+GAME_LISP_FUNCTION(GAME_STOP_SNOW) {
+    _debugprintf("game_stop_snow script");
+    weather_stop_snow(state);
     return LISP_nil;
 }
 GAME_LISP_FUNCTION(GAME_SET_REGION_NAME) {
@@ -100,8 +115,11 @@ GAME_LISP_FUNCTION(GAME_MESSAGE_QUEUE) {
 #undef STRINGIFY
 static struct game_script_function_builtin script_function_table[] = {
     GAME_LISP_FUNCTION(DLG_NEXT),
+    GAME_LISP_FUNCTION(OBJ_ACTIVATIONS),
     GAME_LISP_FUNCTION(GAME_START_RAIN),
     GAME_LISP_FUNCTION(GAME_STOP_RAIN),
+    GAME_LISP_FUNCTION(GAME_START_SNOW),
+    GAME_LISP_FUNCTION(GAME_STOP_SNOW),
     GAME_LISP_FUNCTION(GAME_SET_ENVIRONMENT_COLORS),
     GAME_LISP_FUNCTION(GAME_MESSAGE_QUEUE),
     GAME_LISP_FUNCTION(GAME_SET_REGION_NAME),
@@ -378,6 +396,31 @@ bool handle_builtin_game_script_functions(struct memory_arena* arena, struct gam
     return false;
 }
 
+bool game_script_object_handle_matches_object(struct lisp_form object_handle, s32 type, s32 id) {
+    assertion(object_handle.type == LISP_FORM_LIST && "lisp object handle is not a list??? Oh no");
+    assertion(object_handle.list.count == 2 && "lisp representations of object handles should be like (TYPE ID)");
+
+    struct lisp_form* type_discriminator_form = lisp_list_nth(&object_handle, 0);
+    struct lisp_form* id_form                 = lisp_list_nth(&object_handle, 1);
+
+    s32 real_id = 0;
+
+    if (!lisp_form_get_s32(*id_form, &real_id)) {
+        return false;
+    }
+
+    string id_to_match = entity_game_script_target_type_name[type];
+
+    if (lisp_form_symbol_matching(*type_discriminator_form, id_to_match)) {
+        if (real_id == id) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+
 struct lisp_form game_script_evaluate_form(struct memory_arena* arena, struct game_state* state, struct lisp_form* form) {
     _debugprintf("begin");
     if (form) {
@@ -453,4 +496,47 @@ struct lisp_form game_script_evaluate_form(struct memory_arena* arena, struct ga
 
     _debugprintf("end");
     return LISP_nil;
+}
+
+struct game_script_typed_ptr game_script_object_handle_decode(struct lisp_form object_handle) {
+    assertion(object_handle.type == LISP_FORM_LIST && "lisp object handle is not a list??? Oh no");
+    assertion(object_handle.list.count == 2 && "lisp representations of object handles should be like (TYPE ID)");
+    struct game_script_typed_ptr result = {};
+
+    struct lisp_form* type_discriminator_form = lisp_list_nth(&object_handle, 0);
+    struct lisp_form* id_form                 = lisp_list_nth(&object_handle, 1);
+
+    s32 type_id = 0;
+    s32 real_id = 0;
+
+    if (!lisp_form_get_s32(*id_form, &real_id)) {
+        /* TODO: needs better erroring */
+        return result;
+    }
+
+    for (s32 index = 0; index < array_count(entity_game_script_target_type_name); ++index) {
+        if (lisp_form_symbol_matching(*type_discriminator_form, entity_game_script_target_type_name[index])) {
+            type_id = index;
+            break;
+        }
+    }
+
+    result.type = type_id;
+
+    {
+        struct level_area* area = &game_state->loaded_area;
+        switch (type_id) {
+            case GAME_SCRIPT_TARGET_TRIGGER: {
+                result.ptr = area->script_triggers + real_id;
+            } break;
+            case GAME_SCRIPT_TARGET_ENTITY: {
+                result.ptr = game_state->entities.entities + real_id;
+            } break;
+            case GAME_SCRIPT_TARGET_CHEST: {
+                result.ptr = area->chests + real_id;
+            } break;
+        }
+    }
+
+    return result;
 }
