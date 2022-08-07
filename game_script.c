@@ -14,6 +14,20 @@ struct game_script_function_builtin {
 #define GAME_LISP_FUNCTION(name) struct lisp_form name ## __script_proc (struct memory_arena* arena, struct game_state* state, struct lisp_form* arguments, s32 argument_count)
 
 GAME_LISP_FUNCTION(OBJ_ACTIVATIONS) {
+    /* expect an object handle. Not checking right now */
+
+    if (argument_count == 1) {
+        struct game_script_typed_ptr object_ptr = game_script_object_handle_decode(arguments[0]);
+
+        switch (object_ptr.type) {
+            case GAME_SCRIPT_TARGET_TRIGGER: {
+                struct trigger* trigger = (struct trigger*)object_ptr.ptr;
+                return lisp_form_integer(trigger->activations);
+            } break;
+                bad_case;
+        }
+    }
+
     return LISP_nil;
 }
 GAME_LISP_FUNCTION(DLG_NEXT) {
@@ -442,6 +456,15 @@ struct lisp_form game_script_evaluate_form(struct memory_arena* arena, struct ga
                 } else {
                     return game_script_evaluate_form(arena, state, false_branch);
                 }
+            } else if (lisp_form_symbol_matching(form->list.forms[0], string_literal("progn"))) {
+                _debugprintf("Found a progn");
+                struct lisp_form result = {};
+
+                for (s32 index = 1; index < form->list.count; ++index) {
+                    result = game_script_evaluate_form(arena, state, form->list.forms+index);
+                }
+
+                return result;
             } else {
                 struct lisp_form result = LISP_nil;
                 /* NOTE: 

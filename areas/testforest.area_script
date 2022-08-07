@@ -4,13 +4,21 @@
         #(game_set_region_name "Darkwood Forest")        
         (game_set_environment_colors 'night))
 
+# (on-touch (trigger 0)
+#           (if (= (obj_activations (trigger 0)) 1)
+#               (progn
+#                 (game_message_queue "Woah... Was it always this bright?")
+#                 (game_set_environment_colors 'day)
+#                 (game_message_queue "Also was it snowing earlier?")
+#                 (game_start_snow)
+#                 (game_message_queue "Maybe not...")
+#                 (game_stop_snow))
+#                (game_message_queue "ok.")))
+
 (on-touch (trigger 0)
-          (if (= (obj_activations (trigger 0)) 1)
-              (progn
-                (game_message_queue "Woah... Was it always this bright?")
-                (game_set_environment_colors 'day)
                 (game_message_queue "Also was it snowing earlier?")
-                (game_start_snow)
+                (game_set_environment_colors 'day)
                 (game_message_queue "Maybe not...")
+                (game_start_snow)
+                (game_message_queue "Woah... Was it always this bright?")
                 (game_stop_snow))
-               (game_message_queue "ok.")))
