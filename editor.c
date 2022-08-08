@@ -1211,7 +1211,7 @@ void update_and_render_editor(struct software_framebuffer* framebuffer, f32 dt) 
                 render_commands_push_text(&commands, font, 1, v2f32(current_trigger->bounds.x * TILE_UNIT_SIZE, current_trigger->bounds.y * TILE_UNIT_SIZE), string_literal("(level\ntransition\ntrigger)"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
             }
 
-            for (s32 generic_trigger_index; generic_trigger_index < editor_state->generic_trigger_count; ++generic_trigger_index) {
+            for (s32 generic_trigger_index = 0; generic_trigger_index < editor_state->generic_trigger_count; ++generic_trigger_index) {
                 struct trigger* current_trigger = editor_state->generic_triggers + generic_trigger_index;
 
                 if (editor_state->last_selected == current_trigger) {
@@ -1278,5 +1278,17 @@ void update_and_render_editor(struct software_framebuffer* framebuffer, f32 dt) 
     software_framebuffer_render_commands(framebuffer, &commands);
     
     _imgui_any_intersection = false;
+}
+
+void update_and_render_editor_menu_ui(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
+    switch (state->ui_state) {
+        case UI_STATE_INGAME: {
+            update_and_render_editor_game_menu_ui(state, framebuffer, dt);
+        } break;
+        case UI_STATE_PAUSE: {
+            update_and_render_pause_editor_menu_ui(state, framebuffer, dt);
+        } break;
+            bad_case;
+    }
 }
 

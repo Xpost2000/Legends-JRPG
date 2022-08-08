@@ -9,11 +9,13 @@
 #include "storyboard_presentation_def.c"
 
 struct game_state*   game_state = 0;
-struct editor_state* editor_state = 0;
 
 static struct memory_arena game_arena   = {};
 /* compile out */
+#ifdef USE_EDITOR
+struct editor_state* editor_state = 0;
 static struct memory_arena editor_arena = {};
+#endif
 
 /* using GNSH fonts, which are public domain, but credits to open game art, this font looks cool */
 enum menu_font_variation {
@@ -846,7 +848,7 @@ void game_postprocess_blur_ingame(struct software_framebuffer* framebuffer, s32 
 
     struct software_framebuffer blur_buffer = software_framebuffer_create(&scratch_arena, framebuffer->width/quality_scale, framebuffer->height/quality_scale);
     software_framebuffer_copy_into(&blur_buffer, framebuffer);
-    software_framebuffer_kernel_convolution_ex(&scratch_arena, &blur_buffer, box_blur, 3, 3, 11, t, 1);
+    software_framebuffer_kernel_convolution_ex(&scratch_arena, &blur_buffer, box_blur, 3, 3, 10, t, 1);
     software_framebuffer_draw_image_ex(framebuffer, (struct image_buffer*)&blur_buffer, RECTANGLE_F32_NULL, RECTANGLE_F32_NULL, color32f32(1,1,1,1), NO_FLAGS, blend_mode);
 }
 
@@ -908,14 +910,19 @@ local void draw_ui_breathing_text(struct software_framebuffer* framebuffer, v2f3
 }
 
 
+#ifdef USE_EDITOR
 void editor_initialize(struct editor_state* state);
 #include "editor.c"
+#endif
+
 #include "tile_data.c"
 
 local void initialize_main_menu(void);
 void game_initialize(void) {
     game_arena   = memory_arena_create_from_heap("Game Memory", Megabyte(32));
+#ifdef USE_EDITOR
     editor_arena = memory_arena_create_from_heap("Editor Memory", Megabyte(32));
+#endif
 
     game_state                      = memory_arena_push(&game_arena, sizeof(*game_state));
     game_state->variables.variables = memory_arena_push(&game_arena, sizeof(*game_state->variables.variables) * 4096);
@@ -958,8 +965,8 @@ void game_initialize(void) {
      */
     game_state->entities = entity_list_create(&game_arena, 512);
     player_id            = entity_list_create_player(&game_state->entities, v2f32(70, 70));
-    /* entity_list_create_badguy(&game_state->entities, v2f32(8 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE)); */
-    /* entity_list_create_badguy(&game_state->entities, v2f32(11 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE)); */
+    entity_list_create_badguy(&game_state->entities, v2f32(8 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE));
+    entity_list_create_badguy(&game_state->entities, v2f32(11 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE));
 
     {
         {
@@ -1462,18 +1469,6 @@ local void update_and_render_pause_game_menu_ui(struct game_state* state, struct
     }
 }
 
-void update_and_render_editor_menu_ui(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
-    switch (state->ui_state) {
-        case UI_STATE_INGAME: {
-            update_and_render_editor_game_menu_ui(state, framebuffer, dt);
-        } break;
-        case UI_STATE_PAUSE: {
-            update_and_render_pause_editor_menu_ui(state, framebuffer, dt);
-        } break;
-            bad_case;
-    }
-}
-
 void update_and_render_game_menu_ui(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
     switch (state->ui_state) {
         case UI_STATE_INGAME: {
@@ -1792,7 +1787,7 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                 game_script_execute_awaiting_scripts(&scratch_arena, game_state, dt);
 
                 software_framebuffer_render_commands(framebuffer, &commands);
-                game_postprocess_blur_ingame(framebuffer, 2, 0.54, BLEND_MODE_ALPHA);
+                game_postprocess_blur_ingame(framebuffer, 2, 0.60, BLEND_MODE_ALPHA);
 
                 /* color "grading" */
                 software_framebuffer_draw_quad(framebuffer, rectangle_f32(0,0,999,999), global_color_grading_filter, BLEND_MODE_MULTIPLICATIVE);
