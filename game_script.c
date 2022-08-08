@@ -30,22 +30,6 @@ local s32  game_script_execution_stack_depth                                    
 local struct game_script_execution_state game_script_stackframe[GAME_SCRIPT_EXECUTION_STATE_STACK_SIZE] = {};
 local bool queued_script_already                                                                        = false;
 
-struct lisp_form coroutine_object_result(bool finished, struct lisp_form result) {
-    struct lisp_form coroutine_result = {};
-    coroutine_result.type = LISP_FORM_LIST;
-    coroutine_result.list.count = 3;
-    coroutine_result.list.forms = memory_arena_push(&scratch_arena, 3 * sizeof(*coroutine_result.list.forms));
-    coroutine_result.list.forms[0] = lisp_form_symbol("!coroutine_object_result!");
-    if (finished) {
-        coroutine_result.list.forms[1] = LISP_t;
-    } else {
-        coroutine_result.list.forms[1] = LISP_nil;
-    }
-    coroutine_result.list.forms[2] = result;
-
-    return coroutine_result;
-}
-
 void game_script_push_stackframe(struct lisp_form f) {
     assertion(game_script_execution_stack_depth < GAME_SCRIPT_EXECUTION_STATE_STACK_SIZE && "game_script stackoverflow!");
     game_script_stackframe[game_script_execution_stack_depth].current_form_index = 0;
@@ -613,7 +597,44 @@ struct game_script_typed_ptr game_script_object_handle_decode(struct lisp_form o
     return result;
 }
 
-/* everything here is basically executing coroutines */
+/* This assumes form_to_wait_on has already begun it's action. */
+bool game_script_waiting_on_form(struct lisp_form* form_to_wait_on) {
+    /* always a list */
+
+    struct lisp_form* first = lisp_list_nth(form_to_wait_on, 0);
+
+    /* builtins */
+    if (lisp_form_symbol_matching(*first, string_literal("if"))) {
+        struct lisp_form* condition    = lisp_list_get_child(form_to_wait_on, 1);
+        struct lisp_form* true_branch  = lisp_list_get_child(form_to_wait_on, 2);
+        struct lisp_form* false_branch = lisp_list_get_child(form_to_wait_on, 3);
+
+        /* crying in *side_effects*. Lots of bugs waiting to happen. */
+        struct lisp_form evaluated = game_script_evaluate_form(&scratch_arena, game_state, condition);
+
+        if (evaluated.type != LISP_FORM_NIL) {
+            return game_script_waiting_on_form(true_branch);
+        } else {
+            if (false_branch)
+                return game_script_waiting_on_form(false_branch);
+            else
+                return true;
+        }
+    } else if (lisp_form_symbol_matching(*first, string_literal("progn"))) {
+        return game_script_waiting_on_form(lisp_list_nth(form_to_wait_on, -1));
+    }
+
+    if (lisp_form_symbol_matching(*first, string_literal("game_message_queue"))) {
+        if (global_popup_state.message_count == 0) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 /*
   if it's a scalar (normal value), we'll assume it's the same as receiving a finished signal.
   
@@ -630,12 +651,61 @@ void game_script_execute_awaiting_scripts(struct memory_arena* arena, struct gam
         struct game_script_execution_state* current_stackframe = game_script_stackframe + (game_script_execution_stack_depth-1);
 
         /* finished stackframe. pop off */
-        if (current_stackframe->current_form_index >= current_form_index->body.list.count) {
+        if (current_stackframe->current_form_index >= current_stackframe->body.list.count) {
             game_script_execution_stack_depth -= 1;
         } else {
-            /* I mean I can't account for all crazy combos, so hopefully this works for whatever
-               I type.*/
-            /* handle special forms slightly differently here... */
+            /* as I cannot currently think of a real coroutine-isque implementation */
+            /* I'm going to hard code all the "resumes" */
+
+            /*
+              It's probably because I don't have the structure for a coroutine, as I'm trying
+              to really simulate synchronous state.
+              
+              IE: I don't ever yield.
+             */
+
+            bool allow_advancement = true;
+            if (current_stackframe->current_form_index > 1) {
+                /* 
+                   so we're going to manually code the waits by just checking what the previous
+                   form was. Which is the simplest possible method. Because I use multiple stackframes,
+                   this is actually still going to work the way I want it to. It just won't be *elegant*,
+                   but I don't give a crap right now, I got a small headache trying to think of a short way to hammer
+                   in coroutines and trying to read the lua source didn't super help.
+                   
+                   I'm not that smart okay :(, I'm trying to make a game anyways, not a scripting language.
+                */
+
+                struct lisp_form* last_form = current_stackframe->body.list.forms + (current_stackframe->current_form_index-1);
+                allow_advancement = game_script_waiting_on_form(last_form);
+            }
+
+            if (allow_advancement) {
+                /* sort of custom eval */
+                struct lisp_form* first = lisp_list_nth(&current_stackframe->body, 0);
+
+                if (lisp_form_symbol_matching(*first, string_literal("if"))) {
+                    struct lisp_form* condition    = lisp_list_get_child(&current_stackframe->body, 1);
+                    struct lisp_form* true_branch  = lisp_list_get_child(&current_stackframe->body, 2);
+                    struct lisp_form* false_branch = lisp_list_get_child(&current_stackframe->body, 3);
+
+                    /* crying in *side_effects*. Lots of bugs waiting to happen. */
+                    struct lisp_form evaluated = game_script_evaluate_form(&scratch_arena, game_state, condition);
+
+                    if (evaluated.type != LISP_FORM_NIL) {
+                        game_script_push_stackframe(*true_branch);
+                    } else {
+                        if (false_branch)
+                            game_script_push_stackframe(*false_branch);
+                    }
+                } else if (lisp_form_symbol_matching(*first, string_literal("progn"))) {
+                    game_script_push_stackframe(lisp_list_sliced(current_stackframe->body, 1, -1));
+                } else {
+                    game_script_evaluate_form(&scratch_arena, game_state, current_stackframe->body.list.forms + current_stackframe->current_form_index);
+                }
+
+                current_stackframe->current_form_index += 1;
+            }
         }
     }
 }
