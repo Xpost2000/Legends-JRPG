@@ -423,14 +423,14 @@ bool lisp_form_check_equality(struct lisp_form a, struct lisp_form b) {
     return false;
 }
 
-static void _debug_print_out_lisp_code(struct lisp_form* code) {
+static void _debug_print_out_lisp_code_(struct lisp_form* code) {
     switch (code->type) {
         case LISP_FORM_LIST: {
             _debugprintf1("( ");
 
             struct lisp_list* list_contents = &code->list;
             for (unsigned index = 0; index < list_contents->count; ++index) {
-                _debug_print_out_lisp_code(&list_contents->forms[index]);
+                _debug_print_out_lisp_code_(&list_contents->forms[index]);
                 _debugprintf1(" ");
             }
 
@@ -459,6 +459,11 @@ static void _debug_print_out_lisp_code(struct lisp_form* code) {
             _debugprintf1("%.*s", lisp_form_type_strings[code->type].length, lisp_form_type_strings[code->type].data);
         } break;
     }
+}
+
+static void _debug_print_out_lisp_code(struct lisp_form* code) {
+    _debug_print_out_lisp_code_(code);
+    _debugprintf1("\n");
 }
 
 /* NOTE: strings are escaped */
@@ -724,6 +729,14 @@ struct lisp_form lisp_list_sliced(struct lisp_form original, s32 start, s32 end)
     result.list.forms = original.list.forms + start;
     result.list.count = end - start;
 
+    return result;
+}
+
+struct lisp_form lisp_list_make(struct memory_arena* arena, s32 size) {
+    struct lisp_form result = {};
+    result.type = LISP_FORM_LIST;
+    result.list.forms = memory_arena_push(arena, sizeof(*result.list.forms) * size);
+    result.list.count = size;
     return result;
 }
 

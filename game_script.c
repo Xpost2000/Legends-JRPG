@@ -685,6 +685,18 @@ void game_script_execute_awaiting_scripts(struct memory_arena* arena, struct gam
                 struct lisp_form* last_form = lisp_list_nth(&current_stackframe->body, current_stackframe->current_form_index-1);
                 allow_advancement = game_script_waiting_on_form(last_form);
             }
+            
+            /* HACK: if's may have singular forms to evaluate
+               the stackframe expects a list of frames, and so I need to listify this.*/
+            /* this can be alleviated with a stack allocator, but memory is memory, it doesn't matter where I get it since
+               most of these game parts are pretty isolated... (other than all requiring memory arenas)*/
+            local bool allocated_scratch_list_wrapper = false;
+            local struct lisp_form _scratch_list_wrapper = {};
+            if (!allocated_scratch_list_wrapper) {
+                _scratch_list_wrapper.type       = LISP_FORM_LIST;
+                _scratch_list_wrapper.list.forms = memory_arena_push(&game_arena, sizeof(struct lisp_form));
+                _scratch_list_wrapper.list.count = 1;
+            }
 
             if (allow_advancement) {
                 /* sort of custom eval */
@@ -701,16 +713,28 @@ void game_script_execute_awaiting_scripts(struct memory_arena* arena, struct gam
                         struct lisp_form evaluated = game_script_evaluate_form(&scratch_arena, game_state, condition);
 
                         if (evaluated.type != LISP_FORM_NIL) {
-                            game_script_push_stackframe(*true_branch);
+                            _scratch_list_wrapper.list.forms[0] = *true_branch;
+                            game_script_push_stackframe(_scratch_list_wrapper);
                         } else {
-                            if (false_branch)
-                                game_script_push_stackframe(*false_branch);
+                            if (false_branch) {
+                                _scratch_list_wrapper.list.forms[0] = *false_branch;
+                                game_script_push_stackframe(_scratch_list_wrapper);
+                            }
                         }
                     } else if (lisp_form_symbol_matching(*first, string_literal("progn"))) {
                         game_script_push_stackframe(lisp_list_sliced(*current_form, 1, -1));
                     } else {
                         game_script_evaluate_form(&scratch_arena, game_state, current_form);
                     }
+                } else {
+                    if (current_stackframe->current_form_index >= 1) {
+                    }
+                    struct lisp_form listified = lisp_list_make(&scratch_arena, 1);
+                    listified.list.forms[0] = *current_form;
+                    game_script_evaluate_form(&scratch_arena, game_state, &listified);
+                    /* _debugprintf("cannot execute"); */
+                    /* _debug_print_out_lisp_code(current_form); */
+                    /* no execute */
                 }
 
                 current_stackframe->current_form_index += 1;
