@@ -1538,7 +1538,7 @@ void handle_entity_scriptable_trigger_interactions(struct game_state* state, str
 
     bool any_intersections = false;
     for (s32 index = 0; index < trigger_count; ++index) {
-        struct trigger*      current_trigger         = triggers + index;
+        struct trigger* current_trigger = triggers + index;
 
         switch (current_trigger->activation_method) {
             case ACTIVATION_TYPE_TOUCH: {
@@ -1555,6 +1555,7 @@ void handle_entity_scriptable_trigger_interactions(struct game_state* state, str
                     if (!already_activated_trigger) {
                         if (entity->interacted_script_trigger_write_index < array_count(entity->interacted_script_trigger_ids)) {
                             entity->interacted_script_trigger_ids[entity->interacted_script_trigger_write_index++] = index+1;
+                            current_trigger->activations += 1;
                             struct level_area* area = &state->loaded_area;
 
                             struct lisp_form listener_body = level_area_find_listener_for_object(state, area, LEVEL_AREA_LISTEN_EVENT_ON_TOUCH, GAME_SCRIPT_TARGET_TRIGGER, index);

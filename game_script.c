@@ -49,12 +49,14 @@ void game_script_enqueue_form_to_execute(struct lisp_form f) {
 GAME_LISP_FUNCTION(OBJ_ACTIVATIONS) {
     /* expect an object handle. Not checking right now */
 
+    _debugprintf("Hi I was called with : %d args", argument_count);
     if (argument_count == 1) {
         struct game_script_typed_ptr object_ptr = game_script_object_handle_decode(arguments[0]);
 
         switch (object_ptr.type) {
             case GAME_SCRIPT_TARGET_TRIGGER: {
                 struct trigger* trigger = (struct trigger*)object_ptr.ptr;
+                _debugprintf("requested activation # for trigger: (%d)", trigger->activations);
                 return lisp_form_integer(trigger->activations);
             } break;
                 bad_case;
