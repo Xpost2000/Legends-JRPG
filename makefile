@@ -5,6 +5,7 @@ CC=gcc
 CFLAGS=-Werror -Wno-unused -Wno-format -Wno-unused-but-set-variable -Wall -std=c99
 CLIBS=`pkg-config --libs --cflags sdl2` -I./dependencies/
 SOURCE_FILE_MODULES= main.c
+EMCC=emcc
 
 .PHONY: all clean gen-asm
 all: game.exe game-debug.exe
@@ -13,6 +14,8 @@ game.exe: $(wildcard *.c *.h)
 	$(CC) $(SOURCE_FILE_MODULES) -DRELEASE -o $@ $(CFLAGS) $(CLIBS) -O2
 game-debug.exe: $(wildcard *.c *.h)
 	$(CC) $(SOURCE_FILE_MODULES) -DUSE_EDITOR -o $@ $(CFLAGS) $(CLIBS) -ggdb3
+web-experimental: $(wildcard *.c *.h)
+	$(EMCC) $(SOURCE_FILE_MODULES) -DRELEASE -s USE_SDL=2 -s USE_WEBGL2=1 -o game.html $(CFLAGS) $(CLIBS) -s INITIAL_MEMORY=127MB --preload-file res --preload-file scenes --preload-file areas
 run: game.exe
 	./game.exe
 run-debug: game-debug.exe

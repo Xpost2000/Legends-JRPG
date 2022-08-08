@@ -1,7 +1,10 @@
 #ifndef COMMON_C
 #define COMMON_C
 
+#ifndef __EMSCRIPTEN__
 #include <x86intrin.h>
+#undef USE_SIMD_OPTIMIZATIONS
+#endif
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -559,11 +562,14 @@ struct directory_listing {
 };
 
 #define WIN32_LEAN_AND_MEAN
+#ifndef __EMSCRIPTEN__
 #include <windows.h>
+#endif
 
 struct directory_listing directory_listing_list_all_files_in(struct memory_arena* arena, string location) {
     struct directory_listing result = {};
 
+#ifndef __EMSCRIPTEN__
     WIN32_FIND_DATA find_data = {};
     HANDLE handle = FindFirstFile(string_concatenate(arena, location, string_literal("/*")).data, &find_data);
 
@@ -585,6 +591,7 @@ struct directory_listing directory_listing_list_all_files_in(struct memory_arena
         _debugprintf("read file \"%s\"", find_data.cFileName);
         memory_arena_push(arena, sizeof(*result.files));
     } while (FindNextFile(handle, &find_data));
+#endif
 
     return result;
 }

@@ -1,5 +1,9 @@
 /* #define USE_SIMD_OPTIMIZATIONS */
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
+
 #include <SDL2/SDL.h>
 
 #include "common.c"
@@ -261,43 +265,55 @@ void deinitialize(void) {
 
 #include "sandbox_tests.c"
 
-int main(int argc, char** argv) {
-    f32 last_elapsed_delta_time = (1.0 / 60.0f);
+f32 last_elapsed_delta_time = (1.0 / 60.0f);
+void engine_main_loop(void* _) {
+    char window_name_title_buffer[256] = {};
+    u32 start_frame_time = SDL_GetTicks();
+
+    begin_input_frame();
+    {
+        handle_sdl_events();
+        update_all_controller_inputs();
+        update_and_render_game(&global_default_framebuffer, last_elapsed_delta_time);
+    }
+    end_input_frame();
+
+    swap_framebuffers_onto_screen();
+
+    last_elapsed_delta_time = (SDL_GetTicks() - start_frame_time) / 1000.0f;
+    global_elapsed_time    += last_elapsed_delta_time;
+    add_frametime_sample(last_elapsed_delta_time);
+
+#if 1
+    {
+        f32 average_frametime = get_average_frametime();
+        snprintf(window_name_title_buffer, 256, "RPG(%s) - instant fps: %d, (%f ms)", _build_flags, (int)(1.0/(f32)average_frametime), average_frametime);
+        SDL_SetWindowTitle(global_game_window, window_name_title_buffer);
+    }
+#endif
+
+    memory_arena_clear_top(&scratch_arena);
+    memory_arena_clear_bottom(&scratch_arena);
+}
+
+int engine_main(int argc, char** argv) {
     initialize();
 
     if (sandbox_testing())
         return 1;
 
-    char window_name_title_buffer[256] = {};
+#ifdef __EMSCRIPTEN__
+    emscripten_set_main_loop(engine_main_loop, 0, true);
+#else
     while (global_game_running) {
-        u32 start_frame_time = SDL_GetTicks();
-
-        begin_input_frame();
-        {
-            handle_sdl_events();
-            update_all_controller_inputs();
-            update_and_render_game(&global_default_framebuffer, last_elapsed_delta_time);
-        }
-        end_input_frame();
-
-        swap_framebuffers_onto_screen();
-
-        last_elapsed_delta_time = (SDL_GetTicks() - start_frame_time) / 1000.0f;
-        global_elapsed_time    += last_elapsed_delta_time;
-        add_frametime_sample(last_elapsed_delta_time);
-
-        #if 1
-        {
-            f32 average_frametime = get_average_frametime();
-            snprintf(window_name_title_buffer, 256, "RPG(%s) - instant fps: %d, (%f ms)", _build_flags, (int)(1.0/(f32)average_frametime), average_frametime);
-            SDL_SetWindowTitle(global_game_window, window_name_title_buffer);
-        }
-        #endif
-
-        memory_arena_clear_top(&scratch_arena);
-        memory_arena_clear_bottom(&scratch_arena);
+        engine_main_loop(NULL);
     }
+#endif
 
     deinitialize();
     return 0;
+}
+
+int main(int argc, char** argv) {
+    return engine_main(argc, argv);
 }
