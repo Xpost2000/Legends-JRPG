@@ -175,6 +175,7 @@ struct entity {
 };
 
 bool is_entity_aggressive_to_player(struct entity* entity);
+void entity_play_animation(struct entity* entity, string name);
 void entity_inventory_use_item(struct entity_inventory* inventory, s32 item_index, struct entity* target);
 
 void entity_combat_submit_movement_action(struct entity* entity, v2f32* path_points, s32 path_count);

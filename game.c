@@ -48,7 +48,6 @@ local struct font_cache* game_get_font(s32 variation) {
     return font;
 }
 
-image_id guy_img;
 image_id combat_square_unselected;
 image_id combat_square_selected;
 image_id selection_sword_img;
@@ -930,7 +929,6 @@ void game_initialize(void) {
     combat_square_unselected = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/cmbt/cmbt_grid_sq.png"));
     combat_square_selected   = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/cmbt/cmbt_selected_sq.png"));
 
-    guy_img               = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/guy/down.png"));
     chest_closed_img      = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/chestclosed.png"));
     chest_open_bottom_img = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/chestopenbottom.png"));
     chest_open_top_img    = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/chestopentop.png"));
@@ -960,7 +958,19 @@ void game_initialize(void) {
     /* entity_list_create_badguy(&game_state->entities, v2f32(11 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE)); */
 
     {
-        entity_model_database_add_model(&game_arena, string_literal("guy"));
+        {
+            s32 base_guy = entity_model_database_add_model(&game_arena, string_literal("guy"));
+            entity_model_add_animation(base_guy, string_literal("down"),       1, 0);
+            entity_model_add_animation(base_guy, string_literal("up"),         1, 0);
+            entity_model_add_animation(base_guy, string_literal("left"),       1, 0);
+            entity_model_add_animation(base_guy, string_literal("right"),      1, 0);
+
+            const f32 WALK_TIMINGS = 0.1;
+            entity_model_add_animation(base_guy, string_literal("down_walk"),  3, WALK_TIMINGS);
+            entity_model_add_animation(base_guy, string_literal("up_walk"),    3, WALK_TIMINGS);
+            entity_model_add_animation(base_guy, string_literal("left_walk"),  3, WALK_TIMINGS);
+            entity_model_add_animation(base_guy, string_literal("right_walk"), 3, WALK_TIMINGS);
+        }
     }
 
 #ifdef USE_EDITOR

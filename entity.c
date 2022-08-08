@@ -1,5 +1,12 @@
 #include "entities_def.c"
 
+void entity_play_animation(struct entity* entity, string name) {
+    entity->animation.name                = name;
+    entity->animation.current_frame_index = 0;
+    entity->animation.iterations          = 0;
+    entity->animation.timer               = 0;
+}
+
 struct rectangle_f32 entity_rectangle_collision_bounds(struct entity* entity) {
     return rectangle_f32(entity->position.x,
                          entity->position.y,
@@ -321,12 +328,29 @@ void entity_list_render_entities(struct entity_list* entities, struct graphics_a
             continue;
         }
 
-        struct entity_model* model = &global_entity_models.models[model_index];
-        /* _debugprintf("%d, %d, %d, %d\n", model->sprites[0].index, model->sprites[1].index, model->sprites[2].index, model->sprites[3].index); */
+        /* struct entity_model* model = &global_entity_models.models[model_index]; */
+        struct entity_animation* anim = find_animation_by_name(model_index, current_entity->animation.name);
 
-        /* TODO sprite model anchor */
+        if (!anim) {
+            continue;
+        }
+
+        current_entity->animation.timer += dt;
+        if (current_entity->animation.timer >= anim->time_until_next_frame) {
+            current_entity->animation.current_frame_index++;
+            current_entity->animation.timer = 0;
+
+            if (current_entity->animation.current_frame_index >= anim->frame_count) {
+                current_entity->animation.current_frame_index = 0;
+                current_entity->animation.iterations         += 1;
+            }
+        }
+
+        image_id sprite_to_use = anim->sprites[current_entity->animation.current_frame_index];
+
+        /* TODO sprite model anchor NOTE: does not account for model size? */
         render_commands_push_image(commands,
-                                   graphics_assets_get_image_by_id(graphics_assets, model->sprites[current_entity->facing_direction]),
+                                   graphics_assets_get_image_by_id(graphics_assets, sprite_to_use),
                                    rectangle_f32(current_entity->position.x,
                                                  current_entity->position.y - (TILE_UNIT_SIZE*1.5),
                                                  TILE_UNIT_SIZE,

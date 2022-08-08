@@ -22,9 +22,7 @@ game rendering, since our sprites are extraordinarily small, I'm going to just m
 and we can just shove as many sprites into that as we want. If we hit a limit of about 4096x4096 on our texture atlas for some reason, I might have to split pages. That's a problem
 for the future though. After some game logic is done))
 
-** Consider making the editor a bit more advanced (relative to the main game),
-   IE: We should probably allow editor resolution resizing so that way I can actually
-   see the world...
+** Might need to move things to more data files
 ** SDL Mixer Audio
    Too lazy to do real audio mixing (also I don't know how to.)
 ** Need a normal game UI
@@ -39,11 +37,6 @@ for the future though. After some game logic is done))
 ** Draw some new sprites for actors and animals
    Yeah, we need them like now!
 ** More focused dialogue? Focus on a specific entity
-** Cutscene scripting capacity
-   Our cutscenes, are really just going to be a product of our scripting system,
-   and not a dedicated cutscene system...
-
-   It's a bit of a pain but yeah
 ** Weapon and Armor item types
    We need an item equip screen as well, we would also preferably
    draw sprites for each weapon. However, I might avoid that since
