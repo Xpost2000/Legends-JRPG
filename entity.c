@@ -308,16 +308,15 @@ void entity_list_update_entities(struct game_state* state, struct entity_list* e
             }
 
             /* implicit animation state setting for now. */
-            if (current_entity->velocity.x != 0 &&
-                current_entity->velocity.y != 0) {
+            if (current_entity->velocity.x != 0 || current_entity->velocity.y != 0) {
                 if (current_entity->velocity.y < 0) {
-                    entity_play_animation(current_entity, string_literal("walk_up"));
+                    entity_play_animation(current_entity, string_literal("up_walk"));
                 } else if (current_entity->velocity.y > 0) {
-                    entity_play_animation(current_entity, string_literal("walk_down"));
+                    entity_play_animation(current_entity, string_literal("down_walk"));
                 } else if (current_entity->velocity.x > 0) {
-                    entity_play_animation(current_entity, string_literal("walk_left"));
+                    entity_play_animation(current_entity, string_literal("right_walk"));
                 } else if (current_entity->velocity.x < 0) {
-                    entity_play_animation(current_entity, string_literal("walk_right"));
+                    entity_play_animation(current_entity, string_literal("left_walk"));
                 }
             } else {
                 entity_play_animation(current_entity, facing_direction_strings_normal[current_entity->facing_direction]);
@@ -354,6 +353,7 @@ void entity_list_render_entities(struct entity_list* entities, struct graphics_a
         struct entity_animation* anim = find_animation_by_name(model_index, current_entity->animation.name);
 
         if (!anim) {
+            _debugprintf("cannot find anim: %.*s", current_entity->animation.name.length, current_entity->animation.name.data);
             continue;
         }
 

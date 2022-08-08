@@ -28,7 +28,8 @@ s32 update_and_render_region_zone_change(struct game_state* state, struct softwa
     switch (region_zone_animation_phase) {
         case REGION_ZONE_ANIMATION_PHASE_LINGER: {
             software_framebuffer_draw_quad(framebuffer, rectangle_f32(0,0,SCREEN_WIDTH,SCREEN_HEIGHT), color32u8(0,0,0,255), BLEND_MODE_ALPHA);
-            if (region_zone_animation_timer < 0.0) {
+            if (region_zone_animation_timer <= 0.0) {
+                region_zone_animation_timer = 0;
                 region_zone_animation_phase++;
             }
             region_zone_animation_timer -= dt;
@@ -37,6 +38,7 @@ s32 update_and_render_region_zone_change(struct game_state* state, struct softwa
             software_framebuffer_draw_quad(framebuffer, rectangle_f32(0,0,SCREEN_WIDTH,SCREEN_HEIGHT), color32u8(0,0,0,255), BLEND_MODE_ALPHA);
 
             f32 text_alpha = region_zone_animation_timer / 1.2f;
+            if (text_alpha < 0.0) text_alpha = 0.0;
             if (text_alpha > 1.0) text_alpha = 1.0;
             software_framebuffer_draw_text_bounds_centered(framebuffer, font, 6, rectangle_f32(0,0,SCREEN_WIDTH,SCREEN_HEIGHT), string_from_cstring(state->current_region_name), color32f32(1,1,1,text_alpha), BLEND_MODE_ALPHA);
 
@@ -60,7 +62,9 @@ s32 update_and_render_region_zone_change(struct game_state* state, struct softwa
                 region_zone_animation_phase++;
             }
             software_framebuffer_draw_text_bounds_centered(framebuffer, font, 6, rectangle_f32(0,0,SCREEN_WIDTH,SCREEN_HEIGHT), string_from_cstring(state->current_region_name), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
-            software_framebuffer_draw_text_bounds_centered(framebuffer, font, 4, rectangle_f32(0,80,SCREEN_WIDTH,SCREEN_HEIGHT+80), string_from_cstring(state->current_region_subtitle), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+            if (cstring_length(state->current_region_subtitle)) {
+                software_framebuffer_draw_text_bounds_centered(framebuffer, font, 4, rectangle_f32(0,80,SCREEN_WIDTH,SCREEN_HEIGHT+80), string_from_cstring(state->current_region_subtitle), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+            }
             region_zone_animation_timer -= dt;
         } break;
         case REGION_ZONE_ANIMATION_PHASE_FADE_AWAY: {

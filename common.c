@@ -78,6 +78,9 @@ static inline f32 sq_f32(f32 x) {
     return x*x;
 }
 
+#define Minimum(a, b) ((a) < (b)) ? (a) : (b)
+#define Maximum(a, b) ((a) > (b)) ? (a) : (b)
+
 static inline f32 sign_f32(f32 x) {
     if      (x > 0)   return 1;
     else if (x == 0)  return 0;

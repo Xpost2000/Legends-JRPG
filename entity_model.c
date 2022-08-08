@@ -40,6 +40,7 @@ struct entity_animation* find_animation_by_name(s32 model_index, string name) {
     struct entity_model* model = &global_entity_models.models[model_index];
 
     for (s32 index = 0; index < model->animation_count; ++index) {
+        _debugprintf("anim: %.*s vs %.*s", model->animations[index].name.length, model->animations[index].name.data, name.length, name.data);
         if (string_equal(model->animations[index].name, name)) {
             return model->animations + index;
         }

@@ -97,18 +97,21 @@ GAME_LISP_FUNCTION(GAME_STOP_SNOW) {
 }
 GAME_LISP_FUNCTION(GAME_SET_REGION_NAME) {
     _debugprintf("set region name");
-    struct lisp_form* str_name = &arguments[0];
+    struct lisp_form* str_name     = &arguments[0];
     struct lisp_form* str_sub_name = &arguments[1];
 
-    string area_name     = {};
-    string area_sub_name = {};
+    string area_name     = string_literal("");
+    string area_sub_name = string_literal("");
 
     area_name = str_name->string;
     if (argument_count == 2) {
         area_sub_name = str_sub_name->string;
     }
+    _debugprintf("set_region name");
+    _debug_print_out_lisp_code(str_name);
+    _debug_print_out_lisp_code(str_sub_name);
     /* no check */
-    game_attempt_to_change_area_name(state, string_literal("Does not work yet!"), string_literal("The development zone"));
+    game_attempt_to_change_area_name(state, area_name, area_sub_name);
     return LISP_nil;
 }
 

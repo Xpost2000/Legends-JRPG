@@ -149,8 +149,12 @@ struct autotile_table*       auto_tile_info;
 local void game_attempt_to_change_area_name(struct game_state* state, string name, string subtitle) {
     /* we don't need to check the subtitle. That doesn't matter. I would think. */
     if (!cstring_equal(name.data, state->current_region_name)) {
-        cstring_copy(name.data,     state->current_region_name    , array_count(state->current_region_name));
-        cstring_copy(subtitle.data, state->current_region_subtitle, array_count(state->current_region_subtitle));
+        cstring_copy(name.data,     state->current_region_name, Minimum(name.length, array_count(state->current_region_name)));
+        if (subtitle.data && subtitle.length) {
+            cstring_copy(subtitle.data, state->current_region_subtitle, Minimum(subtitle.length, array_count(state->current_region_subtitle)));
+        } else {
+            state->current_region_subtitle[0] = '\0';
+        }
         initialize_region_zone_change();
     }
 }
@@ -965,7 +969,7 @@ void game_initialize(void) {
             entity_model_add_animation(base_guy, string_literal("left"),       1, 0);
             entity_model_add_animation(base_guy, string_literal("right"),      1, 0);
 
-            const f32 WALK_TIMINGS = 0.1;
+            const f32 WALK_TIMINGS = 0.13;
             entity_model_add_animation(base_guy, string_literal("down_walk"),  3, WALK_TIMINGS);
             entity_model_add_animation(base_guy, string_literal("up_walk"),    3, WALK_TIMINGS);
             entity_model_add_animation(base_guy, string_literal("left_walk"),  3, WALK_TIMINGS);
