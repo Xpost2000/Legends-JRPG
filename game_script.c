@@ -1,6 +1,17 @@
 /* game scripting language things */
 /* here we evaluate the lisp script to do things! */
 
+/*
+  Special form NOTE:
+  
+  (no-wait (FORM))
+  Will consume a single form and execute it without trying to wait for it's completion, this is for some things
+  
+  
+  All actions are done in parallel if possible. (might be buggy with message queue, but the intent
+  is that you use it for cutscene scripting like path finding.)
+*/
+
 /* evaluate a singular form at a time */
 typedef struct lisp_form (*game_script_function)(struct memory_arena*, struct game_state*, struct lisp_form*, s32);
 
@@ -8,6 +19,44 @@ struct game_script_function_builtin {
     char* name;
     game_script_function function;
 };
+
+struct game_script_execution_state {
+    s32 current_form_index;
+    struct lisp_form body;
+};
+
+#define GAME_SCRIPT_EXECUTION_STATE_STACK_SIZE (128) /* hopefully this doesn't stack overflow */
+local s32  game_script_execution_stack_depth                                                            = 0;
+local struct game_script_execution_state game_script_stackframe[GAME_SCRIPT_EXECUTION_STATE_STACK_SIZE] = {};
+local bool queued_script_already                                                                        = false;
+
+struct lisp_form coroutine_object_result(bool finished, struct lisp_form result) {
+    struct lisp_form coroutine_result = {};
+    coroutine_result.type = LISP_FORM_LIST;
+    coroutine_result.list.count = 3;
+    coroutine_result.list.forms = memory_arena_push(&scratch_arena, 3 * sizeof(*coroutine_result.list.forms));
+    coroutine_result.list.forms[0] = lisp_form_symbol("!coroutine_object_result!");
+    if (finished) {
+        coroutine_result.list.forms[1] = LISP_t;
+    } else {
+        coroutine_result.list.forms[1] = LISP_nil;
+    }
+    coroutine_result.list.forms[2] = result;
+
+    return coroutine_result;
+}
+
+void game_script_push_stackframe(struct lisp_form f) {
+    assertion(game_script_execution_stack_depth < GAME_SCRIPT_EXECUTION_STATE_STACK_SIZE && "game_script stackoverflow!");
+    game_script_stackframe[game_script_execution_stack_depth].current_form_index = 0;
+    game_script_stackframe[game_script_execution_stack_depth++].body             = f;
+}
+
+void game_script_enqueue_form_to_execute(struct lisp_form f) {
+    assertion(queued_script_already == false && "We do not support multiple scripts... Yet! Haven't thought of an answer yet.");
+    queued_script_already                              = true;
+    game_script_push_stackframe(f);
+}
 
 /* considering this is so patternized, is it worth writing a mini metaprogramming thing that just automates this? Who knows */
 
@@ -562,4 +611,31 @@ struct game_script_typed_ptr game_script_object_handle_decode(struct lisp_form o
     }
 
     return result;
+}
+
+/* everything here is basically executing coroutines */
+/*
+  if it's a scalar (normal value), we'll assume it's the same as receiving a finished signal.
+  
+  if we get a (!game_script_coroutine_result_object! *status* *real-value*)
+  
+  TODO: does not handle multiple script enqueues yet...
+*/
+void game_script_execute_awaiting_scripts(struct memory_arena* arena, struct game_state* state, f32 dt) {
+    if (game_script_execution_stack_depth <= 0) {
+        /* allow queueing next script */
+        queued_script_already = false;
+    } else {
+        /* execute current script with a stackframe. */
+        struct game_script_execution_state* current_stackframe = game_script_stackframe + (game_script_execution_stack_depth-1);
+
+        /* finished stackframe. pop off */
+        if (current_stackframe->current_form_index >= current_form_index->body.list.count) {
+            game_script_execution_stack_depth -= 1;
+        } else {
+            /* I mean I can't account for all crazy combos, so hopefully this works for whatever
+               I type.*/
+            /* handle special forms slightly differently here... */
+        }
+    }
 }

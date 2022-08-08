@@ -33,4 +33,7 @@ bool game_script_object_handle_matches_object(struct lisp_form object_handle, s3
 struct game_script_typed_ptr game_script_object_handle_decode(struct lisp_form object_handle);
 struct lisp_form game_script_evaluate_form(struct memory_arena* arena, struct game_state* state, struct lisp_form* form);
 
+void game_script_enqueue_form_to_execute(struct lisp_form f);
+void game_script_execute_awaiting_scripts(struct memory_arena* arena, struct game_state* state, f32 dt);
+
 #endif

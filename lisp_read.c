@@ -329,6 +329,14 @@ struct lisp_form lisp_form_integer(s32 value) {
     return result;
 }
 
+/* NOTE: please be a string literal, I'm not copying into storage or making an intern table yet */
+struct lisp_form lisp_form_symbol(string string_constant) {
+    struct lisp_form result = {};
+    result.type             = LISP_FORM_SYMBOL;
+    result.string           = string_constant;
+    return result;
+}
+
 bool lisp_form_get_f32(struct lisp_form form, f32* value) {
     if (form.type == LISP_FORM_NUMBER) {
         if (form.is_real) {

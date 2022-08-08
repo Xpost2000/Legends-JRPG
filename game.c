@@ -1078,6 +1078,8 @@ local void dialogue_try_to_execute_script_actions(struct game_state* state, stru
         _debugprintf("dialogue script-code: %.*s", node->script_code.length, node->script_code.data);
         struct lisp_form code = lisp_read_form(&scratch_arena, node->script_code);
         /* we should already know this is a DO form so just go */
+
+        /* TODO MARKME */
         struct lisp_list* list_contents = &code.list;
         for (unsigned index = 1; index < list_contents->count; ++index) {
             struct lisp_form* form = list_contents->forms + index;
@@ -1556,11 +1558,10 @@ void handle_entity_scriptable_trigger_interactions(struct game_state* state, str
                             struct level_area* area = &state->loaded_area;
 
                             struct lisp_form listener_body = level_area_find_listener_for_object(state, area, LEVEL_AREA_LISTEN_EVENT_ON_TOUCH, GAME_SCRIPT_TARGET_TRIGGER, index);
-
+                            game_script_enqueue_form_to_execute(listener_body);
                             for (s32 index = 0; index < listener_body.list.count; ++index) {
                                 game_script_evaluate_form(&scratch_arena, state, listener_body.list.forms + index);
                             }
-                            /* _debug_print_out_lisp_code(&listener); */
                         }
                     }
 
@@ -1634,21 +1635,23 @@ local void execute_current_area_scripts(struct game_state* state, f32 dt) {
             struct lisp_form* on_enter_script    = script_data->on_enter;
 
             if (on_enter_script) {
-                _debugprintf("Executing on-enter script (%d forms)", on_enter_script->list.count);
-                for (s32 index = 1; index < on_enter_script->list.count; ++index) {
-                    struct lisp_form* current_form = lisp_list_nth(on_enter_script, index);
-                    /* TODO: use dt */
-                    game_script_evaluate_form(&scratch_arena, state, current_form);
-                }
+                game_script_enqueue_form_to_execute(lisp_list_sliced(*on_enter_script, 1, -1));
+            }
+        } else {
+            /* 
+               Wait no onframe is a waste of time. 
+               
+               Events are best. For this anyways. I don't know what I was thinking
+               when I did this.
+            */
+            if (on_frame_script) {
+                /* for (s32 index = 1; index < on_frame_script->list.count; ++index) { */
+                /*     struct lisp_form* current_form = lisp_list_nth(on_frame_script, index); */
+                /*     game_script_evaluate_form(&scratch_arena, state, current_form); */
+                /* } */
             }
         }
 
-        if (on_frame_script) {
-            for (s32 index = 1; index < on_frame_script->list.count; ++index) {
-                struct lisp_form* current_form = lisp_list_nth(on_frame_script, index);
-                game_script_evaluate_form(&scratch_arena, state, current_form);
-            }
-        }
 
         /* onframe is going to hurt but I'm not kidding about this. */
         /* I could invoke multiple every-n-seconds blocks? */
@@ -1706,6 +1709,8 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                 }
 
                 entity_list_render_entities(&game_state->entities, &graphics_assets, &commands, dt);
+                game_script_execute_awaiting_scripts(&scratch_arena, game_state, dt);
+
                 software_framebuffer_render_commands(framebuffer, &commands);
                 game_postprocess_blur_ingame(framebuffer, 2, 0.54, BLEND_MODE_ALPHA);
 
