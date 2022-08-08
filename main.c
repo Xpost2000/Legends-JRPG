@@ -1,4 +1,4 @@
-#define USE_SIMD_OPTIMIZATIONS
+/* #define USE_SIMD_OPTIMIZATIONS */
 
 #include <SDL2/SDL.h>
 

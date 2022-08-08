@@ -129,13 +129,18 @@ enum tile_data_flags {
 struct autotile_table {s32 neighbors[256];};
 struct tile_data_definition {
     string               name;
-    string               image_asset_location;
+    string               frames[16];
+    s32 frame_index;
+    s32 frame_count;
+    f32 time_until_next_frame;
+    f32 timer;
     struct rectangle_f32 sub_rectangle; /* if 0 0 0 0 assume entire texture */
     /* special flags, like glowing and friends! To allow for multiple render passes */
     s32                  flags;
     /* TODO implement 4 bit marching squares. Useful for graphics */
     struct autotile_table* autotile_info;
 };
+image_id get_tile_image_id(struct tile_data_definition* tile_def);
 static s32 tile_table_data_count = 0;
 /* tiles.c */
 

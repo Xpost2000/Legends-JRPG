@@ -167,7 +167,7 @@ void render_foreground_area(struct game_state* state, struct render_commands* co
         s32 tile_id = area->tile_layers[TILE_LAYER_ROOF][index].id;
         struct tile_data_definition* tile_data = tile_table_data + tile_id;
 
-        image_id tex = graphics_assets_get_image_by_filepath(&graphics_assets, tile_data->image_asset_location); 
+        image_id tex = get_tile_image_id(tile_data);
 
         render_commands_push_image(commands,
                                    graphics_assets_get_image_by_id(&graphics_assets, tex),
@@ -182,7 +182,7 @@ void render_foreground_area(struct game_state* state, struct render_commands* co
         s32 tile_id = area->tile_layers[TILE_LAYER_FOREGROUND][index].id;
         struct tile_data_definition* tile_data = tile_table_data + tile_id;
 
-        image_id tex = graphics_assets_get_image_by_filepath(&graphics_assets, tile_data->image_asset_location); 
+        image_id tex = get_tile_image_id(tile_data);
 
         render_commands_push_image(commands,
                                    graphics_assets_get_image_by_id(&graphics_assets, tex),
@@ -204,7 +204,7 @@ void render_ground_area(struct game_state* state, struct render_commands* comman
             s32 tile_id = area->tile_layers[TILE_LAYER_GROUND][index].id;
             struct tile_data_definition* tile_data = tile_table_data + tile_id;
 
-            image_id tex = graphics_assets_get_image_by_filepath(&graphics_assets, tile_data->image_asset_location); 
+        image_id tex = get_tile_image_id(tile_data);
 
             render_commands_push_image(commands,
                                        graphics_assets_get_image_by_id(&graphics_assets, tex),
@@ -219,16 +219,16 @@ void render_ground_area(struct game_state* state, struct render_commands* comman
             s32 tile_id = area->tile_layers[TILE_LAYER_OBJECT][index].id;
             struct tile_data_definition* tile_data = tile_table_data + tile_id;
 
-            image_id tex = graphics_assets_get_image_by_filepath(&graphics_assets, tile_data->image_asset_location); 
+        image_id tex = get_tile_image_id(tile_data);
 
-            render_commands_push_image(commands,
-                                       graphics_assets_get_image_by_id(&graphics_assets, tex),
-                                       rectangle_f32(area->tile_layers[TILE_LAYER_OBJECT][index].x * TILE_UNIT_SIZE,
-                                                     area->tile_layers[TILE_LAYER_OBJECT][index].y * TILE_UNIT_SIZE,
-                                                     TILE_UNIT_SIZE,
-                                                     TILE_UNIT_SIZE),
-                                       tile_data->sub_rectangle,
-                                       color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
+        render_commands_push_image(commands,
+                                   graphics_assets_get_image_by_id(&graphics_assets, tex),
+                                   rectangle_f32(area->tile_layers[TILE_LAYER_OBJECT][index].x * TILE_UNIT_SIZE,
+                                                 area->tile_layers[TILE_LAYER_OBJECT][index].y * TILE_UNIT_SIZE,
+                                                 TILE_UNIT_SIZE,
+                                                 TILE_UNIT_SIZE),
+                                   tile_data->sub_rectangle,
+                                   color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
         }
     }
 
@@ -969,13 +969,6 @@ void game_initialize(void) {
 #endif
     initialize_static_table_data();
     initialize_items_database();
-
-    for (unsigned index = 0; index < 2048; ++index) {
-        struct tile_data_definition* item = tile_table_data + index;
-        if (item->image_asset_location.length && item->image_asset_location.data) {
-            graphics_assets_load_image(&graphics_assets, item->image_asset_location);
-        }
-    }
 
     assertion(verify_no_item_id_name_hash_collisions());
     void game_initialize_game_world(void);
@@ -1745,6 +1738,24 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                 commands.clear_buffer_color  = color32u8(0, 0, 0, 255);
 
                 execute_current_area_scripts(game_state, dt);
+
+                /* update all tile animations */
+                {
+                    for (s32 index = 0; index < tile_table_data_count; ++index) {
+                        struct tile_data_definition* tile_definition = tile_table_data + index;
+
+                        tile_definition->timer += dt;
+                        if (tile_definition->timer > tile_definition->time_until_next_frame) {
+                            tile_definition->frame_index += 1;
+
+                            if (tile_definition->frame_index >= tile_definition->frame_count) {
+                                tile_definition->frame_index = 0;
+                            }
+
+                            tile_definition->timer = 0;
+                        }
+                    }
+                }
 
                 render_ground_area(game_state, &commands, &game_state->loaded_area);
                 if (game_state->ui_state != UI_STATE_PAUSE) {

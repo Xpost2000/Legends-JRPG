@@ -831,7 +831,6 @@ image_id graphics_assets_load_image(struct graphics_assets* assets, string path)
         string filepath = assets->image_file_strings[index];
 
         if (string_equal(path, filepath)) {
-            _debugprintf("img reused: %.*s", path.length, path.data);
             return (image_id){.index = index+1};
         }
     }

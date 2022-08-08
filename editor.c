@@ -1111,7 +1111,7 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
                         for (s32 index = 0; index < TILES_PER_ROW; ++index) {
                             s32 tile_data_index = row_index * TILES_PER_ROW + index;
                             struct tile_data_definition* tile_data = tile_table_data + tile_data_index;
-                            image_id tex = graphics_assets_get_image_by_filepath(&graphics_assets, tile_data->image_asset_location); 
+                            image_id tex = graphics_assets_get_image_by_filepath(&graphics_assets, tile_data->frames[0]); 
 
                             software_framebuffer_draw_image_ex(framebuffer, graphics_assets_get_image_by_id(&graphics_assets, tex),
                                                                rectangle_f32(draw_cursor_x, draw_cursor_y-16, 32, 32), RECTANGLE_F32_NULL, color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
@@ -1178,7 +1178,7 @@ void update_and_render_editor(struct software_framebuffer* framebuffer, f32 dt) 
                     struct tile*                 current_tile = editor_state->tile_layers[layer_index] + tile_index;
                     s32                          tile_id      = current_tile->id;
                     struct tile_data_definition* tile_data    = tile_table_data + tile_id;
-                    image_id                     tex          = graphics_assets_get_image_by_filepath(&graphics_assets, tile_data->image_asset_location); 
+                    image_id                     tex          = graphics_assets_get_image_by_filepath(&graphics_assets, tile_data->frames[0]); 
 
                     f32 alpha = 1;
                     if (layer_index != editor_state->current_tile_layer) {
