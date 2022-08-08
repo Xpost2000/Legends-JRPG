@@ -20,6 +20,15 @@
      
 
 (on-touch (trigger 0)
-          (if (equal (obj_activations '(trigger 0)) 1)
-              (game_start_snow) 
-              (game_stop_snow)))
+	(game_message_queue "always happens")
+	(case (obj_activations '(trigger 0))
+	      (1 (game_message_queue "one potato"))
+              (2 (game_message_queue "two potato"))
+              (3 (game_message_queue "three potato"))
+              (4 (game_message_queue "I SCREAM YOU WE ALL SCREAM") (game_start_rain))
+	))
+
+#  (on-touch (trigger 0)
+#            (if (equal (obj_activations '(trigger 0)) 1)
+#                (game_start_snow) 
+#                (game_stop_snow)))

@@ -4,6 +4,8 @@
 
   Not too big of a deal, it's not super duper confusing, just not what you might
   expect at first for API usage.
+  
+  TODO: parenthesis breaks string parsing? check later. Not affecting any existing scripts so far.
  */
 /*
   A lisp style form reader, and

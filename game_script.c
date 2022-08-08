@@ -484,9 +484,9 @@ struct lisp_form game_script_evaluate_cond_and_return_used_branch(struct memory_
             struct lisp_form* condition_clause           = current_form->list.forms + 0;
             struct lisp_form  evaluated_condition_clause = game_script_evaluate_form(arena, state, condition_clause);
 
-            struct lisp_form* condition_clause_action    = current_form->list.forms + 1;
+            struct lisp_form condition_clause_action     = lisp_list_sliced(*current_form, 1, -1);
             if (evaluated_condition_clause.type != LISP_FORM_NIL) {
-                return *condition_clause_action;
+                return condition_clause_action;
             }
         }
     }
@@ -504,9 +504,9 @@ struct lisp_form game_script_evaluate_case_and_return_used_branch(struct memory_
             struct lisp_form* condition_clause           = current_form->list.forms + 0;
             struct lisp_form  evaluated_condition_clause = game_script_evaluate_form(arena, state, condition_clause);
 
-            struct lisp_form* condition_clause_action    = current_form->list.forms + 1;
-            if (lisp_form_check_equality(evaluated_condition_clause, evaluated) || evaluated_condition_clause.type == LISP_FORM_T) {
-                return *condition_clause_action;
+            struct lisp_form condition_clause_action     = lisp_list_sliced(*current_form, 1, -1);
+            if (evaluated_condition_clause.type == LISP_FORM_T || lisp_form_check_equality(evaluated_condition_clause, evaluated)) {
+                return condition_clause_action;
             }
         }
     }
@@ -526,6 +526,12 @@ struct lisp_form game_script_evaluate_form(struct memory_arena* arena, struct ga
         if (form->type == LISP_FORM_LIST) {
             if (lisp_form_symbol_matching(form->list.forms[0], string_literal("if"))) {
                 struct lisp_form used_branch = game_script_evaluate_if_and_return_used_branch(arena, state, form);
+                return game_script_evaluate_form(arena, state, &used_branch);
+            } else if (lisp_form_symbol_matching(form->list.forms[0], string_literal("case"))) {
+                struct lisp_form used_branch = game_script_evaluate_case_and_return_used_branch(arena, state, form);
+                return game_script_evaluate_form(arena, state, &used_branch);
+            } else if (lisp_form_symbol_matching(form->list.forms[0], string_literal("cond"))) {
+                struct lisp_form used_branch = game_script_evaluate_cond_and_return_used_branch(arena, state, form);
                 return game_script_evaluate_form(arena, state, &used_branch);
             } else if (lisp_form_symbol_matching(form->list.forms[0], string_literal("progn"))) {
                 _debugprintf("Found a progn");
@@ -644,21 +650,15 @@ bool game_script_waiting_on_form(struct lisp_form* form_to_wait_on) {
     if (first) {
         /* builtins */
         if (lisp_form_symbol_matching(*first, string_literal("if"))) {
-            struct lisp_form* condition    = lisp_list_get_child(form_to_wait_on, 1);
-            struct lisp_form* true_branch  = lisp_list_get_child(form_to_wait_on, 2);
-            struct lisp_form* false_branch = lisp_list_get_child(form_to_wait_on, 3);
-
             /* crying in *side_effects*. Lots of bugs waiting to happen. */
-            struct lisp_form evaluated = game_script_evaluate_form(&scratch_arena, game_state, condition);
-
-            if (evaluated.type != LISP_FORM_NIL) {
-                return game_script_waiting_on_form(true_branch);
-            } else {
-                if (false_branch)
-                    return game_script_waiting_on_form(false_branch);
-                else
-                    return true;
-            }
+            struct lisp_form evaluated = game_script_evaluate_if_and_return_used_branch(&scratch_arena, game_state, form_to_wait_on);
+            return game_script_waiting_on_form(&evaluated);
+        } else if (lisp_form_symbol_matching(*first, string_literal("case"))) {
+            struct lisp_form evaluated = game_script_evaluate_case_and_return_used_branch(&scratch_arena, game_state, form_to_wait_on);
+            return game_script_waiting_on_form(&evaluated);
+        } else if (lisp_form_symbol_matching(*first, string_literal("cond"))) {
+            struct lisp_form evaluated = game_script_evaluate_cond_and_return_used_branch(&scratch_arena, game_state, form_to_wait_on);
+            return game_script_waiting_on_form(&evaluated);
         } else if (lisp_form_symbol_matching(*first, string_literal("progn"))) {
             return game_script_waiting_on_form(lisp_list_nth(form_to_wait_on, -1));
         }
@@ -744,19 +744,22 @@ void game_script_execute_awaiting_scripts(struct memory_arena* arena, struct gam
                         struct lisp_form used_branch = game_script_evaluate_if_and_return_used_branch(&scratch_arena, game_state, current_form);
                         _scratch_list_wrapper.list.forms[0] = used_branch;
                         game_script_push_stackframe(_scratch_list_wrapper);
+                    } else if (lisp_form_symbol_matching(*first, string_literal("case"))) {
+                        struct lisp_form used_branch = game_script_evaluate_case_and_return_used_branch(&scratch_arena, game_state, current_form);
+                        game_script_push_stackframe(used_branch);
+                    } else if (lisp_form_symbol_matching(*first, string_literal("cond"))) {
+                        struct lisp_form used_branch = game_script_evaluate_cond_and_return_used_branch(&scratch_arena, game_state, current_form);
+                        game_script_push_stackframe(used_branch);
                     } else if (lisp_form_symbol_matching(*first, string_literal("progn"))) {
                         game_script_push_stackframe(lisp_list_sliced(*current_form, 1, -1));
                     } else {
+                        _debugprintf("executing?");
+                        _debug_print_out_lisp_code(current_form);
                         game_script_evaluate_form(&scratch_arena, game_state, current_form);
                     }
                 } else {
-                    if (current_stackframe->current_form_index >= 1) {
-                    }
-                    struct lisp_form listified = lisp_list_make(&scratch_arena, 1);
-                    listified.list.forms[0] = *current_form;
-                    game_script_evaluate_form(&scratch_arena, game_state, &listified);
-                    /* _debugprintf("cannot execute"); */
-                    /* _debug_print_out_lisp_code(current_form); */
+                    _debugprintf("cannot execute");
+                    _debug_print_out_lisp_code(current_form);
                     /* no execute */
                 }
 
