@@ -636,7 +636,7 @@ void serialize_level_area(struct game_state* state, struct binary_serializer* se
 
     if (level->version >= 4) {
         for (s32 index = 0; index < TILE_LAYER_COUNT; ++index) {
-            Serialize_Fixed_Array_And_Allocate_From_Arena_Top(serializer, state->arena, s32, level->tile_counts[TILE_LAYER_OBJECT], level->tile_layers[index]);
+            Serialize_Fixed_Array_And_Allocate_From_Arena_Top(serializer, state->arena, s32, level->tile_counts[index], level->tile_layers[index]);
         }
     } else {
         Serialize_Fixed_Array_And_Allocate_From_Arena_Top(serializer, state->arena, s32, level->tile_counts[TILE_LAYER_OBJECT], level->tile_layers[TILE_LAYER_OBJECT]);

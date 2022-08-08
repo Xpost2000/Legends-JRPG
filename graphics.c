@@ -868,14 +868,5 @@ struct image_buffer* graphics_assets_get_image_by_id(struct graphics_assets* ass
 
 image_id graphics_assets_get_image_by_filepath(struct graphics_assets* assets, string filepath) {
     assertion(filepath.data && filepath.length && "Bad string?");
-
-    for (s32 index = 0; index < assets->image_count; ++index) {
-        string current_filepath = assets->image_file_strings[index];
-
-        if (string_equal(filepath, current_filepath)) {
-            return (image_id) { .index = index + 1 };
-        }
-    }
-
-    return (image_id) { .index = 0 };
+    return graphics_assets_load_image(assets, filepath);
 }
