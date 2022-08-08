@@ -702,9 +702,7 @@ struct lisp_form level_area_find_listener_for_object(struct game_state* state, s
 
         if (game_script_object_handle_matches_object(*object_handle, listener_target_type, listener_target_id)) {
             _debugprintf("found correct listener");
-            /* return only the code bodies. */
             struct lisp_form body = lisp_list_sliced(*event_action_form, 2, -1);
-            _debug_print_out_lisp_code(&body);
             return body;
         }
     }

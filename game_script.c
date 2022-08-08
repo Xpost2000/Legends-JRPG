@@ -605,32 +605,34 @@ bool game_script_waiting_on_form(struct lisp_form* form_to_wait_on) {
 
     struct lisp_form* first = lisp_list_nth(form_to_wait_on, 0);
 
-    /* builtins */
-    if (lisp_form_symbol_matching(*first, string_literal("if"))) {
-        struct lisp_form* condition    = lisp_list_get_child(form_to_wait_on, 1);
-        struct lisp_form* true_branch  = lisp_list_get_child(form_to_wait_on, 2);
-        struct lisp_form* false_branch = lisp_list_get_child(form_to_wait_on, 3);
+    if (first) {
+        /* builtins */
+        if (lisp_form_symbol_matching(*first, string_literal("if"))) {
+            struct lisp_form* condition    = lisp_list_get_child(form_to_wait_on, 1);
+            struct lisp_form* true_branch  = lisp_list_get_child(form_to_wait_on, 2);
+            struct lisp_form* false_branch = lisp_list_get_child(form_to_wait_on, 3);
 
-        /* crying in *side_effects*. Lots of bugs waiting to happen. */
-        struct lisp_form evaluated = game_script_evaluate_form(&scratch_arena, game_state, condition);
+            /* crying in *side_effects*. Lots of bugs waiting to happen. */
+            struct lisp_form evaluated = game_script_evaluate_form(&scratch_arena, game_state, condition);
 
-        if (evaluated.type != LISP_FORM_NIL) {
-            return game_script_waiting_on_form(true_branch);
-        } else {
-            if (false_branch)
-                return game_script_waiting_on_form(false_branch);
-            else
-                return true;
+            if (evaluated.type != LISP_FORM_NIL) {
+                return game_script_waiting_on_form(true_branch);
+            } else {
+                if (false_branch)
+                    return game_script_waiting_on_form(false_branch);
+                else
+                    return true;
+            }
+        } else if (lisp_form_symbol_matching(*first, string_literal("progn"))) {
+            return game_script_waiting_on_form(lisp_list_nth(form_to_wait_on, -1));
         }
-    } else if (lisp_form_symbol_matching(*first, string_literal("progn"))) {
-        return game_script_waiting_on_form(lisp_list_nth(form_to_wait_on, -1));
-    }
 
-    if (lisp_form_symbol_matching(*first, string_literal("game_message_queue"))) {
-        if (global_popup_state.message_count == 0) {
-            return true;
-        } else {
-            return false;
+        if (lisp_form_symbol_matching(*first, string_literal("game_message_queue"))) {
+            if (global_popup_state.message_count == 0) {
+                return true;
+            } else {
+                return false;
+            }
         }
     }
 
@@ -680,32 +682,35 @@ void game_script_execute_awaiting_scripts(struct memory_arena* arena, struct gam
                    I'm not that smart okay :(, I'm trying to make a game anyways, not a scripting language.
                 */
 
-                struct lisp_form* last_form = current_stackframe->body.list.forms + (current_stackframe->current_form_index-1);
+                struct lisp_form* last_form = lisp_list_nth(&current_stackframe->body, current_stackframe->current_form_index-1);
                 allow_advancement = game_script_waiting_on_form(last_form);
             }
 
             if (allow_advancement) {
                 /* sort of custom eval */
-                struct lisp_form* first = lisp_list_nth(&current_stackframe->body, 0);
+                struct lisp_form* current_form = lisp_list_nth(&current_stackframe->body, current_stackframe->current_form_index);
+                struct lisp_form* first = lisp_list_nth(current_form, 0);
 
-                if (lisp_form_symbol_matching(*first, string_literal("if"))) {
-                    struct lisp_form* condition    = lisp_list_get_child(&current_stackframe->body, 1);
-                    struct lisp_form* true_branch  = lisp_list_get_child(&current_stackframe->body, 2);
-                    struct lisp_form* false_branch = lisp_list_get_child(&current_stackframe->body, 3);
+                if (first) {
+                    if (lisp_form_symbol_matching(*first, string_literal("if"))) {
+                        struct lisp_form* condition    = lisp_list_get_child(current_form, 1);
+                        struct lisp_form* true_branch  = lisp_list_get_child(current_form, 2);
+                        struct lisp_form* false_branch = lisp_list_get_child(current_form, 3);
 
-                    /* crying in *side_effects*. Lots of bugs waiting to happen. */
-                    struct lisp_form evaluated = game_script_evaluate_form(&scratch_arena, game_state, condition);
+                        /* crying in *side_effects*. Lots of bugs waiting to happen. */
+                        struct lisp_form evaluated = game_script_evaluate_form(&scratch_arena, game_state, condition);
 
-                    if (evaluated.type != LISP_FORM_NIL) {
-                        game_script_push_stackframe(*true_branch);
+                        if (evaluated.type != LISP_FORM_NIL) {
+                            game_script_push_stackframe(*true_branch);
+                        } else {
+                            if (false_branch)
+                                game_script_push_stackframe(*false_branch);
+                        }
+                    } else if (lisp_form_symbol_matching(*first, string_literal("progn"))) {
+                        game_script_push_stackframe(lisp_list_sliced(*current_form, 1, -1));
                     } else {
-                        if (false_branch)
-                            game_script_push_stackframe(*false_branch);
+                        game_script_evaluate_form(&scratch_arena, game_state, current_form);
                     }
-                } else if (lisp_form_symbol_matching(*first, string_literal("progn"))) {
-                    game_script_push_stackframe(lisp_list_sliced(current_stackframe->body, 1, -1));
-                } else {
-                    game_script_evaluate_form(&scratch_arena, game_state, current_stackframe->body.list.forms + current_stackframe->current_form_index);
                 }
 
                 current_stackframe->current_form_index += 1;
