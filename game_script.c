@@ -650,6 +650,8 @@ void game_script_execute_awaiting_scripts(struct memory_arena* arena, struct gam
         /* execute current script with a stackframe. */
         struct game_script_execution_state* current_stackframe = game_script_stackframe + (game_script_execution_stack_depth-1);
 
+        _debugprintf("current stack frame (%d)", game_script_execution_stack_depth);
+
         /* finished stackframe. pop off */
         if (current_stackframe->current_form_index >= current_stackframe->body.list.count) {
             game_script_execution_stack_depth -= 1;
@@ -665,7 +667,7 @@ void game_script_execute_awaiting_scripts(struct memory_arena* arena, struct gam
              */
 
             bool allow_advancement = true;
-            if (current_stackframe->current_form_index > 1) {
+            if (current_stackframe->current_form_index >= 1) {
                 /* 
                    so we're going to manually code the waits by just checking what the previous
                    form was. Which is the simplest possible method. Because I use multiple stackframes,

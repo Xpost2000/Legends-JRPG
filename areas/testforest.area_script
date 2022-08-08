@@ -1,6 +1,9 @@
 # Figure out a way to make conversations block execution.
 # Might need to change the evaluation method.
 (on-enter
+                (game_message_queue "Woah... Was it always this bright?")
+                (game_message_queue "Woah... Was it always this bright? 2")
+                (game_message_queue "Woah... Was it always this bright? 3")
         #(game_set_region_name "Darkwood Forest")        
         (game_set_environment_colors 'night))
 
@@ -20,5 +23,6 @@
                 (game_set_environment_colors 'day)
                 (game_message_queue "Also was it snowing earlier?")
                 (game_start_snow)
+                (game_message_queue "Well it is now...")
                 (game_message_queue "Maybe not...")
                 (game_stop_snow))

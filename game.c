@@ -1559,21 +1559,8 @@ void handle_entity_scriptable_trigger_interactions(struct game_state* state, str
 
                             struct lisp_form listener_body = level_area_find_listener_for_object(state, area, LEVEL_AREA_LISTEN_EVENT_ON_TOUCH, GAME_SCRIPT_TARGET_TRIGGER, index);
                             game_script_enqueue_form_to_execute(listener_body);
-                            for (s32 index = 0; index < listener_body.list.count; ++index) {
-                                game_script_evaluate_form(&scratch_arena, state, listener_body.list.forms + index);
-                            }
                         }
                     }
-
-                    /* NOTE: I think how I want to handle the evaluation system is to do a 
-                       and send lisp forms that are evaluated all together.
-                       
-                       This applies to everything except for dialogue, which is kind of not expected to wait for anything.
-                       Dialogue is generally expected to be very simple, although this can always change...?
-                       game_script_request_evaluation_of_script();
-                       
-                       Anyways later for now.
-                    */
                 }
             } break;
         }
