@@ -1,6 +1,10 @@
 #include "entities_def.c"
 
 void entity_play_animation(struct entity* entity, string name) {
+    if (string_equal(entity->animation.name, name)) {
+        return;
+    }
+
     entity->animation.name                = name;
     entity->animation.current_frame_index = 0;
     entity->animation.iterations          = 0;
@@ -208,98 +212,116 @@ void entity_list_update_entities(struct game_state* state, struct entity_list* e
             continue;
         }
 
-        if (!(current_entity->flags & ENTITY_FLAGS_NOCLIP)) {
-            /* _debugprintf("cx: %f, %f\n", current_entity->velocity.x, current_entity->velocity.y); */
-            /* tile intersection */
-            {
-                bool stop_horizontal_movement = false;
-
+        {
+            if (!(current_entity->flags & ENTITY_FLAGS_NOCLIP)) {
+                /* _debugprintf("cx: %f, %f\n", current_entity->velocity.x, current_entity->velocity.y); */
+                /* tile intersection */
                 {
-                    current_entity->position.x += current_entity->velocity.x * dt;
+                    bool stop_horizontal_movement = false;
 
-                    for (s32 index = 0; index < area->tile_counts[TILE_LAYER_OBJECT] && !stop_horizontal_movement; ++index) {
-                        struct tile* current_tile = area->tile_layers[TILE_LAYER_OBJECT] + index;
-                        struct tile_data_definition* tile_data = tile_table_data + current_tile->id;
+                    {
+                        current_entity->position.x += current_entity->velocity.x * dt;
 
-                        if (Get_Bit(tile_data->flags, TILE_DATA_FLAGS_SOLID)) {
+                        for (s32 index = 0; index < area->tile_counts[TILE_LAYER_OBJECT] && !stop_horizontal_movement; ++index) {
+                            struct tile* current_tile = area->tile_layers[TILE_LAYER_OBJECT] + index;
+                            struct tile_data_definition* tile_data = tile_table_data + current_tile->id;
+
+                            if (Get_Bit(tile_data->flags, TILE_DATA_FLAGS_SOLID)) {
+                                stop_horizontal_movement |=
+                                    entity_push_out_horizontal_edges(current_entity, rectangle_f32(current_tile->x * TILE_UNIT_SIZE, current_tile->y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE));
+                            }
+                        }
+
+                        for (s32 index = 0; index < area->tile_counts[TILE_LAYER_GROUND] && !stop_horizontal_movement; ++index) {
+                            struct tile* current_tile = area->tile_layers[TILE_LAYER_GROUND] + index;
+                            struct tile_data_definition* tile_data = tile_table_data + current_tile->id;
+
+                            if (Get_Bit(tile_data->flags, TILE_DATA_FLAGS_SOLID)) {
+                                stop_horizontal_movement |=
+                                    entity_push_out_horizontal_edges(current_entity, rectangle_f32(current_tile->x * TILE_UNIT_SIZE, current_tile->y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE));
+                            }
+                        }
+
+                        for (s32 index = 0; index < area->entity_chest_count && !stop_horizontal_movement; ++index) {
+                            struct entity_chest* chest = area->chests + index;
+
                             stop_horizontal_movement |=
-                                entity_push_out_horizontal_edges(current_entity, rectangle_f32(current_tile->x * TILE_UNIT_SIZE, current_tile->y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE));
+                                entity_push_out_horizontal_edges(current_entity, rectangle_f32(chest->position.x * TILE_UNIT_SIZE, chest->position.y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE));
                         }
                     }
 
-                    for (s32 index = 0; index < area->tile_counts[TILE_LAYER_GROUND] && !stop_horizontal_movement; ++index) {
-                        struct tile* current_tile = area->tile_layers[TILE_LAYER_GROUND] + index;
-                        struct tile_data_definition* tile_data = tile_table_data + current_tile->id;
+                    if (stop_horizontal_movement) current_entity->velocity.x = 0;
 
-                        if (Get_Bit(tile_data->flags, TILE_DATA_FLAGS_SOLID)) {
-                            stop_horizontal_movement |=
-                                entity_push_out_horizontal_edges(current_entity, rectangle_f32(current_tile->x * TILE_UNIT_SIZE, current_tile->y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE));
+                    current_entity->position.y += current_entity->velocity.y * dt;
+                    {
+                        bool stop_vertical_movement = false;
+
+                        for (s32 index = 0; index < area->tile_counts[TILE_LAYER_OBJECT] && !stop_vertical_movement; ++index) {
+                            struct tile* current_tile = area->tile_layers[TILE_LAYER_OBJECT] + index;
+                            struct tile_data_definition* tile_data = tile_table_data + current_tile->id;
+
+                            if (Get_Bit(tile_data->flags, TILE_DATA_FLAGS_SOLID)) {
+                                stop_vertical_movement |=
+                                    entity_push_out_vertical_edges(current_entity, rectangle_f32(current_tile->x * TILE_UNIT_SIZE, current_tile->y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE));
+                            }
                         }
-                    }
 
-                    for (s32 index = 0; index < area->entity_chest_count && !stop_horizontal_movement; ++index) {
-                        struct entity_chest* chest = area->chests + index;
+                        for (s32 index = 0; index < area->tile_counts[TILE_LAYER_GROUND] && !stop_vertical_movement; ++index) {
+                            struct tile* current_tile = area->tile_layers[TILE_LAYER_GROUND] + index;
+                            struct tile_data_definition* tile_data = tile_table_data + current_tile->id;
 
-                        stop_horizontal_movement |=
-                            entity_push_out_horizontal_edges(current_entity, rectangle_f32(chest->position.x * TILE_UNIT_SIZE, chest->position.y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE));
+                            if (Get_Bit(tile_data->flags, TILE_DATA_FLAGS_SOLID)) {
+                                stop_vertical_movement |=
+                                    entity_push_out_vertical_edges(current_entity, rectangle_f32(current_tile->x * TILE_UNIT_SIZE, current_tile->y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE));
+                            }
+                        }
+
+                        for (s32 index = 0; index < area->entity_chest_count && !stop_vertical_movement; ++index) {
+                            struct entity_chest* chest = area->chests + index;
+
+                            stop_vertical_movement |=
+                                entity_push_out_vertical_edges(current_entity, rectangle_f32(chest->position.x * TILE_UNIT_SIZE, chest->position.y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE));
+                        }
+
+                        if (stop_vertical_movement) current_entity->velocity.y = 0;
                     }
                 }
 
-                if (stop_horizontal_movement) current_entity->velocity.x = 0;
 
+                /* any existing actions or action queues will ALWAYS override manual control */
+                entity_update_and_perform_actions(state, entities, index, area, dt);
+
+                if (!current_entity->ai.current_action) {
+                    /* controller actions, for AI brains. */
+                    if (current_entity->flags & ENTITY_FLAGS_PLAYER_CONTROLLED) {
+                        entity_handle_player_controlled(state, entities, index, dt);
+                    }
+                }
+
+                /* handle trigger interactions */
+                /* NPCs should not be able to leave areas for now */
+                handle_entity_level_trigger_interactions(state, current_entity, area->trigger_level_transition_count, area->trigger_level_transitions, dt);
+                handle_entity_scriptable_trigger_interactions(state, current_entity, area->script_trigger_count, area->script_triggers, dt);
+            } else {
+                current_entity->position.x += current_entity->velocity.x * dt;
                 current_entity->position.y += current_entity->velocity.y * dt;
-                {
-                    bool stop_vertical_movement = false;
-
-                    for (s32 index = 0; index < area->tile_counts[TILE_LAYER_OBJECT] && !stop_vertical_movement; ++index) {
-                        struct tile* current_tile = area->tile_layers[TILE_LAYER_OBJECT] + index;
-                        struct tile_data_definition* tile_data = tile_table_data + current_tile->id;
-
-                        if (Get_Bit(tile_data->flags, TILE_DATA_FLAGS_SOLID)) {
-                            stop_vertical_movement |=
-                                entity_push_out_vertical_edges(current_entity, rectangle_f32(current_tile->x * TILE_UNIT_SIZE, current_tile->y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE));
-                        }
-                    }
-
-                    for (s32 index = 0; index < area->tile_counts[TILE_LAYER_GROUND] && !stop_vertical_movement; ++index) {
-                        struct tile* current_tile = area->tile_layers[TILE_LAYER_GROUND] + index;
-                        struct tile_data_definition* tile_data = tile_table_data + current_tile->id;
-
-                        if (Get_Bit(tile_data->flags, TILE_DATA_FLAGS_SOLID)) {
-                            stop_vertical_movement |=
-                                entity_push_out_vertical_edges(current_entity, rectangle_f32(current_tile->x * TILE_UNIT_SIZE, current_tile->y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE));
-                        }
-                    }
-
-                    for (s32 index = 0; index < area->entity_chest_count && !stop_vertical_movement; ++index) {
-                        struct entity_chest* chest = area->chests + index;
-
-                        stop_vertical_movement |=
-                            entity_push_out_vertical_edges(current_entity, rectangle_f32(chest->position.x * TILE_UNIT_SIZE, chest->position.y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE));
-                    }
-
-                    if (stop_vertical_movement) current_entity->velocity.y = 0;
-                }
             }
 
-
-            /* any existing actions or action queues will ALWAYS override manual control */
-            entity_update_and_perform_actions(state, entities, index, area, dt);
-
-            if (!current_entity->ai.current_action) {
-                /* controller actions, for AI brains. */
-                if (current_entity->flags & ENTITY_FLAGS_PLAYER_CONTROLLED) {
-                    entity_handle_player_controlled(state, entities, index, dt);
+            /* implicit animation state setting for now. */
+            if (current_entity->velocity.x != 0 &&
+                current_entity->velocity.y != 0) {
+                if (current_entity->velocity.y < 0) {
+                    entity_play_animation(current_entity, string_literal("walk_up"));
+                } else if (current_entity->velocity.y > 0) {
+                    entity_play_animation(current_entity, string_literal("walk_down"));
+                } else if (current_entity->velocity.x > 0) {
+                    entity_play_animation(current_entity, string_literal("walk_left"));
+                } else if (current_entity->velocity.x < 0) {
+                    entity_play_animation(current_entity, string_literal("walk_right"));
                 }
+            } else {
+                entity_play_animation(current_entity, facing_direction_strings_normal[current_entity->facing_direction]);
             }
-
-            /* handle trigger interactions */
-            /* NPCs should not be able to leave areas for now */
-            handle_entity_level_trigger_interactions(state, current_entity, area->trigger_level_transition_count, area->trigger_level_transitions, dt);
-            handle_entity_scriptable_trigger_interactions(state, current_entity, area->script_trigger_count, area->script_triggers, dt);
-        } else {
-            current_entity->position.x += current_entity->velocity.x * dt;
-            current_entity->position.y += current_entity->velocity.y * dt;
         }
     }
 }
