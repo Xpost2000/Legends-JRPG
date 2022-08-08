@@ -8,7 +8,24 @@
    is to allow level complexity! All old tiles are assumed to
    operate on the "object" tile level.
 */
-#define CURRENT_LEVEL_AREA_VERSION (3)
+#define CURRENT_LEVEL_AREA_VERSION (4)
+
+enum tile_layers {
+    TILE_LAYER_GROUND,     /* render below all. dark color? */
+    /* also collision layer */
+    TILE_LAYER_OBJECT,     /* render at normal level as entities */
+    TILE_LAYER_ROOF,       /* render above entities, allow fading */
+    TILE_LAYER_FOREGROUND, /* render above entities, no fading */
+    TILE_LAYER_COUNT
+};
+
+local string tile_layer_strings[] = {
+    string_literal("(ground)"),
+    string_literal("(object)"),
+    string_literal("(roof)"),
+    string_literal("(foreground)"),
+    string_literal("(count)"),
+};
 
 struct tile {
     s32 id;
@@ -16,16 +33,9 @@ struct tile {
     s32 flags; /* acts as a XOR against it's parent? (tile definitions elsewhere.) */
     s16 x;
     s16 y;
-    s16 layer;
+    /* old: layer field */
+    s16 reserved_;
 };
-
-s32 _qsort_tile(const void* a, const void* b) {
-    const struct tile* a_tile = a;
-    const struct tile* b_tile = b;
-    if (a_tile->layer < b_tile->layer) return -1;
-    else if (a_tile->layer > b_tile->layer) return 1;
-    return 0;
-}
 
 struct trigger_level_transition {
     /* assume to be in tile coordinates. */
@@ -120,8 +130,13 @@ struct level_area {
     u32          version;
     v2f32        default_player_spawn;
 
+#if 0
     s32          tile_count;
     struct tile* tiles;
+#else
+    s32          tile_counts[TILE_LAYER_COUNT];
+    struct tile* tile_layers[TILE_LAYER_COUNT];
+#endif
 
     s32 trigger_level_transition_count;
     struct trigger_level_transition* trigger_level_transitions;

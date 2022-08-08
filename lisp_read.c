@@ -752,3 +752,11 @@ bool lisp_form_as_function_list_check_fn_name(struct lisp_form* f, string name) 
 
     return false;
 }
+
+struct lisp_form lisp_form_produce_truthy_value_form(bool v) {
+    if (v) {
+        return LISP_t;
+    } else {
+        return LISP_nil;
+    }
+}

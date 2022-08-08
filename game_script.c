@@ -61,6 +61,20 @@ GAME_LISP_FUNCTION(DLG_NEXT) {
     _debugprintf("NOT IMPLEMENTED YET!");
     return LISP_nil;
 }
+GAME_LISP_FUNCTION(GAME_IS_WEATHER) {
+    struct lisp_form weather_type = arguments[0];
+    if (lisp_form_symbol_matching(weather_type, string_literal("snow"))) {
+        return lisp_form_produce_truthy_value_form(state->weather.features & WEATHER_SNOW);
+    } else if (lisp_form_symbol_matching(weather_type, string_literal("rain"))) {
+        return lisp_form_produce_truthy_value_form(state->weather.features & WEATHER_RAIN);
+    } else if (lisp_form_symbol_matching(weather_type, string_literal("fog"))) {
+        return lisp_form_produce_truthy_value_form(state->weather.features & WEATHER_FOGGY);
+    } else if (lisp_form_symbol_matching(weather_type, string_literal("storm"))) {
+        return lisp_form_produce_truthy_value_form(state->weather.features & WEATHER_STORMY);
+    }
+
+    return LISP_nil;
+}
 GAME_LISP_FUNCTION(GAME_START_RAIN) {
     _debugprintf("game_start_rain script");
     weather_start_rain(state);
@@ -161,6 +175,7 @@ static struct game_script_function_builtin script_function_table[] = {
     GAME_LISP_FUNCTION(GAME_STOP_RAIN),
     GAME_LISP_FUNCTION(GAME_START_SNOW),
     GAME_LISP_FUNCTION(GAME_STOP_SNOW),
+    GAME_LISP_FUNCTION(GAME_IS_WEATHER),
     GAME_LISP_FUNCTION(GAME_SET_ENVIRONMENT_COLORS),
     GAME_LISP_FUNCTION(GAME_MESSAGE_QUEUE),
     GAME_LISP_FUNCTION(GAME_SET_REGION_NAME),

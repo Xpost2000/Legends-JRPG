@@ -162,22 +162,74 @@ void game_finish_conversation(struct game_state* state) {
 }
 
 local void render_combat_area_information(struct game_state* state, struct render_commands* commands, struct level_area* area);
-void render_area(struct game_state* state, struct render_commands* commands, struct level_area* area) {
-    /* TODO do it lazy mode. Once only */
-    for (s32 index = 0; index < area->tile_count; ++index) {
-        s32 tile_id = area->tiles[index].id;
+void render_foreground_area(struct game_state* state, struct render_commands* commands, struct level_area* area) {
+    for (s32 index = 0; index < area->tile_counts[TILE_LAYER_ROOF]; ++index) {
+        s32 tile_id = area->tile_layers[TILE_LAYER_ROOF][index].id;
         struct tile_data_definition* tile_data = tile_table_data + tile_id;
 
         image_id tex = graphics_assets_get_image_by_filepath(&graphics_assets, tile_data->image_asset_location); 
 
         render_commands_push_image(commands,
                                    graphics_assets_get_image_by_id(&graphics_assets, tex),
-                                   rectangle_f32(area->tiles[index].x * TILE_UNIT_SIZE,
-                                                 area->tiles[index].y * TILE_UNIT_SIZE,
+                                   rectangle_f32(area->tile_layers[TILE_LAYER_ROOF][index].x * TILE_UNIT_SIZE,
+                                                 area->tile_layers[TILE_LAYER_ROOF][index].y * TILE_UNIT_SIZE,
                                                  TILE_UNIT_SIZE,
                                                  TILE_UNIT_SIZE),
                                    tile_data->sub_rectangle,
                                    color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
+    }
+    for (s32 index = 0; index < area->tile_counts[TILE_LAYER_FOREGROUND]; ++index) {
+        s32 tile_id = area->tile_layers[TILE_LAYER_FOREGROUND][index].id;
+        struct tile_data_definition* tile_data = tile_table_data + tile_id;
+
+        image_id tex = graphics_assets_get_image_by_filepath(&graphics_assets, tile_data->image_asset_location); 
+
+        render_commands_push_image(commands,
+                                   graphics_assets_get_image_by_id(&graphics_assets, tex),
+                                   rectangle_f32(area->tile_layers[TILE_LAYER_FOREGROUND][index].x * TILE_UNIT_SIZE,
+                                                 area->tile_layers[TILE_LAYER_FOREGROUND][index].y * TILE_UNIT_SIZE,
+                                                 TILE_UNIT_SIZE,
+                                                 TILE_UNIT_SIZE),
+                                   tile_data->sub_rectangle,
+                                   color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
+    }
+}
+
+void render_ground_area(struct game_state* state, struct render_commands* commands, struct level_area* area) {
+    /* TODO do it lazy mode. Once only */
+
+    /* Object & ground layer */
+    {
+        for (s32 index = 0; index < area->tile_counts[TILE_LAYER_GROUND]; ++index) {
+            s32 tile_id = area->tile_layers[TILE_LAYER_GROUND][index].id;
+            struct tile_data_definition* tile_data = tile_table_data + tile_id;
+
+            image_id tex = graphics_assets_get_image_by_filepath(&graphics_assets, tile_data->image_asset_location); 
+
+            render_commands_push_image(commands,
+                                       graphics_assets_get_image_by_id(&graphics_assets, tex),
+                                       rectangle_f32(area->tile_layers[TILE_LAYER_GROUND][index].x * TILE_UNIT_SIZE,
+                                                     area->tile_layers[TILE_LAYER_GROUND][index].y * TILE_UNIT_SIZE,
+                                                     TILE_UNIT_SIZE,
+                                                     TILE_UNIT_SIZE),
+                                       tile_data->sub_rectangle,
+                                       color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
+        }
+        for (s32 index = 0; index < area->tile_counts[TILE_LAYER_OBJECT]; ++index) {
+            s32 tile_id = area->tile_layers[TILE_LAYER_OBJECT][index].id;
+            struct tile_data_definition* tile_data = tile_table_data + tile_id;
+
+            image_id tex = graphics_assets_get_image_by_filepath(&graphics_assets, tile_data->image_asset_location); 
+
+            render_commands_push_image(commands,
+                                       graphics_assets_get_image_by_id(&graphics_assets, tex),
+                                       rectangle_f32(area->tile_layers[TILE_LAYER_OBJECT][index].x * TILE_UNIT_SIZE,
+                                                     area->tile_layers[TILE_LAYER_OBJECT][index].y * TILE_UNIT_SIZE,
+                                                     TILE_UNIT_SIZE,
+                                                     TILE_UNIT_SIZE),
+                                       tile_data->sub_rectangle,
+                                       color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
+        }
     }
 
     if (state->combat_state.active_combat) {
@@ -261,8 +313,8 @@ struct entity* game_get_player(struct game_state* state) {
 #include "weather.c"
 
 /* does not account for layers right now. That's okay. */
-struct tile* level_area_find_tile(struct level_area* level, s32 x, s32 y) {
-    Array_For_Each(it, struct tile, level->tiles, level->tile_count) {
+struct tile* level_area_find_tile(struct level_area* level, s32 x, s32 y, s32 layer) {
+    Array_For_Each(it, struct tile, level->tile_layers[layer], level->tile_counts[layer]) {
         if ((s32)(it->x)== x && (s32)(it->y) == y) {
             return it;
         }
@@ -273,15 +325,22 @@ struct tile* level_area_find_tile(struct level_area* level, s32 x, s32 y) {
 
 /* NOTE: also builds other run time data but I don't want to change the name. */
 local void build_navigation_map_for_level_area(struct memory_arena* arena, struct level_area* level) {
-    if (level->tile_count > 0) {
+    if (level->tile_counts[TILE_LAYER_OBJECT] > 0 ||
+        level->tile_counts[TILE_LAYER_GROUND]) {
         struct level_area_navigation_map* navigation_map = &level->navigation_data;
 
-        s32 min_x = level->tiles[0].x;
-        s32 min_y = level->tiles[0].y;
-        s32 max_x = level->tiles[0].x;
-        s32 max_y = level->tiles[0].y;
+        s32 min_x = INT_MAX;
+        s32 min_y = INT_MAX;
+        s32 max_x = -INT_MAX;
+        s32 max_y = -INT_MAX;
 
-        Array_For_Each(it, struct tile, level->tiles, level->tile_count) {
+        Array_For_Each(it, struct tile, level->tile_layers[TILE_LAYER_OBJECT], level->tile_counts[TILE_LAYER_OBJECT]) {
+            if ((s32)it->x < min_x) min_x = (s32)(it->x);
+            if ((s32)it->y < min_y) min_y = (s32)(it->y);
+            if ((s32)it->x > max_x) max_x = (s32)(it->x);
+            if ((s32)it->y > max_y) max_y = (s32)(it->y);
+        }
+        Array_For_Each(it, struct tile, level->tile_layers[TILE_LAYER_GROUND], level->tile_counts[TILE_LAYER_GROUND]) {
             if ((s32)it->x < min_x) min_x = (s32)(it->x);
             if ((s32)it->y < min_y) min_y = (s32)(it->y);
             if ((s32)it->x > max_x) max_x = (s32)(it->x);
@@ -302,7 +361,9 @@ local void build_navigation_map_for_level_area(struct memory_arena* arena, struc
         for (s32 y_cursor = navigation_map->min_y; y_cursor < navigation_map->max_y; ++y_cursor) {
             for (s32 x_cursor = navigation_map->min_x; x_cursor < navigation_map->max_x; ++x_cursor) {
                 struct level_area_navigation_map_tile* nav_tile = &navigation_map->tiles[((y_cursor - navigation_map->min_y) * navigation_map->width + (x_cursor - navigation_map->min_x))];
-                struct tile*                          real_tile = level_area_find_tile(level, x_cursor, y_cursor);
+
+                struct tile* real_tile    = level_area_find_tile(level, x_cursor, y_cursor, TILE_LAYER_OBJECT);
+                if (!real_tile) real_tile = level_area_find_tile(level, x_cursor, y_cursor, TILE_LAYER_GROUND);
 
                 nav_tile->score_modifier = 1;
                 if (real_tile) {
@@ -341,7 +402,8 @@ local void level_area_build_movement_visibility_map(struct memory_arena* arena, 
             f32 distance = v2f32_distance_sq(v2f32(x_cursor, y_cursor), v2f32(x, y));
 
             if (distance <= radius_sq) {
-                struct tile* t = level_area_find_tile(level, x_cursor, y_cursor);
+                struct tile* t = level_area_find_tile(level, x_cursor, y_cursor, TILE_LAYER_OBJECT);
+                if (!t) t = level_area_find_tile(level, x_cursor, y_cursor, TILE_LAYER_GROUND);
 
                 if (t) {
                     struct tile_data_definition* tile_data_entry = &tile_table_data[t->id];
@@ -571,8 +633,14 @@ void serialize_level_area(struct game_state* state, struct binary_serializer* se
     serialize_f32(serializer, &level->default_player_spawn.x);
     serialize_f32(serializer, &level->default_player_spawn.y);
     _debugprintf("reading tiles");
-    /* just going to cheat and used fixed size allocations... */
-    Serialize_Fixed_Array_And_Allocate_From_Arena_Top(serializer, state->arena, s32, level->tile_count, level->tiles);
+
+    if (level->version >= 4) {
+        for (s32 index = 0; index < TILE_LAYER_COUNT; ++index) {
+            Serialize_Fixed_Array_And_Allocate_From_Arena_Top(serializer, state->arena, s32, level->tile_counts[TILE_LAYER_OBJECT], level->tile_layers[index]);
+        }
+    } else {
+        Serialize_Fixed_Array_And_Allocate_From_Arena_Top(serializer, state->arena, s32, level->tile_counts[TILE_LAYER_OBJECT], level->tile_layers[TILE_LAYER_OBJECT]);
+    }
 
     if (level->version >= 1) {
         _debugprintf("reading level transitions");
@@ -598,7 +666,6 @@ void serialize_level_area(struct game_state* state, struct binary_serializer* se
 
     state->camera.xy.x = player->position.x;
     state->camera.xy.y = player->position.y;
-    qsort(level->tiles, level->tile_count, sizeof(*level->tiles), _qsort_tile);
 
     build_navigation_map_for_level_area(state->arena, level);
 
@@ -1679,7 +1746,7 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
 
                 execute_current_area_scripts(game_state, dt);
 
-                render_area(game_state, &commands, &game_state->loaded_area);
+                render_ground_area(game_state, &commands, &game_state->loaded_area);
                 if (game_state->ui_state != UI_STATE_PAUSE) {
                     if (!storyboard_active) {
                         entity_list_update_entities(game_state,&game_state->entities, dt, &game_state->loaded_area);
@@ -1695,6 +1762,8 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                 }
 
                 entity_list_render_entities(&game_state->entities, &graphics_assets, &commands, dt);
+                render_foreground_area(game_state, &commands, &game_state->loaded_area);
+
                 game_script_execute_awaiting_scripts(&scratch_arena, game_state, dt);
 
                 software_framebuffer_render_commands(framebuffer, &commands);

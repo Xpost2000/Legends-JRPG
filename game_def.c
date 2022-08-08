@@ -261,9 +261,17 @@ struct editor_state {
     s32           trigger_placement_type;
     s32           entity_placement_type;
 
+#if 0
     s32                              tile_count;
     s32                              tile_capacity;
     struct tile*                     tiles;
+#else
+    s32                              tile_counts[TILE_LAYER_COUNT];
+    s32                              tile_capacities[TILE_LAYER_COUNT];
+    struct tile*                     tile_layers[TILE_LAYER_COUNT];
+#endif
+    s32                              current_tile_layer;
+
     s32                              trigger_level_transition_count;
     s32                              trigger_level_transition_capacity;
     struct trigger_level_transition* trigger_level_transitions;

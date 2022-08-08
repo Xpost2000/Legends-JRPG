@@ -84,7 +84,7 @@ s32 EDITOR_imgui_button(struct software_framebuffer* framebuffer, struct font_ca
 /* little IMGUI  */
 
 void editor_clear_all_allocations(struct editor_state* state) {
-    state->tile_count                     = 0;
+    zero_array(state->tile_counts);
     state->trigger_level_transition_count = 0;
     state->entity_chest_count             = 0;
     state->generic_trigger_count          = 0;
@@ -101,11 +101,15 @@ void editor_clear_all(struct editor_state* state) {
 
 void editor_initialize(struct editor_state* state) {
     editor_state->arena                             = &editor_arena;
-    editor_state->tile_capacity                     = 8192;
+    for (s32 index = 0; index < TILE_LAYER_COUNT; ++index) {
+        editor_state->tile_capacities[index] = 8192;
+    }
     editor_state->trigger_level_transition_capacity = 1024;
     editor_state->entity_chest_capacity             = 1024;
     editor_state->generic_trigger_capacity          = 1024;
-    state->tiles                                    = memory_arena_push(state->arena, state->tile_capacity                     * sizeof(*state->tiles));
+    for (s32 index = 0; index < TILE_LAYER_COUNT; ++index) {
+        state->tile_layers[index] = memory_arena_push(state->arena, state->tile_capacities[index] * sizeof(*state->tile_layers[0]));
+    }
     state->trigger_level_transitions                = memory_arena_push(state->arena, state->trigger_level_transition_capacity * sizeof(*state->trigger_level_transitions));
     state->entity_chests                            = memory_arena_push(state->arena, state->entity_chest_capacity             * sizeof(*state->entity_chests));
     state->generic_triggers                         = memory_arena_push(state->arena, state->generic_trigger_capacity          * sizeof(*state->generic_triggers));
@@ -124,7 +128,14 @@ void editor_serialize_area(struct binary_serializer* serializer) {
     serialize_f32(serializer, &editor_state->default_player_spawn.x);
     serialize_f32(serializer, &editor_state->default_player_spawn.y);
     _debugprintf("reading tiles");
-    Serialize_Fixed_Array(serializer, s32, editor_state->tile_count, editor_state->tiles);
+
+    if (version_id >= 4) {
+        for (s32 index = 0; index < TILE_LAYER_COUNT; ++index) {
+            Serialize_Fixed_Array(serializer, s32, editor_state->tile_counts[index], editor_state->tile_layers[index]);
+        }
+    } else {
+        Serialize_Fixed_Array(serializer, s32, editor_state->tile_counts[TILE_LAYER_OBJECT], editor_state->tile_layers[TILE_LAYER_OBJECT]);
+    }
 
     if (version_id >= 1) {
         Serialize_Fixed_Array(serializer, s32, editor_state->trigger_level_transition_count, editor_state->trigger_level_transitions);
@@ -141,15 +152,15 @@ void editor_remove_tile_at(v2f32 point_in_tilespace) {
     s32 where_x = point_in_tilespace.x;
     s32 where_y = point_in_tilespace.y;
 
-    for (s32 index = 0; index < editor_state->tile_count; ++index) {
-        struct tile* current_tile = editor_state->tiles + index;
+    for (s32 index = 0; index < editor_state->tile_counts[editor_state->current_tile_layer]; ++index) {
+        struct tile* current_tile = editor_state->tile_layers[editor_state->current_tile_layer] + index;
 
         /* override */
         if (current_tile->x == where_x && current_tile->y == where_y) {
             if (current_tile == editor_state->last_selected) editor_state->last_selected = 0;
 
             current_tile->id = 0;
-            editor_state->tiles[index] = editor_state->tiles[--editor_state->tile_count];
+            editor_state->tile_layers[editor_state->current_tile_layer][index] = editor_state->tile_layers[editor_state->current_tile_layer][--editor_state->tile_counts[editor_state->current_tile_layer]];
             return;
         }
     }
@@ -179,8 +190,8 @@ void editor_place_tile_at(v2f32 point_in_tilespace) {
     s32 where_x = point_in_tilespace.x;
     s32 where_y = point_in_tilespace.y;
 
-    for (s32 index = 0; index < editor_state->tile_count; ++index) {
-        struct tile* current_tile = editor_state->tiles + index;
+    for (s32 index = 0; index < editor_state->tile_counts[editor_state->current_tile_layer]; ++index) {
+        struct tile* current_tile = editor_state->tile_layers[editor_state->current_tile_layer] + index;
 
         /* override */
         if (current_tile->x == where_x && current_tile->y == where_y) {
@@ -190,7 +201,7 @@ void editor_place_tile_at(v2f32 point_in_tilespace) {
         }
     }
 
-    struct tile* new_tile = editor_state->tiles + (editor_state->tile_count++);
+    struct tile* new_tile = editor_state->tile_layers[editor_state->current_tile_layer] + (editor_state->tile_counts[editor_state->current_tile_layer]++);
     new_tile->id = editor_state->painting_tile_id;
     new_tile->x  = where_x;
     new_tile->y  = where_y;
@@ -846,7 +857,7 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
         y_cursor += 12;
         {
             char tmp_text[1024]={};
-            snprintf(tmp_text, 1024, "mode: %.*s\n", editor_tool_mode_strings[editor_state->tool_mode].length, editor_tool_mode_strings[editor_state->tool_mode].data);
+            snprintf(tmp_text, 1024, "mode: %.*s", editor_tool_mode_strings[editor_state->tool_mode].length, editor_tool_mode_strings[editor_state->tool_mode].data);
             software_framebuffer_draw_text(framebuffer,
                                            graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_GOLD]),
                                            1, v2f32(0,y_cursor), string_from_cstring(tmp_text), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
@@ -856,10 +867,25 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
                 y_cursor += 12;
                 {
                     char tmp_text[1024]={};
-                    snprintf(tmp_text, 1024, "current tile id: %d", editor_state->painting_tile_id);
+                    snprintf(tmp_text, 1024, "current tile id: %d\ncurrent tile layer: %.*s", editor_state->painting_tile_id, tile_layer_strings[editor_state->current_tile_layer].length, tile_layer_strings[editor_state->current_tile_layer].data);
                     software_framebuffer_draw_text(framebuffer,
                                                    graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_GOLD]),
                                                    1, v2f32(0,y_cursor), string_from_cstring(tmp_text), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+                }
+                y_cursor += 12;
+
+                if (!editor_state->tab_menu_open) {
+                    if (is_mouse_wheel_up()) {
+                        editor_state->current_tile_layer -= 1;
+                        if (editor_state->current_tile_layer < 0) {
+                            editor_state->current_tile_layer = TILE_LAYER_COUNT-1;
+                        }
+                    } else if (is_mouse_wheel_down()) {
+                        editor_state->current_tile_layer += 1;
+                        if (editor_state->current_tile_layer >= TILE_LAYER_COUNT) {
+                            editor_state->current_tile_layer = 0;
+                        }
+                    }
                 }
             } break;
             case EDITOR_TOOL_TRIGGER_PLACEMENT: {
@@ -1137,33 +1163,37 @@ void update_and_render_editor(struct software_framebuffer* framebuffer, f32 dt) 
 
     if (editor_state->viewing_loaded_area) {
         /* yeah this is a big mess */
-        render_area(game_state, &commands, &editor_state->loaded_area);
+        render_ground_area(game_state, &commands, &editor_state->loaded_area);
         if (editor_state->last_selected && editor_state->tool_mode == EDITOR_TOOL_TRIGGER_PLACEMENT) {
             struct trigger_level_transition* trigger = editor_state->last_selected;
             render_commands_push_quad(&commands, rectangle_f32(trigger->spawn_location.x * TILE_UNIT_SIZE, trigger->spawn_location.y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE),
                                       color32u8(0, 255, 255, normalized_sinf(global_elapsed_time*4) * 0.5*255 + 64), BLEND_MODE_ALPHA);
         }
+        render_foreground_area(game_state, &commands, &editor_state->loaded_area);
     } else {
-        /* Maybe change the data structures later? */
-        /* TODO do it lazy mode. Once only */
-        qsort(editor_state->tiles, editor_state->tile_count, sizeof(*editor_state->tiles), _qsort_tile);
-
         /* Render world */
         {
-            for (s32 tile_index = 0; tile_index < editor_state->tile_count; ++tile_index) {
-                struct tile*                 current_tile = editor_state->tiles + tile_index;
-                s32                          tile_id      = current_tile->id;
-                struct tile_data_definition* tile_data    = tile_table_data + tile_id;
-                image_id                     tex          = graphics_assets_get_image_by_filepath(&graphics_assets, tile_data->image_asset_location); 
+            for (s32 layer_index = 0; layer_index < array_count(editor_state->tile_layers); ++layer_index) {
+                for (s32 tile_index = 0; tile_index < editor_state->tile_counts[layer_index]; ++tile_index) {
+                    struct tile*                 current_tile = editor_state->tile_layers[layer_index] + tile_index;
+                    s32                          tile_id      = current_tile->id;
+                    struct tile_data_definition* tile_data    = tile_table_data + tile_id;
+                    image_id                     tex          = graphics_assets_get_image_by_filepath(&graphics_assets, tile_data->image_asset_location); 
 
-                render_commands_push_image(&commands,
-                                           graphics_assets_get_image_by_id(&graphics_assets, tex),
-                                           rectangle_f32(current_tile->x * TILE_UNIT_SIZE,
-                                                         current_tile->y * TILE_UNIT_SIZE,
-                                                         TILE_UNIT_SIZE,
-                                                         TILE_UNIT_SIZE),
-                                           tile_data->sub_rectangle,
-                                           color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
+                    f32 alpha = 1;
+                    if (layer_index != editor_state->current_tile_layer) {
+                        alpha = 0.5;
+                    }
+
+                    render_commands_push_image(&commands,
+                                               graphics_assets_get_image_by_id(&graphics_assets, tex),
+                                               rectangle_f32(current_tile->x * TILE_UNIT_SIZE,
+                                                             current_tile->y * TILE_UNIT_SIZE,
+                                                             TILE_UNIT_SIZE,
+                                                             TILE_UNIT_SIZE),
+                                               tile_data->sub_rectangle,
+                                               color32f32(1,1,1,alpha), NO_FLAGS, BLEND_MODE_ALPHA);
+                }
             }
             struct font_cache* font = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_BLUE]);
             for (s32 trigger_level_transition_index = 0; trigger_level_transition_index < editor_state->trigger_level_transition_count; ++trigger_level_transition_index) {

@@ -210,9 +210,18 @@ void entity_list_update_entities(struct game_state* state, struct entity_list* e
                 {
                     current_entity->position.x += current_entity->velocity.x * dt;
 
-                    for (s32 index = 0; index < area->tile_count && !stop_horizontal_movement; ++index) {
-                        
-                        struct tile* current_tile = area->tiles + index;
+                    for (s32 index = 0; index < area->tile_counts[TILE_LAYER_OBJECT] && !stop_horizontal_movement; ++index) {
+                        struct tile* current_tile = area->tile_layers[TILE_LAYER_OBJECT] + index;
+                        struct tile_data_definition* tile_data = tile_table_data + current_tile->id;
+
+                        if (Get_Bit(tile_data->flags, TILE_DATA_FLAGS_SOLID)) {
+                            stop_horizontal_movement |=
+                                entity_push_out_horizontal_edges(current_entity, rectangle_f32(current_tile->x * TILE_UNIT_SIZE, current_tile->y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE));
+                        }
+                    }
+
+                    for (s32 index = 0; index < area->tile_counts[TILE_LAYER_GROUND] && !stop_horizontal_movement; ++index) {
+                        struct tile* current_tile = area->tile_layers[TILE_LAYER_GROUND] + index;
                         struct tile_data_definition* tile_data = tile_table_data + current_tile->id;
 
                         if (Get_Bit(tile_data->flags, TILE_DATA_FLAGS_SOLID)) {
@@ -235,8 +244,18 @@ void entity_list_update_entities(struct game_state* state, struct entity_list* e
                 {
                     bool stop_vertical_movement = false;
 
-                    for (s32 index = 0; index < area->tile_count && !stop_vertical_movement; ++index) {
-                        struct tile* current_tile = area->tiles + index;
+                    for (s32 index = 0; index < area->tile_counts[TILE_LAYER_OBJECT] && !stop_vertical_movement; ++index) {
+                        struct tile* current_tile = area->tile_layers[TILE_LAYER_OBJECT] + index;
+                        struct tile_data_definition* tile_data = tile_table_data + current_tile->id;
+
+                        if (Get_Bit(tile_data->flags, TILE_DATA_FLAGS_SOLID)) {
+                            stop_vertical_movement |=
+                                entity_push_out_vertical_edges(current_entity, rectangle_f32(current_tile->x * TILE_UNIT_SIZE, current_tile->y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE));
+                        }
+                    }
+
+                    for (s32 index = 0; index < area->tile_counts[TILE_LAYER_GROUND] && !stop_vertical_movement; ++index) {
+                        struct tile* current_tile = area->tile_layers[TILE_LAYER_GROUND] + index;
                         struct tile_data_definition* tile_data = tile_table_data + current_tile->id;
 
                         if (Get_Bit(tile_data->flags, TILE_DATA_FLAGS_SOLID)) {
