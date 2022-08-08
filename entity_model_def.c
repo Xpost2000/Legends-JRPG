@@ -1,6 +1,12 @@
 #ifndef ENTITY_MODEL_DEF_C
 #define ENTITY_MODEL_DEF_C
 
+struct entity_animation {
+    string name;
+    f32    time_until_next_frame;
+    s32    frame_count;
+};
+
 struct entity_model {
     string name;
     image_id sprites[DIRECTION_COUNT];

@@ -132,8 +132,18 @@ struct entity_ai_data {
     f32 wait_timer;
 };
 
+struct entity_animation_state {
+    string name; /* look up name */
+
+    s32    current_frame_index;
+    s32    iterations;
+    f32    timer;
+};
+
 struct entity {
     string name;
+
+    struct entity_animation_state animation;
 
     s32   model_index;
     u8    facing_direction;
