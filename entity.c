@@ -421,6 +421,8 @@ void entity_inventory_add(struct entity_inventory* inventory, s32 limits, item_i
 
     if (inventory->count < limits) {
         inventory->items[inventory->count].item     = item;
+        /* just in case I forgot to 0 out? */
+        inventory->items[inventory->count].count    = 0;
         inventory->items[inventory->count++].count += 1;
     }
 }
@@ -484,6 +486,7 @@ void entity_inventory_equip_item(struct entity_inventory* inventory, s32 limits,
 
 void entity_inventory_unequip_item(struct entity_inventory* inventory, s32 limits, s32 equipment_index, struct entity* target) {
     if (target->equip_slots[equipment_index].id_hash != 0) {
+        _debugprintf("have an item to unequip");
         entity_inventory_add(inventory, limits, target->equip_slots[equipment_index]);
         target->equip_slots[equipment_index] = (item_id) {};
     }
