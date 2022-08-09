@@ -36,8 +36,11 @@ enum item_type {
     ITEM_SORT_FILTER_ALL,
     ITEM_TYPE_MISC,
     ITEM_TYPE_CONSUMABLE_ITEM, /* party members & player */
+
+    /* these are equippables  */
     ITEM_TYPE_WEAPON,
     ITEM_TYPE_EQUIPMENT,
+
     ITEM_TYPE_COUNT,
 };
 /* editor strings */
@@ -53,12 +56,14 @@ static string item_type_strings[] = {
 /* 
    some equipments may take multiple slots.
 */
-enum equipment_slot_flag_mask {
-    EQUIPMENT_SLOT_FLAG_HEAD  = BIT(0),
-    EQUIPMENT_SLOT_FLAG_BODY  = BIT(1),
-    EQUIPMENT_SLOT_FLAG_HANDS = BIT(2),
-    EQUIPMENT_SLOT_FLAG_LEGS  = BIT(3),
-    EQUIPMENT_SLOT_FLAG_MISC  = BIT(4), /* accessory equips (x2) */
+enum equipment_slot {
+    EQUIPMENT_SLOT_FLAG_HEAD    = (0),
+    EQUIPMENT_SLOT_FLAG_BODY    = (1),
+    EQUIPMENT_SLOT_FLAG_HANDS   = (2),
+    EQUIPMENT_SLOT_FLAG_LEGS    = (3),
+    EQUIPMENT_SLOT_FLAG_MISC    = (4), /* accessory equips (x2) */
+    EQUIPMENT_SLOT_FLAG_MISC1   = (4), /* accessory equips (x2) */
+    EQUIPMENT_SLOT_FLAG_WEAPON1  = (4), /* accessory equips (x2) */
 };
 
 local s32 global_item_icon_frame_counter = 0;
@@ -85,6 +90,8 @@ struct item_def {
 
         Entity_Stat_Block_Base(s32);
     } stats;
+
+    /* TODO: not flags anymore */
     u8 equipment_slot_flags;
 
     struct entity_stat_block_modifiers modifiers;

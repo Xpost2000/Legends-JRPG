@@ -56,7 +56,7 @@ enum entity_flags {
 };
 
 /* generousity is well rewarded */
-#define MAX_PARTY_ITEMS (4096)
+#define MAX_PARTY_ITEMS (8192)
 struct player_party_inventory {
     s32           item_count;
     struct item_instance items[MAX_PARTY_ITEMS];
@@ -185,8 +185,9 @@ struct entity {
             item_id legs;
             item_id accessory1;
             item_id accessory2;
+            item_id weapon1;
         };
-        item_id equip_slots[6];
+        item_id equip_slots[7];
     };
 
     s32_range                     health;
