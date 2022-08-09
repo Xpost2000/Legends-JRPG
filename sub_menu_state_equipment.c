@@ -126,9 +126,29 @@ local void do_entity_stat_information_panel(struct software_framebuffer* framebu
         y_cursor += font_height;
         y_cursor += font_height;
 
+        /* stats now need delta comparison */
         for (s32 index = 0; index < STAT_COUNT; ++index) {
             software_framebuffer_draw_text(framebuffer, label_name_font, font_scale, v2f32(x+15, y_cursor), info_labels[index+5], color32f32_WHITE, BLEND_MODE_ALPHA);
-            software_framebuffer_draw_text(framebuffer, value_font, font_scale, v2f32(x+15 + largest_label_width, y_cursor), string_from_cstring(format_temp("%d", entity->stat_block.values[index])), color32f32_WHITE, BLEND_MODE_ALPHA);
+
+            s32 current_stat_value = entity->stat_block.values[index];
+            software_framebuffer_draw_text(framebuffer, value_font, font_scale, v2f32(x+15 + largest_label_width, y_cursor), string_from_cstring(format_temp("%d", current_stat_value)), color32f32_WHITE, BLEND_MODE_ALPHA);
+
+            if (equipment_screen_state.inventory_pick_mode) {
+                struct item_instance* selected_item_id = game_state->inventory.items + equipment_screen_state.inventory_slot_selection;
+                struct item_def* item                  = item_database_find_by_id(selected_item_id->item);
+
+                s32 target_stat_value_modification = item->stats.values[index];
+                s32 target_stat_value              = target_stat_value_modification + current_stat_value;
+
+                struct font_cache* painting_font = NULL;
+
+                if (target_stat_value == current_stat_value)     painting_font = value_font;
+                else if (target_stat_value > current_stat_value) painting_font = value_better_font;
+                else if (target_stat_value < current_stat_value) painting_font = value_worse_font;
+
+                software_framebuffer_draw_text(framebuffer, painting_font, font_scale, v2f32(x+15 + largest_label_width + 60, y_cursor), string_from_cstring(format_temp("%d", target_stat_value)), color32f32_WHITE, BLEND_MODE_ALPHA);
+            }
+
             y_cursor += font_height;
         }
     }
