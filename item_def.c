@@ -61,6 +61,7 @@ enum equipment_slot_flag_mask {
     EQUIPMENT_SLOT_FLAG_MISC  = BIT(4), /* accessory equips (x2) */
 };
 
+local s32 global_item_icon_frame_counter = 0;
 struct item_def {
     string id_name;
     string name;
@@ -72,7 +73,9 @@ struct item_def {
     s32 damage_value;
 
     /* override the default type icon */
-    image_id icon;
+    /* animation time is going to be the same for all items */
+    string icon_name;
+    s32    frame_count;
 
     /* multiplication is always applied in order first. */
     /* though all modifiers are added together first. */
@@ -109,6 +112,31 @@ item_id item_get_id(struct item_def* item) {
 #define MAX_ITEMS_DATABASE_SIZE (8192)
 static struct item_def item_database[MAX_ITEMS_DATABASE_SIZE] = {};
 
+local void init_item_icon(s32 index) {
+    if (item_database[index].frame_count == 0)
+        item_database[index].frame_count = 1;
+
+    if (item_database[index].icon_name.length)
+        return;
+
+    string icon_name = string_literal("");
+    switch (item_database[index].type) {
+        case ITEM_TYPE_MISC: {
+            icon_name = string_literal("misc");
+        } break;
+        case ITEM_TYPE_WEAPON: {
+            icon_name = string_literal("weapon");
+        } break;
+        case ITEM_TYPE_EQUIPMENT: {
+            icon_name = string_literal("equipment");
+        } break;
+        case ITEM_TYPE_CONSUMABLE_ITEM: {
+            icon_name = string_literal("consumable");
+        } break;
+    }
+    item_database[index].icon_name = icon_name;
+}
+
 /* NOTE: need to load this from a file */
 static void initialize_items_database(void) {
     item_database[0].id_name                  = string_literal("item_trout_fish_5");
@@ -118,6 +146,7 @@ static void initialize_items_database(void) {
     item_database[0].health_restoration_value = 5;
     item_database[0].gold_value               = 5;
     item_database[0].max_stack_value          = 20;
+    init_item_icon(0);
 
     item_database[1].id_name                  = string_literal("item_sardine_fish_5");
     item_database[1].name                     = string_literal("Dead Sardine(?)");
@@ -126,6 +155,7 @@ static void initialize_items_database(void) {
     item_database[1].health_restoration_value = 5;
     item_database[1].gold_value               = 5;
     item_database[1].max_stack_value          = 20;
+    init_item_icon(1);
 
     item_database[2].id_name                  = string_literal("item_armor_rags");
     item_database[2].name                     = string_literal("Beggers' Rags");
@@ -137,6 +167,7 @@ static void initialize_items_database(void) {
     item_database[2].modifiers                = entity_stat_block_modifiers_identity;
     item_database[2].gold_value               = 50;
     item_database[2].max_stack_value          = 20;
+    init_item_icon(2);
     
     item_database[3].id_name                  = string_literal("item_armor_loincloth");
     item_database[3].name                     = string_literal("Loincloth");
@@ -147,6 +178,7 @@ static void initialize_items_database(void) {
     item_database[3].modifiers                = entity_stat_block_modifiers_identity;
     item_database[3].gold_value               = 50;
     item_database[3].max_stack_value          = 20;
+    init_item_icon(3);
 
     item_database[4].id_name                  = string_literal("item_armor_bandage_wraps");
     item_database[4].name                     = string_literal("Bandages");
@@ -158,6 +190,7 @@ static void initialize_items_database(void) {
     item_database[4].modifiers                = entity_stat_block_modifiers_identity;
     item_database[4].gold_value               = 50;
     item_database[4].max_stack_value          = 20;
+    init_item_icon(4);
 
     item_database[5].id_name                  = string_literal("item_accessory_wedding_ring");
     item_database[5].name                     = string_literal("Wedding Ring");
@@ -167,6 +200,7 @@ static void initialize_items_database(void) {
     item_database[5].modifiers                = entity_stat_block_modifiers_identity;
     item_database[5].gold_value               = 150;
     item_database[5].max_stack_value          = 20;
+    init_item_icon(5);
 }
 
 static struct item_def* item_database_find_by_id(item_id id) {
