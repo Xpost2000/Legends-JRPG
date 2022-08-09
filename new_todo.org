@@ -22,6 +22,24 @@ game rendering, since our sprites are extraordinarily small, I'm going to just m
 and we can just shove as many sprites into that as we want. If we hit a limit of about 4096x4096 on our texture atlas for some reason, I might have to split pages. That's a problem
 for the future though. After some game logic is done))
 
+WHEN I'M BACK:
+Inventory / Equipment page!
+
+Think of an okay prologue, and once the inventory/equipment
+stuff is working enough, we'll move to more combat work!
+
+Then add particle systems! We're going to allocate from a fixed pool, and
+have a limited amount. It's not going to be as useful as the particle system from
+the previous project, however it's going to be way simpler. I'll try to have similar
+effects (Image -> Particles), which should be much easier as our sprites are known
+to be much smaller (this is intentional.)
+
+We're going to then work on the basic lighting system. We're going to do lighting in
+a similar method to "deferred lighting methods",
+
+Then begin adding objects! Which will be hardcoded in engine unfortunately?
+
+
 ** Might need to move things to more data files
 ** SDL Mixer Audio
    Too lazy to do real audio mixing (also I don't know how to.)

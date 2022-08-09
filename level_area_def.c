@@ -8,20 +8,24 @@
    is to allow level complexity! All old tiles are assumed to
    operate on the "object" tile level.
 */
-#define CURRENT_LEVEL_AREA_VERSION (4)
+#define CURRENT_LEVEL_AREA_VERSION (5)
 
 enum tile_layers {
-    TILE_LAYER_GROUND,     /* render below all. dark color? */
-    /* also collision layer */
-    TILE_LAYER_OBJECT,     /* render at normal level as entities */
-    TILE_LAYER_ROOF,       /* render above entities, allow fading */
-    TILE_LAYER_FOREGROUND, /* render above entities, no fading */
+    TILE_LAYER_GROUND,            /* render below all. dark color? */
+                                                /* also collision layer */
+    TILE_LAYER_OBJECT,            /* render at normal level as entities */
+    TILE_LAYER_CLUTTER_DECOR,     /* render at normal level as entities */
+    TILE_LAYER_OVERHEAD,          /* render above entities no fading */
+    TILE_LAYER_ROOF,              /* render above entities, allow fading */
+    TILE_LAYER_FOREGROUND,        /* render above entities, no fading */
     TILE_LAYER_COUNT
 };
 
 local string tile_layer_strings[] = {
     string_literal("(ground)"),
-    string_literal("(object)"),
+    string_literal("(object)"), 
+    string_literal("(clutter)"), 
+    string_literal("(overhead)"),
     string_literal("(roof)"),
     string_literal("(foreground)"),
     string_literal("(count)"),

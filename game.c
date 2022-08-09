@@ -167,74 +167,39 @@ void game_finish_conversation(struct game_state* state) {
 }
 
 local void render_combat_area_information(struct game_state* state, struct render_commands* commands, struct level_area* area);
-void render_foreground_area(struct game_state* state, struct render_commands* commands, struct level_area* area) {
-    for (s32 index = 0; index < area->tile_counts[TILE_LAYER_ROOF]; ++index) {
-        s32 tile_id = area->tile_layers[TILE_LAYER_ROOF][index].id;
+local void render_tile_layer(struct render_commands* commands, struct level_area* area, s32 layer) {
+    for (s32 index = 0; index < area->tile_counts[layer]; ++index) {
+        s32 tile_id = area->tile_layers[layer][index].id;
         struct tile_data_definition* tile_data = tile_table_data + tile_id;
 
         image_id tex = get_tile_image_id(tile_data);
 
         render_commands_push_image(commands,
                                    graphics_assets_get_image_by_id(&graphics_assets, tex),
-                                   rectangle_f32(area->tile_layers[TILE_LAYER_ROOF][index].x * TILE_UNIT_SIZE,
-                                                 area->tile_layers[TILE_LAYER_ROOF][index].y * TILE_UNIT_SIZE,
-                                                 TILE_UNIT_SIZE,
-                                                 TILE_UNIT_SIZE),
-                                   tile_data->sub_rectangle,
-                                   color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
-    }
-    for (s32 index = 0; index < area->tile_counts[TILE_LAYER_FOREGROUND]; ++index) {
-        s32 tile_id = area->tile_layers[TILE_LAYER_FOREGROUND][index].id;
-        struct tile_data_definition* tile_data = tile_table_data + tile_id;
-
-        image_id tex = get_tile_image_id(tile_data);
-
-        render_commands_push_image(commands,
-                                   graphics_assets_get_image_by_id(&graphics_assets, tex),
-                                   rectangle_f32(area->tile_layers[TILE_LAYER_FOREGROUND][index].x * TILE_UNIT_SIZE,
-                                                 area->tile_layers[TILE_LAYER_FOREGROUND][index].y * TILE_UNIT_SIZE,
-                                                 TILE_UNIT_SIZE,
-                                                 TILE_UNIT_SIZE),
+                                   rectangle_f32(area->tile_layers[layer][index].x * TILE_UNIT_SIZE, area->tile_layers[layer][index].y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE),
                                    tile_data->sub_rectangle,
                                    color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
     }
 }
+
+void render_foreground_area(struct game_state* state, struct render_commands* commands, struct level_area* area) {
+    {
+        render_tile_layer(commands, area, TILE_LAYER_OVERHEAD);
+        render_tile_layer(commands, area, TILE_LAYER_ROOF);
+        render_tile_layer(commands, area, TILE_LAYER_FOREGROUND);
+    }
+}
+
+/* requires player state to handle some specific layers */
 
 void render_ground_area(struct game_state* state, struct render_commands* commands, struct level_area* area) {
     /* TODO do it lazy mode. Once only */
 
     /* Object & ground layer */
     {
-        for (s32 index = 0; index < area->tile_counts[TILE_LAYER_GROUND]; ++index) {
-            s32 tile_id = area->tile_layers[TILE_LAYER_GROUND][index].id;
-            struct tile_data_definition* tile_data = tile_table_data + tile_id;
-
-        image_id tex = get_tile_image_id(tile_data);
-
-            render_commands_push_image(commands,
-                                       graphics_assets_get_image_by_id(&graphics_assets, tex),
-                                       rectangle_f32(area->tile_layers[TILE_LAYER_GROUND][index].x * TILE_UNIT_SIZE,
-                                                     area->tile_layers[TILE_LAYER_GROUND][index].y * TILE_UNIT_SIZE,
-                                                     TILE_UNIT_SIZE,
-                                                     TILE_UNIT_SIZE),
-                                       tile_data->sub_rectangle,
-                                       color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
-        }
-        for (s32 index = 0; index < area->tile_counts[TILE_LAYER_OBJECT]; ++index) {
-            s32 tile_id = area->tile_layers[TILE_LAYER_OBJECT][index].id;
-            struct tile_data_definition* tile_data = tile_table_data + tile_id;
-
-        image_id tex = get_tile_image_id(tile_data);
-
-        render_commands_push_image(commands,
-                                   graphics_assets_get_image_by_id(&graphics_assets, tex),
-                                   rectangle_f32(area->tile_layers[TILE_LAYER_OBJECT][index].x * TILE_UNIT_SIZE,
-                                                 area->tile_layers[TILE_LAYER_OBJECT][index].y * TILE_UNIT_SIZE,
-                                                 TILE_UNIT_SIZE,
-                                                 TILE_UNIT_SIZE),
-                                   tile_data->sub_rectangle,
-                                   color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
-        }
+        render_tile_layer(commands, area, TILE_LAYER_GROUND);
+        render_tile_layer(commands, area, TILE_LAYER_OBJECT);
+        render_tile_layer(commands, area, TILE_LAYER_CLUTTER_DECOR);
     }
 
     if (state->combat_state.active_combat) {
