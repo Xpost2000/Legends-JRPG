@@ -130,8 +130,24 @@ void editor_serialize_area(struct binary_serializer* serializer) {
     _debugprintf("reading tiles");
 
     if (version_id >= 4) {
-        for (s32 index = 0; index < TILE_LAYER_COUNT; ++index) {
-            Serialize_Fixed_Array(serializer, s32, editor_state->tile_counts[index], editor_state->tile_layers[index]);
+        if (version_id < CURRENT_LEVEL_AREA_VERSION) {
+            /* for older versions I have to know what the tile layers were and assign them like this. */
+            switch (version_id) {
+                case 4: {
+                    Serialize_Fixed_Array(serializer, s32, editor_state->tile_counts[TILE_LAYER_GROUND],     editor_state->tile_layers[TILE_LAYER_GROUND]);
+                    Serialize_Fixed_Array(serializer, s32, editor_state->tile_counts[TILE_LAYER_OBJECT],     editor_state->tile_layers[TILE_LAYER_OBJECT]);
+                    Serialize_Fixed_Array(serializer, s32, editor_state->tile_counts[TILE_LAYER_ROOF],       editor_state->tile_layers[TILE_LAYER_ROOF]);
+                    Serialize_Fixed_Array(serializer, s32, editor_state->tile_counts[TILE_LAYER_FOREGROUND], editor_state->tile_layers[TILE_LAYER_FOREGROUND]);
+                } break;
+                default: {
+                    
+                } break;
+            }
+        } else {
+            /* the current version of the tile layering, we can just load them in order. */
+            for (s32 index = 0; index < TILE_LAYER_COUNT; ++index) {
+                Serialize_Fixed_Array(serializer, s32, editor_state->tile_counts[index], editor_state->tile_layers[index]);
+            }
         }
     } else {
         Serialize_Fixed_Array(serializer, s32, editor_state->tile_counts[TILE_LAYER_OBJECT], editor_state->tile_layers[TILE_LAYER_OBJECT]);

@@ -605,8 +605,24 @@ void serialize_level_area(struct game_state* state, struct binary_serializer* se
     _debugprintf("reading tiles");
 
     if (level->version >= 4) {
-        for (s32 index = 0; index < TILE_LAYER_COUNT; ++index) {
-            Serialize_Fixed_Array_And_Allocate_From_Arena_Top(serializer, state->arena, s32, level->tile_counts[index], level->tile_layers[index]);
+        if (level->version < CURRENT_LEVEL_AREA_VERSION) {
+            /* for older versions I have to know what the tile layers were and assign them like this. */
+            switch (level->version) {
+                case 4: {
+                    Serialize_Fixed_Array_And_Allocate_From_Arena_Top(serializer, state->arena, s32, level->tile_counts[TILE_LAYER_GROUND],     level->tile_layers[TILE_LAYER_GROUND]);
+                    Serialize_Fixed_Array_And_Allocate_From_Arena_Top(serializer, state->arena, s32, level->tile_counts[TILE_LAYER_OBJECT],     level->tile_layers[TILE_LAYER_OBJECT]);
+                    Serialize_Fixed_Array_And_Allocate_From_Arena_Top(serializer, state->arena, s32, level->tile_counts[TILE_LAYER_ROOF],       level->tile_layers[TILE_LAYER_ROOF]);
+                    Serialize_Fixed_Array_And_Allocate_From_Arena_Top(serializer, state->arena, s32, level->tile_counts[TILE_LAYER_FOREGROUND], level->tile_layers[TILE_LAYER_FOREGROUND]);
+                } break;
+                default: {
+                    
+                } break;
+            }
+        } else {
+            /* the current version of the tile layering, we can just load them in order. */
+            for (s32 index = 0; index < TILE_LAYER_COUNT; ++index) {
+                Serialize_Fixed_Array_And_Allocate_From_Arena_Top(serializer, state->arena, s32, level->tile_counts[index], level->tile_layers[index]);
+            }
         }
     } else {
         Serialize_Fixed_Array_And_Allocate_From_Arena_Top(serializer, state->arena, s32, level->tile_counts[TILE_LAYER_OBJECT], level->tile_layers[TILE_LAYER_OBJECT]);
