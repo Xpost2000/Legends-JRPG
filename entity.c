@@ -56,7 +56,7 @@ entity_id entity_list_create_entity(struct entity_list* entities) {
         }
     }
 
-    return (entity_id){0,0};
+    return (entity_id){};
 }
 
 entity_id entity_list_get_id(struct entity_list* entities, s32 index) {

@@ -97,26 +97,26 @@ local union color32u8 global_color_grading_filter = COLOR_GRADING_DAY;
 
 enum facing_direction {
     DIRECTION_DOWN,
+    DIRECTION_RIGHT,
     DIRECTION_UP,
     DIRECTION_LEFT,
-    DIRECTION_RIGHT,
     DIRECTION_RETAINED,
     DIRECTION_COUNT = 4,
 };
 static string facing_direction_strings[] = {
-    string_literal("(down)"),
-    string_literal("(up)"),
-    string_literal("(left)"),
-    string_literal("(right)"),
-    string_literal("(retained)"),
+    [DIRECTION_DOWN]     = string_literal("(down)"),
+    [DIRECTION_UP]       = string_literal("(up)"),
+    [DIRECTION_LEFT]     = string_literal("(left)"),
+    [DIRECTION_RIGHT]    = string_literal("(right)"),
+    [DIRECTION_RETAINED] = string_literal("(retained)"),
     string_literal("(count)"),
 };
 static string facing_direction_strings_normal[] = {
-    string_literal("down"),
-    string_literal("up"),
-    string_literal("left"),
-    string_literal("right"),
-    string_literal("(retained)"),
+    [DIRECTION_DOWN]     = string_literal("down"),
+    [DIRECTION_UP]       = string_literal("up"),
+    [DIRECTION_LEFT]     = string_literal("left"),
+    [DIRECTION_RIGHT]    = string_literal("right"),
+    [DIRECTION_RETAINED] = string_literal("(retained)"),
     string_literal("(count)"),
 };
 /* loaded from a table at runtime or compile time? */
@@ -271,7 +271,8 @@ enum ui_pause_menu_animation_state{
 enum ui_pause_menu_sub_menu_state {
     UI_PAUSE_MENU_SUB_MENU_STATE_NONE      = 0,
     UI_PAUSE_MENU_SUB_MENU_STATE_INVENTORY = 1,
-    UI_PAUSE_MENU_SUB_MENU_STATE_OPTIONS   = 2,
+    UI_PAUSE_MENU_SUB_MENU_STATE_EQUIPMENT = 2,
+    UI_PAUSE_MENU_SUB_MENU_STATE_OPTIONS   = 3,
 };
 
 /* share this for all types of similar menu types. */
@@ -372,6 +373,17 @@ struct game_state {
     struct player_party_inventory inventory;
     struct entity_list  entities;
     struct weather      weather;
+
+    /* 
+       The player is eternally going to be entity 0, we never unload them,
+       
+       NOTE: need to think of how to keep track of these things. I'm currently
+       just planning to run it through the save record system, as the engine
+       doesn't support a real persistent world and I'll have to hack alot of things
+       through entity flags.
+
+       struct entity party_member_persistent_storage[12];
+    */
     /* fread into this */
 
     /* I am a fan of animation, so we need to animate this. Even though it causes */
@@ -388,7 +400,6 @@ struct game_state {
     u32                 current_conversation_node_id;
     s32                 currently_selected_dialogue_choice;
 
-    /* TODO: Normalize this text. Anyways this should be in a string table. */
     char                current_region_name[96];
     char                current_region_subtitle[128];
 

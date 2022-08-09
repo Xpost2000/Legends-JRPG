@@ -4,9 +4,26 @@
 
 #include "entity_stat_block_def.c"
 
+/* This needs to be augmented more... Oh well. Not my issue. */
 typedef struct entity_id {
-    s32 index;
-    s32 generation;
+    /* use this flag to reference a companion instead. */
+    /* the game does not know how to handle this yet. */
+    union {
+        /* 
+           64 bit id is unnecessary. But too lazy to bitmask
+           
+           So this generally reduces code changes.
+        */
+        struct {
+            u8  party_member_persistence;
+            u8  flags1;
+            u8  flags2;
+            u8  flags3;
+            u32  index;
+        };
+        u64 full_id;
+    };
+    s32  generation;
 } entity_id;
 
 enum entity_ai_flags {
