@@ -36,6 +36,10 @@
 #define GAME_DEF_C
 /* shared structure definitions for both editor and game */
 
+/* need to draw the border to be color changable. since it looks ort of dummmb */
+#define UI_DEFAULT_COLOR        (color32f32(34/255.0f, 37/255.0f, 143/255.0f, 1.0))
+#define UI_BATTLE_COLOR UI_DEFAULT_COLOR
+
 enum entity_game_script_target_types {
     GAME_SCRIPT_TARGET_TRIGGER,
     GAME_SCRIPT_TARGET_ENTITY,

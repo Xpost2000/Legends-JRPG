@@ -134,7 +134,6 @@ local void draw_turn_panel(struct game_state* state, struct software_framebuffer
         software_framebuffer_draw_quad(framebuffer, rectangle_f32(x, y + (index - combat_state->active_combatant) * square_size * 1.3, square_size, square_size), color, BLEND_MODE_ALPHA);
     }
 }
-#define UI_BATTLE_COLOR (color32f32(34/255.0f, 37/255.0f, 143/255.0f, 1.0))
 
 local void do_battle_selection_menu(struct game_state* state, struct software_framebuffer* framebuffer, f32 x, f32 y, bool allow_input) {
     struct game_state_combat_state* combat_state            = &state->combat_state;

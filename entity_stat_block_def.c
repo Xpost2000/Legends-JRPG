@@ -1,15 +1,31 @@
 #ifndef ENTITY_STAT_BLOCK_DEF_C
 #define ENTITY_STAT_BLOCK_DEF_C
 
+enum stat_id {
+    STAT_VIGOR,
+    STAT_STRENGTH,
+    STAT_CONSTITUTION,
+    STAT_WILLPOWER,
+    STAT_AGILITY,
+    STAT_SPEED,
+    STAT_INTELLIGENCE,
+    STAT_LUCK,
+    STAT_COUNT
+};
 #define Entity_Stat_Block_Base(TYPE) \
-    TYPE vigor;                       \
-    TYPE strength;                    \
-    TYPE constitution;                \
-    TYPE willpower;                   \
-    TYPE agility;                     \
-    TYPE speed;                       \
-    TYPE intelligence;                \
-    TYPE luck;                 
+    union {                          \
+        struct {                     \
+            TYPE vigor;              \
+            TYPE strength;           \
+            TYPE constitution;       \
+            TYPE willpower;          \
+            TYPE agility;            \
+            TYPE speed;              \
+            TYPE intelligence;       \
+            TYPE luck;               \
+        };                           \
+        TYPE values[8];              \
+    }
 
 local string entity_stat_name_strings[] = {
     string_literal("Vigor"),
@@ -40,6 +56,9 @@ struct entity_stat_block {
     s32 experience;
     s32 xp_value;
 };
+
+
+static struct entity_stat_block entity_stat_block_identity = (struct entity_stat_block) {.level=1, .values[0]=5,.values[1]=5,.values[2]=5,.values[3]=5,.values[4]=5,.values[5]=5,.values[6]=5,.values[7]=5,.experience=0,.xp_value=0};
 
 struct entity_stat_block_modifiers {
     f32 health;

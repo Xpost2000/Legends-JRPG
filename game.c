@@ -29,6 +29,7 @@ enum menu_font_variation {
     MENU_FONT_COLOR_STEEL,
     MENU_FONT_COLOR_WHITE,
     MENU_FONT_COLOR_YELLOW,
+    MENU_FONT_COLOR_BLOODRED,
 
     MENU_FONT_COUNT,
 };
@@ -42,6 +43,7 @@ static string menu_font_variation_string_names[] = {
     string_literal("res/fonts/gnsh-bitmapfont-colour7.png"),
     string_literal("res/fonts/gnsh-bitmapfont-colour8.png"),
     string_literal("res/fonts/gnsh-bitmapfont-colour9.png"),
+    string_literal("res/fonts/gnsh-bitmapfont-colour10.png"),
 };
 font_id menu_fonts[9];
 /* replace old occurances of this */
