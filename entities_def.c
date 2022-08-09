@@ -207,6 +207,8 @@ struct entity {
 bool is_entity_aggressive_to_player(struct entity* entity);
 void entity_play_animation(struct entity* entity, string name);
 
+s32 entity_find_effective_stat_value(struct entity* entity, s32 stat_index);
+
 /* these don't do error checking, they assume the item index is within bounds */
 void entity_inventory_equip_item(struct entity_inventory* inventory, s32 limits, s32 item_index, s32 equipment_index, struct entity* target);
 void entity_inventory_unequip_item(struct entity_inventory* inventory, s32 limits, s32 equipment_index, struct entity* target);

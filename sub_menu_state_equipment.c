@@ -30,7 +30,6 @@ struct {
 } equipment_screen_state;
 
 /* render the entity but spinning their directional animations */
-
 local void open_equipment_screen(entity_id target_id) {
     equipment_screen_state.inventory_slot_selection = 0;
     equipment_screen_state.equip_slot_selection = 0;
@@ -130,11 +129,11 @@ local void do_entity_stat_information_panel(struct software_framebuffer* framebu
         for (s32 index = 0; index < STAT_COUNT; ++index) {
             software_framebuffer_draw_text(framebuffer, label_name_font, font_scale, v2f32(x+15, y_cursor), info_labels[index+5], color32f32_WHITE, BLEND_MODE_ALPHA);
 
-            s32 current_stat_value = entity->stat_block.values[index];
+            s32 current_stat_value = entity_find_effective_stat_value(entity, index);
             software_framebuffer_draw_text(framebuffer, value_font, font_scale, v2f32(x+15 + largest_label_width, y_cursor), string_from_cstring(format_temp("%d", current_stat_value)), color32f32_WHITE, BLEND_MODE_ALPHA);
 
             if (equipment_screen_state.inventory_pick_mode) {
-                struct item_instance* selected_item_id = game_state->inventory.items + equipment_screen_state.inventory_slot_selection;
+                struct item_instance* selected_item_id = game_state->inventory.items + equipment_screen_state.inventory_item_slice[equipment_screen_state.inventory_slot_selection];
                 struct item_def* item                  = item_database_find_by_id(selected_item_id->item);
 
                 s32 target_stat_value_modification = item->stats.values[index];

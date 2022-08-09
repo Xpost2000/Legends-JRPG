@@ -706,3 +706,33 @@ bool is_entity_aggressive_to_player(struct entity* entity) {
 
     return false;
 }
+
+/* have to figure out how health should work */
+s32 entity_find_effective_stat_value(struct entity* entity, s32 stat_index) {
+    s32 base_value = entity->stat_block.values[stat_index];
+
+    /* apply multiplicative effects */
+    {
+        /* from spell effects? */
+
+        /* from items */
+        for (s32 equip_index = 0; equip_index < array_count(entity->equip_slots); ++equip_index) {
+            item_id          equip_slot_item = entity->equip_slots[equip_index];
+            struct item_def* item_base       = item_database_find_by_id(equip_slot_item);
+
+            if (item_base) base_value *= item_base->modifiers.values[stat_index];
+        }
+    }
+
+    /* apply additive effects */
+    {
+        for (s32 equip_index = 0; equip_index < array_count(entity->equip_slots); ++equip_index) {
+            item_id          equip_slot_item = entity->equip_slots[equip_index];
+            struct item_def* item_base       = item_database_find_by_id(equip_slot_item);
+
+            if (item_base) base_value += item_base->stats.values[stat_index];
+        }
+    }
+
+    return base_value;
+}
