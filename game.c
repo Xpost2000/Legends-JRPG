@@ -45,7 +45,7 @@ static string menu_font_variation_string_names[] = {
     string_literal("res/fonts/gnsh-bitmapfont-colour9.png"),
     string_literal("res/fonts/gnsh-bitmapfont-colour10.png"),
 };
-font_id menu_fonts[9];
+font_id menu_fonts[MENU_FONT_COUNT];
 /* replace old occurances of this */
 local struct font_cache* game_get_font(s32 variation) {
     struct font_cache* font = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[variation]);

@@ -6,6 +6,8 @@ struct {
 
     s32 direction_index;
     f32 spin_timer;
+
+    s32 equip_slot_selection;
 } equipment_screen_state;
 
 /* render the entity but spinning their directional animations */
@@ -34,7 +36,6 @@ local void do_entity_stat_information_panel(struct software_framebuffer* framebu
     };
 
     f32 largest_label_width = 0;
-
 
     struct font_cache* label_name_font   = game_get_font(MENU_FONT_COLOR_GOLD);
     struct font_cache* value_font        = game_get_font(MENU_FONT_COLOR_STEEL);
@@ -92,7 +93,87 @@ local void do_entity_stat_information_panel(struct software_framebuffer* framebu
     }
 }
 local void do_entity_equipment_panel(struct software_framebuffer* framebuffer, f32 x, f32 y, struct entity* entity) {
+    local string info_labels[] = {
+        string_literal("HEAD:"),
+        string_literal("CHST:"),
+        string_literal("HNDS:"),
+        string_literal("LEGS:"),
+
+        string_literal("OTHR:"),
+        string_literal("OTHR:"),
+    };
+
+    f32 largest_label_width = 0;
+
+    struct font_cache* label_name_font   = game_get_font(MENU_FONT_COLOR_GOLD);
+    struct font_cache* value_font        = game_get_font(MENU_FONT_COLOR_STEEL);
+    struct font_cache* select_value_font = game_get_font(MENU_FONT_COLOR_ORANGE);
+
+    f32 font_scale = 2;
+    f32 font_height = font_cache_text_height(label_name_font) * font_scale;
+
     draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, v2f32(x,y), 5*2, 6*2, UI_DEFAULT_COLOR);
+    {
+        for (s32 index = 0; index < array_count(info_labels); ++index) {
+            f32 current_width = font_cache_text_width(label_name_font, info_labels[index], font_scale);
+            if (current_width > largest_label_width) largest_label_width = current_width;
+        }
+    }
+
+    {
+        s32 index = 0;
+        f32 y_cursor = y+15;
+
+        for (; index < array_count(info_labels)-2; ++index) {
+            f32 offset_indent = 15;
+            software_framebuffer_draw_text(framebuffer, label_name_font, font_scale, v2f32(x+offset_indent, y_cursor), info_labels[index], color32f32_WHITE, BLEND_MODE_ALPHA);
+            {
+                item_id slot = entity->equip_slots[index];
+                struct item_def* item = item_database_find_by_id(slot);
+                struct font_cache* painting_font = value_font;
+                if (index == equipment_screen_state.equip_slot_selection) {
+                    painting_font = select_value_font;
+                }
+                if (!item) {
+                    software_framebuffer_draw_text(framebuffer, painting_font, font_scale, v2f32(x+offset_indent+largest_label_width, y_cursor), string_literal("------"), color32f32_WHITE, BLEND_MODE_ALPHA);
+                } else {
+                    software_framebuffer_draw_text(framebuffer, painting_font, font_scale, v2f32(x+offset_indent+largest_label_width, y_cursor), item->name, color32f32_WHITE, BLEND_MODE_ALPHA);
+                }
+            }
+            y_cursor += font_height;
+        }
+        y_cursor += font_height;
+        for (; index < array_count(info_labels); ++index) {
+            f32 offset_indent = 15;
+            software_framebuffer_draw_text(framebuffer, label_name_font, font_scale, v2f32(x+offset_indent, y_cursor), info_labels[index], color32f32_WHITE, BLEND_MODE_ALPHA);
+            {
+                item_id slot = entity->equip_slots[index];
+                struct item_def* item = item_database_find_by_id(slot);
+                struct font_cache* painting_font = value_font;
+                if (index == equipment_screen_state.equip_slot_selection) {
+                    painting_font = select_value_font;
+                }
+                if (!item) {
+                    software_framebuffer_draw_text(framebuffer, painting_font, font_scale, v2f32(x+offset_indent+largest_label_width, y_cursor), string_literal("------"), color32f32_WHITE, BLEND_MODE_ALPHA);
+                } else {
+                    software_framebuffer_draw_text(framebuffer, painting_font, font_scale, v2f32(x+offset_indent+largest_label_width, y_cursor), item->name, color32f32_WHITE, BLEND_MODE_ALPHA);
+                }
+            }
+            y_cursor += font_height;
+        }
+    }
+
+    if (is_key_down_with_repeat(KEY_DOWN)) {
+        equipment_screen_state.equip_slot_selection += 1;
+        if (equipment_screen_state.equip_slot_selection >= array_count(info_labels)) {
+            equipment_screen_state.equip_slot_selection = 0;
+        }
+    } else if (is_key_down_with_repeat(KEY_UP)) {
+        equipment_screen_state.equip_slot_selection -= 1;
+        if (equipment_screen_state.equip_slot_selection < 0) {
+            equipment_screen_state.equip_slot_selection = array_count(info_labels)-1;
+        }
+    }
 }
 local void do_entity_select_equipment_panel(struct software_framebuffer* framebuffer, f32 x, f32 y, struct entity* entity) {
     draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, v2f32(x,y), 18*2, 5*2, UI_DEFAULT_COLOR);

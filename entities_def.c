@@ -177,6 +177,18 @@ struct entity {
 
     struct entity_actor_inventory inventory;
 
+    union {
+        struct {
+            item_id head;
+            item_id chest;
+            item_id hands;
+            item_id legs;
+            item_id accessory1;
+            item_id accessory2;
+        };
+        item_id equip_slots[6];
+    };
+
     s32_range                     health;
     s32_range                     magic;
     struct entity_stat_block      stat_block;
