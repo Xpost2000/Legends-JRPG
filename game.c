@@ -809,6 +809,9 @@ bool game_state_set_ui_state(struct game_state* state, u32 new_ui_state) {
 #include "entity.c"
 
 void game_postprocess_blur(struct software_framebuffer* framebuffer, s32 quality_scale, f32 t, u32 blend_mode) {
+#ifdef NO_POSTPROCESSING
+    return;
+#endif
     f32 box_blur[] = {
         1,1,1,
         1,1,1,
@@ -823,6 +826,9 @@ void game_postprocess_blur(struct software_framebuffer* framebuffer, s32 quality
     software_framebuffer_draw_image_ex(framebuffer, (struct image_buffer*)&blur_buffer, RECTANGLE_F32_NULL, RECTANGLE_F32_NULL, color32f32(1,1,1,1), NO_FLAGS, blend_mode);
 }
 void game_postprocess_blur_ingame(struct software_framebuffer* framebuffer, s32 quality_scale, f32 t, u32 blend_mode) {
+#ifdef NO_POSTPROCESSING
+    return;
+#endif
     f32 box_blur[] = {
         1,1.5,1,
         1.5,1,1.5,
@@ -837,6 +843,9 @@ void game_postprocess_blur_ingame(struct software_framebuffer* framebuffer, s32 
 
 /* TODO: I want to add a shader argument into draw_image_ex... It might be too slow though... */
 void game_postprocess_grayscale(struct software_framebuffer* framebuffer, f32 t) {
+#ifdef NO_POSTPROCESSING
+    return;
+#endif
     for (s32 y_cursor = 0; y_cursor < framebuffer->height; ++y_cursor) {
         for (s32 x_cursor = 0; x_cursor < framebuffer->width; ++x_cursor) {
             u8 r = framebuffer->pixels[y_cursor * framebuffer->width * 4 + x_cursor * 4 + 0];

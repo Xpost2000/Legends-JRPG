@@ -436,6 +436,7 @@ void entity_inventory_remove_item(struct entity_inventory* inventory, s32 item_i
     item->count -= 1;
 
     if (item->count <= 0 || remove_all) {
+        item->count = 0;
         inventory->items[item_index] = inventory->items[--inventory->count];
     }
 }
@@ -470,12 +471,14 @@ void entity_inventory_equip_item(struct entity_inventory* inventory, s32 limits,
     struct item_instance* item_to_equip = inventory->items + item_index;
     struct item_def*      item_base     = item_database_find_by_id(item_to_equip->item);
 
+    _debugprintf("equipping: %.*s", item_base->name.length, item_base->name.data);
+
     if (item_base->type == ITEM_TYPE_WEAPON || item_base->type == ITEM_TYPE_EQUIPMENT) {
-        entity_inventory_remove_item(inventory, item_index, false);
 
         item_id* equip_slot = target->equip_slots + equipment_index;
         entity_inventory_unequip_item(inventory, limits, equipment_index, target);
         *equip_slot = item_to_equip->item;
+        entity_inventory_remove_item(inventory, item_index, false);
     }
 }
 

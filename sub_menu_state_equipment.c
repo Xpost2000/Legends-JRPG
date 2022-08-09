@@ -1,4 +1,5 @@
 /* TODO: Equipment animation! */
+/* TODO: better UI state handling, since we don't consume events properly. */
 #define EQUIPMENT_SCREEN_SPIN_TIMER_LENGTH (0.2)
 
 struct {
@@ -20,6 +21,12 @@ struct {
     s16  inventory_filtered_size;
     s16  inventory_item_slice[MAX_PARTY_ITEMS];
     s16  inventory_item_scroll_y;
+
+    /* As I lack a real UI system I don't consume events in an automated way so I'll just do it here. */
+    /* easier to do this and less code anyhow. */
+    /* of course this should be placed into the game state itself so we can event cancel in more locations */
+    bool cancel_pressed;
+    bool confirm_pressed;
 } equipment_screen_state;
 
 /* render the entity but spinning their directional animations */
@@ -126,6 +133,18 @@ local void do_entity_stat_information_panel(struct software_framebuffer* framebu
         }
     }
 }
+
+local s32 filter_mask_slot_table_map[] = {
+    EQUIPMENT_SLOT_FLAG_HEAD,
+    EQUIPMENT_SLOT_FLAG_BODY,
+    EQUIPMENT_SLOT_FLAG_HANDS,
+    EQUIPMENT_SLOT_FLAG_LEGS,
+
+    EQUIPMENT_SLOT_FLAG_MISC,
+    EQUIPMENT_SLOT_FLAG_MISC,
+
+    EQUIPMENT_SLOT_FLAG_WEAPON,
+};
 local void do_entity_equipment_panel(struct software_framebuffer* framebuffer, f32 x, f32 y, struct entity* entity) {
     local string info_labels[] = {
         string_literal("HEAD:"),
@@ -137,18 +156,6 @@ local void do_entity_equipment_panel(struct software_framebuffer* framebuffer, f
         string_literal("OTHR:"),
 
         string_literal("WPN:"),
-    };
-
-    s32 filter_mask_slot_table_map[] = {
-        EQUIPMENT_SLOT_FLAG_HEAD,
-        EQUIPMENT_SLOT_FLAG_BODY,
-        EQUIPMENT_SLOT_FLAG_HANDS,
-        EQUIPMENT_SLOT_FLAG_LEGS,
-
-        EQUIPMENT_SLOT_FLAG_MISC,
-        EQUIPMENT_SLOT_FLAG_MISC,
-
-        EQUIPMENT_SLOT_FLAG_WEAPON,
     };
 
     f32 largest_label_width = 0;
@@ -255,10 +262,16 @@ local void do_entity_equipment_panel(struct software_framebuffer* framebuffer, f
             equipment_screen_build_new_filtered_item_list(filter_mask_slot_table_map[equipment_screen_state.equip_slot_selection]);
         }
 
-        if (is_key_pressed(KEY_RETURN)) {
-            equipment_screen_state.inventory_pick_mode = true;    
-        } else if (is_key_pressed(KEY_BACKSPACE)) {
+        if (equipment_screen_state.confirm_pressed) {
+            if (equipment_screen_state.inventory_filtered_size > 0) {
+                equipment_screen_state.inventory_pick_mode = true;    
+                equipment_screen_state.confirm_pressed = false;
+            }
+        } else if (equipment_screen_state.cancel_pressed) {
             entity_inventory_unequip_item((struct entity_inventory*)&game_state->inventory, MAX_PARTY_ITEMS, equipment_screen_state.equip_slot_selection, entity);
+            equipment_screen_state.cancel_pressed = false;
+
+            equipment_screen_build_new_filtered_item_list(filter_mask_slot_table_map[equipment_screen_state.equip_slot_selection]);
         }
 
         if (is_key_pressed(KEY_ESCAPE)) {
@@ -274,6 +287,8 @@ local void do_entity_equipment_panel(struct software_framebuffer* framebuffer, f
 /* TODO: draw icons */
 /* TODO: scrolling behavior! I simply don't have enough items to trigger any bugs right now so I don't know! */
 local void do_entity_select_equipment_panel(struct software_framebuffer* framebuffer, f32 x, f32 y, struct entity* entity) {
+    if (equipment_screen_state.inventory_filtered_size == 0) return;
+
     union color32f32 ui_color  = UI_DEFAULT_COLOR;
     union color32f32 mod_color = color32f32_WHITE;
 
@@ -328,11 +343,16 @@ local void do_entity_select_equipment_panel(struct software_framebuffer* framebu
             }
         }
 
-        if (is_key_pressed(KEY_ESCAPE)) {
+        if (equipment_screen_state.cancel_pressed) {
             equipment_screen_state.inventory_pick_mode = false;
-        } else if (is_key_pressed(KEY_RETURN)) {
-            entity_inventory_equip_item((struct entity_inventory*)&game_state->inventory, MAX_PARTY_ITEMS, equipment_screen_state.inventory_item_slice[equipment_screen_state.inventory_slot_selection], equipment_screen_state.equip_slot_selection, entity);
+            equipment_screen_state.cancel_pressed = false;
+        } else if (equipment_screen_state.confirm_pressed) {
+            entity_inventory_equip_item((struct entity_inventory*)&game_state->inventory, MAX_PARTY_ITEMS,
+                                        equipment_screen_state.inventory_item_slice[equipment_screen_state.inventory_slot_selection],
+                                        equipment_screen_state.equip_slot_selection, entity);
             equipment_screen_state.inventory_pick_mode = false;
+            equipment_screen_build_new_filtered_item_list(filter_mask_slot_table_map[equipment_screen_state.equip_slot_selection]);
+            equipment_screen_state.confirm_pressed = false;
         }
     }
 }
@@ -351,9 +371,12 @@ local void update_and_render_character_equipment_screen(struct game_state* state
                                            color32f32_WHITE, NO_FLAGS, BLEND_MODE_ALPHA);
     }
 
+    equipment_screen_state.cancel_pressed  = is_key_pressed(KEY_BACKSPACE);
+    equipment_screen_state.confirm_pressed = is_key_pressed(KEY_RETURN);
+
     do_entity_stat_information_panel(framebuffer, framebuffer->width - TILE_UNIT_SIZE*13, 30, target_entity);
-    do_entity_equipment_panel(framebuffer, framebuffer->width - TILE_UNIT_SIZE*6, 30, target_entity);
     do_entity_select_equipment_panel(framebuffer, framebuffer->width-TILE_UNIT_SIZE*6, framebuffer->height-TILE_UNIT_SIZE*6, target_entity);
+    do_entity_equipment_panel(framebuffer, framebuffer->width - TILE_UNIT_SIZE*6, 30, target_entity);
 
     equipment_screen_state.spin_timer += dt;
 
