@@ -25,13 +25,14 @@ struct {
 /* render the entity but spinning their directional animations */
 
 local void open_equipment_screen(entity_id target_id) {
-    equipment_screen_state.inventory_filtered_size  = 0;
-    equipment_screen_state.inventory_item_scroll_y  = 0;
     equipment_screen_state.inventory_slot_selection = 0;
+    equipment_screen_state.equip_slot_selection = 0;
     equipment_screen_state.focus_entity = target_id;
 }
 
 local void equipment_screen_build_new_filtered_item_list(s32 filter_mask) {
+    equipment_screen_state.inventory_filtered_size  = 0;
+    equipment_screen_state.inventory_item_scroll_y  = 0;
     for (s32 index = 0; index < game_state->inventory.item_count; ++index) {
         struct item_instance* instance = game_state->inventory.items + index;
         item_id item_handle = instance->item;
@@ -40,9 +41,9 @@ local void equipment_screen_build_new_filtered_item_list(s32 filter_mask) {
         _debugprintf("item checkings");
 
         if (item->type == ITEM_TYPE_EQUIPMENT || item->type == ITEM_TYPE_WEAPON) {
-            _debugprintf("okay, this passed the basic filter");
+            _debugprintf("okay, this (%.*s) passed the basic filter", item->name.length, item->name.data);
             if (item->equipment_slot_flags == filter_mask) {
-                _debugprintf("new item");
+                _debugprintf("new item %.*s", item->name.length, item->name.data);
                 equipment_screen_state.inventory_item_slice[equipment_screen_state.inventory_filtered_size++] = index;
             }
         }
@@ -138,6 +139,18 @@ local void do_entity_equipment_panel(struct software_framebuffer* framebuffer, f
         string_literal("WPN:"),
     };
 
+    s32 filter_mask_slot_table_map[] = {
+        EQUIPMENT_SLOT_FLAG_HEAD,
+        EQUIPMENT_SLOT_FLAG_BODY,
+        EQUIPMENT_SLOT_FLAG_HANDS,
+        EQUIPMENT_SLOT_FLAG_LEGS,
+
+        EQUIPMENT_SLOT_FLAG_MISC,
+        EQUIPMENT_SLOT_FLAG_MISC,
+
+        EQUIPMENT_SLOT_FLAG_WEAPON,
+    };
+
     f32 largest_label_width = 0;
 
     struct font_cache* label_name_font   = game_get_font(MENU_FONT_COLOR_GOLD);
@@ -159,7 +172,7 @@ local void do_entity_equipment_panel(struct software_framebuffer* framebuffer, f
         s32 index = 0;
         f32 y_cursor = y+15;
 
-        for (; index < array_count(info_labels)-2; ++index) {
+        for (; index < array_count(info_labels)-3; ++index) {
             f32 offset_indent = 15;
             software_framebuffer_draw_text(framebuffer, label_name_font, font_scale, v2f32(x+offset_indent, y_cursor), info_labels[index], color32f32_WHITE, BLEND_MODE_ALPHA);
             {
@@ -217,6 +230,14 @@ local void do_entity_equipment_panel(struct software_framebuffer* framebuffer, f
         }
     }
 
+    {
+        static bool first_time_build_filter = false;
+        if (!first_time_build_filter) {
+            first_time_build_filter = true;
+            equipment_screen_build_new_filtered_item_list(filter_mask_slot_table_map[equipment_screen_state.equip_slot_selection]);
+        }
+    }
+
     if (!equipment_screen_state.inventory_pick_mode) {
         if (is_key_down_with_repeat(KEY_DOWN)) {
             equipment_screen_state.equip_slot_selection += 1;
@@ -224,38 +245,51 @@ local void do_entity_equipment_panel(struct software_framebuffer* framebuffer, f
                 equipment_screen_state.equip_slot_selection = 0;
             }
 
-            equipment_screen_build_new_filtered_item_list(equipment_screen_state.equip_slot_selection);
+            equipment_screen_build_new_filtered_item_list(filter_mask_slot_table_map[equipment_screen_state.equip_slot_selection]);
         } else if (is_key_down_with_repeat(KEY_UP)) {
             equipment_screen_state.equip_slot_selection -= 1;
             if (equipment_screen_state.equip_slot_selection < 0) {
                 equipment_screen_state.equip_slot_selection = array_count(info_labels)-1;
             }
 
-            equipment_screen_build_new_filtered_item_list(equipment_screen_state.equip_slot_selection);
+            equipment_screen_build_new_filtered_item_list(filter_mask_slot_table_map[equipment_screen_state.equip_slot_selection]);
         }
 
         if (is_key_pressed(KEY_RETURN)) {
             equipment_screen_state.inventory_pick_mode = true;    
+        } else if (is_key_pressed(KEY_BACKSPACE)) {
+            entity_inventory_unequip_item((struct entity_inventory*)&game_state->inventory, MAX_PARTY_ITEMS, equipment_screen_state.equip_slot_selection, entity);
+        }
+
+        if (is_key_pressed(KEY_ESCAPE)) {
+            struct ui_pause_menu* menu_state = &game_state->ui_pause;
+            menu_state->animation_state     = UI_PAUSE_MENU_TRANSITION_IN;
+            menu_state->last_sub_menu_state = menu_state->sub_menu_state;
+            menu_state->sub_menu_state      = UI_PAUSE_MENU_SUB_MENU_STATE_NONE;
+            menu_state->transition_t = 0;
         }
     }
 }
 
 /* TODO: draw icons */
+/* TODO: scrolling behavior! I simply don't have enough items to trigger any bugs right now so I don't know! */
 local void do_entity_select_equipment_panel(struct software_framebuffer* framebuffer, f32 x, f32 y, struct entity* entity) {
-    draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, v2f32(x,y), 5*2, 5*2, UI_DEFAULT_COLOR);
+    union color32f32 ui_color  = UI_DEFAULT_COLOR;
+    union color32f32 mod_color = color32f32_WHITE;
+
+    if (!equipment_screen_state.inventory_pick_mode) {
+        ui_color.a = 0.5;
+        mod_color.a = 0.5;
+    }
+
+    draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, v2f32(x,y), 5*2, 5*2, ui_color);
 
     s32 ITEMS_PER_PAGE = 4;
-    s32 pages_of_items = (equipment_screen_state.inventory_filtered_size / ITEMS_PER_PAGE)+1;
+    /* s32 pages_of_items = (equipment_screen_state.inventory_filtered_size / ITEMS_PER_PAGE)+1; */
 
-    s32 currently_scrolled_page = (pages_of_items)/(equipment_screen_state.inventory_item_scroll_y+1);
-    s32 lower_limit             = (currently_scrolled_page * ITEMS_PER_PAGE);
-    s32 upper_limit             = ((currently_scrolled_page+1) * ITEMS_PER_PAGE);
-
-    bool no_scrolling_down = false;
-    if (upper_limit >= equipment_screen_state.inventory_filtered_size) {
-        upper_limit       = equipment_screen_state.inventory_filtered_size;
-        no_scrolling_down = true;
-    }
+    /* s32 currently_scrolled_page = (pages_of_items)/(equipment_screen_state.inventory_item_scroll_y+1); */
+    s32 lower_limit             = equipment_screen_state.inventory_item_scroll_y;
+    s32 upper_limit             = equipment_screen_state.inventory_filtered_size;
 
     struct font_cache* value_font        = game_get_font(MENU_FONT_COLOR_STEEL);
     struct font_cache* select_value_font = game_get_font(MENU_FONT_COLOR_ORANGE);
@@ -264,18 +298,41 @@ local void do_entity_select_equipment_panel(struct software_framebuffer* framebu
 
     f32 y_cursor = y + 15;
 
-    _debugprintf("%d, %d", lower_limit, upper_limit);
     for (s32 index = lower_limit; index < upper_limit; ++index) {
-        struct item_instance* instance = game_state->inventory.items + index;
+        struct item_instance* instance = game_state->inventory.items + equipment_screen_state.inventory_item_slice[index];
         item_id item_handle = instance->item;
         struct item_def* item = item_database_find_by_id(item_handle);
+        
         if (item) {
             struct font_cache* painting_font = value_font;
             if (index == equipment_screen_state.inventory_slot_selection) {
                 painting_font = select_value_font;
-                software_framebuffer_draw_text(framebuffer, painting_font, font_scale, v2f32(x+15, y_cursor), item->name, color32f32_WHITE, BLEND_MODE_ALPHA);
+                software_framebuffer_draw_text(framebuffer, painting_font, font_scale, v2f32(x+15, y_cursor), string_from_cstring(format_temp("%.*s (x%d)", item->name.length, item->name.data, instance->count)), mod_color, BLEND_MODE_ALPHA);
                 y_cursor += font_height;
             }
+        }
+    }
+
+    if (equipment_screen_state.inventory_pick_mode) {
+        if (is_key_down_with_repeat(KEY_DOWN)) {
+            equipment_screen_state.inventory_slot_selection += 1;
+
+            if (equipment_screen_state.inventory_slot_selection >= equipment_screen_state.inventory_filtered_size) {
+                equipment_screen_state.inventory_slot_selection = 0;
+            }
+        } else if (is_key_down_with_repeat(KEY_UP)) {
+            equipment_screen_state.inventory_slot_selection -= 1;
+
+            if (equipment_screen_state.inventory_slot_selection < 0) {
+                equipment_screen_state.inventory_slot_selection = equipment_screen_state.inventory_filtered_size-1;
+            }
+        }
+
+        if (is_key_pressed(KEY_ESCAPE)) {
+            equipment_screen_state.inventory_pick_mode = false;
+        } else if (is_key_pressed(KEY_RETURN)) {
+            entity_inventory_equip_item((struct entity_inventory*)&game_state->inventory, MAX_PARTY_ITEMS, equipment_screen_state.inventory_item_slice[equipment_screen_state.inventory_slot_selection], equipment_screen_state.equip_slot_selection, entity);
+            equipment_screen_state.inventory_pick_mode = false;
         }
     }
 }

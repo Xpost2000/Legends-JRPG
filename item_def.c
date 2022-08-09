@@ -62,8 +62,7 @@ enum equipment_slot {
     EQUIPMENT_SLOT_FLAG_HANDS   = (2),
     EQUIPMENT_SLOT_FLAG_LEGS    = (3),
     EQUIPMENT_SLOT_FLAG_MISC    = (4), /* accessory equips (x2) */
-    EQUIPMENT_SLOT_FLAG_MISC1   = (4), /* accessory equips (x2) */
-    EQUIPMENT_SLOT_FLAG_WEAPON1  = (4), /* accessory equips (x2) */
+    EQUIPMENT_SLOT_FLAG_WEAPON  = (5), /* accessory equips (x2) */
 };
 
 local s32 global_item_icon_frame_counter = 0;

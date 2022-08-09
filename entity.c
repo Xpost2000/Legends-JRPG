@@ -465,16 +465,33 @@ void item_apply_to_entity(struct item_def* item, struct entity* target) {
     }
 }
 
+/* TODO: maybe inventories should know their own limits. */
+void entity_inventory_equip_item(struct entity_inventory* inventory, s32 limits, s32 item_index, s32 equipment_index, struct entity* target) {
+    struct item_instance* item_to_equip = inventory->items + item_index;
+    struct item_def*      item_base     = item_database_find_by_id(item_to_equip->item);
+
+    if (item_base->type == ITEM_TYPE_WEAPON || item_base->type == ITEM_TYPE_EQUIPMENT) {
+        entity_inventory_remove_item(inventory, item_index, false);
+
+        item_id* equip_slot = target->equip_slots + equipment_index;
+        entity_inventory_unequip_item(inventory, limits, equipment_index, target);
+        *equip_slot = item_to_equip->item;
+    }
+}
+
+void entity_inventory_unequip_item(struct entity_inventory* inventory, s32 limits, s32 equipment_index, struct entity* target) {
+    if (target->equip_slots[equipment_index].id_hash != 0) {
+        entity_inventory_add(inventory, limits, target->equip_slots[equipment_index]);
+        target->equip_slots[equipment_index] = (item_id) {};
+    }
+}
+
 void entity_inventory_use_item(struct entity_inventory* inventory, s32 item_index, struct entity* target) {
     struct item_instance* current_item = &inventory->items[item_index];
     struct item_def* item_base         = item_database_find_by_id(current_item->item);
 
     if (item_base->type == ITEM_TYPE_CONSUMABLE_ITEM) {
-        current_item->count -= 1;
-
-        if (current_item->count <= 0) {
-            inventory->items[item_index] = inventory->items[--inventory->count];
-        }
+        entity_inventory_remove_item(inventory, item_index, false);
     }
 
     /* or region? */
