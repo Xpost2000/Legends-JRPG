@@ -20,10 +20,9 @@
 (camera_follow 'player)
 
 (follow_path 'player
-    '(right right right down down))
+    '(down down right))
 
 (open_conversation "cutscene_test")
-
 (follow_path 'player '(right right))
 (open_conversation "cutscene_test_end")
 # The cutscene ends when all of this is over.

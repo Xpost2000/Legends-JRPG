@@ -42,9 +42,24 @@ struct entity_stat_block {
 };
 
 struct entity_stat_block_modifiers {
-    f32 hp;
-    f32 sp;
+    f32 health;
+    f32 spell_points;
     Entity_Stat_Block_Base(f32);
 };
+
+static struct entity_stat_block_modifiers entity_stat_block_modifiers_identity =
+    (struct entity_stat_block_modifiers)
+    {
+        .health                                                     = 1,
+        .spell_points                                               = 1,
+        .vigor                                                      = 1,
+        .strength                                                   = 1,
+        .constitution                                               = 1,
+        .willpower                                                  = 1,
+        .agility                                                    = 1,
+        .speed                                                      = 1,
+        .intelligence                                               = 1,
+        .luck                                                       = 1,
+    };
 
 #endif

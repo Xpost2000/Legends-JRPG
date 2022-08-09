@@ -1,11 +1,6 @@
 # Figure out a way to make conversations block execution.
 # Might need to change the evaluation method.
-(on-enter
-                (game_message_queue "Woah... Was it always this bright?")
-                (game_message_queue "Woah... Was it always this bright? 2")
-                (game_message_queue "Woah... Was it always this bright? 3")
-        (game_set_region_name "Darkwood Forest")        
-        (game_set_environment_colors 'night))
+(on-enter (game_set_environment_colors 'night))
 
 #  (on-touch (trigger 0)
 #               (if (equal (obj_activations '(trigger 0)) 1)

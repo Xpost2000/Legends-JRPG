@@ -477,10 +477,12 @@ void entity_inventory_use_item(struct entity_inventory* inventory, s32 item_inde
     struct item_instance* current_item = &inventory->items[item_index];
     struct item_def* item_base         = item_database_find_by_id(current_item->item);
 
-    current_item->count -= 1;
+    if (item_base->type == ITEM_TYPE_CONSUMABLE_ITEM) {
+        current_item->count -= 1;
 
-    if (current_item->count <= 0) {
-        inventory->items[item_index] = inventory->items[--inventory->count];
+        if (current_item->count <= 0) {
+            inventory->items[item_index] = inventory->items[--inventory->count];
+        }
     }
 
     /* or region? */
