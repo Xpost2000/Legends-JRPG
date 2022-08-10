@@ -78,11 +78,13 @@ static int _thread_job_executor(void* context) {
 
     while (global_game_running) {
         if (!SDL_SemWait(global_job_queue.notification)) {
+            if (!global_game_running)
+                _debugprintf("received kill semaphore");
             /* job hunting! */
             /* let's hunt */
             (SDL_LockMutex(global_job_queue.mutex)); {
                 while (!working_job && global_game_running) {
-                    for (s32 index = 0; index < MAX_JOBS; ++index) {
+                    for (s32 index = 0; index < MAX_JOBS && global_game_running; ++index) {
                         struct thread_job* current_job = &global_job_queue.jobs[index];
 
                         if (current_job->status == THREAD_JOB_STATUS_READY) {
@@ -94,12 +96,12 @@ static int _thread_job_executor(void* context) {
                 }
             } 
             SDL_UnlockMutex(global_job_queue.mutex);
+        }
 
-            if (working_job && working_job->job) {
-                working_job->job(working_job->data);
-                working_job->status = THREAD_JOB_STATUS_FINISHED;
-                working_job         = NULL;
-            }
+        if (working_job && working_job->job) {
+            working_job->job(working_job->data);
+            working_job->status = THREAD_JOB_STATUS_FINISHED;
+            working_job         = NULL;
         }
     }
 
@@ -129,11 +131,13 @@ void thread_pool_simulate_single_threaded(bool v) {
 void synchronize_and_finish_thread_pool(void) {
     _debugprintf("Trying to synchronize and finish the threads... Please");
     /* signal to quit the threads since we do a blocking wait */
-    SDL_SemPost(global_job_queue.notification);
-    thread_pool_synchronize_tasks();
 
+    _debugprintf("semaphore value: %d", SDL_SemValue(global_job_queue.notification));
     for (s32 thread_index = 0; thread_index < global_thread_count; ++thread_index) {
+        _debugprintf("posting semaphore, and hoping a thread dies");
+        SDL_SemPost(global_job_queue.notification);
         SDL_WaitThread(global_thread_pool[thread_index], NULL);
+        _debugprintf("moving on to next thread. (sem v %d)", SDL_SemValue(global_job_queue.notification));
     }
 
     for (s32 thread_index = 0; thread_index < global_thread_count; ++thread_index) {
