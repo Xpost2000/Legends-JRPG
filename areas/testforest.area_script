@@ -1,6 +1,9 @@
 # Figure out a way to make conversations block execution.
 # Might need to change the evaluation method.
 (on-enter
+	(game_disable_input)
+	(follow_path '(entity player) '(down down right right))
+	(game_enable_input)
         (wait 10)
         (game_set_environment_colors 'night)
         (wait (+ (random 5) 3))
