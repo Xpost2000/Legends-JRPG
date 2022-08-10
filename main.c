@@ -251,9 +251,11 @@ void initialize(void) {
 
     global_default_framebuffer  = software_framebuffer_create(&game_arena, SCREEN_WIDTH, SCREEN_HEIGHT);
     global_game_texture_surface = SDL_CreateTexture(global_game_sdl_renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STREAMING, global_default_framebuffer.width, global_default_framebuffer.height);
+    initialize_thread_pool();
 }
 
 void deinitialize(void) {
+    synchronize_and_finish_thread_pool();
     game_deinitialize();
 
     close_all_controllers();
@@ -302,7 +304,6 @@ void engine_main_loop(void* _) {
 
 int engine_main(int argc, char** argv) {
     initialize();
-    initialize_thread_pool();
 
     if (sandbox_testing())
         return 1;
@@ -315,7 +316,6 @@ int engine_main(int argc, char** argv) {
     }
 #endif
 
-    synchronize_and_finish_thread_pool();
     deinitialize();
     return 0;
 }

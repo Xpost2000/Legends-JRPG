@@ -75,6 +75,7 @@ static int _thread_job_executor(void* context) {
 #endif
 
     struct thread_job* working_job = 0;
+
     while (global_game_running) {
 #if 0
         _debugprintf("thread(%d) waits for a job", SDL_ThreadID());
@@ -82,11 +83,11 @@ static int _thread_job_executor(void* context) {
         if (!SDL_SemWait(global_job_queue.notification)) {
             /* job hunting! */
             /* let's hunt */
-            SDL_LockMutex(global_job_queue.mutex); {
+            (SDL_LockMutex(global_job_queue.mutex)); {
 #if 0
                 _debugprintf("thread(%d) begins locking", SDL_ThreadID());
 #endif
-                while (!working_job) {
+                while (!working_job && global_game_running) {
                     for (s32 index = 0; index < MAX_JOBS; ++index) {
                         struct thread_job* current_job = &global_job_queue.jobs[index];
 
@@ -104,24 +105,23 @@ static int _thread_job_executor(void* context) {
                 _debugprintf("thread (%d) found a job!", SDL_ThreadID());
                 _debugprintf("thread(%d) stops locking", SDL_ThreadID());
 #endif
-            } SDL_UnlockMutex(global_job_queue.mutex);
+            } 
+            SDL_UnlockMutex(global_job_queue.mutex);
 
             if (working_job && working_job->job) {
 #if 0
                 _debugprintf("thread (%d)(%p) doing job", SDL_ThreadID(), working_job->data);
 #endif
                 working_job->job(working_job->data);
+                working_job->status = THREAD_JOB_STATUS_FINISHED;
             }
 
-            working_job->status = THREAD_JOB_STATUS_FINISHED;
             working_job         = NULL;
-
         }
-        /* _debugprintf("thread(%d) restarts loop", SDL_ThreadID()); */
+    }
 
-        if (global_game_running == false) {
-            break;
-        }
+    if (!SDL_TryLockMutex(global_job_queue.mutex)) {
+        SDL_UnlockMutex(global_job_queue.mutex);
     }
 
     return 0;
@@ -148,6 +148,7 @@ void thread_pool_simulate_single_threaded(bool v) {
 void synchronize_and_finish_thread_pool(void) {
     /* signal to quit the threads since we do a blocking wait */
     SDL_SemPost(global_job_queue.notification);
+    thread_pool_synchronize_tasks();
 
     for (s32 thread_index = 0; thread_index < global_thread_count; ++thread_index) {
         SDL_WaitThread(global_thread_pool[thread_index], NULL);
