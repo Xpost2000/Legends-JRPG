@@ -831,6 +831,7 @@ void game_postprocess_blur_ingame(struct software_framebuffer* framebuffer, s32 
 #ifdef NO_POSTPROCESSING
     return;
 #endif
+
     f32 box_blur[] = {
         1,1.5,1,
         1.5,1,1.5,

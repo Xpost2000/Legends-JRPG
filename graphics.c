@@ -194,13 +194,13 @@ void software_framebuffer_draw_image_ex(struct software_framebuffer* framebuffer
 
 #ifndef USE_SIMD_OPTIMIZATIONS
 void software_framebuffer_draw_image_ex_clipped(struct software_framebuffer* framebuffer, struct image_buffer* image, struct rectangle_f32 destination, struct rectangle_f32 src, union color32f32 modulation, u32 flags, u8 blend_mode, struct rectangle_f32 clip_rect) {
-    if (!rectangle_f32_intersect(destination, clip_rect)) {
-        return;
-    }
-
     if ((destination.x == 0) && (destination.y == 0) && (destination.w == 0) && (destination.h == 0)) {
         destination.w = framebuffer->width;
         destination.h = framebuffer->height;
+    }
+
+    if (!rectangle_f32_intersect(destination, clip_rect)) {
+        return;
     }
 
     if ((src.x == 0) && (src.y == 0) && (src.w == 0) && (src.h == 0)) {
@@ -252,13 +252,13 @@ void software_framebuffer_draw_image_ex_clipped(struct software_framebuffer* fra
 }
 #else
 void software_framebuffer_draw_image_ex_clipped(struct software_framebuffer* framebuffer, struct image_buffer* image, struct rectangle_f32 destination, struct rectangle_f32 src, union color32f32 modulation, u32 flags, u8 blend_mode, struct rectangle_f32 clip_rect) {
-    if (!rectangle_f32_intersect(destination, clip_rect)) {
-        return;
+    if ((destination.x == 0) && (destination.y == 0) && (destination.w == 0) && (destination.h == 0)) {
+        destination.w = clip_rect.w;
+        destination.h = clip_rect.h;
     }
 
-    if ((destination.x == 0) && (destination.y == 0) && (destination.w == 0) && (destination.h == 0)) {
-        destination.w = framebuffer->width;
-        destination.h = framebuffer->height;
+    if (!rectangle_f32_intersect(destination, clip_rect)) {
+        return;
     }
 
     if ((src.x == 0) && (src.y == 0) && (src.w == 0) && (src.h == 0)) {
@@ -639,48 +639,8 @@ struct render_commands_job_details {
 };
 
 void software_framebuffer_render_commands_tiled(struct software_framebuffer* framebuffer, struct render_commands* commands, struct rectangle_f32 clip_rect) {
-    f32 half_screen_width  = framebuffer->width/2;
-    f32 half_screen_height = framebuffer->height/2;
-
     for (unsigned index = 0; index < commands->command_count; ++index) {
         struct render_command* command = &commands->commands[index];
-
-        {
-            command->start.x       *= commands->camera.zoom;
-            command->start.y       *= commands->camera.zoom;
-            command->end.x         *= commands->camera.zoom;
-            command->end.y         *= commands->camera.zoom;
-            command->destination.x *= commands->camera.zoom;
-            command->destination.y *= commands->camera.zoom;
-            command->destination.w *= commands->camera.zoom;
-            command->destination.h *= commands->camera.zoom;
-            command->xy.x          *= commands->camera.zoom;
-            command->xy.y          *= commands->camera.zoom;
-            command->scale         *= commands->camera.zoom;
-        }
-
-        if (commands->camera.centered) {
-            command->start.x       += half_screen_width;
-            command->start.y       += half_screen_height;
-            command->end.x         += half_screen_width;
-            command->end.y         += half_screen_height;
-            command->destination.x += half_screen_width;
-            command->destination.y += half_screen_height;
-            command->xy.x          += half_screen_width;
-            command->xy.y          += half_screen_height;
-        }
-
-        {
-            command->start.x       -= commands->camera.xy.x;
-            command->start.y       -= commands->camera.xy.y;
-            command->end.x         -= commands->camera.xy.x;
-            command->end.y         -= commands->camera.xy.y;
-            command->destination.x -= commands->camera.xy.x;
-            command->destination.y -= commands->camera.xy.y;
-            command->xy.x          -= commands->camera.xy.x;
-            command->xy.y          -= commands->camera.xy.y;
-        }
-
 
         switch (command->type) {
             case RENDER_COMMAND_DRAW_QUAD: {
@@ -735,7 +695,6 @@ s32 thread_software_framebuffer_render_commands_tiles(void* context) {
     software_framebuffer_render_commands_tiled(job_details->framebuffer,
                                                job_details->commands,
                                                job_details->clip_rect);
-
     return 0;
 }
 
@@ -746,11 +705,55 @@ void software_framebuffer_render_commands(struct software_framebuffer* framebuff
 
     sort_render_commands(commands);
 
+    f32 half_screen_width  = framebuffer->width/2;
+    f32 half_screen_height = framebuffer->height/2;
+
+    /* move all things into clip space */
+    for (unsigned index = 0; index < commands->command_count; ++index) {
+        struct render_command* command = &commands->commands[index];
+
+        {
+            command->start.x       *= commands->camera.zoom;
+            command->start.y       *= commands->camera.zoom;
+            command->end.x         *= commands->camera.zoom;
+            command->end.y         *= commands->camera.zoom;
+            command->destination.x *= commands->camera.zoom;
+            command->destination.y *= commands->camera.zoom;
+            command->destination.w *= commands->camera.zoom;
+            command->destination.h *= commands->camera.zoom;
+            command->xy.x          *= commands->camera.zoom;
+            command->xy.y          *= commands->camera.zoom;
+            command->scale         *= commands->camera.zoom;
+        }
+
+        if (commands->camera.centered) {
+            command->start.x       += half_screen_width;
+            command->start.y       += half_screen_height;
+            command->end.x         += half_screen_width;
+            command->end.y         += half_screen_height;
+            command->destination.x += half_screen_width;
+            command->destination.y += half_screen_height;
+            command->xy.x          += half_screen_width;
+            command->xy.y          += half_screen_height;
+        }
+
+        {
+            command->start.x       -= commands->camera.xy.x;
+            command->start.y       -= commands->camera.xy.y;
+            command->end.x         -= commands->camera.xy.x;
+            command->end.y         -= commands->camera.xy.y;
+            command->destination.x -= commands->camera.xy.x;
+            command->destination.y -= commands->camera.xy.y;
+            command->xy.x          -= commands->camera.xy.x;
+            command->xy.y          -= commands->camera.xy.y;
+        }
+    }
+
 #ifndef MULTITHREADED_EXPERIMENTAL
     software_framebuffer_render_commands_tiled(framebuffer, commands, rectangle_f32(0,0,framebuffer->width,framebuffer->height));
 #else
-    s32 JOB_W  = 16;
-    s32 JOB_H  = 16;
+    s32 JOB_W  = 4;
+    s32 JOB_H  = 4;
     s32 TILE_W = framebuffer->width / JOB_W;
     s32 TILE_H = framebuffer->height / JOB_H;
 

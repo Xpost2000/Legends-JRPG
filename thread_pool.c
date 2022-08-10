@@ -114,14 +114,14 @@ static int _thread_job_executor(void* context) {
 
 void initialize_thread_pool(void) {
     s32 cpu_count = SDL_GetCPUCount();
-    global_thread_count = cpu_count;
+    global_thread_count = cpu_count * 2;
     _debugprintf("%d cpus reported.", cpu_count);
 
     global_job_queue.notification = SDL_CreateSemaphore(0);
     global_job_queue.mutex        = SDL_CreateMutex();
 
-    if (cpu_count > MAX_POSSIBLE_THREADS) cpu_count = MAX_POSSIBLE_THREADS;
-    for (s32 index = 0; index < cpu_count; ++index) {
+    if (global_thread_count > MAX_POSSIBLE_THREADS) global_thread_count = MAX_POSSIBLE_THREADS;
+    for (s32 index = 0; index < global_thread_count; ++index) {
         global_thread_pool_arenas[index] = memory_arena_create_from_heap("thread pool", Kilobyte(256));
         global_thread_pool[index]        = SDL_CreateThread(_thread_job_executor, format_temp("slave%d", index), &global_thread_pool_arenas[index]);
     }

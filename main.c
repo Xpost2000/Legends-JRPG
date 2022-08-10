@@ -4,7 +4,7 @@
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #else
-#define USE_SIMD_OPTIMIZATIONS
+/* #define USE_SIMD_OPTIMIZATIONS */
 #endif
 
 #include <SDL2/SDL.h>
