@@ -55,7 +55,7 @@ void thread_pool_add_job(job_queue_function job, void* data) {
 
 void thread_pool_synchronize_tasks() {
     bool done = false;
-    while (!done) {
+    while (!done && global_game_running) {
         done = true;
 
         for (s32 index = 0; index < MAX_JOBS; ++index) {
@@ -76,13 +76,16 @@ static int _thread_job_executor(void* context) {
 
     struct thread_job* working_job = 0;
 
-    while (global_game_running) {
+    for (;;) {
         if (!SDL_SemWait(global_job_queue.notification)) {
-            if (!global_game_running)
-                _debugprintf("received kill semaphore");
+            if (!global_game_running) {
+                break;
+            }
+
             /* job hunting! */
             /* let's hunt */
-            (SDL_LockMutex(global_job_queue.mutex)); {
+            SDL_LockMutex(global_job_queue.mutex);
+            {
                 while (!working_job && global_game_running) {
                     for (s32 index = 0; index < MAX_JOBS && global_game_running; ++index) {
                         struct thread_job* current_job = &global_job_queue.jobs[index];
@@ -94,7 +97,7 @@ static int _thread_job_executor(void* context) {
                         }
                     }
                 }
-            } 
+            }
             SDL_UnlockMutex(global_job_queue.mutex);
         }
 
@@ -132,12 +135,26 @@ void synchronize_and_finish_thread_pool(void) {
     _debugprintf("Trying to synchronize and finish the threads... Please");
     /* signal to quit the threads since we do a blocking wait */
 
-    _debugprintf("semaphore value: %d", SDL_SemValue(global_job_queue.notification));
+    _debugprintf("semaphore value: %d (have to kill %d threads)", SDL_SemValue(global_job_queue.notification), global_thread_count);
+    /* 
+       notify the semaphore up to the amount of threads,
+       
+       semaphore is accessed, and should atomically decrement and the thread should quit.
+
+       I have no idea why I have to separate the waiting honestly. Seems to deadlock in that
+       case.
+       
+       Considering I only have one mutex and one semaphore I'm surprised I can cause a deadlock with
+       a situation that simple...
+    */
     for (s32 thread_index = 0; thread_index < global_thread_count; ++thread_index) {
         _debugprintf("posting semaphore, and hoping a thread dies");
         SDL_SemPost(global_job_queue.notification);
+    }
+
+    for (s32 thread_index = 0; thread_index < global_thread_count; ++thread_index) {
+        _debugprintf("waiting on thread");
         SDL_WaitThread(global_thread_pool[thread_index], NULL);
-        _debugprintf("moving on to next thread. (sem v %d)", SDL_SemValue(global_job_queue.notification));
     }
 
     for (s32 thread_index = 0; thread_index < global_thread_count; ++thread_index) {
