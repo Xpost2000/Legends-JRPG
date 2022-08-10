@@ -124,6 +124,32 @@ GAME_LISP_FUNCTION(OBJ_ACTIVATIONS) {
 
     return LISP_nil;
 }
+GAME_LISP_FUNCTION(random) {
+    /* expect an object handle. Not checking right now */
+    if (argument_count == 1) {
+        if (arguments[0].type == LISP_FORM_NUMBER) {
+            if (arguments[0].is_real) {
+                f32 arg = 1.0f;
+
+                lisp_form_get_f32(arguments[0], &arg);
+                f32 return_value = random_float(&state->rng) * arg;
+
+                return lisp_form_real(return_value);
+            } else {
+                s32 arg = 0;
+
+                lisp_form_get_s32(arguments[0], &arg);
+                s32 return_value = random_ranged_integer(&state->rng, 0, arg);
+
+                return lisp_form_integer(return_value);
+            }
+        } else {
+            return LISP_nil;
+        }
+    }
+
+    return LISP_nil;
+}
 GAME_LISP_FUNCTION(DLG_NEXT) {
     _debugprintf("NOT IMPLEMENTED YET!");
     return LISP_nil;
