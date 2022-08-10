@@ -828,22 +828,6 @@ struct postprocess_job_details {
     struct rectangle_f32         clip_rect;
 };
 
-void game_postprocess_blur(struct software_framebuffer* framebuffer, s32 quality_scale, f32 t, u32 blend_mode) {
-#ifdef NO_POSTPROCESSING
-    return;
-#endif
-    f32 box_blur[] = {
-        1,1,1,
-        1,1,1,
-        1,1,1,
-    };
-
-    struct software_framebuffer blur_buffer = software_framebuffer_create(&scratch_arena, framebuffer->width/quality_scale, framebuffer->height/quality_scale);
-    software_framebuffer_copy_into(&blur_buffer, framebuffer);
-    software_framebuffer_kernel_convolution_ex(&scratch_arena, framebuffer, box_blur, 3, 3, 12, t, 2);
-    software_framebuffer_draw_image_ex(framebuffer, (struct image_buffer*)&blur_buffer, RECTANGLE_F32_NULL, RECTANGLE_F32_NULL, color32f32(1,1,1,1), NO_FLAGS, blend_mode);
-}
-
 s32 thread_job_postprocess(void* job) {
     struct postprocess_job_details* details = job;
     software_framebuffer_kernel_convolution_ex_bounded(*details->shared->unaltered_framebuffer_copy,
@@ -858,20 +842,20 @@ s32 thread_job_postprocess(void* job) {
     return 0;
 }
 
-void game_postprocess_blur_ingame(struct software_framebuffer* framebuffer, s32 quality_scale, f32 t, u32 blend_mode) {
+void game_postprocess_blur(struct software_framebuffer* framebuffer, s32 quality_scale, f32 t, u32 blend_mode) {
 #ifdef NO_POSTPROCESSING
     return;
 #endif
     f32 box_blur[] = {
-        1,1.5,1,
-        1.5,1,1.5,
-        1,1.5,1,
+        1,1,1,
+        1,1,1,
+        1,1,1,
     };
 
-    /* output buffer */
-    struct software_framebuffer blur_buffer      = software_framebuffer_create(&scratch_arena, framebuffer->width/quality_scale, framebuffer->height/quality_scale);
+    struct software_framebuffer blur_buffer = software_framebuffer_create(&scratch_arena, framebuffer->width/quality_scale, framebuffer->height/quality_scale);
+    software_framebuffer_copy_into(&blur_buffer, framebuffer);
+#if 1
     struct software_framebuffer unaltered_buffer = software_framebuffer_create(&scratch_arena, framebuffer->width/quality_scale, framebuffer->height/quality_scale);
-    software_framebuffer_copy_into(&blur_buffer,       framebuffer);
     software_framebuffer_copy_into(&unaltered_buffer, &blur_buffer);
 
     /* We don't handle un-even divisions, which is kind of bad. This is mostly a "proof of concept" */
@@ -910,8 +894,70 @@ void game_postprocess_blur_ingame(struct software_framebuffer* framebuffer, s32 
     }
 
     thread_pool_synchronize_tasks();
+#else
+    software_framebuffer_kernel_convolution_ex(&scratch_arena, framebuffer, box_blur, 3, 3, 12, t, 2);
+#endif
     software_framebuffer_draw_image_ex(framebuffer, (struct image_buffer*)&blur_buffer, RECTANGLE_F32_NULL, RECTANGLE_F32_NULL, color32f32(1,1,1,1), NO_FLAGS, blend_mode);
-    /* software_framebuffer_kernel_convolution_ex(&scratch_arena, &blur_buffer, box_blur, 3, 3, 10, t, 1); */
+}
+
+
+void game_postprocess_blur_ingame(struct software_framebuffer* framebuffer, s32 quality_scale, f32 t, u32 blend_mode) {
+#ifdef NO_POSTPROCESSING
+    return;
+#endif
+    f32 box_blur[] = {
+        1,1.5,1,
+        1.5,1,1.5,
+        1,1.5,1,
+    };
+
+    /* output buffer */
+    struct software_framebuffer blur_buffer      = software_framebuffer_create(&scratch_arena, framebuffer->width/quality_scale, framebuffer->height/quality_scale);
+    software_framebuffer_copy_into(&blur_buffer,       framebuffer);
+#if 1
+    struct software_framebuffer unaltered_buffer = software_framebuffer_create(&scratch_arena, framebuffer->width/quality_scale, framebuffer->height/quality_scale);
+    software_framebuffer_copy_into(&unaltered_buffer, &blur_buffer);
+
+    /* We don't handle un-even divisions, which is kind of bad. This is mostly a "proof of concept" */
+    s32 JOBS_W = 10;
+    s32 JOBS_H = 10;
+    s32 CLIP_W = (framebuffer->width/quality_scale)/JOBS_W;
+    s32 CLIP_H = (framebuffer->height/quality_scale)/JOBS_H;
+
+    struct postprocess_job_shared shared_buffer =  (struct postprocess_job_shared) {
+        .kernel                     = box_blur,
+        .kernel_width               = 3,
+        .kernel_height              = 3,
+        .unaltered_framebuffer_copy = &unaltered_buffer,
+        .framebuffer                = &blur_buffer,
+        .blend_t                    = t,
+        .divisor                    = 12,
+        .passes                     = 1,
+        .blend_mode                 = blend_mode,
+    };
+
+    struct postprocess_job_details* job_buffers = memory_arena_push(&scratch_arena, sizeof(*job_buffers) * (JOBS_W*JOBS_H));
+
+    for (s32 y = 0; y < JOBS_H; ++y) {
+        for (s32 x = 0; x < JOBS_W; ++x) {
+            struct rectangle_f32            clip_rect      = (struct rectangle_f32){x * CLIP_W, y * CLIP_H, CLIP_W, CLIP_H};
+            struct postprocess_job_details* current_buffer = &job_buffers[y*JOBS_W+x];
+
+            /* should share this and only store the clip rectangle once this works */
+            {
+                current_buffer->shared                     = &shared_buffer;
+                current_buffer->clip_rect                  = clip_rect;
+            }
+
+            thread_pool_add_job(thread_job_postprocess, current_buffer);
+        }
+    }
+
+    thread_pool_synchronize_tasks();
+#else
+    software_framebuffer_kernel_convolution_ex(&scratch_arena, &blur_buffer, box_blur, 3, 3, 10, t, 1);
+#endif
+    software_framebuffer_draw_image_ex(framebuffer, (struct image_buffer*)&blur_buffer, RECTANGLE_F32_NULL, RECTANGLE_F32_NULL, color32f32(1,1,1,1), NO_FLAGS, blend_mode);
 }
 
 /* TODO: I want to add a shader argument into draw_image_ex... It might be too slow though... */

@@ -185,8 +185,12 @@ void software_framebuffer_draw_quad(struct software_framebuffer* framebuffer, st
     }
 }
 
-#ifndef USE_SIMD_OPTIMIZATIONS
 void software_framebuffer_draw_image_ex(struct software_framebuffer* framebuffer, struct image_buffer* image, struct rectangle_f32 destination, struct rectangle_f32 src, union color32f32 modulation, u32 flags, u8 blend_mode) {
+    software_framebuffer_draw_image_ex_clipped(framebuffer, image, destination, src, modulation, flags, blend_mode, rectangle_f32(0,0,framebuffer->width,framebuffer->height));
+}
+
+#ifndef USE_SIMD_OPTIMIZATIONS
+void software_framebuffer_draw_image_ex_clipped(struct software_framebuffer* framebuffer, struct image_buffer* image, struct rectangle_f32 destination, struct rectangle_f32 src, union color32f32 modulation, u32 flags, u8 blend_mode, struct rectangle_f32 clip_rect) {
     if ((destination.x == 0) && (destination.y == 0) && (destination.w == 0) && (destination.h == 0)) {
         destination.w = framebuffer->width;
         destination.h = framebuffer->height;
@@ -200,10 +204,10 @@ void software_framebuffer_draw_image_ex(struct software_framebuffer* framebuffer
     f32 scale_ratio_w = (f32)src.w  / destination.w;
     f32 scale_ratio_h = (f32)src.h  / destination.h;
 
-    s32 start_x = clamp_s32((s32)destination.x, 0, framebuffer->width);
-    s32 start_y = clamp_s32((s32)destination.y, 0, framebuffer->height);
-    s32 end_x   = clamp_s32((s32)(destination.x + destination.w), 0, framebuffer->width);
-    s32 end_y   = clamp_s32((s32)(destination.y + destination.h), 0, framebuffer->height);
+    s32 start_x = clamp_s32((s32)destination.x, clip_rect.x, clip_rect.w);
+    s32 start_y = clamp_s32((s32)destination.y, clip_rect.y, clip_rect.h);
+    s32 end_x   = clamp_s32((s32)(destination.x + destination.w), clip_rect.x, clip_rect.w);
+    s32 end_y   = clamp_s32((s32)(destination.y + destination.h), clip_rect.y, clip_rect.h);
 
     s32 unclamped_end_x = (s32)(destination.x + destination.w);
     s32 unclamped_end_y = (s32)(destination.y + destination.h);
@@ -240,7 +244,7 @@ void software_framebuffer_draw_image_ex(struct software_framebuffer* framebuffer
     }
 }
 #else
-void software_framebuffer_draw_image_ex(struct software_framebuffer* framebuffer, struct image_buffer* image, struct rectangle_f32 destination, struct rectangle_f32 src, union color32f32 modulation, u32 flags, u8 blend_mode) {
+void software_framebuffer_draw_image_ex_clipped(struct software_framebuffer* framebuffer, struct image_buffer* image, struct rectangle_f32 destination, struct rectangle_f32 src, union color32f32 modulation, u32 flags, u8 blend_mode, struct rectangle_f32 clip_rect) {
     if ((destination.x == 0) && (destination.y == 0) && (destination.w == 0) && (destination.h == 0)) {
         destination.w = framebuffer->width;
         destination.h = framebuffer->height;
@@ -254,10 +258,10 @@ void software_framebuffer_draw_image_ex(struct software_framebuffer* framebuffer
     f32 scale_ratio_w = (f32)src.w / destination.w;
     f32 scale_ratio_h = (f32)src.h / destination.h;
 
-    s32 start_x = clamp_s32((s32)destination.x, 0, framebuffer->width);
-    s32 start_y = clamp_s32((s32)destination.y, 0, framebuffer->height);
-    s32 end_x   = clamp_s32((s32)(destination.x + destination.w), 0, framebuffer->width);
-    s32 end_y   = clamp_s32((s32)(destination.y + destination.h), 0, framebuffer->height);
+    s32 start_x = clamp_s32((s32)destination.x, clip_rect.x, clip_rect.w);
+    s32 start_y = clamp_s32((s32)destination.y, clip_rect.y, clip_rect.h);
+    s32 end_x   = clamp_s32((s32)(destination.x + destination.w), clip_rect.x, clip_rect.w);
+    s32 end_y   = clamp_s32((s32)(destination.y + destination.h), clip_rect.y, clip_rect.h);
 
     s32 unclamped_end_x = (s32)(destination.x + destination.w);
     s32 unclamped_end_y = (s32)(destination.y + destination.h);
