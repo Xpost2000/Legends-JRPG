@@ -8,7 +8,8 @@
 #include "game_script_def.c"
 #include "storyboard_presentation_def.c"
 
-struct game_state*   game_state = 0;
+struct game_state* game_state         = 0;
+local bool         disable_game_input = false;
 
 static struct memory_arena game_arena   = {};
 /* compile out */

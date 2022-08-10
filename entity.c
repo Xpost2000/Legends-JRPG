@@ -85,6 +85,10 @@ void entity_handle_player_controlled(struct game_state* state, struct entity_lis
 
     /* all the input blockers. */
     {
+        if (disable_game_input) {
+            return;
+        }
+
         if (global_popup_state.message_count > 0) {
             return;
         }

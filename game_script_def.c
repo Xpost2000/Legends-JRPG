@@ -16,7 +16,11 @@
 
 struct game_script_typed_ptr {
     s32   type;
-    void* ptr;
+    union {
+        void* ptr;
+        /* entities cannot be references with a generic pointer technically */
+        entity_id entity_id;
+    };
 };
 
 bool game_script_object_handle_matches_object(struct lisp_form object_handle, s32 type, s32 id);

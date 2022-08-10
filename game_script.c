@@ -83,6 +83,16 @@ struct game_script_execution_state {
 
     struct {
         s32 timer_id;
+
+        /* 
+           while I should theoretically be waiting for an entity
+           to do the action I request, we're only waiting until an
+           entity is no longer doing an action.
+           
+           I'll remedy this with a cutscene_setup proc which cancels
+           all current actions for entities.
+        */
+        entity_id entity_id;
     } awaiters;
 
     struct lisp_form body;
@@ -98,6 +108,8 @@ struct game_script_script_instance {
 };
 
 local struct game_script_script_instance* running_scripts;
+/* HACK: for reference with certain functions that behave differently when not in an eval environment. */
+local s32                                 running_script_index = -1;
 
 struct game_script_script_instance* new_script_instance(void) {
     for (s32 free_index = 0; free_index < MAX_GAME_SCRIPT_RUNNING_SCRIPTS; ++free_index) {
@@ -131,6 +143,7 @@ void game_script_instance_push_stackframe(struct game_script_script_instance* sc
     assertion(script_state->execution_stack_depth < GAME_SCRIPT_EXECUTION_STATE_STACK_SIZE && "game_script stackoverflow!");
     script_state->stackframe[script_state->execution_stack_depth].current_form_index = 0;
     script_state->stackframe[script_state->execution_stack_depth].awaiters.timer_id  = -1;
+    script_state->stackframe[script_state->execution_stack_depth].awaiters.entity_id = -1;
     script_state->stackframe[script_state->execution_stack_depth++].body             = f;
 }
 
@@ -143,6 +156,37 @@ void game_script_enqueue_form_to_execute(struct lisp_form f) {
 /* considering this is so patternized, is it worth writing a mini metaprogramming thing that just automates this? Who knows */
 
 #define GAME_LISP_FUNCTION(name) struct lisp_form name ## __script_proc (struct memory_arena* arena, struct game_state* state, struct lisp_form* arguments, s32 argument_count)
+
+/*
+  (follow_path GSO_HANDLE PathForm)
+  
+  PathForm -> '(left/down/up/right ...)
+  PathForm -> '(start-x start-y) '(end-x end-y)
+ */
+GAME_LISP_FUNCTION(FOLLOW_PATH) {
+    game_script_typed_ptr ptr = game_script_object_handle_decode(arguments[0]);
+    assertion(ptr.type == GAME_SCRIPT_TARGET_ENTITY && "Whoops! Don't know how to make non-entities follow paths!");
+
+    if (argument_count < 2) {
+        return LISP_nil;
+    }
+
+    if (argument_count == 2) {
+        /* manually provided path form */
+    } else if (argument_count == 3) {
+        /* pathfind form */
+    }
+
+    entity_combat_submit_movement_action();
+
+    if (running_script_index != -1) {
+        struct game_script_script_instance* script_instance    = running_scripts + running_script_index;
+        struct game_script_execution_state* current_stackframe = script_instance->stackframe + (script_instance->execution_stack_depth-1);
+        current_stackframe->awaiters.entity_id = ptr.entity_id;
+    }
+
+    return LISP_nil;
+}
 
 GAME_LISP_FUNCTION(OBJ_ACTIVATIONS) {
     /* expect an object handle. Not checking right now */
@@ -309,6 +353,7 @@ static struct game_script_function_builtin script_function_table[] = {
     GAME_LISP_FUNCTION(GAME_START_RAIN),
     GAME_LISP_FUNCTION(GAME_STOP_RAIN),
     GAME_LISP_FUNCTION(GAME_START_SNOW),
+    GAME_LISP_FUNCTION(FOLLOW_PATH),
     GAME_LISP_FUNCTION(GAME_STOP_SNOW),
     GAME_LISP_FUNCTION(GAME_IS_WEATHER),
     GAME_LISP_FUNCTION(GAME_SET_ENVIRONMENT_COLORS),
@@ -765,10 +810,6 @@ struct game_script_typed_ptr game_script_object_handle_decode(struct lisp_form o
     s32 type_id = 0;
     s32 real_id = 0;
 
-    if (!lisp_form_get_s32(*id_form, &real_id)) {
-        /* TODO: needs better erroring */
-        return result;
-    }
 
     for (s32 index = 0; index < array_count(entity_game_script_target_type_name); ++index) {
         if (lisp_form_symbol_matching(*type_discriminator_form, entity_game_script_target_type_name[index])) {
@@ -783,13 +824,25 @@ struct game_script_typed_ptr game_script_object_handle_decode(struct lisp_form o
         struct level_area* area = &game_state->loaded_area;
         switch (type_id) {
             case GAME_SCRIPT_TARGET_TRIGGER: {
+                if (!lisp_form_get_s32(*id_form, &real_id)) {
+                    return result;
+                }
                 result.ptr = area->script_triggers + real_id;
             } break;
             case GAME_SCRIPT_TARGET_ENTITY: {
-                result.ptr = game_state->entities.entities + real_id;
+                if (lisp_form_symbol_matching(*id_form, "player")) {
+                    result.entity_id = player_id;
+                } else if (lisp_form_get_s32(*id_form, &real_id)) {
+                    result.entity_id = entity_list_get_id(&game_state->entities, real_id);
+                }
+                return result;
             } break;
             case GAME_SCRIPT_TARGET_CHEST: {
+                if (!lisp_form_get_s32(*id_form, &real_id)) {
+                    return result;
+                }
                 result.ptr = area->chests + real_id;
+                return result;
             } break;
         }
     }
@@ -800,6 +853,7 @@ struct game_script_typed_ptr game_script_object_handle_decode(struct lisp_form o
 /* This assumes form_to_wait_on has already begun it's action. */
 bool game_script_waiting_on_form(struct game_script_script_instance* script_state, struct lisp_form* form_to_wait_on) {
     /* always a list */
+    struct game_script_execution_state* current_stackframe = script_state->stackframe + (script_state->execution_stack_depth-1);
 
     struct lisp_form* first = lisp_list_nth(form_to_wait_on, 0);
 
@@ -818,8 +872,6 @@ bool game_script_waiting_on_form(struct game_script_script_instance* script_stat
         } else if (lisp_form_symbol_matching(*first, string_literal("progn"))) {
             return game_script_waiting_on_form(script_state, lisp_list_nth(form_to_wait_on, -1));
         } else if (lisp_form_symbol_matching(*first, string_literal("wait"))) {
-            struct game_script_execution_state* current_stackframe = script_state->stackframe + (script_state->execution_stack_depth-1);
-
             if (current_stackframe->awaiters.timer_id != -1) {
                 if (game_script_is_timer_done(current_stackframe->awaiters.timer_id)) {
                     game_script_finish_timer(current_stackframe->awaiters.timer_id);
@@ -830,6 +882,18 @@ bool game_script_waiting_on_form(struct game_script_script_instance* script_stat
             }
 
             return true;
+        }
+
+        if (lisp_form_symbol_matching(*first, string_literal("follow_path"))) {
+            struct entity* waiting_ent = entity_list_dereference_entity(&game_state->entities, current_stackframe->awaiters.entity_id);
+
+            if (waiting_ent) {
+                if (waiting_ent->ai.current_action == ENTITY_ACTION_NONE) {
+                    return true;
+                } else {
+                    return false;
+                }
+            }
         }
 
         if (lisp_form_symbol_matching(*first, string_literal("game_message_queue"))) {
@@ -852,8 +916,11 @@ bool game_script_waiting_on_form(struct game_script_script_instance* script_stat
   TODO: does not handle multiple script enqueues yet... (is this even needed? Hope not.)
 */
 void game_script_execute_awaiting_scripts(struct memory_arena* arena, struct game_state* state, f32 dt) {
+    running_script_index = -1;
+
     for (s32 script_instance_index = 0; script_instance_index < MAX_GAME_SCRIPT_RUNNING_SCRIPTS; ++script_instance_index) {
         struct game_script_script_instance* script_instance = running_scripts + script_instance_index;
+        running_script_index = script_instance_index;
 
         if (!script_instance->active)
             continue;
