@@ -169,11 +169,11 @@ void software_framebuffer_clear_buffer(struct software_framebuffer* framebuffer,
         }                                                               \
     } while(0)
 
-void software_framebuffer_draw_quad(struct software_framebuffer* framebuffer, struct rectangle_f32 destination, union color32u8 rgba, u8 blend_mode) {
-    s32 start_x = clamp_s32((s32)destination.x, 0, framebuffer->width);
-    s32 start_y = clamp_s32((s32)destination.y, 0, framebuffer->height);
-    s32 end_x   = clamp_s32((s32)(destination.x + destination.w), 0, framebuffer->width);
-    s32 end_y   = clamp_s32((s32)(destination.y + destination.h), 0, framebuffer->height);
+void software_framebuffer_draw_quad_clipped(struct software_framebuffer* framebuffer, struct rectangle_f32 destination, union color32u8 rgba, u8 blend_mode, struct rectangle_f32 clip_rect) {
+    s32 start_x = clamp_s32((s32)destination.x, clip_rect.x, clip_rect.x+clip_rect.w);
+    s32 start_y = clamp_s32((s32)destination.y, clip_rect.y, clip_rect.y+clip_rect.h);
+    s32 end_x   = clamp_s32((s32)(destination.x + destination.w), clip_rect.x, clip_rect.x+clip_rect.w);
+    s32 end_y   = clamp_s32((s32)(destination.y + destination.h), clip_rect.y, clip_rect.y+clip_rect.h);
 
     u32* framebuffer_pixels_as_32 = (u32*)framebuffer->pixels;
     unused(framebuffer_pixels_as_32);
@@ -183,6 +183,9 @@ void software_framebuffer_draw_quad(struct software_framebuffer* framebuffer, st
             _BlendPixel_Scalar(framebuffer, x_cursor, y_cursor, rgba, blend_mode);
         }
     }
+}
+void software_framebuffer_draw_quad(struct software_framebuffer* framebuffer, struct rectangle_f32 destination, union color32u8 rgba, u8 blend_mode) {
+    software_framebuffer_draw_quad_clipped(framebuffer, destination, rgba, blend_mode, rectangle_f32(0, 0, framebuffer->width, framebuffer->height));
 }
 
 void software_framebuffer_draw_image_ex(struct software_framebuffer* framebuffer, struct image_buffer* image, struct rectangle_f32 destination, struct rectangle_f32 src, union color32f32 modulation, u32 flags, u8 blend_mode) {
@@ -204,10 +207,10 @@ void software_framebuffer_draw_image_ex_clipped(struct software_framebuffer* fra
     f32 scale_ratio_w = (f32)src.w  / destination.w;
     f32 scale_ratio_h = (f32)src.h  / destination.h;
 
-    s32 start_x = clamp_s32((s32)destination.x, clip_rect.x, clip_rect.w);
-    s32 start_y = clamp_s32((s32)destination.y, clip_rect.y, clip_rect.h);
-    s32 end_x   = clamp_s32((s32)(destination.x + destination.w), clip_rect.x, clip_rect.w);
-    s32 end_y   = clamp_s32((s32)(destination.y + destination.h), clip_rect.y, clip_rect.h);
+    s32 start_x = clamp_s32((s32)destination.x, clip_rect.x, clip_rect.x+clip_rect.w);
+    s32 start_y = clamp_s32((s32)destination.y, clip_rect.y, clip_rect.y+clip_rect.h);
+    s32 end_x   = clamp_s32((s32)(destination.x + destination.w), clip_rect.x, clip_rect.x+clip_rect.w);
+    s32 end_y   = clamp_s32((s32)(destination.y + destination.h), clip_rect.y, clip_rect.y+clip_rect.h);
 
     s32 unclamped_end_x = (s32)(destination.x + destination.w);
     s32 unclamped_end_y = (s32)(destination.y + destination.h);
@@ -258,10 +261,10 @@ void software_framebuffer_draw_image_ex_clipped(struct software_framebuffer* fra
     f32 scale_ratio_w = (f32)src.w / destination.w;
     f32 scale_ratio_h = (f32)src.h / destination.h;
 
-    s32 start_x = clamp_s32((s32)destination.x, clip_rect.x, clip_rect.w);
-    s32 start_y = clamp_s32((s32)destination.y, clip_rect.y, clip_rect.h);
-    s32 end_x   = clamp_s32((s32)(destination.x + destination.w), clip_rect.x, clip_rect.w);
-    s32 end_y   = clamp_s32((s32)(destination.y + destination.h), clip_rect.y, clip_rect.h);
+    s32 start_x = clamp_s32((s32)destination.x, clip_rect.x, clip_rect.x+clip_rect.w);
+    s32 start_y = clamp_s32((s32)destination.y, clip_rect.y, clip_rect.y+clip_rect.h);
+    s32 end_x   = clamp_s32((s32)(destination.x + destination.w), clip_rect.x, clip_rect.x+clip_rect.w);
+    s32 end_y   = clamp_s32((s32)(destination.y + destination.h), clip_rect.y, clip_rect.y+clip_rect.h);
 
     s32 unclamped_end_x = (s32)(destination.x + destination.w);
     s32 unclamped_end_y = (s32)(destination.y + destination.h);
@@ -395,7 +398,7 @@ void software_framebuffer_draw_image_ex_clipped(struct software_framebuffer* fra
 #endif
 
 
-void software_framebuffer_draw_line(struct software_framebuffer* framebuffer, v2f32 start, v2f32 end, union color32u8 rgba, u8 blend_mode) {
+void software_framebuffer_draw_line_clipped(struct software_framebuffer* framebuffer, v2f32 start, v2f32 end, union color32u8 rgba, u8 blend_mode, struct rectangle_f32 clip_rect) {
     u32 stride = framebuffer->width;
 
     if (start.y == end.y) {
@@ -404,8 +407,8 @@ void software_framebuffer_draw_line(struct software_framebuffer* framebuffer, v2
         }
 
         for (s32 x_cursor = start.x; x_cursor < end.x; x_cursor++) {
-            if (x_cursor < framebuffer->width && x_cursor >= 0 &&
-                start.y  < framebuffer->height && start.y >= 0) {
+            if (x_cursor < clip_rect.w+clip_rect.x && x_cursor >= clip_rect.x &&
+                start.y  < clip_rect.h+clip_rect.y && start.y >= clip_rect.y) {
                 _BlendPixel_Scalar(framebuffer, x_cursor, (s32)floor(start.y), rgba, blend_mode);
             }
         }
@@ -415,8 +418,8 @@ void software_framebuffer_draw_line(struct software_framebuffer* framebuffer, v2
         }
         
         for (s32 y_cursor = start.y; y_cursor < end.y; y_cursor++) {
-            if (start.x < framebuffer->width && start.x >= 0 &&
-                y_cursor  < framebuffer->height && y_cursor >= 0) {
+            if (start.x < clip_rect.x+clip_rect.w && start.x    >= clip_rect.x &&
+                y_cursor  < clip_rect.y+clip_rect.h && y_cursor >= clip_rect.y) {
                 _BlendPixel_Scalar(framebuffer, (s32)floor(start.x), y_cursor, rgba, blend_mode);
             }
         }
@@ -441,8 +444,8 @@ void software_framebuffer_draw_line(struct software_framebuffer* framebuffer, v2
         float alpha = rgba.a / 255.0f;
 
         for (;;) {
-            if (x1 < framebuffer->width   && x1 >= 0 &&
-                y1  < framebuffer->height && y1 >= 0) {
+            if (x1 < clip_rect.x+clip_rect.w   && x1 >= clip_rect.x &&
+                y1  < clip_rect.y+clip_rect.h && y1 >= clip_rect.y) {
                 _BlendPixel_Scalar(framebuffer, x1, y1, rgba, blend_mode);
             }
 
@@ -466,9 +469,35 @@ void software_framebuffer_draw_line(struct software_framebuffer* framebuffer, v2
         }
     }
 }
+void software_framebuffer_draw_line(struct software_framebuffer* framebuffer, v2f32 start, v2f32 end, union color32u8 rgba, u8 blend_mode) {
+    software_framebuffer_draw_line_clipped(framebuffer, start, end, rgba, blend_mode, rectangle_f32(0, 0, framebuffer->width, framebuffer->height));
+}
+
+local void software_framebuffer_draw_glyph_clipped(struct software_framebuffer* framebuffer, struct font_cache* font, float scale, v2f32 xy, s32 character, union color32f32 modulation, u8 blend_mode, struct rectangle_f32 clip_rect) {
+    f32 x_cursor = xy.x;
+    f32 y_cursor = xy.y;
+
+    software_framebuffer_draw_image_ex_clipped(
+        framebuffer, (struct image_buffer*)font,
+        rectangle_f32(
+            x_cursor, y_cursor,
+            font->tile_width  * scale,
+            font->tile_height * scale
+        ),
+        rectangle_f32(
+            (character % font->atlas_cols) * font->tile_width,
+            (character / font->atlas_cols) * font->tile_height,
+            font->tile_width, font->tile_height
+        ),
+        modulation,
+        NO_FLAGS,
+        blend_mode,
+        clip_rect
+    );
+}
 
 /* we do not have a draw glyph */
-void software_framebuffer_draw_text(struct software_framebuffer* framebuffer, struct font_cache* font, float scale, v2f32 xy, string text, union color32f32 modulation, u8 blend_mode) {
+void software_framebuffer_draw_text_clipped(struct software_framebuffer* framebuffer, struct font_cache* font, float scale, v2f32 xy, string text, union color32f32 modulation, u8 blend_mode, struct rectangle_f32 clip_rect) {
     f32 x_cursor = xy.x;
     f32 y_cursor = xy.y;
 
@@ -479,28 +508,17 @@ void software_framebuffer_draw_text(struct software_framebuffer* framebuffer, st
         } else {
             s32 character_index = text.data[index] - 32;
 
-            software_framebuffer_draw_image_ex(
-                framebuffer, (struct image_buffer*)font,
-                rectangle_f32(
-                    x_cursor, y_cursor,
-                    font->tile_width * scale,
-                    font->tile_height * scale
-                ),
-                rectangle_f32(
-                    (character_index % font->atlas_cols) * font->tile_width,
-                    (character_index / font->atlas_cols) * font->tile_height,
-                    font->tile_width, font->tile_height
-                ),
-                modulation,
-                NO_FLAGS,
-                blend_mode
-            );
-
+            software_framebuffer_draw_glyph_clipped(framebuffer, font, scale, v2f32(x_cursor, y_cursor), character_index, modulation, blend_mode, clip_rect);
             x_cursor += font->tile_width * scale;
         }
     }
 }
 
+void software_framebuffer_draw_text(struct software_framebuffer* framebuffer, struct font_cache* font, float scale, v2f32 xy, string text, union color32f32 modulation, u8 blend_mode)  {
+    software_framebuffer_draw_text_clipped(framebuffer, font, scale, xy, text, modulation, blend_mode, rectangle_f32(0, 0, framebuffer->width, framebuffer->height));
+}
+
+/* TODO: provide clipped versions */
 void software_framebuffer_draw_text_bounds(struct software_framebuffer* framebuffer, struct font_cache* font, f32 scale, v2f32 xy, f32 bounds_w, string text, union color32f32 modulation, u8 blend_mode) {
     f32 x_cursor = xy.x;
     f32 y_cursor = xy.y;
@@ -512,23 +530,7 @@ void software_framebuffer_draw_text_bounds(struct software_framebuffer* framebuf
         } else {
             s32 character_index = text.data[index] - 32;
 
-            software_framebuffer_draw_image_ex(
-                framebuffer, (struct image_buffer*)font,
-                rectangle_f32(
-                    x_cursor, y_cursor,
-                    font->tile_width * scale,
-                    font->tile_height * scale
-                ),
-                rectangle_f32(
-                    (character_index % font->atlas_cols) * font->tile_width,
-                    (character_index / font->atlas_cols) * font->tile_height,
-                    font->tile_width, font->tile_height
-                ),
-                modulation,
-                NO_FLAGS,
-                blend_mode
-            );
-
+            software_framebuffer_draw_glyph_clipped(framebuffer, font, scale, v2f32(x_cursor, y_cursor), character_index, modulation, blend_mode, rectangle_f32(0,0, framebuffer->width, framebuffer->height));
             x_cursor += font->tile_width * scale;
 
             if (x_cursor >= xy.x+bounds_w) {
@@ -547,41 +549,7 @@ void software_framebuffer_draw_text_bounds_centered(struct software_framebuffer*
     centered_starting_position.x = bounds.x + (bounds.w/2) - (text_width/2);
     centered_starting_position.y = bounds.y + (bounds.h/2) - (text_height/2);
 
-    f32 x_cursor = centered_starting_position.x;
-    f32 y_cursor = centered_starting_position.y;
-
-    for (unsigned index = 0; index < text.length; ++index) {
-        if (text.data[index] == '\n') {
-            y_cursor += font->tile_height * scale;
-            x_cursor = centered_starting_position.x;
-        } else {
-            s32 character_index = text.data[index] - 32;
-
-            software_framebuffer_draw_image_ex(
-                framebuffer, (struct image_buffer*)font,
-                rectangle_f32(
-                    x_cursor, y_cursor,
-                    font->tile_width * scale,
-                    font->tile_height * scale
-                ),
-                rectangle_f32(
-                    (character_index % font->atlas_cols) * font->tile_width,
-                    (character_index / font->atlas_cols) * font->tile_height,
-                    font->tile_width, font->tile_height
-                ),
-                modulation,
-                NO_FLAGS,
-                blend_mode
-            );
-
-            x_cursor += font->tile_width * scale;
-
-            if (x_cursor >= bounds.x+bounds.w) {
-                x_cursor = centered_starting_position.x;
-                y_cursor += font->tile_height * scale;
-            }
-        }
-    }
+    software_framebuffer_draw_text_bounds(framebuffer, font, scale, centered_starting_position, bounds.w, text, modulation, blend_mode);
 }
 
 void software_framebuffer_copy_into(struct software_framebuffer* target, struct software_framebuffer* source) {
@@ -656,13 +624,7 @@ void sort_render_commands(struct render_commands* commands) {
    
 Time to parallelize.
 */
-void software_framebuffer_render_commands(struct software_framebuffer* framebuffer, struct render_commands* commands) {
-    if (commands->should_clear_buffer) {
-        software_framebuffer_clear_buffer(framebuffer, commands->clear_buffer_color);
-    }
-
-    sort_render_commands(commands);
-
+void software_framebuffer_render_commands_tiled(struct software_framebuffer* framebuffer, struct render_commands* commands, struct rectangle_f32 clip_rect) {
     f32 half_screen_width  = framebuffer->width/2;
     f32 half_screen_height = framebuffer->height/2;
 
@@ -748,6 +710,19 @@ void software_framebuffer_render_commands(struct software_framebuffer* framebuff
             } break;
         }
     }
+}
+
+void software_framebuffer_render_commands(struct software_framebuffer* framebuffer, struct render_commands* commands) {
+    if (commands->should_clear_buffer) {
+        software_framebuffer_clear_buffer(framebuffer, commands->clear_buffer_color);
+    }
+
+    sort_render_commands(commands);
+
+#ifndef MULTITHREADED_EXPERIMENTAL
+    software_framebuffer_render_commands_tiled(framebuffer, commands, rectangle_f32(0,0,framebuffer->width,framebuffer->height));
+#else
+#endif
 }
 
 /* requires an arena because we need an original copy of our framebuffer. */
