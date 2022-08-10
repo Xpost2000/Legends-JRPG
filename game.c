@@ -845,22 +845,22 @@ void game_postprocess_blur_ingame(struct software_framebuffer* framebuffer, s32 
     software_framebuffer_draw_image_ex(framebuffer, (struct image_buffer*)&blur_buffer, RECTANGLE_F32_NULL, RECTANGLE_F32_NULL, color32f32(1,1,1,1), NO_FLAGS, blend_mode);
 }
 
-/* TODO: I want to add a shader argument into draw_image_ex... It might be too slow though... */
+void grayscale_shader(struct software_framebuffer* framebuffer, s32 pixel_x, s32 pixel_y, void* context) {
+    f32 t = *(float*)context;
+    u8 r = framebuffer->pixels[pixel_y * framebuffer->width * 4 + pixel_x * 4 + 0];
+    u8 g = framebuffer->pixels[pixel_y * framebuffer->width * 4 + pixel_x * 4 + 1];
+    u8 b = framebuffer->pixels[pixel_y * framebuffer->width * 4 + pixel_x * 4 + 2];
+    f32 average = (r + g + b) / 3.0f;
+    framebuffer->pixels[pixel_y * framebuffer->width * 4 + pixel_x * 4 + 0] = framebuffer->pixels[pixel_y * framebuffer->width * 4 + pixel_x * 4 + 0] * (1 - t) + average * t;
+    framebuffer->pixels[pixel_y * framebuffer->width * 4 + pixel_x * 4 + 1] = framebuffer->pixels[pixel_y * framebuffer->width * 4 + pixel_x * 4 + 1] * (1 - t) + average * t;
+    framebuffer->pixels[pixel_y * framebuffer->width * 4 + pixel_x * 4 + 2] = framebuffer->pixels[pixel_y * framebuffer->width * 4 + pixel_x * 4 + 2] * (1 - t) + average * t;
+}
+
 void game_postprocess_grayscale(struct software_framebuffer* framebuffer, f32 t) {
 #ifdef NO_POSTPROCESSING
     return;
 #endif
-    for (s32 y_cursor = 0; y_cursor < framebuffer->height; ++y_cursor) {
-        for (s32 x_cursor = 0; x_cursor < framebuffer->width; ++x_cursor) {
-            u8 r = framebuffer->pixels[y_cursor * framebuffer->width * 4 + x_cursor * 4 + 0];
-            u8 g = framebuffer->pixels[y_cursor * framebuffer->width * 4 + x_cursor * 4 + 1];
-            u8 b = framebuffer->pixels[y_cursor * framebuffer->width * 4 + x_cursor * 4 + 2];
-            f32 average = (r + g + b) / 3.0f;
-            framebuffer->pixels[y_cursor * framebuffer->width * 4 + x_cursor * 4 + 0] = framebuffer->pixels[y_cursor * framebuffer->width * 4 + x_cursor * 4 + 0] * (1 - t) + average * t;
-            framebuffer->pixels[y_cursor * framebuffer->width * 4 + x_cursor * 4 + 1] = framebuffer->pixels[y_cursor * framebuffer->width * 4 + x_cursor * 4 + 1] * (1 - t) + average * t;
-            framebuffer->pixels[y_cursor * framebuffer->width * 4 + x_cursor * 4 + 2] = framebuffer->pixels[y_cursor * framebuffer->width * 4 + x_cursor * 4 + 2] * (1 - t) + average * t;
-        }
-    }
+    software_framebuffer_run_shader(framebuffer, rectangle_f32(0, 0, framebuffer->width, framebuffer->height), grayscale_shader, (void*)&t);
 }
 
 local void draw_ui_breathing_text_centered(struct software_framebuffer* framebuffer, struct rectangle_f32 bounds, struct font_cache* font, f32 scale, string text, s32 seed_displacement, union color32f32 modulation) {

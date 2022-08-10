@@ -165,6 +165,9 @@ void software_framebuffer_draw_line(struct software_framebuffer* framebuffer, v2
 
 void software_framebuffer_kernel_convolution_ex(struct memory_arena* arena, struct software_framebuffer* framebuffer, f32* kernel, s16 width, s16 height, f32 divisor, f32 blend_t, s32 passes);
 
+typedef void (*shader_fn)(struct software_framebuffer* framebuffer, s32 pixel_x, s32 pixel_y, void* context);
+void software_framebuffer_run_shader(struct software_framebuffer* framebuffer, struct rectangle_f32 src_rect, shader_fn shader, void* context);
+
 /*
   This is intended for threading work, and kernel convolution samples from the neighbors which
   requires the entire unaltered image. I don't have enough stack space to copy the framebuffer every single time

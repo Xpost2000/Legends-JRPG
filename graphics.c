@@ -826,8 +826,8 @@ void software_framebuffer_kernel_convolution_ex(struct memory_arena* arena, stru
     software_framebuffer_copy_into(&unaltered_buffer, framebuffer);
 
     /* We don't handle un-even divisions, which is kind of bad. This is mostly a "proof of concept" */
-    s32 JOBS_W = 16;
-    s32 JOBS_H = 16;
+    s32 JOBS_W = 4;
+    s32 JOBS_H = 4;
     s32 CLIP_W = (framebuffer->width)/JOBS_W;
     s32 CLIP_H = (framebuffer->height)/JOBS_H;
 
@@ -901,6 +901,69 @@ void software_framebuffer_kernel_convolution_ex_bounded(struct software_framebuf
             }
         }
     }
+}
+
+struct run_shader_job_details_shared {
+    struct software_framebuffer* framebuffer;
+    shader_fn shader;
+    void* context;
+};
+
+struct run_shader_job_details {
+    struct run_shader_job_details_shared* shared;
+    struct rectangle_f32 src_rect;
+};
+
+s32 thread_software_framebuffer_run_shader(void* context) {
+    struct run_shader_job_details* job_details = context;
+    struct rectangle_f32 src_rect = job_details->src_rect;
+
+    for (s32 y = src_rect.y; y < src_rect.y+src_rect.h; ++y) {
+        for (s32 x = src_rect.x; x < src_rect.x+src_rect.w; ++x) {
+            job_details->shared->shader(job_details->shared->framebuffer, x, y, job_details->shared->context);
+        }
+    }
+
+    return 0;
+}
+
+void software_framebuffer_run_shader(struct software_framebuffer* framebuffer, struct rectangle_f32 src_rect, shader_fn shader, void* context) {
+#ifndef MULTITHREADED_EXPERIMENTAL
+    for (s32 y = src_rect.y; y < src_rect.y+src_rect.h; ++y) {
+        for (s32 x = src_rect.x; x < src_rect.x+src_rect.w; ++x) {
+            shader(framebuffer, x, y, context);
+        }
+    }
+#else
+    s32 JOBS_W = 4;
+    s32 JOBS_H = 4;
+    s32 CLIP_W = (framebuffer->width)/JOBS_W;
+    s32 CLIP_H = (framebuffer->height)/JOBS_H;
+
+    struct run_shader_job_details_shared shared_buffer =  (struct run_shader_job_details_shared) {
+        .framebuffer = framebuffer,
+        .context     = context,
+        .shader      = shader
+    };
+
+    struct run_shader_job_details* job_buffers = memory_arena_push(&scratch_arena, sizeof(*job_buffers) * (JOBS_W*JOBS_H));
+
+    for (s32 y = 0; y < JOBS_H; ++y) {
+        for (s32 x = 0; x < JOBS_W; ++x) {
+            struct rectangle_f32            clip_rect      = (struct rectangle_f32){x * CLIP_W, y * CLIP_H, CLIP_W, CLIP_H};
+            struct run_shader_job_details*  current_buffer = &job_buffers[y*JOBS_W+x];
+
+            {
+                current_buffer->shared                     = &shared_buffer;
+                current_buffer->src_rect                  = clip_rect;
+            }
+
+            thread_pool_add_job(thread_software_framebuffer_run_shader, current_buffer);
+        }
+    }
+
+    thread_pool_synchronize_tasks();
+#endif
 }
 
 #undef _BlendPixel_Scalar
