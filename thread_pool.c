@@ -6,7 +6,7 @@
   Should work fine.
 */
 
-#define MAX_POSSIBLE_THREADS (128)
+#define MAX_POSSIBLE_THREADS (16)
 local s32 global_thread_count                                              = 0;
 local SDL_Thread* global_thread_pool[MAX_POSSIBLE_THREADS]                 = {};
 local struct memory_arena  global_thread_pool_arenas[MAX_POSSIBLE_THREADS] = {};
@@ -43,7 +43,9 @@ void thread_pool_add_job(job_queue_function job, void* data) {
             current_job->status = THREAD_JOB_STATUS_READY;
             current_job->data   = data;
             current_job->job    = job;
+#if 0
             _debugprintf("posted new job (%p dataptr)", current_job->data);
+#endif
 
             SDL_SemPost(global_job_queue.notification);
             return;
@@ -132,6 +134,7 @@ void initialize_thread_pool(void) {
     global_job_queue.notification = SDL_CreateSemaphore(0);
     global_job_queue.mutex        = SDL_CreateMutex();
 
+    if (cpu_count > MAX_POSSIBLE_THREADS) cpu_count = MAX_POSSIBLE_THREADS;
     for (s32 index = 0; index < cpu_count; ++index) {
         global_thread_pool_arenas[index] = memory_arena_create_from_heap("thread pool", Kilobyte(256));
         global_thread_pool[index] = SDL_CreateThread(_thread_job_executor, format_temp("slave%d", index), &global_thread_pool_arenas[index]);

@@ -19,6 +19,7 @@ static void _thread_testing(void) {
     s32 n[100] = {};
     for (s32 i = 0; i < array_count(n); ++i) n[i] = i+1;
     /* consume this! */
+    u64 a = SDL_GetPerformanceCounter();
     {
         for (s64 i = 0; i < array_count(n); ++i)
             thread_pool_add_job(test_job_number, &n[i]);
@@ -28,45 +29,23 @@ static void _thread_testing(void) {
             thread_pool_add_job(test_job_number, &n[i]);
         for (s64 i = 0; i < array_count(n); ++i)
             thread_pool_add_job(test_job_number, &n[i]);
-        for (s64 i = 0; i < array_count(n); ++i)
-            thread_pool_add_job(test_job_number, &n[i]);
-        for (s64 i = 0; i < array_count(n); ++i)
-            thread_pool_add_job(test_job_number, &n[i]);
-        for (s64 i = 0; i < array_count(n); ++i)
-            thread_pool_add_job(test_job_number, &n[i]);
     }
-    _debugprintf("waiting for task compleition");
     thread_pool_synchronize_tasks();
-    _debugprintf("okay finished");
-    for (s32 i = 0; i < array_count(n); ++i) {
-        _debugprintf("%d", n[i]);
-    }
+    u64 b = SDL_GetPerformanceCounter();
+    _debugprintf("okay finished %d", b - a);
 
     _debugprintf("single threaded version of the same test");
+    a = SDL_GetPerformanceCounter();
     for (s32 i = 0; i < array_count(n); ++i) n[i] = i+1;
     for (s64 i = 0; i < array_count(n); ++i)
         test_job_number(&n[i]);
-    for (s64 i = 0; i < array_count(n); ++i)
-        test_job_number(&n[i]);
-    for (s64 i = 0; i < array_count(n); ++i)
-        test_job_number(&n[i]);
-    for (s64 i = 0; i < array_count(n); ++i)
-        test_job_number(&n[i]);
-    for (s64 i = 0; i < array_count(n); ++i)
-        test_job_number(&n[i]);
-    for (s64 i = 0; i < array_count(n); ++i)
-        test_job_number(&n[i]);
-    for (s64 i = 0; i < array_count(n); ++i)
-        test_job_number(&n[i]);
-    _debugprintf("okay finished");
-    for (s32 i = 0; i < array_count(n); ++i) {
-        _debugprintf("%d", n[i]);
-    }
+    b = SDL_GetPerformanceCounter();
+    _debugprintf("okay finished %d", b - a);
 }
 
 static bool sandbox_testing(void) {
     _debugprintf("sandbox start");
-    _thread_testing();
+    /* _thread_testing(); */
     _debugprintf("sandbox end");
     return false;
 }

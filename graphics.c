@@ -758,21 +758,23 @@ void software_framebuffer_render_commands(struct software_framebuffer* framebuff
   Well, I could SIMD this for a much easier performance fix...
   Then threading this would just be figuring out how to split this into multiple tiles/clusters.
 */
-void software_framebuffer_kernel_convolution_ex(struct memory_arena* arena, struct software_framebuffer* framebuffer, f32* kernel, s16 width, s16 height, f32 divisor, f32 blend_t, s32 passes) {
+void software_framebuffer_kernel_convolution_ex(struct memory_arena* arena, struct software_framebuffer* framebuffer, f32* kernel, s16 kernel_width, s16 kernel_height, f32 divisor, f32 blend_t, s32 passes) {
     struct software_framebuffer unaltered_copy = software_framebuffer_create(arena, framebuffer->width, framebuffer->height);
+    software_framebuffer_copy_into(&unaltered_copy, framebuffer);
+    software_framebuffer_kernel_convolution_ex_bounded(unaltered_copy, framebuffer, kernel, kernel_width, kernel_height, divisor, blend_t, passes, rectangle_f32(0,0,framebuffer->width,framebuffer->height));
+}
+void software_framebuffer_kernel_convolution_ex_bounded(struct software_framebuffer unaltered_copy, struct software_framebuffer* framebuffer, f32* kernel, s16 kernel_width, s16 kernel_height, f32 divisor, f32 blend_t, s32 passes, struct rectangle_f32 clip) {
     if (divisor == 0.0) divisor = 1;
 
+    s32 framebuffer_width  = framebuffer->width;
+    s32 framebuffer_height = framebuffer->height;
+
+    s32 kernel_half_width =  kernel_width/2;
+    s32 kernel_half_height = kernel_height/2;
+
     for (s32 pass = 0; pass < passes; pass++) {
-        software_framebuffer_copy_into(&unaltered_copy, framebuffer);
-
-        s32 framebuffer_width  = framebuffer->width;
-        s32 framebuffer_height = framebuffer->height;
-
-        s32 kernel_half_width = width/2;
-        s32 kernel_half_height = height/2;
-
-        for (s32 y_cursor = 0; y_cursor < framebuffer_height; ++y_cursor) {
-            for (s32 x_cursor = 0; x_cursor < framebuffer_width; ++x_cursor) {
+        for (s32 y_cursor = clip.y; y_cursor < clip.y+clip.h; ++y_cursor) {
+            for (s32 x_cursor = clip.x; x_cursor < clip.w+clip.x; ++x_cursor) {
                 f32 accumulation[3] = {};
 
                 for (s32 y_cursor_kernel = -kernel_half_height; y_cursor_kernel <= kernel_half_height; ++y_cursor_kernel) {
@@ -782,10 +784,9 @@ void software_framebuffer_kernel_convolution_ex(struct memory_arena* arena, stru
 
                         if (sample_x >= 0 && sample_x < framebuffer_width &&
                             sample_y >= 0 && sample_y < framebuffer_height) {
-
-                            accumulation[0] += unaltered_copy.pixels[sample_y * framebuffer_width * 4 + sample_x * 4 + 0] * kernel[(y_cursor_kernel+1) * width + (x_cursor_kernel+1)];
-                            accumulation[1] += unaltered_copy.pixels[sample_y * framebuffer_width * 4 + sample_x * 4 + 1] * kernel[(y_cursor_kernel+1) * width + (x_cursor_kernel+1)];
-                            accumulation[2] += unaltered_copy.pixels[sample_y * framebuffer_width * 4 + sample_x * 4 + 2] * kernel[(y_cursor_kernel+1) * width + (x_cursor_kernel+1)];
+                            accumulation[0] += unaltered_copy.pixels[sample_y * framebuffer_width * 4 + sample_x * 4 + 0] * kernel[(y_cursor_kernel+1) * kernel_width + (x_cursor_kernel+1)];
+                            accumulation[1] += unaltered_copy.pixels[sample_y * framebuffer_width * 4 + sample_x * 4 + 1] * kernel[(y_cursor_kernel+1) * kernel_width + (x_cursor_kernel+1)];
+                            accumulation[2] += unaltered_copy.pixels[sample_y * framebuffer_width * 4 + sample_x * 4 + 2] * kernel[(y_cursor_kernel+1) * kernel_width + (x_cursor_kernel+1)];
                         }
                     }
                 }

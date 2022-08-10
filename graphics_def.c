@@ -164,6 +164,18 @@ void software_framebuffer_draw_line(struct software_framebuffer* framebuffer, v2
 
 void software_framebuffer_kernel_convolution_ex(struct memory_arena* arena, struct software_framebuffer* framebuffer, f32* kernel, s16 width, s16 height, f32 divisor, f32 blend_t, s32 passes);
 
+/*
+  This is intended for threading work, and kernel convolution samples from the neighbors which
+  requires the entire unaltered image. I don't have enough stack space to copy the framebuffer every single time
+  on the thread 
+
+  (1.2 mb per thread to hold 640x480!!!)
+  
+  So we'll just pass one singular copy from the above function, to avoid the time to copy multiple slices of the framebuffer which
+  would ruin the effect anyways.
+*/
+void software_framebuffer_kernel_convolution_ex_bounded(struct software_framebuffer before, struct software_framebuffer* framebuffer, f32* kernel, s16 kernel_width, s16 kernel_height, f32 divisor, f32 blend_t, s32 passes, struct rectangle_f32 clip);
+
 #include "render_commands_def.c"
 void software_framebuffer_render_commands(struct software_framebuffer* framebuffer, struct render_commands* commands);
 

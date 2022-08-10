@@ -598,4 +598,8 @@ struct directory_listing directory_listing_list_all_files_in(struct memory_arena
     return result;
 }
 
+static u64 read_timestamp_counter(void) {
+    return __rdtsc();
+}
+
 #endif
