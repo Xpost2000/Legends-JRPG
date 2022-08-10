@@ -309,6 +309,35 @@ void engine_main_loop(void* _) {
 
 int engine_main(int argc, char** argv) {
     initialize();
+    
+    /* feature testing */
+    {
+        printf("%d byte sized cache line\n", SDL_GetCPUCacheLineSize());
+        printf("%d MB of ram\n", SDL_GetSystemRAM());
+        if (SDL_HasMMX()) {
+            printf("MMX Detected\n");
+        }
+
+        if (SDL_HasSSE()) {
+            printf("SSE Detected\n");
+        }
+
+        if (SDL_HasAVX()) {
+            printf("AVX Detected\n");
+        }
+
+        if (SDL_HasSSE2()) {
+            printf("SSE2 Detected\n");
+        }
+
+        if (SDL_HasSSE3()) {
+            printf("SSE2 Detected\n");
+        }
+
+        if (SDL_HasSSE41() || SDL_HasSSE42()) {
+            printf("SSE4 Detected\n");
+        }
+    }
 
     if (sandbox_testing())
         return 1;
