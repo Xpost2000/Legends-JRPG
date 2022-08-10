@@ -143,7 +143,7 @@ void game_script_instance_push_stackframe(struct game_script_script_instance* sc
     assertion(script_state->execution_stack_depth < GAME_SCRIPT_EXECUTION_STATE_STACK_SIZE && "game_script stackoverflow!");
     script_state->stackframe[script_state->execution_stack_depth].current_form_index = 0;
     script_state->stackframe[script_state->execution_stack_depth].awaiters.timer_id  = -1;
-    script_state->stackframe[script_state->execution_stack_depth].awaiters.entity_id = -1;
+    script_state->stackframe[script_state->execution_stack_depth].awaiters.entity_id = (entity_id){};
     script_state->stackframe[script_state->execution_stack_depth++].body             = f;
 }
 
@@ -164,20 +164,56 @@ void game_script_enqueue_form_to_execute(struct lisp_form f) {
   PathForm -> '(start-x start-y) '(end-x end-y)
  */
 GAME_LISP_FUNCTION(FOLLOW_PATH) {
-    game_script_typed_ptr ptr = game_script_object_handle_decode(arguments[0]);
+    struct game_script_typed_ptr ptr = game_script_object_handle_decode(arguments[0]);
     assertion(ptr.type == GAME_SCRIPT_TARGET_ENTITY && "Whoops! Don't know how to make non-entities follow paths!");
 
     if (argument_count < 2) {
         return LISP_nil;
     }
 
+    v2f32* path       = 0;
+    s32    path_count = 0;
+
+    struct entity* target_entity = entity_list_dereference_entity(&state->entities, ptr.entity_id);
+    assertion(target_entity && "no entity?");
+
     if (argument_count == 2) {
         /* manually provided path form */
+        path = memory_arena_push(&scratch_arena, 0);
+
+        struct lisp_form* defined_path = &arguments[1];
+        assertion(defined_path->type == LISP_FORM_LIST && "this is not a path I guess.");
+
+        f32 x_cursor = target_entity->position.x/TILE_UNIT_SIZE;
+        f32 y_cursor = target_entity->position.y/TILE_UNIT_SIZE;
+
+        memory_arena_push(&scratch_arena, sizeof(v2f32));
+        path[path_count].x = x_cursor;
+        path[path_count++].y = y_cursor;
+
+        for (s32 direction_index = 0; direction_index < defined_path->list.count; ++direction_index) {
+            struct lisp_form* sym = lisp_list_nth(defined_path, direction_index);
+
+            if (lisp_form_symbol_matching(*sym, string_literal("right"))) {
+                x_cursor += 1;
+            } else if (lisp_form_symbol_matching(*sym, string_literal("left"))) {
+                x_cursor -= 1;
+            } else if (lisp_form_symbol_matching(*sym, string_literal("down"))) {
+                y_cursor += 1;
+            } else if (lisp_form_symbol_matching(*sym, string_literal("up"))) {
+                y_cursor -= 1;
+            }
+
+            memory_arena_push(&scratch_arena, sizeof(v2f32));
+            path[path_count].x = x_cursor;
+            path[path_count++].y = y_cursor;
+        }
     } else if (argument_count == 3) {
         /* pathfind form */
+        unimplemented("path find form!");
     }
 
-    entity_combat_submit_movement_action();
+    entity_combat_submit_movement_action(target_entity, path, path_count);
 
     if (running_script_index != -1) {
         struct game_script_script_instance* script_instance    = running_scripts + running_script_index;
@@ -830,7 +866,7 @@ struct game_script_typed_ptr game_script_object_handle_decode(struct lisp_form o
                 result.ptr = area->script_triggers + real_id;
             } break;
             case GAME_SCRIPT_TARGET_ENTITY: {
-                if (lisp_form_symbol_matching(*id_form, "player")) {
+                if (lisp_form_symbol_matching(*id_form, string_literal("player"))) {
                     result.entity_id = player_id;
                 } else if (lisp_form_get_s32(*id_form, &real_id)) {
                     result.entity_id = entity_list_get_id(&game_state->entities, real_id);

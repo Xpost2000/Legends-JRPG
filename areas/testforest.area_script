@@ -2,7 +2,7 @@
 # Might need to change the evaluation method.
 (on-enter
 	(game_disable_input)
-	(follow_path '(entity player) '(down down right right))
+	(follow_path '(entity player) '(down down down down right right right))
 	(game_enable_input)
         (wait 10)
         (game_set_environment_colors 'night)
