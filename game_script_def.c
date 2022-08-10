@@ -34,4 +34,7 @@ void game_script_execute_awaiting_scripts(struct memory_arena* arena, struct gam
 */
 void game_script_run_all_timers(f32 dt);
 
+void game_script_initialize(struct memory_arena* arena);
+void game_script_deinitialize(void);
+
 #endif

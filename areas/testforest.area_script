@@ -1,7 +1,7 @@
 # Figure out a way to make conversations block execution.
 # Might need to change the evaluation method.
 (on-enter
-        (wait 60)
+        (wait 10)
         (game_set_environment_colors 'night)
         (wait (+ (random 5) 3))
         (game_set_environment_colors 'dawn)

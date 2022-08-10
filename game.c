@@ -939,6 +939,8 @@ void game_initialize(void) {
     /* selection_sword_img   = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/selection_sword.png")); */
     global_entity_models = entity_model_database_create(&game_arena, 512);
 
+    game_script_initialize(&game_arena);
+
     for (unsigned index = 0; index < array_count(menu_font_variation_string_names); ++index) {
         string current = menu_font_variation_string_names[index];
         menu_fonts[index] = graphics_assets_load_bitmap_font(&graphics_assets, current, 5, 12, 5, 20);
@@ -1011,6 +1013,7 @@ void game_initialize_game_world(void) {
 }
 
 void game_deinitialize(void) {
+    game_script_deinitialize();
     level_area_clean_up(&game_state->loaded_area);
     game_finish_conversation(game_state);
     finish_save_data();

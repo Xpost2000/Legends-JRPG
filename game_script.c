@@ -73,6 +73,11 @@ struct game_script_function_builtin {
     game_script_function function;
 };
 
+
+/**/
+#define GAME_SCRIPT_EXECUTION_STATE_STACK_SIZE (128) /* hopefully this doesn't stack overflow */
+#define MAX_GAME_SCRIPT_RUNNING_SCRIPTS        (256)
+
 struct game_script_execution_state {
     s32 current_form_index;
 
@@ -83,22 +88,56 @@ struct game_script_execution_state {
     struct lisp_form body;
 };
 
-#define GAME_SCRIPT_EXECUTION_STATE_STACK_SIZE (128) /* hopefully this doesn't stack overflow */
-local s32  game_script_execution_stack_depth                                                            = 0;
-local struct game_script_execution_state game_script_stackframe[GAME_SCRIPT_EXECUTION_STATE_STACK_SIZE] = {};
-local bool queued_script_already                                                                        = false;
+struct game_script_script_instance {
+    struct game_script_execution_state stackframe[GAME_SCRIPT_EXECUTION_STATE_STACK_SIZE];
+    s32 execution_stack_depth;
 
-void game_script_push_stackframe(struct lisp_form f) {
-    assertion(game_script_execution_stack_depth < GAME_SCRIPT_EXECUTION_STATE_STACK_SIZE && "game_script stackoverflow!");
-    game_script_stackframe[game_script_execution_stack_depth].current_form_index = 0;
-    game_script_stackframe[game_script_execution_stack_depth].awaiters.timer_id  = -1;
-    game_script_stackframe[game_script_execution_stack_depth++].body             = f;
+    bool active;
+
+    struct lisp_form _scratch_list_wrapper;
+};
+
+local struct game_script_script_instance* running_scripts;
+
+struct game_script_script_instance* new_script_instance(void) {
+    for (s32 free_index = 0; free_index < MAX_GAME_SCRIPT_RUNNING_SCRIPTS; ++free_index) {
+        struct game_script_script_instance* script = free_index + running_scripts;
+
+        if (!script->active) {
+            script->active = true;
+            return script;
+        }
+    }
+
+    return 0;
+}
+
+void game_script_initialize(struct memory_arena* arena) {
+    running_scripts = memory_arena_push(arena, sizeof(*running_scripts) * MAX_GAME_SCRIPT_RUNNING_SCRIPTS);
+
+    /* used for wrapping conditional clauses. As the execute scripts function wants lists of forms to execute. */
+    for (s32 index = 0; index < MAX_GAME_SCRIPT_RUNNING_SCRIPTS; ++index) {
+        running_scripts[index]._scratch_list_wrapper.type       = LISP_FORM_LIST;
+        running_scripts[index]._scratch_list_wrapper.list.forms = memory_arena_push(arena, sizeof(struct lisp_form));
+        running_scripts[index]._scratch_list_wrapper.list.count = 1;
+    }
+}
+
+void game_script_deinitialize(void) {
+    
+}
+
+void game_script_instance_push_stackframe(struct game_script_script_instance* script_state, struct lisp_form f) {
+    assertion(script_state->execution_stack_depth < GAME_SCRIPT_EXECUTION_STATE_STACK_SIZE && "game_script stackoverflow!");
+    script_state->stackframe[script_state->execution_stack_depth].current_form_index = 0;
+    script_state->stackframe[script_state->execution_stack_depth].awaiters.timer_id  = -1;
+    script_state->stackframe[script_state->execution_stack_depth++].body             = f;
 }
 
 void game_script_enqueue_form_to_execute(struct lisp_form f) {
-    assertion(queued_script_already == false && "We do not support multiple scripts... Yet! Haven't thought of an answer yet.");
-    queued_script_already                              = true;
-    game_script_push_stackframe(f);
+    struct game_script_script_instance* new_script = new_script_instance();
+    assertion(new_script && "ran out of script instances to handle!");
+    game_script_instance_push_stackframe(new_script, f);
 }
 
 /* considering this is so patternized, is it worth writing a mini metaprogramming thing that just automates this? Who knows */
@@ -759,7 +798,7 @@ struct game_script_typed_ptr game_script_object_handle_decode(struct lisp_form o
 }
 
 /* This assumes form_to_wait_on has already begun it's action. */
-bool game_script_waiting_on_form(struct lisp_form* form_to_wait_on) {
+bool game_script_waiting_on_form(struct game_script_script_instance* script_state, struct lisp_form* form_to_wait_on) {
     /* always a list */
 
     struct lisp_form* first = lisp_list_nth(form_to_wait_on, 0);
@@ -769,17 +808,17 @@ bool game_script_waiting_on_form(struct lisp_form* form_to_wait_on) {
         if (lisp_form_symbol_matching(*first, string_literal("if"))) {
             /* crying in *side_effects*. Lots of bugs waiting to happen. */
             struct lisp_form evaluated = game_script_evaluate_if_and_return_used_branch(&scratch_arena, game_state, form_to_wait_on);
-            return game_script_waiting_on_form(&evaluated);
+            return game_script_waiting_on_form(script_state, &evaluated);
         } else if (lisp_form_symbol_matching(*first, string_literal("case"))) {
             struct lisp_form evaluated = game_script_evaluate_case_and_return_used_branch(&scratch_arena, game_state, form_to_wait_on);
-            return game_script_waiting_on_form(&evaluated);
+            return game_script_waiting_on_form(script_state, &evaluated);
         } else if (lisp_form_symbol_matching(*first, string_literal("cond"))) {
             struct lisp_form evaluated = game_script_evaluate_cond_and_return_used_branch(&scratch_arena, game_state, form_to_wait_on);
-            return game_script_waiting_on_form(&evaluated);
+            return game_script_waiting_on_form(script_state, &evaluated);
         } else if (lisp_form_symbol_matching(*first, string_literal("progn"))) {
-            return game_script_waiting_on_form(lisp_list_nth(form_to_wait_on, -1));
+            return game_script_waiting_on_form(script_state, lisp_list_nth(form_to_wait_on, -1));
         } else if (lisp_form_symbol_matching(*first, string_literal("wait"))) {
-            struct game_script_execution_state* current_stackframe = game_script_stackframe + (game_script_execution_stack_depth-1);
+            struct game_script_execution_state* current_stackframe = script_state->stackframe + (script_state->execution_stack_depth-1);
 
             if (current_stackframe->awaiters.timer_id != -1) {
                 if (game_script_is_timer_done(current_stackframe->awaiters.timer_id)) {
@@ -813,97 +852,89 @@ bool game_script_waiting_on_form(struct lisp_form* form_to_wait_on) {
   TODO: does not handle multiple script enqueues yet... (is this even needed? Hope not.)
 */
 void game_script_execute_awaiting_scripts(struct memory_arena* arena, struct game_state* state, f32 dt) {
-    if (game_script_execution_stack_depth <= 0) {
-        /* allow queueing next script */
-        queued_script_already = false;
-    } else {
-        /* execute current script with a stackframe. */
-        struct game_script_execution_state* current_stackframe = game_script_stackframe + (game_script_execution_stack_depth-1);
+    for (s32 script_instance_index = 0; script_instance_index < MAX_GAME_SCRIPT_RUNNING_SCRIPTS; ++script_instance_index) {
+        struct game_script_script_instance* script_instance = running_scripts + script_instance_index;
 
-        _debugprintf("current stack frame (%d)", game_script_execution_stack_depth);
+        if (!script_instance->active)
+            continue;
 
-        /* finished stackframe. pop off */
-        if (current_stackframe->current_form_index >= current_stackframe->body.list.count) {
-            game_script_execution_stack_depth -= 1;
+        if (script_instance->execution_stack_depth <= 0) {
+            script_instance->active = false;
         } else {
-            /*
-              It's probably because I don't have the structure for a coroutine, as I'm trying
-              to really simulate synchronous state.
-              
-              IE: I don't ever yield.
-             */
+            struct game_script_execution_state* current_stackframe = script_instance->stackframe + (script_instance->execution_stack_depth-1);
+            _debugprintf("current stack frame(script: %d) (%d)", script_instance_index, script_instance->execution_stack_depth);
 
-            bool allow_advancement = true;
-            if (current_stackframe->current_form_index >= 1) {
-                /* 
-                   so we're going to manually code the waits by just checking what the previous
-                   form was. Which is the simplest possible method. Because I use multiple stackframes,
-                   this is actually still going to work the way I want it to. It just won't be *elegant*,
-                   but I don't give a crap right now, I got a small headache trying to think of a short way to hammer
-                   in coroutines and trying to read the lua source didn't super help.
-                   
-                   I'm not that smart okay :(, I'm trying to make a game anyways, not a scripting language.
+            if (current_stackframe->current_form_index >= current_stackframe->body.list.count) {
+                script_instance->execution_stack_depth -= 1;
+            } else {
+                /*
+                  It's probably because I don't have the structure for a coroutine, as I'm trying
+                  to really simulate synchronous state.
+              
+                  IE: I don't ever yield.
                 */
 
-                struct lisp_form* last_form = lisp_list_nth(&current_stackframe->body, current_stackframe->current_form_index-1);
-                allow_advancement = game_script_waiting_on_form(last_form);
-            }
-            
-            /* HACK: if's may have singular forms to evaluate
-               the stackframe expects a list of frames, and so I need to listify this.*/
-            /* this can be alleviated with a stack allocator, but memory is memory, it doesn't matter where I get it since
-               most of these game parts are pretty isolated... (other than all requiring memory arenas)*/
-            local bool allocated_scratch_list_wrapper = false;
-            local struct lisp_form _scratch_list_wrapper = {};
-            if (!allocated_scratch_list_wrapper) {
-                _scratch_list_wrapper.type       = LISP_FORM_LIST;
-                _scratch_list_wrapper.list.forms = memory_arena_push(&game_arena, sizeof(struct lisp_form));
-                _scratch_list_wrapper.list.count = 1;
-            }
+                bool allow_advancement = true;
+                if (current_stackframe->current_form_index >= 1) {
+                    /* 
+                       so we're going to manually code the waits by just checking what the previous
+                       form was. Which is the simplest possible method. Because I use multiple stackframes,
+                       this is actually still going to work the way I want it to. It just won't be *elegant*,
+                       but I don't give a crap right now, I got a small headache trying to think of a short way to hammer
+                       in coroutines and trying to read the lua source didn't super help.
+                   
+                       I'm not that smart okay :(, I'm trying to make a game anyways, not a scripting language.
+                    */
 
-            if (allow_advancement) {
-                /* sort of custom eval */
-                struct lisp_form* current_form = lisp_list_nth(&current_stackframe->body, current_stackframe->current_form_index);
-                struct lisp_form* first = lisp_list_nth(current_form, 0);
-
-                if (first) {
-                    if (lisp_form_symbol_matching(*first, string_literal("if"))) {
-                        struct lisp_form used_branch = game_script_evaluate_if_and_return_used_branch(&scratch_arena, game_state, current_form);
-                        _scratch_list_wrapper.list.forms[0] = used_branch;
-                        game_script_push_stackframe(_scratch_list_wrapper);
-                    } else if (lisp_form_symbol_matching(*first, string_literal("case"))) {
-                        struct lisp_form used_branch = game_script_evaluate_case_and_return_used_branch(&scratch_arena, game_state, current_form);
-                        game_script_push_stackframe(used_branch);
-                    } else if (lisp_form_symbol_matching(*first, string_literal("cond"))) {
-                        struct lisp_form used_branch = game_script_evaluate_cond_and_return_used_branch(&scratch_arena, game_state, current_form);
-                        game_script_push_stackframe(used_branch);
-                    } else if (lisp_form_symbol_matching(*first, string_literal("progn"))) {
-                        game_script_push_stackframe(lisp_list_sliced(*current_form, 1, -1));
-                    } else {
-                        /* wait is not evaluated. It's  */
-                        if (lisp_form_symbol_matching(*first, string_literal("wait"))) {
-                            /* 
-                               NOTE: it's really more rather the entire execution state is waiting, not
-                               just the stackframe... Oh whatever
-                            */
-                            f32 time_limit = 1.0f;
-                            struct lisp_form* wait_param = lisp_list_nth(current_form, 1);
-
-                            if (wait_param && lisp_form_get_f32(*wait_param, &time_limit));
-                            current_stackframe->awaiters.timer_id = game_script_create_timer(time_limit);
-                        } else {
-                            _debugprintf("executing?");
-                            _debug_print_out_lisp_code(current_form);
-                            game_script_evaluate_form(&scratch_arena, game_state, current_form);
-                        }
-                    }
-                } else {
-                    _debugprintf("cannot execute");
-                    _debug_print_out_lisp_code(current_form);
-                    /* no execute */
+                    struct lisp_form* last_form = lisp_list_nth(&current_stackframe->body, current_stackframe->current_form_index-1);
+                    allow_advancement = game_script_waiting_on_form(script_instance, last_form);
                 }
+            
 
-                current_stackframe->current_form_index += 1;
+                if (allow_advancement) {
+                    /* sort of custom eval */
+                    struct lisp_form* current_form = lisp_list_nth(&current_stackframe->body, current_stackframe->current_form_index);
+                    struct lisp_form* first        = lisp_list_nth(current_form, 0);
+
+                    if (first) {
+                        if (lisp_form_symbol_matching(*first, string_literal("if"))) {
+                            struct lisp_form used_branch = game_script_evaluate_if_and_return_used_branch(&scratch_arena, game_state, current_form);
+                            script_instance->_scratch_list_wrapper.list.forms[0] = used_branch;
+                            game_script_instance_push_stackframe(script_instance, script_instance->_scratch_list_wrapper);
+                        } else if (lisp_form_symbol_matching(*first, string_literal("case"))) {
+                            struct lisp_form used_branch = game_script_evaluate_case_and_return_used_branch(&scratch_arena, game_state, current_form);
+                            game_script_instance_push_stackframe(script_instance, used_branch);
+                        } else if (lisp_form_symbol_matching(*first, string_literal("cond"))) {
+                            struct lisp_form used_branch = game_script_evaluate_cond_and_return_used_branch(&scratch_arena, game_state, current_form);
+                            game_script_instance_push_stackframe(script_instance, used_branch);
+                        } else if (lisp_form_symbol_matching(*first, string_literal("progn"))) {
+                            game_script_instance_push_stackframe(script_instance, lisp_list_sliced(*current_form, 1, -1));
+                        } else {
+                            /* wait is not evaluated. It's  */
+                            if (lisp_form_symbol_matching(*first, string_literal("wait"))) {
+                                /* 
+                                   NOTE: it's really more rather the entire execution state is waiting, not
+                                   just the stackframe... Oh whatever
+                                */
+                                f32 time_limit = 1.0f;
+                                struct lisp_form* wait_param = lisp_list_nth(current_form, 1);
+
+                                if (wait_param && lisp_form_get_f32(*wait_param, &time_limit));
+                                current_stackframe->awaiters.timer_id = game_script_create_timer(time_limit);
+                            } else {
+                                _debugprintf("executing?");
+                                _debug_print_out_lisp_code(current_form);
+                                game_script_evaluate_form(&scratch_arena, game_state, current_form);
+                            }
+                        }
+                    } else {
+                        _debugprintf("cannot execute");
+                        _debug_print_out_lisp_code(current_form);
+                        /* no execute */
+                    }
+
+                    current_stackframe->current_form_index += 1;
+                }
             }
         }
     }
