@@ -288,13 +288,15 @@ void software_framebuffer_draw_image_ex_clipped(struct software_framebuffer* fra
     __m128 modulation_b = _mm_load1_ps(&modulation.b);
     __m128 modulation_a = _mm_load1_ps(&modulation.a);
 
-    __m128 inverse_255  = _mm_set1_ps(1.0 / 255.0f);
+    __m128 inverse_255    = _mm_set1_ps(1.0 / 255.0f);
+    __m128 zero           = _mm_set1_ps(0);
+    __m128 two_fifty_five = _mm_set1_ps(255);
 
     for (s32 y_cursor = start_y; y_cursor < end_y; ++y_cursor) {
         for (s32 x_cursor = start_x; x_cursor < end_x; x_cursor += 4) {
             s32 image_sample_y = ((src.y + src.h) - ((unclamped_end_y - y_cursor) * scale_ratio_h));
+            s32 image_sample_x = ((src.x + src.w) - ((unclamped_end_x - (x_cursor))   * scale_ratio_w));
 
-            s32 image_sample_x  = ((src.x + src.w) - ((unclamped_end_x - (x_cursor))   * scale_ratio_w));
             s32 image_sample_x1 = ((src.x + src.w) - ((unclamped_end_x - (x_cursor+1)) * scale_ratio_w));
             s32 image_sample_x2 = ((src.x + src.w) - ((unclamped_end_x - (x_cursor+2)) * scale_ratio_w));
             s32 image_sample_x3 = ((src.x + src.w) - ((unclamped_end_x - (x_cursor+3)) * scale_ratio_w));
@@ -374,7 +376,7 @@ void software_framebuffer_draw_image_ex_clipped(struct software_framebuffer* fra
                     blue_destination_channels  = _mm_add_ps(_mm_mul_ps(blue_destination_channels,  one_minus_alpha),   _mm_mul_ps(blue_channels, alpha_channels));
                 } break;
                 case BLEND_MODE_ADDITIVE: {
-                    red_destination_channels   = _mm_add_ps(red_destination_channels,   _mm_mul_ps(red_channels, alpha_channels));
+                    red_destination_channels   = _mm_add_ps(red_destination_channels,   _mm_mul_ps(red_channels,   alpha_channels));
                     green_destination_channels = _mm_add_ps(green_destination_channels, _mm_mul_ps(green_channels, alpha_channels));
                     blue_destination_channels  = _mm_add_ps(blue_destination_channels,  _mm_mul_ps(blue_channels,  alpha_channels));
                 } break;
@@ -387,16 +389,19 @@ void software_framebuffer_draw_image_ex_clipped(struct software_framebuffer* fra
             }
 
 #define castF32_M128(X) ((f32*)(&X))
+            blue_destination_channels  = _mm_min_ps(_mm_max_ps(blue_destination_channels , zero), two_fifty_five);
+            green_destination_channels = _mm_min_ps(_mm_max_ps(green_destination_channels, zero), two_fifty_five);
+            red_destination_channels   = _mm_min_ps(_mm_max_ps(red_destination_channels  , zero), two_fifty_five);
+
             for (int i = 0; i < 4; ++i) {
-                if ((x_cursor + i >= framebuffer->width) ||
-                    (((src.x + src.w) - ((unclamped_end_x - (x_cursor+i)) * scale_ratio_w))) >= src.x+src.w)
+                if ((x_cursor + i >= framebuffer->width) || (((src.x + src.w) - ((unclamped_end_x - (x_cursor+i)) * scale_ratio_w))) >= src.x+src.w)
                     break;
 
                 framebuffer->pixels_u32[y_cursor * framebuffer->width + (x_cursor+i)] = packu32(
                     255,
-                    clamp_f32(castF32_M128(blue_destination_channels)[i],  0, 255),
-                    clamp_f32(castF32_M128(green_destination_channels)[i], 0, 255),
-                    clamp_f32(castF32_M128(red_destination_channels)[i],   0, 255)
+                    castF32_M128(blue_destination_channels)[i],
+                    castF32_M128(green_destination_channels)[i],
+                    castF32_M128(red_destination_channels)[i]
                 );
             }
 #undef castF32_M128
@@ -698,6 +703,47 @@ s32 thread_software_framebuffer_render_commands_tiles(void* context) {
     return 0;
 }
 
+local void transform_command_into_clip_space(v2f32 resolution, struct render_command* command, struct camera* camera) {
+    f32 half_screen_width  = resolution.x/2;
+    f32 half_screen_height = resolution.y/2;
+
+    {
+        command->start.x       *= camera->zoom;
+        command->start.y       *= camera->zoom;
+        command->end.x         *= camera->zoom;
+        command->end.y         *= camera->zoom;
+        command->destination.x *= camera->zoom;
+        command->destination.y *= camera->zoom;
+        command->destination.w *= camera->zoom;
+        command->destination.h *= camera->zoom;
+        command->xy.x          *= camera->zoom;
+        command->xy.y          *= camera->zoom;
+        command->scale         *= camera->zoom;
+    }
+
+    if (camera->centered) {
+        command->start.x       += half_screen_width;
+        command->start.y       += half_screen_height;
+        command->end.x         += half_screen_width;
+        command->end.y         += half_screen_height;
+        command->destination.x += half_screen_width;
+        command->destination.y += half_screen_height;
+        command->xy.x          += half_screen_width;
+        command->xy.y          += half_screen_height;
+    }
+
+    {
+        command->start.x       -= camera->xy.x;
+        command->start.y       -= camera->xy.y;
+        command->end.x         -= camera->xy.x;
+        command->end.y         -= camera->xy.y;
+        command->destination.x -= camera->xy.x;
+        command->destination.y -= camera->xy.y;
+        command->xy.x          -= camera->xy.x;
+        command->xy.y          -= camera->xy.y;
+    }
+}
+                                  
 void software_framebuffer_render_commands(struct software_framebuffer* framebuffer, struct render_commands* commands) {
     if (commands->should_clear_buffer) {
         software_framebuffer_clear_buffer(framebuffer, commands->clear_buffer_color);
@@ -705,48 +751,11 @@ void software_framebuffer_render_commands(struct software_framebuffer* framebuff
 
     sort_render_commands(commands);
 
-    f32 half_screen_width  = framebuffer->width/2;
-    f32 half_screen_height = framebuffer->height/2;
 
     /* move all things into clip space */
     for (unsigned index = 0; index < commands->command_count; ++index) {
         struct render_command* command = &commands->commands[index];
-
-        {
-            command->start.x       *= commands->camera.zoom;
-            command->start.y       *= commands->camera.zoom;
-            command->end.x         *= commands->camera.zoom;
-            command->end.y         *= commands->camera.zoom;
-            command->destination.x *= commands->camera.zoom;
-            command->destination.y *= commands->camera.zoom;
-            command->destination.w *= commands->camera.zoom;
-            command->destination.h *= commands->camera.zoom;
-            command->xy.x          *= commands->camera.zoom;
-            command->xy.y          *= commands->camera.zoom;
-            command->scale         *= commands->camera.zoom;
-        }
-
-        if (commands->camera.centered) {
-            command->start.x       += half_screen_width;
-            command->start.y       += half_screen_height;
-            command->end.x         += half_screen_width;
-            command->end.y         += half_screen_height;
-            command->destination.x += half_screen_width;
-            command->destination.y += half_screen_height;
-            command->xy.x          += half_screen_width;
-            command->xy.y          += half_screen_height;
-        }
-
-        {
-            command->start.x       -= commands->camera.xy.x;
-            command->start.y       -= commands->camera.xy.y;
-            command->end.x         -= commands->camera.xy.x;
-            command->end.y         -= commands->camera.xy.y;
-            command->destination.x -= commands->camera.xy.x;
-            command->destination.y -= commands->camera.xy.y;
-            command->xy.x          -= commands->camera.xy.x;
-            command->xy.y          -= commands->camera.xy.y;
-        }
+        transform_command_into_clip_space(v2f32(SCREEN_WIDTH, SCREEN_HEIGHT), command, &commands->camera);
     }
 
 #ifndef MULTITHREADED_EXPERIMENTAL

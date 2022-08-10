@@ -3,14 +3,6 @@ into it everytime.
 
 Right now I am:
 
-Adding multithreaded render command support (
-the world rendering is quite slow and requires multithreading, we can extend it to other stuff as well, but
-it's not necessary in the vast majority of rendering cases, so I'm only going to render to the screen as tiles for software_framebuffer_render_commands.
-
-the postprocessing stuff also tends to hurt the engine performance.
-
-Afterwards see what happens if we add "shader" support.
-
 After that, work on loading cutscene scripts. Which isn't really that complicated, cutscenes are the simplest type of lisp script
 as they basically just operate top->down. That's literally all they are. (just gotta code lots of auxiliary functions)
 

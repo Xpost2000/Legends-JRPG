@@ -15,20 +15,22 @@ static bool global_game_running = true;
 static f32                         global_elapsed_time          = 0.0f;
 static struct memory_arena         scratch_arena                = {};
 
+/* target engine res */
+const local u32   SCREEN_WIDTH        = 640;
+const local u32   SCREEN_HEIGHT       = 480;
+
+/* real res */
+/* consider a better way to decouple this from the editor logic. */
+/* game logic is okay because we don't use the mouse for UI. (I mean I probably should allow it, but whatever.) */
+local u32 REAL_SCREEN_WIDTH  = SCREEN_WIDTH;
+local u32 REAL_SCREEN_HEIGHT = SCREEN_HEIGHT;
+
 #include "thread_pool.c"
 #include "serializer.c"
 #include "input.c"
 #include "sdl_scancode_table.c"
 #include "graphics.c"
 
-/* target engine res */
-const u32   SCREEN_WIDTH        = 640;
-const u32   SCREEN_HEIGHT       = 480;
-/* real res */
-/* consider a better way to decouple this from the editor logic. */
-/* game logic is okay because we don't use the mouse for UI. (I mean I probably should allow it, but whatever.) */
-local u32 REAL_SCREEN_WIDTH  = SCREEN_WIDTH;
-local u32 REAL_SCREEN_HEIGHT = SCREEN_HEIGHT;
 
 const char* _build_flags =
 #ifdef USE_SIMD_OPTIMIZATIONS
