@@ -12,16 +12,6 @@
 
   So it's not a real lisp. It only looks like a lisp
   since it's a very easy and versatile format to read.
-  
-  NOTE:
-  How do I consider waiting?
-
-  I could push all script actions on to a stack and basically
-  have this be like an implied event system...
-  
-  Who knows?
-  
-  For now just evaluate on-line instead of deferring or anything.
 */
 
 struct game_script_typed_ptr {
@@ -35,5 +25,13 @@ struct lisp_form game_script_evaluate_form(struct memory_arena* arena, struct ga
 
 void game_script_enqueue_form_to_execute(struct lisp_form f);
 void game_script_execute_awaiting_scripts(struct memory_arena* arena, struct game_state* state, f32 dt);
+
+/* 
+   NOTE:
+   The timers we have for the game otherwise, are done manually,
+   the script timers are solely used for waiting purposes, and do
+   not trigger anything.
+*/
+void game_script_run_all_timers(f32 dt);
 
 #endif

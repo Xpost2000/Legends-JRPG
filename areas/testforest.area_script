@@ -1,6 +1,9 @@
 # Figure out a way to make conversations block execution.
 # Might need to change the evaluation method.
-(on-enter (game_set_environment_colors 'night))
+(on-enter
+        (wait 5)
+        (game_set_environment_colors 'night)
+        )
 
 #  (on-touch (trigger 0)
 #               (if (equal (obj_activations '(trigger 0)) 1)

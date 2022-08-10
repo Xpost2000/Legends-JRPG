@@ -1739,6 +1739,7 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                 render_foreground_area(game_state, &commands, &game_state->loaded_area);
 
                 game_script_execute_awaiting_scripts(&scratch_arena, game_state, dt);
+                game_script_run_all_timers(dt);
 
                 software_framebuffer_render_commands(framebuffer, &commands);
                 game_postprocess_blur_ingame(framebuffer, 2, 0.60, BLEND_MODE_ALPHA);
