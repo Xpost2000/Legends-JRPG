@@ -169,6 +169,93 @@ void software_framebuffer_clear_buffer(struct software_framebuffer* framebuffer,
         }                                                               \
     } while(0)
 
+#ifdef USE_SIMD_OPTIMIZATIONS
+void software_framebuffer_draw_quad_clipped(struct software_framebuffer* framebuffer, struct rectangle_f32 destination, union color32u8 rgba, u8 blend_mode, struct rectangle_f32 clip_rect) {
+    s32 start_x = clamp_s32((s32)destination.x, clip_rect.x, clip_rect.x+clip_rect.w);
+    s32 start_y = clamp_s32((s32)destination.y, clip_rect.y, clip_rect.y+clip_rect.h);
+    s32 end_x   = clamp_s32((s32)(destination.x + destination.w), clip_rect.x, clip_rect.x+clip_rect.w);
+    s32 end_y   = clamp_s32((s32)(destination.y + destination.h), clip_rect.y, clip_rect.y+clip_rect.h);
+
+    __m128 red_channels   = _mm_set1_ps((f32)rgba.r);
+    __m128 green_channels = _mm_set1_ps((f32)rgba.g);
+    __m128 blue_channels  = _mm_set1_ps((f32)rgba.b);
+    __m128 alpha_channels = _mm_set1_ps((f32)rgba.a);
+    __m128 inverse_255    = _mm_set1_ps(1.0 / 255.0f);
+
+    alpha_channels = _mm_mul_ps(inverse_255, alpha_channels);
+
+    __m128 zero           = _mm_set1_ps(0);
+    __m128 two_fifty_five = _mm_set1_ps(255);
+
+    s32 stride = framebuffer->width;
+    for (s32 y_cursor = start_y; y_cursor < end_y; ++y_cursor) {
+        for (s32 x_cursor = start_x; x_cursor < end_x; x_cursor += 4) {
+            __m128 red_destination_channels = _mm_set_ps(
+                framebuffer->pixels[y_cursor * stride * 4 + (x_cursor+3) * 4 + 0],
+                framebuffer->pixels[y_cursor * stride * 4 + (x_cursor+2) * 4 + 0],
+                framebuffer->pixels[y_cursor * stride * 4 + (x_cursor+1) * 4 + 0],
+                framebuffer->pixels[y_cursor * stride * 4 + (x_cursor+0) * 4 + 0]
+            );
+            __m128 green_destination_channels = _mm_set_ps(
+                framebuffer->pixels[y_cursor * stride * 4 + (x_cursor+3) * 4 + 1],
+                framebuffer->pixels[y_cursor * stride * 4 + (x_cursor+2) * 4 + 1],
+                framebuffer->pixels[y_cursor * stride * 4 + (x_cursor+1) * 4 + 1],
+                framebuffer->pixels[y_cursor * stride * 4 + (x_cursor+0) * 4 + 1]
+            );
+            __m128 blue_destination_channels = _mm_set_ps(
+                framebuffer->pixels[y_cursor * stride * 4 + (x_cursor+3) * 4 + 2],
+                framebuffer->pixels[y_cursor * stride * 4 + (x_cursor+2) * 4 + 2],
+                framebuffer->pixels[y_cursor * stride * 4 + (x_cursor+1) * 4 + 2],
+                framebuffer->pixels[y_cursor * stride * 4 + (x_cursor+0) * 4 + 2]
+            );
+
+
+            switch (blend_mode) {
+                case BLEND_MODE_NONE: {
+                    red_destination_channels   = _mm_mul_ps(red_channels,   alpha_channels);
+                    green_destination_channels = _mm_mul_ps(green_channels, alpha_channels);
+                    blue_destination_channels  = _mm_mul_ps(blue_channels,  alpha_channels);
+                } break;
+                case BLEND_MODE_ALPHA: {
+                    __m128 one_minus_alpha     = _mm_sub_ps(_mm_set1_ps(1), alpha_channels);
+                    red_destination_channels   = _mm_add_ps(_mm_mul_ps(red_destination_channels,   one_minus_alpha),   _mm_mul_ps(red_channels, alpha_channels));
+                    green_destination_channels = _mm_add_ps(_mm_mul_ps(green_destination_channels, one_minus_alpha),   _mm_mul_ps(green_channels, alpha_channels));
+                    blue_destination_channels  = _mm_add_ps(_mm_mul_ps(blue_destination_channels,  one_minus_alpha),   _mm_mul_ps(blue_channels, alpha_channels));
+                } break;
+                case BLEND_MODE_ADDITIVE: {
+                    red_destination_channels   = _mm_add_ps(red_destination_channels,   _mm_mul_ps(red_channels,   alpha_channels));
+                    green_destination_channels = _mm_add_ps(green_destination_channels, _mm_mul_ps(green_channels, alpha_channels));
+                    blue_destination_channels  = _mm_add_ps(blue_destination_channels,  _mm_mul_ps(blue_channels,  alpha_channels));
+                } break;
+                case BLEND_MODE_MULTIPLICATIVE: {
+                    red_destination_channels   = _mm_mul_ps(red_destination_channels,   _mm_mul_ps(_mm_mul_ps(red_channels, alpha_channels),   inverse_255));
+                    green_destination_channels = _mm_mul_ps(green_destination_channels, _mm_mul_ps(_mm_mul_ps(green_channels, alpha_channels), inverse_255));
+                    blue_destination_channels  = _mm_mul_ps(blue_destination_channels,  _mm_mul_ps(_mm_mul_ps(blue_channels,  alpha_channels), inverse_255));
+                } break;
+                    bad_case;
+            }
+
+#define castF32_M128(X) ((f32*)(&X))
+            blue_destination_channels  = _mm_min_ps(_mm_max_ps(blue_destination_channels , zero), two_fifty_five);
+            green_destination_channels = _mm_min_ps(_mm_max_ps(green_destination_channels, zero), two_fifty_five);
+            red_destination_channels   = _mm_min_ps(_mm_max_ps(red_destination_channels  , zero), two_fifty_five);
+
+            for (int i = 0; i < 4; ++i) {
+                if ((x_cursor + i >= clip_rect.x+clip_rect.w))
+                    break;
+
+                framebuffer->pixels_u32[y_cursor * framebuffer->width + (x_cursor+i)] = packu32(
+                    255,
+                    castF32_M128(blue_destination_channels)[i],
+                    castF32_M128(green_destination_channels)[i],
+                    castF32_M128(red_destination_channels)[i]
+                );
+            }
+#undef castF32_M128
+        }
+    }
+}
+#else
 void software_framebuffer_draw_quad_clipped(struct software_framebuffer* framebuffer, struct rectangle_f32 destination, union color32u8 rgba, u8 blend_mode, struct rectangle_f32 clip_rect) {
     s32 start_x = clamp_s32((s32)destination.x, clip_rect.x, clip_rect.x+clip_rect.w);
     s32 start_y = clamp_s32((s32)destination.y, clip_rect.y, clip_rect.y+clip_rect.h);
@@ -184,6 +271,7 @@ void software_framebuffer_draw_quad_clipped(struct software_framebuffer* framebu
         }
     }
 }
+#endif
 void software_framebuffer_draw_quad(struct software_framebuffer* framebuffer, struct rectangle_f32 destination, union color32u8 rgba, u8 blend_mode) {
     software_framebuffer_draw_quad_clipped(framebuffer, destination, rgba, blend_mode, rectangle_f32(0, 0, framebuffer->width, framebuffer->height));
 }
@@ -394,7 +482,7 @@ void software_framebuffer_draw_image_ex_clipped(struct software_framebuffer* fra
             red_destination_channels   = _mm_min_ps(_mm_max_ps(red_destination_channels  , zero), two_fifty_five);
 
             for (int i = 0; i < 4; ++i) {
-                if ((x_cursor + i >= framebuffer->width) || (((src.x + src.w) - ((unclamped_end_x - (x_cursor+i)) * scale_ratio_w))) >= src.x+src.w)
+                if ((x_cursor + i >= clip_rect.x+clip_rect.w) || (((src.x + src.w) - ((unclamped_end_x - (x_cursor+i)) * scale_ratio_w))) >= src.x+src.w)
                     break;
 
                 framebuffer->pixels_u32[y_cursor * framebuffer->width + (x_cursor+i)] = packu32(
@@ -761,8 +849,8 @@ void software_framebuffer_render_commands(struct software_framebuffer* framebuff
 #ifndef MULTITHREADED_EXPERIMENTAL
     software_framebuffer_render_commands_tiled(framebuffer, commands, rectangle_f32(0,0,framebuffer->width,framebuffer->height));
 #else
-    s32 JOB_W  = 4;
-    s32 JOB_H  = 4;
+    s32 JOB_W  = 2;
+    s32 JOB_H  = 2;
     s32 TILE_W = framebuffer->width / JOB_W;
     s32 TILE_H = framebuffer->height / JOB_H;
 
@@ -835,8 +923,8 @@ void software_framebuffer_kernel_convolution_ex(struct memory_arena* arena, stru
     software_framebuffer_copy_into(&unaltered_buffer, framebuffer);
 
     /* We don't handle un-even divisions, which is kind of bad. This is mostly a "proof of concept" */
-    s32 JOBS_W = 4;
-    s32 JOBS_H = 4;
+    s32 JOBS_W = 8;
+    s32 JOBS_H = 8;
     s32 CLIP_W = (framebuffer->width)/JOBS_W;
     s32 CLIP_H = (framebuffer->height)/JOBS_H;
 
@@ -871,9 +959,64 @@ void software_framebuffer_kernel_convolution_ex(struct memory_arena* arena, stru
 #endif
 }
 /* does not thread itself. */
+#ifdef USE_SIMD_OPTIMIZATIONS
 void software_framebuffer_kernel_convolution_ex_bounded(struct software_framebuffer unaltered_copy, struct software_framebuffer* framebuffer, f32* kernel, s16 kernel_width, s16 kernel_height, f32 divisor, f32 blend_t, s32 passes, struct rectangle_f32 clip) {
+#define castF32_M128(X) ((f32*)(&X))
     if (divisor == 0.0) divisor = 1;
 
+    s32 framebuffer_width  = framebuffer->width;
+    s32 framebuffer_height = framebuffer->height;
+
+    s32 kernel_half_width =  kernel_width/2;
+    s32 kernel_half_height = kernel_height/2;
+
+    __m128 zero             = _mm_set1_ps(0);
+    __m128 two_fifty_five   = _mm_set1_ps(255);
+    __m128 one_over_divisor = _mm_set1_ps(1/divisor);
+    __m128 one_minus_blend_t = _mm_set1_ps(1-blend_t);
+
+    for (s32 pass = 0; pass < passes; pass++) {
+        for (s32 y_cursor = clip.y; y_cursor < clip.y+clip.h; ++y_cursor) {
+            for (s32 x_cursor = clip.x; x_cursor < clip.w+clip.x; ++x_cursor) {
+                __m128 accumulation = _mm_set1_ps(0);
+
+                for (s32 y_cursor_kernel = -kernel_half_height; y_cursor_kernel <= kernel_half_height; ++y_cursor_kernel) {
+                    for (s32 x_cursor_kernel = -kernel_half_width; x_cursor_kernel <= kernel_half_width; ++x_cursor_kernel) {
+                        s32 sample_x = x_cursor_kernel + x_cursor;
+                        s32 sample_y = y_cursor_kernel + y_cursor;
+
+                        __m128 kernel_value = _mm_set1_ps(kernel[(y_cursor_kernel+1) * kernel_width + (x_cursor_kernel+1)]);
+                        __m128 pixel_val    = _mm_set_ps(0,
+                                                         unaltered_copy.pixels[sample_y * framebuffer_width * 4 + sample_x * 4 + 2],
+                                                         unaltered_copy.pixels[sample_y * framebuffer_width * 4 + sample_x * 4 + 1],
+                                                         unaltered_copy.pixels[sample_y * framebuffer_width * 4 + sample_x * 4 + 0]);
+
+                        if (sample_x >= 0 && sample_x < framebuffer_width &&
+                            sample_y >= 0 && sample_y < framebuffer_height) {
+                            accumulation = _mm_add_ps(accumulation, _mm_mul_ps(pixel_val, kernel_value));
+                        }
+                    }
+                }
+
+                accumulation = _mm_min_ps(_mm_max_ps(_mm_mul_ps(accumulation, one_over_divisor), zero), two_fifty_five);
+
+                __m128 pixel_val = _mm_set_ps(0,
+                                              framebuffer->pixels[y_cursor * framebuffer_width * 4 + x_cursor * 4 + 2],
+                                              framebuffer->pixels[y_cursor * framebuffer_width * 4 + x_cursor * 4 + 1],
+                                              framebuffer->pixels[y_cursor * framebuffer_width * 4 + x_cursor * 4 + 0]);
+                pixel_val = _mm_add_ps(_mm_mul_ps(pixel_val, one_minus_blend_t), _mm_mul_ps(_mm_set1_ps(blend_t), accumulation));
+
+                framebuffer->pixels[y_cursor * framebuffer_width * 4 + x_cursor * 4 + 0] = castF32_M128(pixel_val)[0];
+                framebuffer->pixels[y_cursor * framebuffer_width * 4 + x_cursor * 4 + 1] = castF32_M128(pixel_val)[1];
+                framebuffer->pixels[y_cursor * framebuffer_width * 4 + x_cursor * 4 + 2] = castF32_M128(pixel_val)[2];
+            }
+        }
+    }
+#undef castF32_M128
+}
+#else
+void software_framebuffer_kernel_convolution_ex_bounded(struct software_framebuffer unaltered_copy, struct software_framebuffer* framebuffer, f32* kernel, s16 kernel_width, s16 kernel_height, f32 divisor, f32 blend_t, s32 passes, struct rectangle_f32 clip) {
+    if (divisor == 0.0) divisor = 1;
     s32 framebuffer_width  = framebuffer->width;
     s32 framebuffer_height = framebuffer->height;
 
@@ -911,6 +1054,7 @@ void software_framebuffer_kernel_convolution_ex_bounded(struct software_framebuf
         }
     }
 }
+#endif
 
 struct run_shader_job_details_shared {
     struct software_framebuffer* framebuffer;

@@ -1748,11 +1748,11 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                 game_script_execute_awaiting_scripts(&scratch_arena, game_state, dt);
                 game_script_run_all_timers(dt);
 
+                render_commands_push_quad(&commands, rectangle_f32(commands.camera.xy.x-500,commands.camera.xy.y-500,9999,9999), global_color_grading_filter, BLEND_MODE_MULTIPLICATIVE);
                 software_framebuffer_render_commands(framebuffer, &commands);
                 game_postprocess_blur_ingame(framebuffer, 2, 0.50, BLEND_MODE_ALPHA);
 
                 /* color "grading" */
-                software_framebuffer_draw_quad(framebuffer, rectangle_f32(0,0,999,999), global_color_grading_filter, BLEND_MODE_MULTIPLICATIVE);
                 do_weather(framebuffer, game_state, dt);
                 update_and_render_game_menu_ui(game_state, framebuffer, dt);
             } break;
