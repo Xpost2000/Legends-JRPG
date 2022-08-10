@@ -2,6 +2,24 @@
 /* here we evaluate the lisp script to do things! */
 
 /*
+  NOTE: I don't really like the waiting implementation.
+  
+  I would ideally like to implement real continuations (and I'm partly through, as I think I have enough state to
+  implement a form of continuations.)
+  
+  However it's probably a waste to do so, as I'm more looking for a limited usage of continuations like an await/async
+  thing.
+  
+  I cheated and looked at Godot for some ideas, but I suspect it's simpler for them as Godot only has a couple of built-in nodes,
+  and otherwise communicates exclusively through Godot objects. It also has a signal system which might make their await system
+  a bit nicer.
+  
+  I don't have that.
+  
+  I'll just manually write waiting code for stuff I need then, it's not that big of a deal, though it dampers things somewhat...
+ */
+
+/*
   TODO, implement support for cond and switch
  */
 
