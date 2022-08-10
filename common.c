@@ -315,7 +315,7 @@ static inline void memory_set64(void* memory, size_t amount, u64 value) {
 }
 
 void* system_heap_memory_allocate(size_t amount, s32 line_number, const char* filename, const char* function) {
-    if (line_number && filename && function) _debugprintf("heap allocation! : [%s:%d:%s()]", filename, line_number, function);
+    /* if (line_number && filename && function) _debugprintf("heap allocation! : [%s:%d:%s()]", filename, line_number, function); */
     amount += sizeof(struct tracked_memory_allocation_header);
     _globally_tracked_memory_allocation_counter += amount;
 
@@ -350,7 +350,7 @@ void* system_heap_memory_reallocate(void* original_pointer, size_t new_amount) {
 
 
 void system_heap_memory_deallocate(void* pointer, s32 line_number, const char* filename, const char* function) {
-    if (line_number && filename && function) _debugprintf("heap deallocation! : [%s:%d:%s()]", filename, line_number, function);
+    /* if (line_number && filename && function) _debugprintf("heap deallocation! : [%s:%d:%s()]", filename, line_number, function); */
     if (pointer) {
         void* header = pointer - sizeof(struct tracked_memory_allocation_header);
         _globally_tracked_memory_allocation_counter -= ((struct tracked_memory_allocation_header*)(header))->amount;

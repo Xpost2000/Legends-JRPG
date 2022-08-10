@@ -13,9 +13,9 @@ local struct memory_arena  global_thread_pool_arenas[MAX_POSSIBLE_THREADS] = {};
 
 typedef s32 (*job_queue_function)(void*);
 enum {
+    THREAD_JOB_STATUS_FINISHED,
     THREAD_JOB_STATUS_READY,
     THREAD_JOB_STATUS_WORKING,
-    THREAD_JOB_STATUS_FINISHED,
 };
 struct thread_job {
     u8                 status;
@@ -33,17 +33,34 @@ struct thread_job_queue {
 };
 
 struct thread_job_queue global_job_queue = {};
+/* local bool global_thread_pool_use_threads = true; */
 
 void thread_pool_add_job(job_queue_function job, void* data) {
     for (s32 index = 0; index < MAX_JOBS; ++index) {
         struct thread_job* current_job = &global_job_queue.jobs[index];
         
-        if (current_job->status == THREAD_JOB_STATUS_READY || current_job->status == THREAD_JOB_STATUS_FINISHED) {
+        if (current_job->status == THREAD_JOB_STATUS_FINISHED) {
             current_job->status = THREAD_JOB_STATUS_READY;
             current_job->data   = data;
             current_job->job    = job;
+            _debugprintf("posted new job (%p dataptr)", current_job->data);
 
             SDL_SemPost(global_job_queue.notification);
+            return;
+        }
+    }
+}
+
+void thread_pool_synchronize_tasks() {
+    bool done = false;
+    while (!done) {
+        done = true;
+
+        for (s32 index = 0; index < MAX_JOBS; ++index) {
+            struct thread_job* current_job = global_job_queue.jobs + index;
+            if (current_job->status != THREAD_JOB_STATUS_FINISHED) {
+                done = false;
+            }
         }
     }
 }
@@ -51,32 +68,46 @@ void thread_pool_add_job(job_queue_function job, void* data) {
 static int _thread_job_executor(void* context) {
     struct memory_arena* arena   = (struct memory_arena*)context;
     struct memory_arena  scratch = memory_arena_push_sub_arena(arena, Kilobyte(64));
+#if 0
     _debugprintf("thread start : \"%d\"", SDL_ThreadID());
+#endif
 
     struct thread_job* working_job = 0;
     while (global_game_running) {
+#if 0
         _debugprintf("thread(%d) waits for a job", SDL_ThreadID());
+#endif
         if (!SDL_SemWait(global_job_queue.notification)) {
             /* job hunting! */
             /* let's hunt */
-            _debugprintf("thread(%d) begins locking", SDL_ThreadID());
             SDL_LockMutex(global_job_queue.mutex); {
-                for (s32 index = 0; index < MAX_JOBS; ++index) {
-                    struct thread_job* current_job = &global_job_queue.jobs[index];
+#if 0
+                _debugprintf("thread(%d) begins locking", SDL_ThreadID());
+#endif
+                while (!working_job) {
+                    for (s32 index = 0; index < MAX_JOBS; ++index) {
+                        struct thread_job* current_job = &global_job_queue.jobs[index];
 
-                    if (current_job->status == THREAD_JOB_STATUS_READY) {
-                        _debugprintf("job #%d should be taken", index);
-                        current_job->status = THREAD_JOB_STATUS_WORKING;
-                        working_job = current_job;
-                        break;
+                        if (current_job->status == THREAD_JOB_STATUS_READY) {
+#if 0
+                            _debugprintf("job #%d should be taken", index);
+#endif
+                            current_job->status = THREAD_JOB_STATUS_WORKING;
+                            working_job = current_job;
+                            break;
+                        }
                     }
                 }
+#if 0
+                _debugprintf("thread (%d) found a job!", SDL_ThreadID());
+                _debugprintf("thread(%d) stops locking", SDL_ThreadID());
+#endif
             } SDL_UnlockMutex(global_job_queue.mutex);
-            _debugprintf("thread (%d) found a job!", SDL_ThreadID());
-            _debugprintf("thread(%d) stops locking", SDL_ThreadID());
 
             if (working_job && working_job->job) {
-                _debugprintf("thread (%d) doing job", SDL_ThreadID());
+#if 0
+                _debugprintf("thread (%d)(%p) doing job", SDL_ThreadID(), working_job->data);
+#endif
                 working_job->job(working_job->data);
             }
 
@@ -84,20 +115,13 @@ static int _thread_job_executor(void* context) {
             working_job         = NULL;
 
         }
-        _debugprintf("thread(%d) restarts loop", SDL_ThreadID());
+        /* _debugprintf("thread(%d) restarts loop", SDL_ThreadID()); */
 
         if (global_game_running == false) {
             break;
         }
     }
 
-    return 0;
-}
-
-s32 test_job_number(void* s) {
-    _debugprintf("[%d] Sleeping! %d", *(int*)s, SDL_ThreadID());
-    Sleep(rand() % 1000);
-    _debugprintf("[%d]Wow that was a lot of work! %d", *(int*)s, SDL_ThreadID());
     return 0;
 }
 
@@ -112,12 +136,10 @@ void initialize_thread_pool(void) {
         global_thread_pool_arenas[index] = memory_arena_create_from_heap("thread pool", Kilobyte(256));
         global_thread_pool[index] = SDL_CreateThread(_thread_job_executor, format_temp("slave%d", index), &global_thread_pool_arenas[index]);
     }
+}
 
-    /* test */
-    {
-        for (s32 i = 0; i < 150; ++i)
-            thread_pool_add_job(test_job_number, &i);
-    }
+void thread_pool_simulate_single_threaded(bool v) {
+    /* TODO */
 }
 
 void synchronize_and_finish_thread_pool(void) {
@@ -126,6 +148,9 @@ void synchronize_and_finish_thread_pool(void) {
 
     for (s32 thread_index = 0; thread_index < global_thread_count; ++thread_index) {
         SDL_WaitThread(global_thread_pool[thread_index], NULL);
+    }
+
+    for (s32 thread_index = 0; thread_index < global_thread_count; ++thread_index) {
         memory_arena_finish(&global_thread_pool_arenas[thread_index]);
     }
 
