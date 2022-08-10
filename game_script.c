@@ -191,25 +191,41 @@ GAME_LISP_FUNCTION(FOLLOW_PATH) {
         path[path_count].x = x_cursor;
         path[path_count++].y = y_cursor;
 
+        /* A sort of RLE to make the path look less stupid */
+#define Compress_Path(direction)                                        \
+        s32 count = 0;                                                  \
+        for (; direction_index < defined_path->list.count; ++direction_index) { \
+            sym = lisp_list_nth(defined_path, direction_index);         \
+            if (lisp_form_symbol_matching(*sym, string_literal(direction))) count++; \
+            else {direction_index -= 1; break;}                         \
+        }                                                               \
+        
+
         for (s32 direction_index = 0; direction_index < defined_path->list.count; ++direction_index) {
             struct lisp_form* sym = lisp_list_nth(defined_path, direction_index);
 
             if (lisp_form_symbol_matching(*sym, string_literal("right"))) {
-                x_cursor += 1;
+                Compress_Path("right");
+                x_cursor += 1 * count;
             } else if (lisp_form_symbol_matching(*sym, string_literal("left"))) {
-                x_cursor -= 1;
+                Compress_Path("left");
+                x_cursor -= 1 * count;
             } else if (lisp_form_symbol_matching(*sym, string_literal("down"))) {
-                y_cursor += 1;
+                Compress_Path("down");
+                y_cursor += 1 * count;
             } else if (lisp_form_symbol_matching(*sym, string_literal("up"))) {
-                y_cursor -= 1;
+                Compress_Path("up");
+                y_cursor -= 1 * count;
             }
 
             memory_arena_push(&scratch_arena, sizeof(v2f32));
             path[path_count].x = x_cursor;
             path[path_count++].y = y_cursor;
         }
+
+#undef Compress_Path
     } else if (argument_count == 3) {
-        /* pathfind form */
+        /* TODO: pathfind form */
         unimplemented("path find form!");
     }
 
