@@ -12,6 +12,8 @@
 #include "common.c"
 
 static bool global_game_running = true;
+static f32                         global_elapsed_time          = 0.0f;
+static struct memory_arena         scratch_arena                = {};
 
 #include "thread_pool.c"
 #include "serializer.c"
@@ -46,8 +48,6 @@ static SDL_Texture*                global_game_texture_surface  = NULL;
 static SDL_GameController*         global_controller_devices[4] = {};
 static SDL_Haptic*                 global_haptic_devices[4]     = {};
 static struct software_framebuffer global_default_framebuffer;
-static f32                         global_elapsed_time          = 0.0f;
-static struct memory_arena         scratch_arena                = {};
 static struct graphics_assets      graphics_assets              = {};
 
 

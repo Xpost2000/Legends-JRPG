@@ -194,6 +194,10 @@ void software_framebuffer_draw_image_ex(struct software_framebuffer* framebuffer
 
 #ifndef USE_SIMD_OPTIMIZATIONS
 void software_framebuffer_draw_image_ex_clipped(struct software_framebuffer* framebuffer, struct image_buffer* image, struct rectangle_f32 destination, struct rectangle_f32 src, union color32f32 modulation, u32 flags, u8 blend_mode, struct rectangle_f32 clip_rect) {
+    if (!rectangle_f32_intersect(destination, clip_rect)) {
+        return;
+    }
+
     if ((destination.x == 0) && (destination.y == 0) && (destination.w == 0) && (destination.h == 0)) {
         destination.w = framebuffer->width;
         destination.h = framebuffer->height;
@@ -248,6 +252,10 @@ void software_framebuffer_draw_image_ex_clipped(struct software_framebuffer* fra
 }
 #else
 void software_framebuffer_draw_image_ex_clipped(struct software_framebuffer* framebuffer, struct image_buffer* image, struct rectangle_f32 destination, struct rectangle_f32 src, union color32f32 modulation, u32 flags, u8 blend_mode, struct rectangle_f32 clip_rect) {
+    if (!rectangle_f32_intersect(destination, clip_rect)) {
+        return;
+    }
+
     if ((destination.x == 0) && (destination.y == 0) && (destination.w == 0) && (destination.h == 0)) {
         destination.w = framebuffer->width;
         destination.h = framebuffer->height;
@@ -624,6 +632,12 @@ void sort_render_commands(struct render_commands* commands) {
    
 Time to parallelize.
 */
+struct render_commands_job_details {
+    struct software_framebuffer* framebuffer;
+    struct render_commands*      commands;
+    struct rectangle_f32         clip_rect;
+};
+
 void software_framebuffer_render_commands_tiled(struct software_framebuffer* framebuffer, struct render_commands* commands, struct rectangle_f32 clip_rect) {
     f32 half_screen_width  = framebuffer->width/2;
     f32 half_screen_height = framebuffer->height/2;
@@ -670,46 +684,59 @@ void software_framebuffer_render_commands_tiled(struct software_framebuffer* fra
 
         switch (command->type) {
             case RENDER_COMMAND_DRAW_QUAD: {
-                software_framebuffer_draw_quad(
+                software_framebuffer_draw_quad_clipped(
                     framebuffer,
                     command->destination,
                     command->modulation_u8,
-                    command->blend_mode
+                    command->blend_mode,
+                    clip_rect
                 );
             } break;
             case RENDER_COMMAND_DRAW_IMAGE: {
-                software_framebuffer_draw_image_ex(
+                software_framebuffer_draw_image_ex_clipped(
                     framebuffer,
                     command->image,
                     command->destination,
                     command->source,
                     command->modulation,
                     command->flags,
-                    command->blend_mode
+                    command->blend_mode,
+                    clip_rect
                 );
             } break;
             case RENDER_COMMAND_DRAW_TEXT: {
-                software_framebuffer_draw_text(
+                software_framebuffer_draw_text_clipped(
                     framebuffer,
                     command->font,
                     command->scale,
                     command->xy,
                     command->text,
                     command->modulation,
-                    command->blend_mode
+                    command->blend_mode,
+                    clip_rect
                 );
             } break;
             case RENDER_COMMAND_DRAW_LINE: {
-                software_framebuffer_draw_line(
+                software_framebuffer_draw_line_clipped(
                     framebuffer,
                     command->start,
                     command->end,
                     command->modulation_u8,
-                    command->blend_mode
+                    command->blend_mode,
+                    clip_rect
                 );
             } break;
         }
     }
+}
+
+s32 thread_software_framebuffer_render_commands_tiles(void* context) {
+    struct render_commands_job_details* job_details = context;
+    software_framebuffer_render_commands_tiled(job_details->framebuffer,
+                                               job_details->commands,
+                                               job_details->clip_rect);
+
+    return 0;
 }
 
 void software_framebuffer_render_commands(struct software_framebuffer* framebuffer, struct render_commands* commands) {
@@ -722,6 +749,28 @@ void software_framebuffer_render_commands(struct software_framebuffer* framebuff
 #ifndef MULTITHREADED_EXPERIMENTAL
     software_framebuffer_render_commands_tiled(framebuffer, commands, rectangle_f32(0,0,framebuffer->width,framebuffer->height));
 #else
+    s32 JOB_W  = 16;
+    s32 JOB_H  = 16;
+    s32 TILE_W = framebuffer->width / JOB_W;
+    s32 TILE_H = framebuffer->height / JOB_H;
+
+    struct render_commands_job_details* job_details = memory_arena_push(&scratch_arena, sizeof(*job_details) * (JOB_W*JOB_H));
+
+    for (s32 y = 0; y < JOB_H; ++y) {
+        for (s32 x = 0; x < JOB_W; ++x) {
+            struct rectangle_f32 clip_rect = (struct rectangle_f32) { x * TILE_W, y * TILE_H, TILE_W, TILE_H };
+
+            struct render_commands_job_details* current_details = &job_details[y*JOB_W+x];
+
+            current_details->framebuffer = framebuffer;
+            current_details->commands    = commands;
+            current_details->clip_rect   = clip_rect;
+            
+            thread_pool_add_job(thread_software_framebuffer_render_commands_tiles, current_details);
+        }
+    }
+
+    thread_pool_synchronize_tasks();
 #endif
 }
 
@@ -729,6 +778,10 @@ void software_framebuffer_render_commands(struct software_framebuffer* framebuff
 /* NOTE technically a test of performance to see if this is doomed */
 
 struct postprocess_job_shared {
+    /* 
+       should allow for job types such as generic shader 
+       or specialized cases such as this
+    */
     f32* kernel;
     s32  kernel_width;
     s32  kernel_height;
