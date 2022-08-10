@@ -646,6 +646,12 @@ void sort_render_commands(struct render_commands* commands) {
     /* TODO */
 }
 
+/* TODO: The main benefit of render commands, is that we should be able to parallelize them.
+   This should lead to a massive speed up, my SIMD optimization is kind of shit since it stabilizes but doesn't
+   really improve framerate.
+   
+   The other big killer is the postprocessing system.
+*/
 void software_framebuffer_render_commands(struct software_framebuffer* framebuffer, struct render_commands* commands) {
     if (commands->should_clear_buffer) {
         software_framebuffer_clear_buffer(framebuffer, commands->clear_buffer_color);

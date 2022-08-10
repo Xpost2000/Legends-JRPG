@@ -3,41 +3,35 @@ into it everytime.
 
 Right now I am:
 
-This is going to be quite a bit of work.
+Adding multithreaded render command support (
+the world rendering is quite slow and requires multithreading, we can extend it to other stuff as well, but
+it's not necessary in the vast majority of rendering cases, so I'm only going to render to the screen as tiles for software_framebuffer_render_commands.
 
-I might need to consider writing an opengl renderer very soon, after the game act 1 demo can get
-completed.
+the postprocessing stuff also tends to hurt the engine performance.
 
-I mean until then I should consider multithreading the fucking things.
+Afterwards see what happens if we add "shader" support.
 
-I mean I could kind of easily render into separate image contexts and we can use OpenGL to speed up some post processing?
-Who knows?
+After that, work on loading cutscene scripts. Which isn't really that complicated, cutscenes are the simplest type of lisp script
+as they basically just operate top->down. That's literally all they are. (just gotta code lots of auxiliary functions)
 
-(The threading is fortunately only in very select circumstances, as we don't need to split up the rendering into tiles. Infact the only
-thing that requires any multithreading is post-processing as it requires a shitton of work. Rendering sprites is relatively cheap all things considered,
-although obviously we can use multithreading to speed it up, I won't deem it very necessary...
+We just need to figure out how to wait on them. Though I suspect it's not too hard.
 
-We'll think about how it should work later. However we're just going to exclusively make post processing the only thing that actually requires multithreading. For
-game rendering, since our sprites are extraordinarily small, I'm going to just make a mega texture atlas at load time. (all of the sprites are 16x16, or basically just like that,
-and we can just shove as many sprites into that as we want. If we hit a limit of about 4096x4096 on our texture atlas for some reason, I might have to split pages. That's a problem
-for the future though. After some game logic is done))
+Then we need to investigate the dialogue system to see how broken it can possibly be at the moment.
 
-WHEN I'M BACK:
-Inventory / Equipment page!
+After that, we'll start moving our item database into files. We need to do something about other items as well...
 
-Think of an okay prologue, and once the inventory/equipment
-stuff is working enough, we'll move to more combat work!
+After that we'll work on a basic shopping UI. It might become the reference for the new inventory UI, but yeah.
 
-Then add particle systems! We're going to allocate from a fixed pool, and
-have a limited amount. It's not going to be as useful as the particle system from
-the previous project, however it's going to be way simpler. I'll try to have similar
-effects (Image -> Particles), which should be much easier as our sprites are known
-to be much smaller (this is intentional.)
+We'll need to add our first entities, so we'll need to draw maybe a few new sprites? We'll just create some entity description
+files.
 
-We're going to then work on the basic lighting system. We're going to do lighting in
-a similar method to "deferred lighting methods",
 
-Then begin adding objects! Which will be hardcoded in engine unfortunately?
+Day end. Day after, we'll see more RPG things to polish I suppose, and we'll add SDL_Mixer audio support (though add arbitrary support
+through a simple audio_driver system. Also research on XP/level curves I suppose, we need something balanced. We really should add our first
+combat animations and such. That's going to be a little painful?)
+
+All of this should be enough to allow us to prototype the RPG parts of the game.
+)
 
 
 ** Might need to move things to more data files

@@ -225,8 +225,16 @@ GAME_LISP_FUNCTION(FOLLOW_PATH) {
 
 #undef Compress_Path
     } else if (argument_count == 3) {
-        /* TODO: pathfind form */
-        unimplemented("path find form!");
+        /* TODO: revise the usage of this. Might look correct. */
+        v2f32 start;
+        v2f32 end;
+
+        lisp_form_get_v2f32(arguments[1], &start);
+        lisp_form_get_v2f32(arguments[2], &end);
+
+        struct navigation_path path_results = navigation_path_find(&scratch_arena, &state->loaded_area, start, end);
+        path       = path_results.points;
+        path_count = path_results.count;
     }
 
     entity_combat_submit_movement_action(target_entity, path, path_count);

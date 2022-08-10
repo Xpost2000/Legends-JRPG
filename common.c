@@ -3,7 +3,6 @@
 
 #ifndef __EMSCRIPTEN__
 #include <x86intrin.h>
-#undef USE_SIMD_OPTIMIZATIONS
 #endif
 
 #include <stdio.h>

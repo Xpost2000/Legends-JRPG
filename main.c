@@ -46,6 +46,8 @@ static f32                         global_elapsed_time          = 0.0f;
 static struct memory_arena         scratch_arena                = {};
 static struct graphics_assets      graphics_assets              = {};
 
+#include "thread_pool.c"
+
 local void close_all_controllers(void) {
     for (unsigned controller_index = 0; controller_index < array_count(global_controller_devices); ++controller_index) {
         if (global_controller_devices[controller_index]) {
@@ -300,6 +302,7 @@ void engine_main_loop(void* _) {
 
 int engine_main(int argc, char** argv) {
     initialize();
+    initialize_thread_pool();
 
     if (sandbox_testing())
         return 1;
@@ -312,6 +315,7 @@ int engine_main(int argc, char** argv) {
     }
 #endif
 
+    synchronize_and_finish_thread_pool();
     deinitialize();
     return 0;
 }

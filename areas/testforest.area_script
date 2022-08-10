@@ -2,7 +2,8 @@
 # Might need to change the evaluation method.
 (on-enter
 	(game_disable_input)
-	(follow_path '(entity player) '(down down down down right right right))
+	(follow_path '(entity player) '(down down down down right right right up up up))
+        (game_set_environment_colors '(255 0 0 255))
 	(game_enable_input)
         (wait 10)
         (game_set_environment_colors 'night)
@@ -23,22 +24,23 @@
 #     (progn (game_message_queue "ok."))))
      
 
- (on-touch (trigger 0)
-        (if T (if T (game_message_queue "always happens")))
-        (case (obj_activations '(trigger 0))
- 	      (1 (game_message_queue "one potato"))
-               (2 (game_message_queue "two potato"))
-               (3 (game_message_queue "three potato"))
-               (4 (game_message_queue "I SCREAM YOU WE ALL SCREAM") (game_start_rain))
- 	))
+#(on-touch (trigger 0)
+#       (if T (if T (game_message_queue "always happens")))
+#       (case (obj_activations '(trigger 0))
+#	      (1 (game_message_queue "one potato"))
+#              (2 (game_message_queue "two potato"))
+#              (3 (game_message_queue "three potato"))
+#              (4 (game_message_queue "I SCREAM YOU WE ALL SCREAM") (game_start_rain))
+#	))
 
 #(on-touch (trigger 0)
 #          (if (equal (obj_activations '(trigger 0)) 1)
 #              (game_start_snow) 
 #              (game_stop_snow)))
 
-# (on-touch (trigger 0)
-# 	(if (game_is_weather 'snow)
-# 		(game_stop_snow)
-# 		(game_start_snow))
-# )
+(on-touch (trigger 0)
+	(if (game_is_weather 'snow)
+              (progn
+ 		(game_stop_snow)
+		(follow_path '(entity player) '(up up up up up up)))
+ 		(game_start_snow)))
