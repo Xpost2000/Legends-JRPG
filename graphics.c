@@ -171,10 +171,18 @@ void software_framebuffer_clear_buffer(struct software_framebuffer* framebuffer,
 
 #ifdef USE_SIMD_OPTIMIZATIONS
 void software_framebuffer_draw_quad_clipped(struct software_framebuffer* framebuffer, struct rectangle_f32 destination, union color32u8 rgba, u8 blend_mode, struct rectangle_f32 clip_rect) {
-    s32 start_x = clamp_s32((s32)destination.x, clip_rect.x, clip_rect.x+clip_rect.w);
-    s32 start_y = clamp_s32((s32)destination.y, clip_rect.y, clip_rect.y+clip_rect.h);
-    s32 end_x   = clamp_s32((s32)(destination.x + destination.w), clip_rect.x, clip_rect.x+clip_rect.w);
-    s32 end_y   = clamp_s32((s32)(destination.y + destination.h), clip_rect.y, clip_rect.y+clip_rect.h);
+    __m128i rect_edges_end   = _mm_set_epi32(clip_rect.x+clip_rect.w, clip_rect.y+clip_rect.h, clip_rect.x + clip_rect.w, clip_rect.y + clip_rect.h);
+    __m128i rect_edges_start = _mm_set_epi32(clip_rect.x, clip_rect.y, clip_rect.x, clip_rect.y);
+    union {
+        s32 xyzw[4];
+        __m128i vectors;
+    } v;
+    v.vectors =  _mm_set_epi32(destination.x, destination.y, destination.x+destination.w, destination.y+destination.h);
+    v.vectors           = _mm_min_epi32(_mm_max_epi32(v.vectors, rect_edges_start), rect_edges_end);
+    s32 start_x = (v.xyzw)[3];
+    s32 start_y = (v.xyzw)[2];
+    s32 end_x   = (v.xyzw)[1];
+    s32 end_y   = (v.xyzw)[0];
 
     __m128 red_channels   = _mm_set1_ps((f32)rgba.r);
     __m128 green_channels = _mm_set1_ps((f32)rgba.g);
@@ -239,6 +247,7 @@ void software_framebuffer_draw_quad_clipped(struct software_framebuffer* framebu
             blue_destination_channels  = _mm_min_ps(_mm_max_ps(blue_destination_channels , zero), two_fifty_five);
             green_destination_channels = _mm_min_ps(_mm_max_ps(green_destination_channels, zero), two_fifty_five);
             red_destination_channels   = _mm_min_ps(_mm_max_ps(red_destination_channels  , zero), two_fifty_five);
+
 
             for (int i = 0; i < 4; ++i) {
                 if ((x_cursor + i >= clip_rect.x+clip_rect.w))
@@ -357,10 +366,18 @@ void software_framebuffer_draw_image_ex_clipped(struct software_framebuffer* fra
     f32 scale_ratio_w = (f32)src.w / destination.w;
     f32 scale_ratio_h = (f32)src.h / destination.h;
 
-    s32 start_x = clamp_s32((s32)destination.x, clip_rect.x, clip_rect.x+clip_rect.w);
-    s32 start_y = clamp_s32((s32)destination.y, clip_rect.y, clip_rect.y+clip_rect.h);
-    s32 end_x   = clamp_s32((s32)(destination.x + destination.w), clip_rect.x, clip_rect.x+clip_rect.w);
-    s32 end_y   = clamp_s32((s32)(destination.y + destination.h), clip_rect.y, clip_rect.y+clip_rect.h);
+    __m128i rect_edges_end   = _mm_set_epi32(clip_rect.x+clip_rect.w, clip_rect.y+clip_rect.h, clip_rect.x + clip_rect.w, clip_rect.y + clip_rect.h);
+    __m128i rect_edges_start = _mm_set_epi32(clip_rect.x, clip_rect.y, clip_rect.x, clip_rect.y);
+    union {
+        s32 xyzw[4];
+        __m128i vectors;
+    } v;
+    v.vectors =  _mm_set_epi32(destination.x, destination.y, destination.x+destination.w, destination.y+destination.h);
+    v.vectors           = _mm_min_epi32(_mm_max_epi32(v.vectors, rect_edges_start), rect_edges_end);
+    s32 start_x = (v.xyzw)[3];
+    s32 start_y = (v.xyzw)[2];
+    s32 end_x   = (v.xyzw)[1];
+    s32 end_y   = (v.xyzw)[0];
 
     s32 unclamped_end_x = (s32)(destination.x + destination.w);
     s32 unclamped_end_y = (s32)(destination.y + destination.h);

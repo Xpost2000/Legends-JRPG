@@ -3,7 +3,7 @@
 
 CC=gcc
 CFLAGS=-Werror -Wno-unused -Wno-format -Wno-unused-but-set-variable -Wall -std=c99
-CLIBS=`pkg-config --libs --cflags sdl2` -I./dependencies/
+CLIBS=`pkg-config --libs --cflags sdl2` -I./dependencies/ -msse4
 SOURCE_FILE_MODULES= main.c
 EMCC=emcc
 
