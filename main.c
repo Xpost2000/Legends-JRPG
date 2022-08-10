@@ -1,4 +1,5 @@
 /* #define NO_POSTPROCESSING */
+#define MULTITHREADED_EXPERIMENTAL
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
@@ -9,14 +10,18 @@
 #include <SDL2/SDL.h>
 
 #include "common.c"
+
+static bool global_game_running = true;
+
+#include "thread_pool.c"
 #include "serializer.c"
 #include "input.c"
 #include "sdl_scancode_table.c"
 #include "graphics.c"
 
 /* target engine res */
-const u32 SCREEN_WIDTH       = 640;
-const u32 SCREEN_HEIGHT      = 480;
+const u32   SCREEN_WIDTH        = 640;
+const u32   SCREEN_HEIGHT       = 480;
 /* real res */
 /* consider a better way to decouple this from the editor logic. */
 /* game logic is okay because we don't use the mouse for UI. (I mean I probably should allow it, but whatever.) */
@@ -36,7 +41,6 @@ const char* _build_flags =
 
 /* While this is *software* rendered, we still blit using a hardware method since it's still faster than manual texture blits. */
 static SDL_Window*                 global_game_window           = NULL;
-static bool                        global_game_running          = true;
 static SDL_Renderer*               global_game_sdl_renderer     = NULL;
 static SDL_Texture*                global_game_texture_surface  = NULL;
 static SDL_GameController*         global_controller_devices[4] = {};
@@ -46,7 +50,6 @@ static f32                         global_elapsed_time          = 0.0f;
 static struct memory_arena         scratch_arena                = {};
 static struct graphics_assets      graphics_assets              = {};
 
-#include "thread_pool.c"
 
 local void close_all_controllers(void) {
     for (unsigned controller_index = 0; controller_index < array_count(global_controller_devices); ++controller_index) {

@@ -654,7 +654,7 @@ void sort_render_commands(struct render_commands* commands) {
    This should lead to a massive speed up, my SIMD optimization is kind of shit since it stabilizes but doesn't
    really improve framerate.
    
-   The other big killer is the postprocessing system.
+Time to parallelize.
 */
 void software_framebuffer_render_commands(struct software_framebuffer* framebuffer, struct render_commands* commands) {
     if (commands->should_clear_buffer) {
@@ -753,20 +753,84 @@ void software_framebuffer_render_commands(struct software_framebuffer* framebuff
 /* requires an arena because we need an original copy of our framebuffer. */
 /* NOTE technically a test of performance to see if this is doomed */
 
-/*
-  As expected this is the single most expensive operation.
-  
-  I don't want to have to force so many copies with this when I multithread though... It might be safe to always store a double buffer of the framebuffer
-  itself? Will think about later.
-  
-  Well, I could SIMD this for a much easier performance fix...
-  Then threading this would just be figuring out how to split this into multiple tiles/clusters.
-*/
+struct postprocess_job_shared {
+    f32* kernel;
+    s32  kernel_width;
+    s32  kernel_height;
+
+    f32 divisor;
+    s32 passes;
+
+    struct software_framebuffer* unaltered_framebuffer_copy;
+    struct software_framebuffer* framebuffer;
+
+    f32                          blend_t;
+};
+struct postprocess_job_details {
+    struct postprocess_job_shared* shared;
+    struct rectangle_f32         clip_rect;
+};
+
+s32 thread_software_framebuffer_kernel_convolution(void* job) {
+    struct postprocess_job_details* details = job;
+    software_framebuffer_kernel_convolution_ex_bounded(*details->shared->unaltered_framebuffer_copy,
+                                                       details->shared->framebuffer,
+                                                       details->shared->kernel,
+                                                       details->shared->kernel_width,
+                                                       details->shared->kernel_height,
+                                                       details->shared->divisor,
+                                                       details->shared->blend_t,
+                                                       details->shared->passes,
+                                                       details->clip_rect);
+    return 0;
+}
+
 void software_framebuffer_kernel_convolution_ex(struct memory_arena* arena, struct software_framebuffer* framebuffer, f32* kernel, s16 kernel_width, s16 kernel_height, f32 divisor, f32 blend_t, s32 passes) {
+#ifndef MULTITHREADED_EXPERIMENTAL
     struct software_framebuffer unaltered_copy = software_framebuffer_create(arena, framebuffer->width, framebuffer->height);
     software_framebuffer_copy_into(&unaltered_copy, framebuffer);
     software_framebuffer_kernel_convolution_ex_bounded(unaltered_copy, framebuffer, kernel, kernel_width, kernel_height, divisor, blend_t, passes, rectangle_f32(0,0,framebuffer->width,framebuffer->height));
+#else
+    struct software_framebuffer unaltered_buffer = software_framebuffer_create(arena, framebuffer->width, framebuffer->height);
+    software_framebuffer_copy_into(&unaltered_buffer, framebuffer);
+
+    /* We don't handle un-even divisions, which is kind of bad. This is mostly a "proof of concept" */
+    s32 JOBS_W = 16;
+    s32 JOBS_H = 16;
+    s32 CLIP_W = (framebuffer->width)/JOBS_W;
+    s32 CLIP_H = (framebuffer->height)/JOBS_H;
+
+    struct postprocess_job_shared shared_buffer =  (struct postprocess_job_shared) {
+        .kernel                     = kernel,
+        .kernel_width               = kernel_width,
+        .kernel_height              = kernel_height,
+        .unaltered_framebuffer_copy = &unaltered_buffer,
+        .framebuffer                = framebuffer,
+        .blend_t                    = blend_t,
+        .divisor                    = divisor,
+        .passes                     = passes,
+    };
+
+    struct postprocess_job_details* job_buffers = memory_arena_push(arena, sizeof(*job_buffers) * (JOBS_W*JOBS_H));
+
+    for (s32 y = 0; y < JOBS_H; ++y) {
+        for (s32 x = 0; x < JOBS_W; ++x) {
+            struct rectangle_f32            clip_rect      = (struct rectangle_f32){x * CLIP_W, y * CLIP_H, CLIP_W, CLIP_H};
+            struct postprocess_job_details* current_buffer = &job_buffers[y*JOBS_W+x];
+
+            {
+                current_buffer->shared                     = &shared_buffer;
+                current_buffer->clip_rect                  = clip_rect;
+            }
+
+            thread_pool_add_job(thread_software_framebuffer_kernel_convolution, current_buffer);
+        }
+    }
+
+    thread_pool_synchronize_tasks();
+#endif
 }
+/* does not thread itself. */
 void software_framebuffer_kernel_convolution_ex_bounded(struct software_framebuffer unaltered_copy, struct software_framebuffer* framebuffer, f32* kernel, s16 kernel_width, s16 kernel_height, f32 divisor, f32 blend_t, s32 passes, struct rectangle_f32 clip) {
     if (divisor == 0.0) divisor = 1;
 
