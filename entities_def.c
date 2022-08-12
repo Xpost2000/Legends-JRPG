@@ -53,6 +53,8 @@ enum entity_flags {
      * ....
      */
     ENTITY_FLAGS_HIDDEN            = BIT(31),
+
+    ENTITY_FLAGS_RUNTIME_RESERVATION = (ENTITY_FLAGS_ACTIVE | ENTITY_FLAGS_ALIVE | ENTITY_FLAGS_NOCLIP | ENTITY_FLAGS_PLAYER_CONTROLLED),
 };
 
 /* generousity is well rewarded */
@@ -226,6 +228,7 @@ struct entity_base_data {
     item_id                       equip_slots[ENTITY_EQUIP_SLOT_INDEX_COUNT];
     struct entity_actor_inventory inventory;
 };
+void entity_base_data_unpack(struct entity_base_data* data, struct entity* unpack_destination);
 
 struct entity_database {
     struct memory_arena*     arena;

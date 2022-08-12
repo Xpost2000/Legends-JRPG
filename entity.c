@@ -766,3 +766,24 @@ struct entity_database entity_database_create(struct memory_arena* arena, s32 am
 
     return result;
 }
+
+void entity_base_data_unpack(struct entity_base_data* data, struct entity* destination) {
+    destination->name        = data->name;
+    destination->model_index = data->model_index;
+
+    /* don't allow these flags to override. That could be bad. */
+    data->flags &= ~(ENTITY_FLAGS_RUNTIME_RESERVATION);
+
+    destination->flags        = data->flags;
+    destination->ai.flags     = data->ai_flags;
+    destination->stat_block   = data->stats;
+    destination->health.min   = destination->magic.min = 0;
+    destination->health.value = destination->health.max = data->health;
+    destination->magic.value  = destination->magic.max  = data->magic;
+
+    destination->inventory    = data->inventory;
+
+    for (s32 index = 0; index < array_count(data->equip_slots); ++index) {
+        destination->equip_slots[index] = data->equip_slots[index];
+    }
+}
