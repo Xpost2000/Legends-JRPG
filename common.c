@@ -14,6 +14,8 @@
 #include <assert.h>
 #include <time.h>
 
+#include <math.h>
+
 #define assertion(x) assert(x)
 #define unimplemented(x) assertion(false && x);
 #define bad_case         default: { unimplemented ("no case"); } break

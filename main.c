@@ -30,7 +30,7 @@ local u32 REAL_SCREEN_HEIGHT = SCREEN_HEIGHT;
 #include "input.c"
 #include "sdl_scancode_table.c"
 #include "graphics.c"
-
+#include "audio_none.c"
 
 const char* _build_flags =
 #ifdef USE_SIMD_OPTIMIZATIONS
@@ -260,9 +260,11 @@ void initialize(void) {
     global_default_framebuffer  = software_framebuffer_create(&game_arena, SCREEN_WIDTH, SCREEN_HEIGHT);
     global_game_texture_surface = SDL_CreateTexture(global_game_sdl_renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STREAMING, global_default_framebuffer.width, global_default_framebuffer.height);
     initialize_thread_pool();
+    audio_initialize();
 }
 
 void deinitialize(void) {
+    audio_deinitialize();
     synchronize_and_finish_thread_pool();
     game_deinitialize();
 
