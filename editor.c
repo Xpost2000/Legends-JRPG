@@ -275,7 +275,7 @@ void editor_place_or_drag_actor(v2f32 point_in_tilespace) {
         for (s32 index = 0; index < editor_state->entity_count; ++index) {
             struct level_area_entity* current_entity = editor_state->entities + index;
 
-            if (rectangle_f32_intersect(rectangle_f32(current_entity->position.x, current_entity->position.y, TILE_UNIT_SIZE*0.8, TILE_UNIT_SIZE*0.8), rectangle_f32(point_in_tilespace.x, point_in_tilespace.y, 0.25, 0.25))) {
+            if (rectangle_f32_intersect(rectangle_f32(current_entity->position.x, current_entity->position.y-1, 1, 2), rectangle_f32(point_in_tilespace.x, point_in_tilespace.y, 0.25, 0.25))) {
                 editor_state->last_selected = current_entity;
                 set_drag_candidate(current_entity, get_mouse_in_tile_space(&editor_state->camera, REAL_SCREEN_WIDTH, REAL_SCREEN_HEIGHT), current_entity->position);
                 return;
@@ -297,8 +297,8 @@ void editor_place_or_drag_actor(v2f32 point_in_tilespace) {
             /* TODO: technically our models should contain their own collision size */
             /* they don't right now which is why I'm going to hardcode all of this. */
             /* in tile sizes. */
-            new_entity->scale.x = 0.8;
-            new_entity->scale.y = 0.8;
+            new_entity->scale.x = 1;
+            new_entity->scale.y = 2;
         }
         editor_state->last_selected      = new_entity;
     }
@@ -1073,6 +1073,7 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
                                     string s = string_clone(&scratch_arena, string_from_cstring(format_temp("base_id: %s", entity->base_name)));
                                     if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(10, draw_cursor_y), s)) {
                                     }
+                                    draw_cursor_y += 16 * 2 * 1.5;
                                 }
                                 string facing_direction_string = facing_direction_strings[entity->facing_direction];
                                 {
@@ -1081,17 +1082,16 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
 
                                     if (result == 1) {
                                         entity->facing_direction += 1;
-                                        if (entity->facing_direction >= 3) entity->facing_direction = 0;
-                                    } else if (result == 2) {
-                                        entity->facing_direction -= 1;
-                                        if (entity->facing_direction < 0) entity->facing_direction = 3;
+                                        if (entity->facing_direction > 3) entity->facing_direction = 0;
                                     }
+                                    draw_cursor_y += 16 * 2 * 1.5;
                                 }
 
                                 {
                                     string s = string_clone(&scratch_arena, string_from_cstring(format_temp("hidden: %s", yesno[(entity->flags & ENTITY_FLAGS_HIDDEN) > 0])));
                                     if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(10, draw_cursor_y), s)) {
                                     }
+                                    draw_cursor_y += 16 * 2 * 1.5;
                                 }
                             }
 
@@ -1335,7 +1335,7 @@ void update_and_render_editor(struct software_framebuffer* framebuffer, f32 dt) 
 
             for (s32 entity_index = 0; entity_index < editor_state->entity_count; ++entity_index) {
                 struct level_area_entity* current_entity = editor_state->entities + entity_index;
-                struct rectangle_f32 bounds = rectangle_f32(current_entity->position.x, current_entity->position.y, current_entity->scale.x, current_entity->scale.y);
+                struct rectangle_f32 bounds = rectangle_f32(current_entity->position.x, current_entity->position.y-1, 1, 2);
 
                 if (editor_state->last_selected == current_entity) {
                     render_commands_push_quad(&commands, rectangle_f32(bounds.x * TILE_UNIT_SIZE, bounds.y * TILE_UNIT_SIZE, bounds.w * TILE_UNIT_SIZE, bounds.h * TILE_UNIT_SIZE),
@@ -1345,8 +1345,6 @@ void update_and_render_editor(struct software_framebuffer* framebuffer, f32 dt) 
                                               color32u8(255, 0, 0, normalized_sinf(global_elapsed_time*2) * 0.5*255 + 64), BLEND_MODE_ALPHA);
                 }
 
-                s32 entity_id          = current_entity - editor_state->entities;
-                render_commands_push_text(&commands, font, 1, v2f32(bounds.x * TILE_UNIT_SIZE, bounds.y * TILE_UNIT_SIZE), string_from_cstring(format_temp("(entity %d)", entity_id)), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
                 {
                     
                     struct entity_base_data* base_def = entity_database_find_by_name(&game_state->entity_database, string_from_cstring(current_entity->base_name));
@@ -1357,6 +1355,8 @@ void update_and_render_editor(struct software_framebuffer* framebuffer, f32 dt) 
                     render_commands_push_image(&commands, graphics_assets_get_image_by_id(&graphics_assets, sprite_to_use),
                                                rectangle_f32_scale(bounds, TILE_UNIT_SIZE), RECTANGLE_F32_NULL, color32f32_WHITE, NO_FLAGS, BLEND_MODE_ALPHA);
                 }
+                s32 entity_id          = current_entity - editor_state->entities;
+                render_commands_push_text(&commands, font, 1, v2f32(bounds.x * TILE_UNIT_SIZE, bounds.y * TILE_UNIT_SIZE), string_from_cstring(format_temp("(entity %d)", entity_id)), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
             }
 
             for (s32 generic_trigger_index = 0; generic_trigger_index < editor_state->generic_trigger_count; ++generic_trigger_index) {
