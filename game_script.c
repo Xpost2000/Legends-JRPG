@@ -1055,8 +1055,6 @@ void game_script_execute_awaiting_scripts(struct memory_arena* arena, struct gam
                             }
                         }
                     } else {
-                        _debugprintf("cannot execute");
-                        _debug_print_out_lisp_code(current_form);
                         /* no execute */
                     }
 

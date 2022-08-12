@@ -1,6 +1,5 @@
 /* virtual pixels */
 #define TILE_UNIT_SIZE (32) /* measured with a reference of 640x480 */
-#define MAX_TILE_LAYERS (4) 
 
 #include "game_def.c"
 #include "save_data_def.c"
@@ -1007,7 +1006,8 @@ void game_initialize_game_world(void) {
     load_level_from_file(game_state, string_literal("pf.area"));
 #endif
     /* load_level_from_file(game_state, string_literal("bt.area")); */
-    load_level_from_file(game_state, string_literal("testforest.area"));
+    /* load_level_from_file(game_state, string_literal("testforest.area")); */
+    load_level_from_file(game_state, string_literal("level.area"));
     /* load_level_from_file(game_state, string_literal("testisland.area")); */
     /* game_attempt_to_change_area_name(game_state, string_literal("Old Iyeila"), string_literal("Grave of Stars")); */
 #if 0
@@ -1750,7 +1750,7 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
 
                 render_commands_push_quad(&commands, rectangle_f32(commands.camera.xy.x-500,commands.camera.xy.y-500,9999,9999), global_color_grading_filter, BLEND_MODE_MULTIPLICATIVE);
                 software_framebuffer_render_commands(framebuffer, &commands);
-                game_postprocess_blur_ingame(framebuffer, 2, 0.50, BLEND_MODE_ALPHA);
+                game_postprocess_blur_ingame(framebuffer, 2, 0.62, BLEND_MODE_ALPHA);
 
                 /* color "grading" */
                 do_weather(framebuffer, game_state, dt);

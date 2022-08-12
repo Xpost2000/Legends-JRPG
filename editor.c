@@ -1119,13 +1119,17 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
                     }
 
                     s32 TILES_PER_ROW = (500 / largest_name_width);
-                    s32 row_count     = tile_table_data_count / TILES_PER_ROW;
+                    s32 row_count     = (tile_table_data_count / TILES_PER_ROW)+1;
 
                     for (s32 row_index = 0; row_index < row_count; ++row_index) {
                         f32 draw_cursor_x = 0;
 
                         for (s32 index = 0; index < TILES_PER_ROW; ++index) {
                             s32 tile_data_index = row_index * TILES_PER_ROW + index;
+                            if (!(tile_data_index < tile_table_data_count)) {
+                                break;
+                            }
+
                             struct tile_data_definition* tile_data = tile_table_data + tile_data_index;
                             image_id tex = graphics_assets_get_image_by_filepath(&graphics_assets, tile_data->frames[0]); 
 

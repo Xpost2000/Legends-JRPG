@@ -183,6 +183,9 @@ void handle_sdl_events(void) {
     {
         SDL_Event current_event;
 
+        f32 resolution_scale_x = REAL_SCREEN_WIDTH / SCREEN_WIDTH;
+        f32 resolution_scale_y = REAL_SCREEN_HEIGHT / SCREEN_HEIGHT;
+
         while (SDL_PollEvent(&current_event)) {
             switch (current_event.type) {
                 case SDL_QUIT: {
@@ -203,7 +206,7 @@ void handle_sdl_events(void) {
                     register_mouse_wheel(current_event.wheel.x, current_event.wheel.y);
                 } break;
                 case SDL_MOUSEMOTION: {
-                    register_mouse_position(current_event.motion.x, current_event.motion.y);
+                    register_mouse_position(current_event.motion.x / resolution_scale_x, current_event.motion.y / resolution_scale_y);
                 } break;
                 case SDL_MOUSEBUTTONDOWN:
                 case SDL_MOUSEBUTTONUP: {
@@ -220,7 +223,7 @@ void handle_sdl_events(void) {
                         } break;
                     }
 
-                    register_mouse_position(current_event.button.x, current_event.button.y);
+                    register_mouse_position(current_event.button.x/resolution_scale_x, current_event.button.y/resolution_scale_y);
                     register_mouse_button(button_id, current_event.button.state == SDL_PRESSED);
                 } break;
 

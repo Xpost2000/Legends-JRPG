@@ -92,7 +92,12 @@ static string ui_pause_editor_menu_strings[] = {
     string_literal("QUIT"),
 };
 
-#define COLOR_GRADING_DAY     color32u8(255,255,255,255)
+#define COLOR_GRADING_DAY     color32u8(250,245,216,255)
+/* #define COLOR_GRADING_DAY     color32u8(249,184,165,255) */
+/* #define COLOR_GRADING_DAY     color32u8(249, 143, 109, 255) */
+/* #define COLOR_GRADING_DAY     color32u8(192, 231, 250, 255) */
+/* #define COLOR_GRADING_DAY     color32u8(208, 254, 238, 255) */
+/* #define COLOR_GRADING_DAY     color32u8(213, 215, 152, 255) */
 #define COLOR_GRADING_NIGHT   color32u8(178*0.75,180*0.75,255*0.75,255)
 #define COLOR_GRADING_DARKEST color32u8(42,42,110,255)
 #define COLOR_GRADING_DAWN    color32u8(240,105,26,255)

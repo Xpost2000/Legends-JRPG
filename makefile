@@ -3,7 +3,8 @@
 
 CC=gcc
 CFLAGS=-Werror -Wno-unused -Wno-format -Wno-unused-but-set-variable -Wall -std=c99
-CLIBS=`pkg-config --libs --cflags sdl2` -I./dependencies/ -msse4
+CLIBS=-Dmain=SDL_main -lmingw32 -L./dependencies/x86-64/lib/ -L./dependencies/x86-64/bin/ -I./dependencies/ -lSDL2main -lSDL2 -lsoloud_x64 -msse4
+
 SOURCE_FILE_MODULES= main.c
 EMCC=emcc
 
@@ -11,7 +12,7 @@ EMCC=emcc
 all: game.exe game-debug.exe
 
 game.exe: $(wildcard *.c *.h)
-	$(CC) $(SOURCE_FILE_MODULES) -DRELEASE -o $@ $(CFLAGS) $(CLIBS) -O2
+	$(CC) $(SOURCE_FILE_MODULES) -DRELEASE -o $@ $(CFLAGS) $(CLIBS) -O2 -mwindows
 game-debug.exe: $(wildcard *.c *.h)
 	$(CC) $(SOURCE_FILE_MODULES) -DUSE_EDITOR -o $@ $(CFLAGS) $(CLIBS) -ggdb3
 web-experimental: $(wildcard *.c *.h)

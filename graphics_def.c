@@ -109,6 +109,7 @@ void                image_buffer_free(struct image_buffer* image);
    existing API understands these apis, that comes a bit later. */
 typedef struct image_id { s32 index; } image_id;
 typedef struct font_id  { s32 index; } font_id;
+
 /* todo make this a hashmap or something? */
 struct graphics_assets {
     struct memory_arena* arena;
