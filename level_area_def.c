@@ -70,13 +70,27 @@ struct level_area_navigation_map {
     struct level_area_navigation_map_tile* tiles;
 };
 
-/* NOTE: prepare for level data format migration
-   
-   We're going to add a few fixed layers, which are used for visual purposes,
-   and likely separate our collision layer.
-   
-   The old format will not work anymore!
-*/
+/* need to determine how to make an accurate id system for this */
+#define ENTITY_BASENAME_LENGTH_MAX (32)
+struct level_area_entity {
+    /* look this up in the entity dictionary */
+    char base_name[ENTITY_BASENAME_LENGTH_MAX];
+    v2f32 xy; /* tile coordinates */
+
+    s32 health_override; /* -1 == default */
+    s32 magic_override;  /* -1 == default */
+
+    u8  facing_direction;
+    /* for the most part look at enum entity_flags */
+    u32 flags;
+    /* look at enum entity_ai_flags */
+    u32 ai_flags;
+
+    /* use for quicker script referencing */
+    u32 group_ids[16];
+
+    u8  reserved[64];
+};
 
 /* We're going to listen for a few prescribed events. */
 enum level_area_listen_event {

@@ -1,4 +1,6 @@
-/* TODO Need to clean up  */
+/*
+  Need to improve that level loading thing.
+*/
 
 /*
   Level testing behavior may no longer work, as they may now require dependence on a script file,
