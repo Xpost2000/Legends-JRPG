@@ -43,8 +43,9 @@ struct entity_chest_placement_property_menu {
     s32  item_sort_filter;
 };
 struct entity_actor_placement_property_menu {
-    s32 entity_base_id;
-    f32 item_list_scroll_y;
+    s32  entity_base_id;
+    f32  item_list_scroll_y;
+    bool picking_entity_base;
 };
 struct tile_painting_property_menu {
     f32 item_list_scroll_y;

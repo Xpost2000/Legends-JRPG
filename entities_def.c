@@ -52,7 +52,7 @@ enum entity_flags {
     /*
      * ....
      */
-    ENTITY_FLAGS_HIDDEN            = BIT(31),
+    ENTITY_FLAGS_HIDDEN            = BIT(31), /*TODO not used yet*/
 
     ENTITY_FLAGS_RUNTIME_RESERVATION = (ENTITY_FLAGS_ACTIVE | ENTITY_FLAGS_ALIVE | ENTITY_FLAGS_NOCLIP | ENTITY_FLAGS_PLAYER_CONTROLLED),
 };

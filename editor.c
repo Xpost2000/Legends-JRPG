@@ -1,4 +1,10 @@
 /*
+  Having dense arrays while nice for cache locality, might be a bit difficult to reference?
+  
+  Oh well. I'll accept that.
+*/
+
+/*
   Need to improve that level loading thing.
 */
 
@@ -279,8 +285,11 @@ void editor_place_or_drag_actor(v2f32 point_in_tilespace) {
 
         /* otherwise no touch, place a new one at default size 1 1 */
         struct level_area_entity* new_entity = &editor_state->entities[editor_state->entity_count++];
+        cstring_copy("__default__", new_entity->base_name, array_count("__default__"));
         new_entity->position.x = point_in_tilespace.x;
         new_entity->position.y = point_in_tilespace.y;
+        new_entity->health_override = new_entity->magic_override = -1;
+        new_entity->flags = new_entity->ai_flags = 0;
         {
             struct entity_actor_placement_property_menu* properties = &editor_state->actor_property_menu;
             struct entity_base_data*                     data       = entity_database_find_by_index(&game_state->entity_database, properties->entity_base_id);
@@ -1053,6 +1062,40 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
                 } break;
                 case EDITOR_TOOL_ENTITY_PLACEMENT: {
                     switch (editor_state->entity_placement_type) {
+                        case ENTITY_PLACEMENT_TYPE_ACTOR: {
+                            f32 draw_cursor_y = 70;
+                            struct level_area_entity* entity = editor_state->last_selected;
+
+                            if (editor_state->actor_property_menu.picking_entity_base) {
+                                /* TODO */
+                            } else {
+                                {
+                                    string s = string_clone(&scratch_arena, string_from_cstring(format_temp("base_id: %s", entity->base_name)));
+                                    if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(10, draw_cursor_y), s)) {
+                                    }
+                                }
+                                string facing_direction_string = facing_direction_strings[entity->facing_direction];
+                                {
+                                    string s = string_clone(&scratch_arena, string_from_cstring(format_temp("facing direction: %.*s", facing_direction_string.length, facing_direction_string.data)));
+                                    s32 result = EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(10, draw_cursor_y), s);
+
+                                    if (result == 1) {
+                                        entity->facing_direction += 1;
+                                        if (entity->facing_direction >= 3) entity->facing_direction = 0;
+                                    } else if (result == 2) {
+                                        entity->facing_direction -= 1;
+                                        if (entity->facing_direction < 0) entity->facing_direction = 3;
+                                    }
+                                }
+
+                                {
+                                    string s = string_clone(&scratch_arena, string_from_cstring(format_temp("hidden: %s", yesno[(entity->flags & ENTITY_FLAGS_HIDDEN) > 0])));
+                                    if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(10, draw_cursor_y), s)) {
+                                    }
+                                }
+                            }
+
+                        } break;
                         case ENTITY_PLACEMENT_TYPE_CHEST: {
                             f32 draw_cursor_y = 70;
                             struct entity_chest* chest = editor_state->last_selected;
