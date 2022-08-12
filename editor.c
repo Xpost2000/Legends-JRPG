@@ -90,6 +90,7 @@ void editor_clear_all_allocations(struct editor_state* state) {
     state->trigger_level_transition_count = 0;
     state->entity_chest_count             = 0;
     state->generic_trigger_count          = 0;
+    state->entity_count                   = 0;
 }
 
 void editor_clear_all(struct editor_state* state) {
@@ -109,12 +110,15 @@ void editor_initialize(struct editor_state* state) {
     editor_state->trigger_level_transition_capacity = 1024;
     editor_state->entity_chest_capacity             = 1024;
     editor_state->generic_trigger_capacity          = 1024;
+    editor_state->entity_capacity                   = 512;
+
     for (s32 index = 0; index < TILE_LAYER_COUNT; ++index) {
         state->tile_layers[index] = memory_arena_push(state->arena, state->tile_capacities[index] * sizeof(*state->tile_layers[0]));
     }
     state->trigger_level_transitions                = memory_arena_push(state->arena, state->trigger_level_transition_capacity * sizeof(*state->trigger_level_transitions));
     state->entity_chests                            = memory_arena_push(state->arena, state->entity_chest_capacity             * sizeof(*state->entity_chests));
     state->generic_triggers                         = memory_arena_push(state->arena, state->generic_trigger_capacity          * sizeof(*state->generic_triggers));
+    state->entities                                 = memory_arena_push(state->arena, state->entity_capacity                   * sizeof(*state->entities));
     editor_clear_all(state);
 }
 

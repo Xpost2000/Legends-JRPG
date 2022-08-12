@@ -71,7 +71,7 @@ struct level_area_navigation_map {
 };
 
 /* need to determine how to make an accurate id system for this */
-#define ENTITY_BASENAME_LENGTH_MAX (32)
+#define ENTITY_BASENAME_LENGTH_MAX (64)
 struct level_area_entity {
     /* look this up in the entity dictionary */
     char base_name[ENTITY_BASENAME_LENGTH_MAX];
@@ -88,7 +88,6 @@ struct level_area_entity {
 
     /* use for quicker script referencing */
     u32 group_ids[16];
-
     u8  reserved[64];
 };
 

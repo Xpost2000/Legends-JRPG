@@ -157,6 +157,17 @@ struct entity_animation_state {
     f32    timer;
 };
 
+enum entity_equip_slot_index {
+    ENTITY_EQUIP_SLOT_INDEX_HEAD,
+    ENTITY_EQUIP_SLOT_INDEX_CHEST,
+    ENTITY_EQUIP_SLOT_INDEX_HANDS,
+    ENTITY_EQUIP_SLOT_INDEX_LEGS,
+    ENTITY_EQUIP_SLOT_INDEX_ACCESSORY1,
+    ENTITY_EQUIP_SLOT_INDEX_ACCESSORY2,
+    ENTITY_EQUIP_SLOT_INDEX_WEAPON1,
+    ENTITY_EQUIP_SLOT_INDEX_COUNT,
+};
+
 struct entity {
     string name;
 
@@ -187,7 +198,7 @@ struct entity {
             item_id accessory2;
             item_id weapon1;
         };
-        item_id equip_slots[7];
+        item_id equip_slots[ENTITY_EQUIP_SLOT_INDEX_COUNT];
     };
 
     s32_range                     health;
@@ -203,6 +214,31 @@ struct entity {
     s32                           interacted_script_trigger_write_index;
     s32                           interacted_script_trigger_ids[32];
 };
+
+struct entity_base_data {
+    string                        name;
+    s32                           model_index;
+    u32                           flags;
+    u32                           ai_flags;
+    struct entity_stat_block      stats;
+    s32                           health;
+    s32                           magic;
+    item_id                       equip_slots[ENTITY_EQUIP_SLOT_INDEX_COUNT];
+    struct entity_actor_inventory inventory;
+};
+
+struct entity_database {
+    struct memory_arena*     arena;
+    s32                      capacity;
+    s32                      count;
+    /* I think I really should be hashing a lot of things I do this for. TODO. Can always change */
+    string*                  entity_key_strings;
+    struct entity_base_data* entities;
+};
+
+/* for debug reasons, in reality it is always built from a file. */
+void   entity_database_add_entity(struct entity_database* entity_database, struct entity_base_data base_ent, string as_name);
+struct entity_database entity_database_create(struct memory_arena* arena, s32 amount);
 
 bool is_entity_aggressive_to_player(struct entity* entity);
 void entity_play_animation(struct entity* entity, string name);

@@ -740,3 +740,29 @@ s32 entity_find_effective_stat_value(struct entity* entity, s32 stat_index) {
 
     return base_value;
 }
+
+void entity_database_add_entity(struct entity_database* entity_database, struct entity_base_data base_ent, string as_name) {
+    s32 next_index = entity_database->count++;
+    entity_database->entities[next_index]           = base_ent;
+    entity_database->entity_key_strings[next_index] = string_clone(entity_database->arena, as_name);
+}
+
+struct entity_database entity_database_create(struct memory_arena* arena, s32 amount) {
+    struct entity_database result = {};
+    result.arena = arena;
+
+    result.capacity = amount;
+    result.count    = 0;
+    result.entity_key_strings = memory_arena_push(arena, amount * sizeof(string));
+    result.entities           = memory_arena_push(arena, amount * sizeof(*result.entities));
+
+    static struct entity_base_data base_data = {
+        .name = string_literal("John Doe"),
+        .health = 10,
+    };
+
+    base_data.stats = entity_stat_block_identity;
+    entity_database_add_entity(&result, base_data, string_literal("__default__"));
+
+    return result;
+}

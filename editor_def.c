@@ -26,20 +26,24 @@ static string trigger_placement_type_strings[] = {
     string_literal("(count)")
 };
 enum entity_placement_type {
-    /* ENTITY_PLACEMENT_TYPE_ACTOR, */
+    ENTITY_PLACEMENT_TYPE_ACTOR,
     ENTITY_PLACEMENT_TYPE_CHEST,
     ENTITY_PLACEMENT_TYPE_COUNT,
 };
 static string entity_placement_type_strings[] = {
-    /* string_literal("NPC"), */
+    string_literal("Actor"),
     string_literal("Chest"),
     string_literal("(count)"),
 };
 struct entity_chest_placement_property_menu {
     /* bool item_edit_open; */
     bool adding_item;
+    /* NOTE this does not mouse wheel scroll. How disappointing */
     f32  item_list_scroll_y;
     s32  item_sort_filter;
+};
+struct entity_actor_placement_property_menu {
+    f32 item_list_scroll_y;
 };
 struct tile_painting_property_menu {
     f32 item_list_scroll_y;
@@ -58,10 +62,9 @@ enum tab_menu_bit_flags {
 };
 struct editor_state {
     struct memory_arena* arena;
-    /* SHIFT TAB SHOULD INTRODUCE A TOOL SELECTION MODE, instead of arrow keys */
     s32           tool_mode;
 
-    /* TAB WILL PROVIDE A CONTEXT SPECIFIC SELECTION */
+    s32           placing_entity_id;
     s32           painting_tile_id;
     s32           trigger_placement_type;
     s32           entity_placement_type;
@@ -86,6 +89,9 @@ struct editor_state {
     s32                              generic_trigger_count;
     s32                              generic_trigger_capacity;
     struct trigger*                  generic_triggers;
+    s32                              entity_count;
+    s32                              entity_capacity;
+    struct level_area_entity*        entities;
     
     struct camera camera;
 
