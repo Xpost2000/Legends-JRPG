@@ -98,6 +98,14 @@ struct level_area_entity {
     u32 group_ids[16];
     u8  reserved[64];
 };
+void level_area_entity_set_base_id(struct level_area_entity* entity, string name) {
+    s32 copy_amount = name.length;
+    if (copy_amount > array_count(entity->base_name)) {
+        copy_amount = array_count(entity->base_name);
+    }
+
+    cstring_copy(name.data, entity->base_name, copy_amount);
+}
 
 /* We're going to listen for a few prescribed events. */
 enum level_area_listen_event {

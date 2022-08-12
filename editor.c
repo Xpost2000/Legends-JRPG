@@ -285,7 +285,8 @@ void editor_place_or_drag_actor(v2f32 point_in_tilespace) {
 
         /* otherwise no touch, place a new one at default size 1 1 */
         struct level_area_entity* new_entity = &editor_state->entities[editor_state->entity_count++];
-        cstring_copy("__default__", new_entity->base_name, array_count("__default__"));
+        level_area_entity_set_base_id(new_entity, string_literal("__default__"));
+
         new_entity->position.x = point_in_tilespace.x;
         new_entity->position.y = point_in_tilespace.y;
         new_entity->health_override = new_entity->magic_override = -1;
@@ -308,7 +309,7 @@ void editor_remove_actor_at(v2f32 point_in_tilespace) {
     for (s32 index = 0; index < editor_state->entity_count; ++index) {
         struct level_area_entity* current_entity = editor_state->entities + index;
 
-        if (rectangle_f32_intersect(rectangle_f32(current_entity->position.x, current_entity->position.y, TILE_UNIT_SIZE*0.8, TILE_UNIT_SIZE*0.8), rectangle_f32(point_in_tilespace.x, point_in_tilespace.y, 0.25, 0.25))) {
+        if (rectangle_f32_intersect(rectangle_f32(current_entity->position.x, current_entity->position.y-1, 1, 2), rectangle_f32(point_in_tilespace.x, point_in_tilespace.y, 0.25, 0.25))) {
             editor_state->entities[index] = editor_state->entities[--editor_state->entity_count];
             return;
         }
@@ -1064,17 +1065,80 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
                     switch (editor_state->entity_placement_type) {
                         case ENTITY_PLACEMENT_TYPE_ACTOR: {
                             f32 draw_cursor_y = 70;
+                            const f32 text_scale = 1;
+
                             struct level_area_entity* entity = editor_state->last_selected;
 
-                            if (editor_state->actor_property_menu.picking_entity_base) {
-                                /* TODO */
-                            } else {
-                                {
-                                    string s = string_clone(&scratch_arena, string_from_cstring(format_temp("base_id: %s", entity->base_name)));
-                                    if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(10, draw_cursor_y), s)) {
-                                    }
-                                    draw_cursor_y += 16 * 2 * 1.5;
+                            {
+                                string s = string_clone(&scratch_arena, string_from_cstring(format_temp("base_id: %s", entity->base_name)));
+                                if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(10, draw_cursor_y), s)) {
+                                    editor_state->actor_property_menu.picking_entity_base ^= 1;
+                                    editor_state->actor_property_menu.item_list_scroll_y   = 0;
                                 }
+                                draw_cursor_y += 16 * 2 * 1.5 + TILE_UNIT_SIZE*2.3;
+                            }
+
+                            if (editor_state->actor_property_menu.picking_entity_base) {
+                                const s32 SCROLL_AMOUNT = 45;
+
+                                if (is_mouse_wheel_up()) {
+                                    if (editor_state->actor_property_menu.item_list_scroll_y < 0)
+                                        editor_state->actor_property_menu.item_list_scroll_y += SCROLL_AMOUNT;
+                                } else if (is_mouse_wheel_down()) {
+                                    editor_state->actor_property_menu.item_list_scroll_y -= SCROLL_AMOUNT;
+                                }
+
+                                if (is_key_pressed(KEY_HOME)) {
+                                    editor_state->actor_property_menu.item_list_scroll_y = 0;
+                                }
+
+                                {
+                                    struct entity_database* entities = &game_state->entity_database;
+
+                                    f32 largest_name_width = 0;
+
+                                    for (s32 index = 0; index < entities->count; ++index) {
+                                        f32 current_width = font_cache_text_width(font, entities->entity_key_strings[index], text_scale);
+
+                                        if (largest_name_width < current_width) {
+                                            largest_name_width = current_width;
+                                        }
+                                    }
+
+                                    s32 ENTRIES_PER_ROW = (500 / largest_name_width);
+                                    s32 row_count     = (tile_table_data_count / ENTRIES_PER_ROW)+1;
+
+                                    for (s32 row_index = 0; row_index < row_count; ++row_index) {
+                                        f32 draw_cursor_x = 0;
+
+                                        for (s32 index = 0; index < ENTRIES_PER_ROW; ++index) {
+                                            s32 entity_data_index = row_index * ENTRIES_PER_ROW + index;
+                                            if (!(entity_data_index < entities->count)) {
+                                                break;
+                                            }
+
+                                            struct entity_base_data* data = entity_database_find_by_index(entities, entity_data_index);
+                                            struct entity_animation* anim = find_animation_by_name(data->model_index, facing_direction_strings_normal[editor_state->actor_property_menu.facing_direction_index_for_animation]);
+
+                                            image_id sprite_to_use = anim->sprites[0];
+
+                                            software_framebuffer_draw_image_ex(framebuffer, graphics_assets_get_image_by_id(&graphics_assets, sprite_to_use),
+                                                                               rectangle_f32(draw_cursor_x, draw_cursor_y-TILE_UNIT_SIZE*2, TILE_UNIT_SIZE, TILE_UNIT_SIZE*2), RECTANGLE_F32_NULL, color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
+
+                                            if (EDITOR_imgui_button(framebuffer, font, highlighted_font, text_scale, v2f32(draw_cursor_x, draw_cursor_y), entities->entity_key_strings[entity_data_index])) {
+                                                editor_state->tab_menu_open    = 0;
+                                                editor_state->actor_property_menu.entity_base_id = entity_data_index;
+
+                                                level_area_entity_set_base_id(entity, entities->entity_key_strings[entity_data_index]);
+                                            }
+
+                                            draw_cursor_x += largest_name_width * 1.1;
+                                        }
+
+                                        draw_cursor_y += TILE_UNIT_SIZE*2 * 1.2 * 2;
+                                    }
+                                }
+                            } else {
                                 string facing_direction_string = facing_direction_strings[entity->facing_direction];
                                 {
                                     string s = string_clone(&scratch_arena, string_from_cstring(format_temp("facing direction: %.*s", facing_direction_string.length, facing_direction_string.data)));
@@ -1083,13 +1147,20 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
                                     if (result == 1) {
                                         entity->facing_direction += 1;
                                         if (entity->facing_direction > 3) entity->facing_direction = 0;
+                                    } else if (result == 2) {
+                                        if (entity->facing_direction == 0) {
+                                            entity->facing_direction = 3;
+                                        } else {
+                                            entity->facing_direction -= 1;
+                                        }
                                     }
                                     draw_cursor_y += 16 * 2 * 1.5;
                                 }
 
                                 {
-                                    string s = string_clone(&scratch_arena, string_from_cstring(format_temp("hidden: %s", yesno[(entity->flags & ENTITY_FLAGS_HIDDEN) > 0])));
+                                    string s = string_clone(&scratch_arena, string_from_cstring(format_temp("hidden: %s", cstr_yesno[(entity->flags & ENTITY_FLAGS_HIDDEN) > 0])));
                                     if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(10, draw_cursor_y), s)) {
+                                        entity->flags ^= ENTITY_FLAGS_HIDDEN;
                                     }
                                     draw_cursor_y += 16 * 2 * 1.5;
                                 }
@@ -1352,8 +1423,17 @@ void update_and_render_editor(struct software_framebuffer* framebuffer, f32 dt) 
 
                     image_id sprite_to_use = anim->sprites[0];
 
+                    union color32f32 color = color32f32_WHITE;
+
+                    if (current_entity->flags & ENTITY_FLAGS_HIDDEN) {
+                        color.r /= 2;
+                        color.g /= 2;
+                        color.b /= 2;
+                        color.a /= 2;
+                    }
+
                     render_commands_push_image(&commands, graphics_assets_get_image_by_id(&graphics_assets, sprite_to_use),
-                                               rectangle_f32_scale(bounds, TILE_UNIT_SIZE), RECTANGLE_F32_NULL, color32f32_WHITE, NO_FLAGS, BLEND_MODE_ALPHA);
+                                               rectangle_f32_scale(bounds, TILE_UNIT_SIZE), RECTANGLE_F32_NULL, color, NO_FLAGS, BLEND_MODE_ALPHA);
                 }
                 s32 entity_id          = current_entity - editor_state->entities;
                 render_commands_push_text(&commands, font, 1, v2f32(bounds.x * TILE_UNIT_SIZE, bounds.y * TILE_UNIT_SIZE), string_from_cstring(format_temp("(entity %d)", entity_id)), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
@@ -1419,6 +1499,17 @@ void update_and_render_editor(struct software_framebuffer* framebuffer, f32 dt) 
                                               color32u8(0, 0, 255, normalized_sinf(global_elapsed_time*4) * 0.5*255 + 64), BLEND_MODE_ALPHA);
                 }
             } break;
+        }
+
+        editor_state->actor_property_menu.facing_direction_spin_timer += dt;
+        if (editor_state->actor_property_menu.facing_direction_spin_timer >= FACING_DIRECTION_SPIN_TIMER_LENGTH_MAX) {
+            editor_state->actor_property_menu.facing_direction_index_for_animation += 1;
+
+            if (editor_state->actor_property_menu.facing_direction_index_for_animation > 3) {
+                editor_state->actor_property_menu.facing_direction_index_for_animation = 0;
+            }
+
+            editor_state->actor_property_menu.facing_direction_spin_timer = 0;
         }
     }
 
