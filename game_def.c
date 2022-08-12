@@ -374,12 +374,20 @@ struct game_state {
     struct random_state rng;
     struct camera camera;
 
-    /* TODO, move these out, these don't have to be here. I'm just being inconsistent. */
     struct ui_pause_menu ui_pause;
     struct ui_sub_menu_inventory ui_inventory;
 
     /* TODO add party member stuff! */
     struct player_party_inventory inventory;
+
+    /* 
+       TODO:
+
+       for sanity's sake, have a list of "permenant" and "level" entities again...
+       
+       It's simpler to handle rather than doing some more complicated sparse storage...
+    */
+    struct entity_database entity_database;
     struct entity_list  entities;
     struct weather      weather;
 
