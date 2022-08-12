@@ -260,6 +260,52 @@ void editor_place_or_drag_level_transition_trigger(v2f32 point_in_tilespace) {
     }
 }
 
+void editor_place_or_drag_actor(v2f32 point_in_tilespace) {
+    if (is_dragging()) {
+        return; 
+    }
+
+    {
+        for (s32 index = 0; index < editor_state->entity_count; ++index) {
+            struct level_area_entity* current_entity = editor_state->entities + index;
+
+            if (rectangle_f32_intersect(rectangle_f32(current_entity->position.x, current_entity->position.y, TILE_UNIT_SIZE*0.8, TILE_UNIT_SIZE*0.8), rectangle_f32(point_in_tilespace.x, point_in_tilespace.y, 0.25, 0.25))) {
+                editor_state->last_selected = current_entity;
+                set_drag_candidate(current_entity, get_mouse_in_tile_space(&editor_state->camera, REAL_SCREEN_WIDTH, REAL_SCREEN_HEIGHT), current_entity->position);
+                return;
+            }
+        }
+
+
+        /* otherwise no touch, place a new one at default size 1 1 */
+        struct level_area_entity* new_entity = &editor_state->entities[editor_state->entity_count++];
+        new_entity->position.x = point_in_tilespace.x;
+        new_entity->position.y = point_in_tilespace.y;
+        {
+            struct entity_actor_placement_property_menu* properties = &editor_state->actor_property_menu;
+            struct entity_base_data*                     data       = entity_database_find_by_index(&game_state->entity_database, properties->entity_base_id);
+
+            /* TODO: technically our models should contain their own collision size */
+            /* they don't right now which is why I'm going to hardcode all of this. */
+            /* in tile sizes. */
+            new_entity->scale.x = 0.8;
+            new_entity->scale.y = 0.8;
+        }
+        editor_state->last_selected      = new_entity;
+    }
+}
+
+void editor_remove_actor_at(v2f32 point_in_tilespace) {
+    for (s32 index = 0; index < editor_state->entity_count; ++index) {
+        struct level_area_entity* current_entity = editor_state->entities + index;
+
+        if (rectangle_f32_intersect(rectangle_f32(current_entity->position.x, current_entity->position.y, TILE_UNIT_SIZE*0.8, TILE_UNIT_SIZE*0.8), rectangle_f32(point_in_tilespace.x, point_in_tilespace.y, 0.25, 0.25))) {
+            editor_state->entities[index] = editor_state->entities[--editor_state->entity_count];
+            return;
+        }
+    }
+}
+
 void editor_place_or_drag_scriptable_transition_trigger(v2f32 point_in_tilespace) {
     if (is_dragging()) {
         return; 
@@ -462,6 +508,13 @@ local void handle_editor_tool_mode_input(struct software_framebuffer* framebuffe
             switch (editor_state->entity_placement_type) {
                 /* NOTE for chest mode we should have a highlight tooltip to peak at the items in the chest. For quick assessment of things */
                 /* I guess same for the triggers... */
+                case ENTITY_PLACEMENT_TYPE_ACTOR: {
+                    if (left_clicked) {
+                        editor_place_or_drag_actor(tile_space_mouse_location);
+                    } else if (right_clicked) {
+                        editor_remove_actor_at(tile_space_mouse_location);
+                    }
+                } break;
                 case ENTITY_PLACEMENT_TYPE_CHEST: {
                     if (left_clicked) {
                         editor_place_or_drag_chest(tile_space_mouse_location);
@@ -1235,6 +1288,32 @@ void update_and_render_editor(struct software_framebuffer* framebuffer, f32 dt) 
                 }
                 /* NOTE display a visual denoting facing direction on transition */
                 render_commands_push_text(&commands, font, 1, v2f32(current_trigger->bounds.x * TILE_UNIT_SIZE, current_trigger->bounds.y * TILE_UNIT_SIZE), string_literal("(level\ntransition\ntrigger)"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+            }
+
+            for (s32 entity_index = 0; entity_index < editor_state->entity_count; ++entity_index) {
+                struct level_area_entity* current_entity = editor_state->entities + entity_index;
+                struct rectangle_f32 bounds = rectangle_f32(current_entity->position.x, current_entity->position.y, current_entity->scale.x, current_entity->scale.y);
+
+                if (editor_state->last_selected == current_entity) {
+                    render_commands_push_quad(&commands, rectangle_f32(bounds.x * TILE_UNIT_SIZE, bounds.y * TILE_UNIT_SIZE, bounds.w * TILE_UNIT_SIZE, bounds.h * TILE_UNIT_SIZE),
+                                              color32u8(255, 255, 255, normalized_sinf(global_elapsed_time*2) * 0.5*255 + 64), BLEND_MODE_ALPHA);
+                } else {
+                    render_commands_push_quad(&commands, rectangle_f32(bounds.x * TILE_UNIT_SIZE, bounds.y * TILE_UNIT_SIZE, bounds.w * TILE_UNIT_SIZE, bounds.h * TILE_UNIT_SIZE),
+                                              color32u8(255, 0, 0, normalized_sinf(global_elapsed_time*2) * 0.5*255 + 64), BLEND_MODE_ALPHA);
+                }
+
+                s32 entity_id          = current_entity - editor_state->entities;
+                render_commands_push_text(&commands, font, 1, v2f32(bounds.x * TILE_UNIT_SIZE, bounds.y * TILE_UNIT_SIZE), string_from_cstring(format_temp("(entity %d)", entity_id)), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+                {
+                    
+                    struct entity_base_data* base_def = entity_database_find_by_name(&game_state->entity_database, string_from_cstring(current_entity->base_name));
+                    struct entity_animation* anim = find_animation_by_name(base_def->model_index, facing_direction_strings_normal[current_entity->facing_direction]);
+
+                    image_id sprite_to_use = anim->sprites[0];
+
+                    render_commands_push_image(&commands, graphics_assets_get_image_by_id(&graphics_assets, sprite_to_use),
+                                               rectangle_f32_scale(bounds, TILE_UNIT_SIZE), RECTANGLE_F32_NULL, color32f32_WHITE, NO_FLAGS, BLEND_MODE_ALPHA);
+                }
             }
 
             for (s32 generic_trigger_index = 0; generic_trigger_index < editor_state->generic_trigger_count; ++generic_trigger_index) {

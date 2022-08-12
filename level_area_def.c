@@ -73,9 +73,17 @@ struct level_area_navigation_map {
 /* need to determine how to make an accurate id system for this */
 #define ENTITY_BASENAME_LENGTH_MAX (64)
 struct level_area_entity {
+    /*
+      This is only a rectangle because it allows me to use it for the drag candidate system in the
+      editor.
+      
+      we always use the model size when unpacking.
+     */
+    v2f32 position;
+    v2f32 scale;
+
     /* look this up in the entity dictionary */
-    char base_name[ENTITY_BASENAME_LENGTH_MAX];
-    v2f32 xy; /* tile coordinates */
+    char  base_name[ENTITY_BASENAME_LENGTH_MAX];
 
     s32 health_override; /* -1 == default */
     s32 magic_override;  /* -1 == default */

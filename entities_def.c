@@ -242,6 +242,8 @@ struct entity_database {
 /* for debug reasons, in reality it is always built from a file. */
 void   entity_database_add_entity(struct entity_database* entity_database, struct entity_base_data base_ent, string as_name);
 struct entity_database entity_database_create(struct memory_arena* arena, s32 amount);
+struct entity_base_data* entity_database_find_by_index(struct entity_database* entity_database, s32 index);
+struct entity_base_data* entity_database_find_by_name(struct entity_database* entity_database, string name);
 
 bool is_entity_aggressive_to_player(struct entity* entity);
 void entity_play_animation(struct entity* entity, string name);

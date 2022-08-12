@@ -787,3 +787,19 @@ void entity_base_data_unpack(struct entity_base_data* data, struct entity* desti
         destination->equip_slots[index] = data->equip_slots[index];
     }
 }
+
+struct entity_base_data* entity_database_find_by_index(struct entity_database* entity_database, s32 index) {
+    return entity_database->entities + index;
+}
+
+struct entity_base_data* entity_database_find_by_name(struct entity_database* entity_database, string name) {
+    for (s32 entity_index = 0; entity_index < entity_database->count; ++entity_index) {
+        string entity_name = entity_database->entity_key_strings[entity_index];
+
+        if (string_equal(entity_name, name)) {
+            return entity_database_find_by_index(entity_database, entity_index);
+        }
+    }
+
+    return entity_database_find_by_name(entity_database, string_literal("__default__"));
+}

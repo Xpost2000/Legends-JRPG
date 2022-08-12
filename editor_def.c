@@ -43,6 +43,7 @@ struct entity_chest_placement_property_menu {
     s32  item_sort_filter;
 };
 struct entity_actor_placement_property_menu {
+    s32 entity_base_id;
     f32 item_list_scroll_y;
 };
 struct tile_painting_property_menu {
@@ -105,6 +106,7 @@ struct editor_state {
 
     struct entity_chest_placement_property_menu chest_property_menu;
     struct tile_painting_property_menu          tile_painting_property_menu;
+    struct entity_actor_placement_property_menu actor_property_menu;
 
     /* ui pause menu animation state */
     /* 0 - none, 1 - save, 2 - load */
