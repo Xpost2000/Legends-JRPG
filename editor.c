@@ -904,13 +904,17 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
     }
 
     if (is_key_pressed(KEY_ESCAPE)) {
-        game_state_set_ui_state(game_state, UI_STATE_PAUSE);
-        /* ready pause menu */
-        {
-            game_state->ui_pause.animation_state = 0;
-            game_state->ui_pause.transition_t    = 0;
-            game_state->ui_pause.selection       = 0;
-            zero_array(game_state->ui_pause.shift_t);
+        if (editor_state->tab_menu_open & TAB_MENU_OPEN_BIT) {
+            editor_state->tab_menu_open = 0;
+        } else {
+            game_state_set_ui_state(game_state, UI_STATE_PAUSE);
+            /* ready pause menu */
+            {
+                game_state->ui_pause.animation_state = 0;
+                game_state->ui_pause.transition_t    = 0;
+                game_state->ui_pause.selection       = 0;
+                zero_array(game_state->ui_pause.shift_t);
+            }
         }
     }
 
