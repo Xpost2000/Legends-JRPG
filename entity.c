@@ -48,6 +48,7 @@ entity_id entity_list_create_entity(struct entity_list* entities) {
         }
     }
 
+    _debugprintf("Alloced new entity;");
     return (entity_id){};
 }
 
@@ -767,6 +768,19 @@ struct entity_database entity_database_create(struct memory_arena* arena, s32 am
     return result;
 }
 
+void level_area_entity_unpack(struct level_area_entity* entity, struct entity* unpack_target) {
+    unpack_target->flags            |= entity->flags;
+    unpack_target->ai.flags         |= entity->ai_flags;
+    unpack_target->facing_direction  = entity->facing_direction;
+    _debugprintf("%f, %f", unpack_target->position.x, unpack_target->position.y);
+    unpack_target->position          = v2f32_scale(entity->position, TILE_UNIT_SIZE);
+    unpack_target->scale.x           = TILE_UNIT_SIZE* 0.8;
+    unpack_target->scale.y           = TILE_UNIT_SIZE* 0.8;
+
+    if (entity->health_override != -1) {unpack_target->health.value = entity->health_override;}
+    if (entity->magic_override != -1)  {unpack_target->magic.value  = entity->magic_override;}
+}
+
 void entity_base_data_unpack(struct entity_base_data* data, struct entity* destination) {
     destination->name        = data->name;
     destination->model_index = data->model_index;
@@ -774,8 +788,9 @@ void entity_base_data_unpack(struct entity_base_data* data, struct entity* desti
     /* don't allow these flags to override. That could be bad. */
     data->flags &= ~(ENTITY_FLAGS_RUNTIME_RESERVATION);
 
-    destination->flags        = data->flags;
-    destination->ai.flags     = data->ai_flags;
+    /* OR-ed */
+    destination->flags        |= data->flags;
+    destination->ai.flags     |= data->ai_flags;
     destination->stat_block   = data->stats;
     destination->health.min   = destination->magic.min = 0;
     destination->health.value = destination->health.max = data->health;

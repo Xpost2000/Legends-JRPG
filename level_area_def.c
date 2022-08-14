@@ -111,6 +111,7 @@ struct level_area_entity {
     /* ???  */
     u8  reserved[128];
 };
+
 void level_area_entity_set_base_id(struct level_area_entity* entity, string name) {
     s32 copy_amount = name.length;
     if (copy_amount > array_count(entity->base_name)) {

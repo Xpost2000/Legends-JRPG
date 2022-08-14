@@ -1,3 +1,5 @@
+/* TODO fix coordinate system <3 */
+
 /* virtual pixels */
 #define TILE_UNIT_SIZE (32) /* measured with a reference of 640x480 */
 
@@ -596,6 +598,7 @@ struct navigation_path navigation_path_find(struct memory_arena* arena, struct l
     return results;
 }
 
+void level_area_entity_unpack(struct level_area_entity* entity, struct entity* unpack_target);
 void serialize_level_area(struct game_state* state, struct binary_serializer* serializer, struct level_area* level, bool use_default_spawn) {
     _debugprintf("%d memory used", state->arena->used + state->arena->used_top);
     memory_arena_clear_top(state->arena);
@@ -648,8 +651,9 @@ void serialize_level_area(struct game_state* state, struct binary_serializer* se
 
         _debugprintf("reading and unpacking entities");
 
-        s32 entity_count;
+        s32 entity_count = 0;
         serialize_s32(serializer, &entity_count);
+        _debugprintf("Seeing %d entities to read", entity_count);
 
         /* TODO, separate per level entities and permenant storage entities */
         assertion(entity_count < 1024 && "Too many entities for the engine ATM");
@@ -664,13 +668,8 @@ void serialize_level_area(struct game_state* state, struct binary_serializer* se
 
             struct entity_base_data* base_data = entity_database_find_by_name(&game_state->entity_database, string_from_cstring(current_packed_entity.base_name));
             entity_base_data_unpack(base_data, current_entity);
-
-            current_entity->flags    |= current_packed_entity.flags;
-            current_entity->ai.flags |= current_packed_entity.ai_flags;
-
-            current_entity->position = current_packed_entity.position;
+            level_area_entity_unpack(&current_packed_entity, current_entity);
         }
-        
     }
 
     /* until we have new area transititons or whatever. */
@@ -685,8 +684,6 @@ void serialize_level_area(struct game_state* state, struct binary_serializer* se
     state->camera.xy.y = player->position.y;
 
     build_navigation_map_for_level_area(state->arena, level);
-
-    _debugprintf("%d memory used", state->arena->used + state->arena->used_top);
 }
 
 local void load_area_script(struct memory_arena* arena, struct level_area* area, string script_name) {
