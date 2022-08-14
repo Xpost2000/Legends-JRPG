@@ -643,6 +643,35 @@ void serialize_level_area(struct game_state* state, struct binary_serializer* se
         _debugprintf("reading scriptable triggers");
         Serialize_Fixed_Array_And_Allocate_From_Arena_Top(serializer, state->arena, s32, level->script_trigger_count, level->script_triggers);
     }
+    if (level->version >= 5) {
+        struct level_area_entity current_packed_entity = {};
+
+        _debugprintf("reading and unpacking entities");
+
+        s32 entity_count;
+        serialize_s32(serializer, &entity_count);
+
+        /* TODO, separate per level entities and permenant storage entities */
+        assertion(entity_count < 1024 && "Too many entities for the engine ATM");
+
+        for (s32 entity_index = 0; entity_index < entity_count; ++entity_index) {
+            Serialize_Structure(serializer, current_packed_entity);
+
+            struct entity* current_entity = 0;
+
+            entity_id new_ent = entity_list_create_entity(&game_state->entities);
+            current_entity    = entity_list_dereference_entity(&game_state->entities, new_ent);
+
+            struct entity_base_data* base_data = entity_database_find_by_name(&game_state->entity_database, string_from_cstring(current_packed_entity.base_name));
+            entity_base_data_unpack(base_data, current_entity);
+
+            current_entity->flags    |= current_packed_entity.flags;
+            current_entity->ai.flags |= current_packed_entity.ai_flags;
+
+            current_entity->position = current_packed_entity.position;
+        }
+        
+    }
 
     /* until we have new area transititons or whatever. */
     /* TODO dumb to assume only the player... but okay */

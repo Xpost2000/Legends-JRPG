@@ -174,6 +174,13 @@ void editor_serialize_area(struct binary_serializer* serializer) {
     if (version_id >= 3) {
         Serialize_Fixed_Array(serializer, s32, editor_state->generic_trigger_count, editor_state->generic_triggers);
     }
+
+    if (version_id >= 5) {
+        serialize_s32(serializer, &editor_state->entity_count);
+        for (s32 entity_index = 0; entity_index < editor_state->entity_count; ++entity_index) {
+            Serialize_Structure(serializer, editor_state->entities[entity_index]);
+        }
+    }
 }
 
 void editor_remove_tile_at(v2f32 point_in_tilespace) {
