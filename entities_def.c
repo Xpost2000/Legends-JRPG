@@ -281,6 +281,7 @@ struct entity_iterator {
 };
 
 struct entity_iterator entity_iterator_create(void);
+struct entity_iterator entity_iterator_clone(struct entity_iterator* base);
 void                   entity_iterator_push(struct entity_iterator* iterator, struct entity_list* list);
 struct entity*         entity_iterator_begin(struct entity_iterator* iterator);
 bool                   entity_iterator_finished(struct entity_iterator* iterator);
@@ -292,8 +293,9 @@ entity_id          entity_list_create_entity(struct entity_list* entities);
 entity_id          entity_list_get_id(struct entity_list* entities, s32 index);
 struct entity*     entity_list_dereference_entity(struct entity_list* entities, entity_id id);
 
-void                 entity_list_update_entities(struct game_state* state, struct entity_list* entities, f32 dt, struct level_area* area);
-void                 entity_list_render_entities(struct entity_list* entities, struct graphics_assets* graphics_assets, struct render_commands* commands, f32 dt);
+void               update_entities(struct game_state* state, f32 dt, struct level_area* area);
+void               render_entities(struct game_state* state, struct graphics_assets* graphics_assets, struct render_commands* commands, f32 dt);
+
 struct rectangle_f32 entity_rectangle_collision_bounds(struct entity* entity);
 
 struct entity_query_list {

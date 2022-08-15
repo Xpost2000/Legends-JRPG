@@ -77,13 +77,10 @@ struct entity* entity_list_dereference_entity(struct entity_list* entities, enti
 
 /* requires tilemap world... */
 /* TODO fix implicit decls, linker hasn't killed game yet */
-void player_handle_radial_interactables(struct game_state* state, struct entity_list* entities, s32 entity_index, f32 dt);
+void player_handle_radial_interactables(struct game_state* state, struct entity* entity, f32 dt);
 #define DEFAULT_VELOCITY (TILE_UNIT_SIZE * 6)
 
-void entity_handle_player_controlled(struct game_state* state, struct entity_list* entities, s32 entity_index, f32 dt) {
-    struct entity* entity = entities->entities + entity_index;
-
-
+void entity_handle_player_controlled(struct game_state* state, struct entity* entity, f32 dt) {
     /* all the input blockers. */
     {
         if (disable_game_input) {
@@ -144,7 +141,7 @@ void entity_handle_player_controlled(struct game_state* state, struct entity_lis
     if (move_right) entity->velocity.x  = DEFAULT_VELOCITY;
 
     /* like chests or something */
-    player_handle_radial_interactables(state, entities, entity_index, dt);
+    player_handle_radial_interactables(state, entity, dt);
 }
 
 bool entity_push_out_horizontal_edges(struct entity* entity, struct rectangle_f32 collidant) {
@@ -199,12 +196,21 @@ bool entity_push_out_vertical_edges(struct entity* entity, struct rectangle_f32 
     return false;
 }
 
-local void entity_update_and_perform_actions(struct game_state* state, struct entity_list* entities, s32 index, struct level_area* area, f32 dt);
-void entity_list_update_entities(struct game_state* state, struct entity_list* entities, f32 dt, struct level_area* area) {
-/* void entity_list_update_entities(struct entity_list* entities, f32 dt, s32* tilemap, s32 w, s32 h) { */
-    for (s32 index = 0; index < entities->capacity; ++index) {
-        struct entity* current_entity = entities->entities + index;
+local void entity_update_and_perform_actions(struct game_state* state, struct entity* entity, struct level_area* area, f32 dt);
 
+struct entity_iterator game_entity_iterator(struct game_state* state) {
+    struct entity_iterator result = {};
+
+    entity_iterator_push(&result, &state->permenant_entities);
+    entity_iterator_push(&result, &state->loaded_area.entities);
+
+    return result;
+}
+
+void update_entities(struct game_state* state, f32 dt, struct level_area* area) {
+    struct entity_iterator it = game_entity_iterator(state);
+
+    for (struct entity* current_entity = entity_iterator_begin(&it); !entity_iterator_finished(&it); current_entity = entity_iterator_advance(&it)) {
         if (!(current_entity->flags & ENTITY_FLAGS_ACTIVE)) {
             continue;
         }
@@ -286,12 +292,12 @@ void entity_list_update_entities(struct game_state* state, struct entity_list* e
 
 
                 /* any existing actions or action queues will ALWAYS override manual control */
-                entity_update_and_perform_actions(state, entities, index, area, dt);
+                entity_update_and_perform_actions(state, current_entity, area, dt);
 
                 if (!current_entity->ai.current_action) {
                     /* controller actions, for AI brains. */
                     if (current_entity->flags & ENTITY_FLAGS_PLAYER_CONTROLLED) {
-                        entity_handle_player_controlled(state, entities, index, dt);
+                        entity_handle_player_controlled(state, current_entity, dt);
                     }
                 }
 
@@ -335,10 +341,10 @@ void entity_think_combat_actions(struct entity* entity, struct game_state* state
     }
 }
 
-void entity_list_render_entities(struct entity_list* entities, struct graphics_assets* graphics_assets, struct render_commands* commands, f32 dt) {
-    for (s32 index = 0; index < entities->capacity; ++index) {
-        struct entity* current_entity = entities->entities + index;
+void render_entities(struct game_state* state, struct graphics_assets* graphics_assets, struct render_commands* commands, f32 dt) {
+    struct entity_iterator it = game_entity_iterator(state);
 
+    for (struct entity* current_entity = entity_iterator_begin(&it); !entity_iterator_finished(&it); current_entity = entity_iterator_advance(&it)) {
         s32 facing_direction = current_entity->facing_direction;
         s32 model_index      = current_entity->model_index;
 
@@ -606,8 +612,8 @@ local s32 find_best_direction_index(v2f32 direction) {
     return best_index;
 }
 
-local void entity_update_and_perform_actions(struct game_state* state, struct entity_list* entities, s32 index, struct level_area* area, f32 dt) {
-    struct entity* target_entity = entities->entities + index;
+local void entity_update_and_perform_actions(struct game_state* state, struct entity* entity, struct level_area* area, f32 dt) {
+    struct entity* target_entity = entity;
 
     const f32 CLOSE_ENOUGH_EPISILON = 0.1556;
 
@@ -693,8 +699,11 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
 for now just do a fixed amount of damage
                  */
                   
+#if 0
+                /* TODO FIX */
                 struct entity* attacked_entity = entities->entities + target_entity->ai.attack_target_index;
                 entity_do_physical_hurt(attacked_entity, 9999);
+#endif
             }
         } break;
     }
@@ -852,4 +861,14 @@ struct entity* entity_iterator_advance(struct entity_iterator* iterator) {
     }
 
     return current_iterated_entity;
+}
+
+struct entity_iterator entity_iterator_clone(struct entity_iterator* base) {
+    struct entity_iterator iterator = {};
+
+    iterator                   = *base;
+    iterator.entity_list_index = 0;
+    iterator.index             = 0;
+
+    return iterator;
 }

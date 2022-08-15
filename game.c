@@ -1644,10 +1644,9 @@ local void mark_interactable(struct game_state* state, s32 type, void* ptr) {
     }
 }
 
-void player_handle_radial_interactables(struct game_state* state, struct entity_list* entities, s32 entity_index, f32 dt ) {
+void player_handle_radial_interactables(struct game_state* state, struct entity* entity, f32 dt) {
     bool found_any_interactable = false;
     struct level_area* area   = &state->loaded_area;
-    struct entity*     entity = entities->entities + entity_index;
 
     if (!found_any_interactable) {
         Array_For_Each(it, struct entity_chest, area->chests, area->entity_chest_count) {
@@ -1756,9 +1755,10 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                 }
 
                 render_ground_area(game_state, &commands, &game_state->loaded_area);
+
                 if (game_state->ui_state != UI_STATE_PAUSE) {
                     if (!storyboard_active) {
-                        entity_list_update_entities(game_state,&game_state->permenant_entities, dt, &game_state->loaded_area);
+                        update_entities(game_state, dt, &game_state->loaded_area);
 
                         if (!game_state->combat_state.active_combat) {
                             determine_if_combat_should_begin(game_state, &game_state->permenant_entities);
@@ -1770,7 +1770,7 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                     game_state->weather.timer += dt;
                 }
 
-                entity_list_render_entities(&game_state->permenant_entities, &graphics_assets, &commands, dt);
+                render_entities(game_state, &graphics_assets, &commands, dt);
                 render_foreground_area(game_state, &commands, &game_state->loaded_area);
 
                 game_script_execute_awaiting_scripts(&scratch_arena, game_state, dt);
