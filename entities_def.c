@@ -5,6 +5,15 @@
 #include "entity_stat_block_def.c"
 
 /* This needs to be augmented more... Oh well. Not my issue. */
+/* We only really have one of each list type, so I could store the list
+   pointer itself, but that don't fit in small things. */
+enum entity_list_storage_type {
+    ENTITY_LIST_STORAGE_TYPE_PERMENANT_STORE,
+    /* for summons, but otherwise stuff that is expected to disappear. */
+    ENTITY_LIST_STORAGE_TYPE_TEMPORARY_STORE,
+    /* for levels which are disappearing. */
+    ENTITY_LIST_STORAGE_TYPE_PER_LEVEL,
+};
 typedef struct entity_id {
     /* use this flag to reference a companion instead. */
     /* the game does not know how to handle this yet. */
@@ -22,7 +31,7 @@ typedef struct entity_id {
         struct {
             /* though not sure if this is ever important as the script code has special handle
                types for permenant entities. (PERM-ENT 0) == PLAYER, and stuff like that */
-            u8  permenant_store;
+            u8  store_type;
             u8  flags[3];
             u32  index;
         };
@@ -246,7 +255,7 @@ struct entity_database {
 
 /* for debug reasons, in reality it is always built from a file. */
 void   entity_database_add_entity(struct entity_database* entity_database, struct entity_base_data base_ent, string as_name);
-struct entity_database entity_database_create(struct memory_arena* arena, s32 amount);
+struct entity_database   entity_database_create(struct memory_arena* arena, s32 amount);
 struct entity_base_data* entity_database_find_by_index(struct entity_database* entity_database, s32 index);
 struct entity_base_data* entity_database_find_by_name(struct entity_database* entity_database, string name);
 
@@ -267,6 +276,7 @@ void entity_combat_submit_item_use_action(struct entity* entity, s32 item_index,
 #endif
 
 struct entity_list {
+    u8             store_type;
     s32*           generation_count;
     struct entity* entities;
     s32            capacity;
@@ -289,10 +299,14 @@ bool                   entity_iterator_finished(struct entity_iterator* iterator
 struct entity*         entity_iterator_advance(struct entity_iterator* iterator);
 
 
-struct entity_list entity_list_create(struct memory_arena* arena, s32 capacity);
+struct entity_list entity_list_create(struct memory_arena* arena, s32 capacity, u8 storage_mark);
+/* TODO: Allow a different way to specify allocation direction. since this is annoying */
+struct entity_list entity_list_create_top(struct memory_arena* arena, s32 capacity, u8 storage_mark);
 entity_id          entity_list_create_entity(struct entity_list* entities);
 entity_id          entity_list_get_id(struct entity_list* entities, s32 index);
 struct entity*     entity_list_dereference_entity(struct entity_list* entities, entity_id id);
+void               entity_list_clear(struct entity_list* entities);
+bool               entity_bad_ref(struct entity* e);
 
 void               update_entities(struct game_state* state, f32 dt, struct level_area* area);
 void               render_entities(struct game_state* state, struct graphics_assets* graphics_assets, struct render_commands* commands, f32 dt);

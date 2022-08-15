@@ -33,7 +33,7 @@
 
   Right now there's a weird mishmash, thankfully I have no content so this is not a big deal right now
   just do this the next time I do things.
- */
+*/
 #ifndef GAME_DEF_C
 #define GAME_DEF_C
 /* shared structure definitions for both editor and game */
@@ -162,7 +162,6 @@ struct game_state;
 
 #include "item_def.c"
 
-
 enum game_ui_nine_patch_id {
     NINE_PATCH_LEFT,
     NINE_PATCH_RIGHT,
@@ -201,6 +200,9 @@ struct level_area;
 #include "entity_model_def.c"
 #include "entities_def.c"
 #include "level_area_def.c"
+
+/* use this instead of entity_list_dereference */
+struct entity* game_dereference_entity(struct game_state* state, entity_id id);
 
 struct navigation_path {
     s32           count;

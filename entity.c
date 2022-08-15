@@ -18,11 +18,24 @@ struct rectangle_f32 entity_rectangle_collision_bounds(struct entity* entity) {
                          entity->scale.y-10);
 }
 
-struct entity_list entity_list_create(struct memory_arena* arena, s32 capacity) {
+struct entity_list entity_list_create_top(struct memory_arena* arena, s32 capacity, u8 store_mark) {
     struct entity_list result = {
-        .entities = memory_arena_push(arena, capacity * sizeof(*result.entities)),
+        .entities         = memory_arena_push_top(arena, capacity * sizeof(*result.entities)),
+        .generation_count = memory_arena_push_top(arena, capacity * sizeof(*result.generation_count)),
+        .capacity         = capacity,
+        .store_type       = store_mark,
+    };
+
+    zero_memory(result.generation_count, result.capacity * sizeof(*result.generation_count));
+    return result;
+}
+
+struct entity_list entity_list_create(struct memory_arena* arena, s32 capacity, u8 store_mark) {
+    struct entity_list result = {
+        .entities         = memory_arena_push(arena, capacity * sizeof(*result.entities)),
         .generation_count = memory_arena_push(arena, capacity * sizeof(*result.generation_count)),
-        .capacity = capacity,
+        .capacity         = capacity,
+        .store_type       = store_mark,
     };
 
     zero_memory(result.generation_count, result.capacity * sizeof(*result.generation_count));
@@ -44,6 +57,7 @@ entity_id entity_list_create_entity(struct entity_list* entities) {
             return (entity_id){
                 .generation = entities->generation_count[index],
                 .index      = index+1,
+                .store_type = entities->store_type,
             };
         }
     }
@@ -54,13 +68,26 @@ entity_id entity_list_create_entity(struct entity_list* entities) {
 
 entity_id entity_list_get_id(struct entity_list* entities, s32 index) {
     entity_id result;
+    result.store_type = entities->store_type;
     result.index      = index+1;
     result.generation = entities->generation_count[index];
     return result;
 }
 
 static struct entity _entity_sentinel = {};
+bool entity_bad_ref(struct entity* e) {
+    if (e == &_entity_sentinel) return true;
+    if (e == NULL)              return true;
+
+    return false;
+}
+
 struct entity* entity_list_dereference_entity(struct entity_list* entities, entity_id id) {
+    /* can't have come from the same place. */
+    if (id.store_type != entities->store_type) {
+        return &_entity_sentinel;
+    }
+
     if (id.index <= 0 || id.index > entities->capacity) {
         return &_entity_sentinel;
     }

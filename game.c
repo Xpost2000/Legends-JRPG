@@ -244,9 +244,10 @@ void render_ground_area(struct game_state* state, struct render_commands* comman
 }
 
 entity_id player_id;
+struct entity* game_dereference_entity(struct game_state* state, entity_id id);
 entity_id entity_list_create_player(struct entity_list* entities, v2f32 position) {
-    entity_id result = entity_list_create_entity(entities);
-    struct entity* player = entity_list_dereference_entity(entities, result);
+    entity_id      result  = entity_list_create_entity(entities);
+    struct entity* player  = entity_list_dereference_entity(entities, result);
 
     assertion(player->flags & ENTITY_FLAGS_ACTIVE);
     player->flags    |= ENTITY_FLAGS_ALIVE;
@@ -655,15 +656,13 @@ void serialize_level_area(struct game_state* state, struct binary_serializer* se
         serialize_s32(serializer, &entity_count);
         _debugprintf("Seeing %d entities to read", entity_count);
 
-        /* NOTE: 
+        /* TODO: 
            hack, this is incorrect behavior as we need to more fine-tune the iterator.
            
            Now since this additional "sentinel" entity is never initialized, it makes no difference anyways.
            I'll correct this later.
         */
-        level->entities.capacity         = entity_count+1;
-        level->entities.generation_count = memory_arena_push_top(state->arena, (entity_count+1) * sizeof(*level->entities.generation_count));
-        level->entities.entities         = memory_arena_push_top(state->arena, (entity_count+1) * sizeof(*level->entities.entities));
+        level->entities = entity_list_create_top(state->arena, (entity_count+1), ENTITY_LIST_STORAGE_TYPE_PER_LEVEL);
 
         for (s32 entity_index = 0; entity_index < entity_count; ++entity_index) {
             Serialize_Structure(serializer, current_packed_entity);
@@ -994,7 +993,7 @@ void game_initialize(void) {
       Save Record        (Saves some delta about entities and map state),
       Game Base Files    (Use if there is no existing save record on that level...)
      */
-    game_state->permenant_entities = entity_list_create(&game_arena, GAME_MAX_PERMENANT_ENTITIES);
+    game_state->permenant_entities = entity_list_create(&game_arena, GAME_MAX_PERMENANT_ENTITIES, ENTITY_LIST_STORAGE_TYPE_PERMENANT_STORE);
     player_id                      = entity_list_create_player(&game_state->permenant_entities, v2f32(70, 70));
     /* entity_list_create_badguy(&game_state->entities, v2f32(8 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE)); */
     /* entity_list_create_badguy(&game_state->entities, v2f32(11 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE)); */
