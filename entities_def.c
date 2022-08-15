@@ -274,6 +274,7 @@ struct entity_list {
 
 #define MAX_ENTITY_LIST_COUNT (32)
 struct entity_iterator {
+    u8  done;
     s32 list_count;
     s32 index;
     s32 entity_list_index;

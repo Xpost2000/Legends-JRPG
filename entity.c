@@ -843,11 +843,7 @@ struct entity* entity_iterator_begin(struct entity_iterator* iterator) {
 }
 
 bool entity_iterator_finished(struct entity_iterator* iterator) {
-    if (iterator->index <= iterator->list_count) {
-        return false;
-    }
-
-    return true;
+    return iterator->done;
 }
 
 struct entity* entity_iterator_advance(struct entity_iterator* iterator) {
@@ -858,6 +854,11 @@ struct entity* entity_iterator_advance(struct entity_iterator* iterator) {
 
     if (iterator->entity_list_index >= current_iteration_list->capacity) {
         iterator->index += 1;
+        iterator->entity_list_index = 0;
+    }
+
+    if (iterator->index >= iterator->list_count) {
+        iterator->done = true;
     }
 
     return current_iterated_entity;
@@ -869,6 +870,7 @@ struct entity_iterator entity_iterator_clone(struct entity_iterator* base) {
     iterator                   = *base;
     iterator.entity_list_index = 0;
     iterator.index             = 0;
+    iterator.done              = 0;
 
     return iterator;
 }
