@@ -38,6 +38,11 @@ void memory_arena_clear_bottom(struct memory_arena* arena) {
     arena->used = 0;
 }
 
+void memory_arena_clear(struct memory_arena* arena) {
+    memory_arena_clear_bottom(arena);
+    memory_arena_clear_top(arena);
+}
+
 void _memory_arena_usage_bounds_check(struct memory_arena* arena) {
     /* arenas with capacity 0 are temporary arenas. */
     if (arena->capacity != 0) {
@@ -58,25 +63,35 @@ void _memory_arena_usage_bounds_check(struct memory_arena* arena) {
     }
 }
 
-void* memory_arena_push_bottom_unaligned(struct memory_arena* arena, u64 amount) {
-    void* base_pointer = arena->memory + arena->used;
-
-    arena->used += amount;
-    arena->flags |= MEMORY_ARENA_TOUCHED_BOTTOM;
-    _memory_arena_usage_bounds_check(arena);
-
-    return base_pointer;
+void memory_arena_set_allocation_region_top(struct memory_arena* arena) {
+    arena->alloc_region = MEMORY_ARENA_ALLOCATION_REGION_TOP;
 }
 
-void* memory_arena_push_top_unaligned(struct memory_arena* arena, u64 amount) {
-    void* end_of_memory = arena->memory + arena->capacity;
-    arena->used_top += amount;
-    void* base_pointer  = end_of_memory - arena->used_top;
+void memory_arena_set_allocation_region_bottom(struct memory_arena* arena) {
+    arena->alloc_region = MEMORY_ARENA_ALLOCATION_REGION_BOTTOM;
+}
 
-    arena->flags |= MEMORY_ARENA_TOUCHED_TOP;
-    _memory_arena_usage_bounds_check(arena);
+void* memory_arena_push_unaligned(struct memory_arena* arena, u64 amount) {
+    if (arena->alloc_region == MEMORY_ARENA_ALLOCATION_REGION_BOTTOM) {
+        void* base_pointer = arena->memory + arena->used;
 
-    return base_pointer;
+        arena->used += amount;
+        arena->flags |= MEMORY_ARENA_TOUCHED_BOTTOM;
+        _memory_arena_usage_bounds_check(arena);
+
+        return base_pointer;
+    } else {
+        void* end_of_memory = arena->memory + arena->capacity;
+        arena->used_top += amount;
+        void* base_pointer  = end_of_memory - arena->used_top;
+
+        arena->flags |= MEMORY_ARENA_TOUCHED_TOP;
+        _memory_arena_usage_bounds_check(arena);
+
+        return base_pointer;
+    }
+
+    return 0;
 }
 
 struct memory_arena memory_arena_push_sub_arena(struct memory_arena* arena, u64 amount) {
@@ -110,18 +125,10 @@ void memory_arena_end_temporary_memory(struct temporary_memory* temporary_arena)
     temporary_arena->memory = 0;
 }
 
-string memory_arena_push_string_bottom(struct memory_arena* arena, string to_copy) {
+string memory_arena_push_string(struct memory_arena* arena, string to_copy) {
     string result = {};
     result.length = to_copy.length;
-    result.data   = memory_arena_push_bottom_unaligned(arena, to_copy.length);
-    cstring_copy(to_copy.data, result.data, result.length);
-    return result;
-}
-
-string memory_arena_push_string_top(struct memory_arena* arena, string to_copy) {
-    string result = {};
-    result.length = to_copy.length;
-    result.data   = memory_arena_push_top_unaligned(arena, to_copy.length);
+    result.data   = memory_arena_push(arena, to_copy.length);
     cstring_copy(to_copy.data, result.data, result.length);
     return result;
 }

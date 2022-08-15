@@ -24,6 +24,11 @@ enum memory_arena_flags {
     MEMORY_ARENA_TOUCHED_TOP    = BIT(2),
 };
 
+enum memory_arena_allocation_region {
+    MEMORY_ARENA_ALLOCATION_REGION_BOTTOM,
+    MEMORY_ARENA_ALLOCATION_REGION_TOP,
+};
+
 #define Memory_Arena_Base                       \
     cstring              name;                  \
     u8*                  memory;                \
@@ -31,7 +36,8 @@ enum memory_arena_flags {
     u64                  used;                  \
     u64                  used_top;              \
     u8                   flags;                 \
-    struct memory_arena* next;           
+    struct memory_arena* next;                  \
+    u8                   alloc_region;
 
 struct memory_arena {
     Memory_Arena_Base;
@@ -44,20 +50,19 @@ struct temporary_memory {
     u64                  parent_bottom_marker;
 };
 
+void                    memory_arena_set_allocation_region_top(struct memory_arena* arena);
+void                    memory_arena_set_allocation_region_bottom(struct memory_arena* arena);
+
 struct memory_arena     memory_arena_create_from_heap(cstring name, u64 capacity);
 void                    memory_arena_finish(struct memory_arena* arena);
 void                    memory_arena_clear_top(struct memory_arena* arena);
 void                    memory_arena_clear_bottom(struct memory_arena* arena);
-void*                   memory_arena_push_top_unaligned(struct memory_arena* arena, u64 amount);
-#define                 memory_arena_push_top(arena, amount) memory_arena_push_top_unaligned(arena, amount)
-void*                   memory_arena_push_bottom_unaligned(struct memory_arena* arena, u64 amount);
+void                    memory_arena_clear(struct memory_arena* arena);
+void*                   memory_arena_push_unaligned(struct memory_arena* arena, u64 amount);
 struct memory_arena     memory_arena_push_sub_arena(struct memory_arena* arena, u64 amount);
-#define                 memory_arena_push_bottom(arena, amount) memory_arena_push_bottom_unaligned(arena, amount)
 struct temporary_memory memory_arena_begin_temporary_memory(cstring name, struct memory_arena* arena);
 void                    memory_arena_end_temporary_memory(struct temporary_memory* temporary_arena);
-string                  memory_arena_push_string_bottom(struct memory_arena* arena, string to_copy);
-string                  memory_arena_push_string_top(struct memory_arena* arena, string to_copy);
-#define                 memory_arena_push_string(arena, string) memory_arena_push_string_bottom(arena, string)
-#define                 memory_arena_push(arena, amount) memory_arena_push_bottom_unaligned(arena, amount)
+string                  memory_arena_push_string(struct memory_arena* arena, string to_copy);
+#define                 memory_arena_push(arena, amount) memory_arena_push_unaligned(arena, amount)
 
 #endif
