@@ -313,6 +313,8 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                     continue;
                 }
 
+                _debugprintf("Qualification!");
+                _debug_print_id(nearby_potential_targets.ids[index]);
                 target_display_list_indices[target_list_count++] = nearby_potential_targets.ids[index];
             }
 
@@ -355,7 +357,7 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
 
             entity_id enemy_id = target_display_list_indices[global_battle_ui_state.selection];
 
-            if (entity_id_equal(enemy_id, global_battle_ui_state.currently_selected_entity_id)) {
+            if (!entity_id_equal(enemy_id, global_battle_ui_state.currently_selected_entity_id)) {
                 global_battle_ui_state.currently_selected_entity_id = enemy_id;
 
                 {

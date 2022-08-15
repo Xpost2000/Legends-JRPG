@@ -1,5 +1,8 @@
 #include "entities_def.c"
 
+void _debug_print_id(entity_id id) {
+    _debugprintf("ent id[g:%d]: %d, %d", id.generation, id.store_type, id.index);
+}
 void entity_play_animation(struct entity* entity, string name) {
     if (string_equal(entity->animation.name, name)) {
         return;
@@ -434,6 +437,7 @@ struct entity_query_list find_entities_within_radius(struct memory_arena* arena,
 
         if (entity_distance_sq <= radius_sq) {
             memory_arena_push(arena, sizeof(*result.ids));
+            _debug_print_id(it.current_id);
             result.ids[result.count++] = it.current_id;
         }
     }
@@ -581,6 +585,7 @@ bool entity_validate_death(struct entity* entity) {
         return true;
     }
 
+    entity->flags |= ENTITY_FLAGS_ALIVE;
     return false;
 }
 
@@ -812,6 +817,8 @@ void level_area_entity_unpack(struct level_area_entity* entity, struct entity* u
 
     if (entity->health_override != -1) {unpack_target->health.value = entity->health_override;}
     if (entity->magic_override != -1)  {unpack_target->magic.value  = entity->magic_override;}
+
+    entity_validate_death(unpack_target);
 }
 
 void entity_base_data_unpack(struct entity_base_data* data, struct entity* destination) {
