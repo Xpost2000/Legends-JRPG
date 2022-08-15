@@ -244,7 +244,21 @@ void render_ground_area(struct game_state* state, struct render_commands* comman
 }
 
 entity_id player_id;
-struct entity* game_dereference_entity(struct game_state* state, entity_id id);
+struct entity* game_dereference_entity(struct game_state* state, entity_id id) {
+    switch (id.store_type) {
+        case ENTITY_LIST_STORAGE_TYPE_PER_LEVEL: {
+            return entity_list_dereference_entity(&state->loaded_area.entities, id);
+        } break;
+
+        case ENTITY_LIST_STORAGE_TYPE_PERMENANT_STORE:
+        default: {
+            return entity_list_dereference_entity(&state->permenant_entities, id);
+        } break;
+    }
+
+    return NULL;
+}
+
 entity_id entity_list_create_player(struct entity_list* entities, v2f32 position) {
     entity_id      result  = entity_list_create_entity(entities);
     struct entity* player  = entity_list_dereference_entity(entities, result);
