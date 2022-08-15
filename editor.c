@@ -50,48 +50,8 @@ local void clear_drag_candidate(void) {
     editor_state->drag_data.context = 0;
 }
 
-/* little IMGUI */
-/* no layout stuff, mostly just simple widgets to play with */
-/* also bad code */
-bool _imgui_mouse_button_left_down = false;
-bool _imgui_mouse_button_right_down = false;
-bool _imgui_any_intersection       = false;
 
-/* 1 - left click, 2 - right click. Might be weird if you're not expecting it... */
-/* TODO correct this elsweyr. */
-s32 EDITOR_imgui_button(struct software_framebuffer* framebuffer, struct font_cache* font, struct font_cache* highlighted_font, f32 draw_scale, v2f32 position, string str) {
-    f32 text_height = font_cache_text_height(font) * draw_scale;
-    f32 text_width  = font_cache_text_width(font, str, draw_scale);
-
-    s32 mouse_positions[2];
-    bool left_clicked, right_clicked;
-    get_mouse_buttons(&left_clicked, 0, &right_clicked);
-    get_mouse_location(mouse_positions, mouse_positions+1);
-
-    struct rectangle_f32 button_bounding_box = rectangle_f32(position.x, position.y, text_width, text_height);
-    struct rectangle_f32 interaction_bounding_box = rectangle_f32(mouse_positions[0], mouse_positions[1], 2, 2);
-
-    if (rectangle_f32_intersect(button_bounding_box, interaction_bounding_box)) {
-        _imgui_any_intersection = true;
-        if (!_imgui_mouse_button_left_down & left_clicked)   _imgui_mouse_button_left_down  = true;
-        if (!_imgui_mouse_button_right_down & right_clicked) _imgui_mouse_button_right_down = true;
-
-        software_framebuffer_draw_text(framebuffer, highlighted_font, draw_scale, position, (str), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
-        if (!left_clicked && _imgui_mouse_button_left_down) {
-            _imgui_mouse_button_left_down = false;
-            return 1;
-        }
-        if (!right_clicked && _imgui_mouse_button_right_down) {
-            _imgui_mouse_button_right_down = false;
-            return 2;
-        }
-    } else {
-        software_framebuffer_draw_text(framebuffer, font, draw_scale, position, (str), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
-    }
-
-    return 0;
-}
-/* little IMGUI  */
+#include "editor_imgui.c"
 
 void editor_clear_all_allocations(struct editor_state* state) {
     zero_array(state->tile_counts);
@@ -1177,6 +1137,12 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
                                     }
                                     draw_cursor_y += 16 * 2 * 1.5;
                                 }
+                                {
+                                    EDITOR_imgui_text_edit_u32(framebuffer, font, highlighted_font, 2, v2f32(10, draw_cursor_y), string_literal("entity flags raw: "), &entity->flags);
+                                    draw_cursor_y += 16 * 2 * 1.5;
+                                    EDITOR_imgui_text_edit_u32(framebuffer, font, highlighted_font, 2, v2f32(10, draw_cursor_y), string_literal("entity ai flags raw: "), &entity->ai_flags);
+                                    draw_cursor_y += 16 * 2 * 1.5;
+                                }
                             }
 
                         } break;
@@ -1528,8 +1494,7 @@ void update_and_render_editor(struct software_framebuffer* framebuffer, f32 dt) 
 
     /* cursor ghost */
     software_framebuffer_render_commands(framebuffer, &commands);
-    
-    _imgui_any_intersection = false;
+    EDITOR_imgui_end_frame();
 }
 
 void update_and_render_editor_menu_ui(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {

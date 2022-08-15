@@ -149,7 +149,10 @@ bool is_editing_text(void) {
 }
 
 char* current_text_buffer(void) {
-    return global_input.current_state.text;
+    if (global_input.current_state.editing_text) {
+        return global_input.current_state.text;
+    }
+    return "";
 }
 
 bool any_key_down(void) {
