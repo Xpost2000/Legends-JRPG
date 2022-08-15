@@ -1009,8 +1009,8 @@ void game_initialize(void) {
      */
     game_state->permenant_entities = entity_list_create(&game_arena, GAME_MAX_PERMENANT_ENTITIES, ENTITY_LIST_STORAGE_TYPE_PERMENANT_STORE);
     player_id                      = entity_list_create_player(&game_state->permenant_entities, v2f32(70, 70));
-    /* entity_list_create_badguy(&game_state->entities, v2f32(8 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE)); */
-    /* entity_list_create_badguy(&game_state->entities, v2f32(11 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE)); */
+    entity_list_create_badguy(&game_state->permenant_entities, v2f32(8 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE));
+    entity_list_create_badguy(&game_state->permenant_entities, v2f32(11 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE));
 
     {
         {
@@ -1780,7 +1780,7 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                         update_entities(game_state, dt, &game_state->loaded_area);
 
                         if (!game_state->combat_state.active_combat) {
-                            determine_if_combat_should_begin(game_state, &game_state->permenant_entities);
+                            determine_if_combat_should_begin(game_state);
                         } else {
                             update_combat(game_state, dt);
                         }

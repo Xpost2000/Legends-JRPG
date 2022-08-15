@@ -1,14 +1,16 @@
-local void add_all_combat_participants(struct game_state* state, struct entity_list* entities) {
+local void add_all_combat_participants(struct game_state* state) {
     /* TODO for now we don't have initiative so we'll just add in the same order */  
     struct game_state_combat_state* combat_state = &state->combat_state;
     combat_state->count                          = 0;
     combat_state->active_combatant               = 0;
 
-    for (s32 index = 0; index < entities->capacity; ++index) {
-        if (entities->entities[index].flags & ENTITY_FLAGS_ALIVE) {
-            entities->entities[index].waiting_on_turn         = true;
-            entities->entities[index].ai.wait_timer              = 0;
-            combat_state->participants[combat_state->count++] = entity_list_get_id(entities, index);
+    struct entity_iterator it = game_entity_iterator(state);
+
+    for (struct entity* current_entity = entity_iterator_begin(&it); !entity_iterator_finished(&it); current_entity = entity_iterator_advance(&it)) {
+        if (current_entity->flags & ENTITY_FLAGS_ALIVE) {
+            current_entity->waiting_on_turn                   = true;
+            current_entity->ai.wait_timer                     = 0;
+            combat_state->participants[combat_state->count++] = it.current_id;
         }
     }
 }
@@ -18,14 +20,14 @@ local void add_all_combat_participants(struct game_state* state, struct entity_l
 /* no need for anything fancy right now. That comes later. */
 /* (hard coding data is a real pain in my ass, so until I can specify NPCs through data, I just
    want the quickest way of doing stuff) */
-local void determine_if_combat_should_begin(struct game_state* state, struct entity_list* entities) {
-    struct entity* player = entity_list_dereference_entity(entities, player_id);
+local void determine_if_combat_should_begin(struct game_state* state) {
+    struct entity* player = game_get_player(state);
 
     bool should_be_in_combat = false;
 
-    for (u32 index = 0; index < entities->capacity && !should_be_in_combat; ++index) {
-        struct entity* current_entity = entities->entities + index;
+    struct entity_iterator it = game_entity_iterator(state);
 
+    for (struct entity* current_entity = entity_iterator_begin(&it); !entity_iterator_finished(&it); current_entity = entity_iterator_advance(&it)) {
         if (!(current_entity->flags & ENTITY_FLAGS_ALIVE))
             continue;
 
@@ -42,7 +44,7 @@ local void determine_if_combat_should_begin(struct game_state* state, struct ent
         state->combat_state.active_combat    = true;
         state->combat_state.active_combatant = 0;
         start_combat_ui();
-        add_all_combat_participants(state, entities);
+        add_all_combat_participants(state);
     }
 }
 
@@ -87,7 +89,7 @@ void update_combat(struct game_state* state, f32 dt) {
             combat_state->active_combatant += 1;
 
             if (combat_state->active_combatant >= combat_state->count) {
-                add_all_combat_participants(state, &state->permenant_entities);
+                add_all_combat_participants(state);
             }
         }
     }

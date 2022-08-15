@@ -288,6 +288,7 @@ struct entity_iterator {
     s32 list_count;
     s32 index;
     s32 entity_list_index;
+    entity_id current_id;
     struct entity_list* entity_lists[MAX_ENTITY_LIST_COUNT];
 };
 

@@ -876,8 +876,9 @@ bool entity_iterator_finished(struct entity_iterator* iterator) {
 
 /* TODO: this is slightly wrong. Not in the mood to do correctly. So there is a hack. */
 struct entity* entity_iterator_advance(struct entity_iterator* iterator) {
-    struct entity_list* current_iteration_list = iterator->entity_lists[iterator->index];
-    struct entity* current_iterated_entity     = current_iteration_list->entities + iterator->entity_list_index;
+    struct entity_list* current_iteration_list  = iterator->entity_lists[iterator->index];
+    struct entity*      current_iterated_entity = current_iteration_list->entities + iterator->entity_list_index;
+    iterator->current_id                        = entity_list_get_id(current_iteration_list, iterator->entity_list_index);
 
     iterator->entity_list_index += 1;
 
