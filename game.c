@@ -655,9 +655,15 @@ void serialize_level_area(struct game_state* state, struct binary_serializer* se
         serialize_s32(serializer, &entity_count);
         _debugprintf("Seeing %d entities to read", entity_count);
 
-        level->entities.capacity = entity_count;
-        level->entities.generation_count = memory_arena_push_top(state->arena, entity_count * sizeof(*level->entities.generation_count));
-        level->entities.entities         = memory_arena_push_top(state->arena, entity_count * sizeof(*level->entities.entities));
+        /* NOTE: 
+           hack, this is incorrect behavior as we need to more fine-tune the iterator.
+           
+           Now since this additional "sentinel" entity is never initialized, it makes no difference anyways.
+           I'll correct this later.
+        */
+        level->entities.capacity         = entity_count+1;
+        level->entities.generation_count = memory_arena_push_top(state->arena, (entity_count+1) * sizeof(*level->entities.generation_count));
+        level->entities.entities         = memory_arena_push_top(state->arena, (entity_count+1) * sizeof(*level->entities.entities));
 
         for (s32 entity_index = 0; entity_index < entity_count; ++entity_index) {
             Serialize_Structure(serializer, current_packed_entity);
