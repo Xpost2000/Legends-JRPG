@@ -181,14 +181,6 @@ Define_Serializer_Function(f64, f64);
   helpful macros
 */
 
-#define Serialize_Fixed_Array_And_Allocate_From_Arena_Top(serializer, arena, type, counter, array) \
-    do {                                                                \
-        serialize_##type(serializer, &counter);                         \
-        _debugprintf("allocating: %d (%s) objects", counter, #array);      \
-        if (serializer->mode == BINARY_SERIALIZER_READ)                 \
-            array = memory_arena_push_top(arena, counter * sizeof(*array)); \
-        serialize_bytes(serializer, array, counter * sizeof(*array));   \
-    } while (0)
 #define Serialize_Fixed_Array_And_Allocate_From_Arena(serializer, arena, type, counter, array) \
     do {                                                                \
         serialize_##type(serializer, &counter);                         \

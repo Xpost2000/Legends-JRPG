@@ -21,18 +21,6 @@ struct rectangle_f32 entity_rectangle_collision_bounds(struct entity* entity) {
                          entity->scale.y-10);
 }
 
-struct entity_list entity_list_create_top(struct memory_arena* arena, s32 capacity, u8 store_mark) {
-    struct entity_list result = {
-        .entities         = memory_arena_push_top(arena, capacity * sizeof(*result.entities)),
-        .generation_count = memory_arena_push_top(arena, capacity * sizeof(*result.generation_count)),
-        .capacity         = capacity,
-        .store_type       = store_mark,
-    };
-
-    zero_memory(result.generation_count, result.capacity * sizeof(*result.generation_count));
-    return result;
-}
-
 struct entity_list entity_list_create(struct memory_arena* arena, s32 capacity, u8 store_mark) {
     struct entity_list result = {
         .entities         = memory_arena_push(arena, capacity * sizeof(*result.entities)),

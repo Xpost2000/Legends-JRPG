@@ -343,8 +343,8 @@ local void build_navigation_map_for_level_area(struct memory_arena* arena, struc
         navigation_map->width  = (max_x - min_x)+1;
         navigation_map->height = (max_y - min_y)+1;
 
-        navigation_map->tiles                 = memory_arena_push_top(arena, sizeof(*navigation_map->tiles) * navigation_map->width * navigation_map->height);
-        level->combat_movement_visibility_map = memory_arena_push_top(arena, navigation_map->width * navigation_map->height);
+        navigation_map->tiles                 = memory_arena_push(arena, sizeof(*navigation_map->tiles) * navigation_map->width * navigation_map->height);
+        level->combat_movement_visibility_map = memory_arena_push(arena, navigation_map->width * navigation_map->height);
 
         for (s32 y_cursor = navigation_map->min_y; y_cursor < navigation_map->max_y; ++y_cursor) {
             for (s32 x_cursor = navigation_map->min_x; x_cursor < navigation_map->max_x; ++x_cursor) {
@@ -614,100 +614,103 @@ struct navigation_path navigation_path_find(struct memory_arena* arena, struct l
 
 void level_area_entity_unpack(struct level_area_entity* entity, struct entity* unpack_target);
 void serialize_level_area(struct game_state* state, struct binary_serializer* serializer, struct level_area* level, bool use_default_spawn) {
-    _debugprintf("%d memory used", state->arena->used + state->arena->used_top);
-    memory_arena_clear_top(state->arena);
-    _debugprintf("reading version");
-    serialize_u32(serializer, &level->version);
-    _debugprintf("reading default player spawn");
-    serialize_f32(serializer, &level->default_player_spawn.x);
-    serialize_f32(serializer, &level->default_player_spawn.y);
-    _debugprintf("reading tiles");
+    memory_arena_set_allocation_region_top(state->arena); {
+        _debugprintf("%d memory used", state->arena->used + state->arena->used_top);
+        memory_arena_clear_top(state->arena);
+        _debugprintf("reading version");
+        serialize_u32(serializer, &level->version);
+        _debugprintf("reading default player spawn");
+        serialize_f32(serializer, &level->default_player_spawn.x);
+        serialize_f32(serializer, &level->default_player_spawn.y);
+        _debugprintf("reading tiles");
 
-    if (level->version >= 4) {
-        if (level->version < CURRENT_LEVEL_AREA_VERSION) {
-            /* for older versions I have to know what the tile layers were and assign them like this. */
-            switch (level->version) {
-                case 4: {
-                    Serialize_Fixed_Array_And_Allocate_From_Arena_Top(serializer, state->arena, s32, level->tile_counts[TILE_LAYER_GROUND],     level->tile_layers[TILE_LAYER_GROUND]);
-                    Serialize_Fixed_Array_And_Allocate_From_Arena_Top(serializer, state->arena, s32, level->tile_counts[TILE_LAYER_OBJECT],     level->tile_layers[TILE_LAYER_OBJECT]);
-                    Serialize_Fixed_Array_And_Allocate_From_Arena_Top(serializer, state->arena, s32, level->tile_counts[TILE_LAYER_ROOF],       level->tile_layers[TILE_LAYER_ROOF]);
-                    Serialize_Fixed_Array_And_Allocate_From_Arena_Top(serializer, state->arena, s32, level->tile_counts[TILE_LAYER_FOREGROUND], level->tile_layers[TILE_LAYER_FOREGROUND]);
-                } break;
-                default: {
+        if (level->version >= 4) {
+            if (level->version < CURRENT_LEVEL_AREA_VERSION) {
+                /* for older versions I have to know what the tile layers were and assign them like this. */
+                switch (level->version) {
+                    case 4: {
+                        Serialize_Fixed_Array_And_Allocate_From_Arena(serializer, state->arena, s32, level->tile_counts[TILE_LAYER_GROUND],     level->tile_layers[TILE_LAYER_GROUND]);
+                        Serialize_Fixed_Array_And_Allocate_From_Arena(serializer, state->arena, s32, level->tile_counts[TILE_LAYER_OBJECT],     level->tile_layers[TILE_LAYER_OBJECT]);
+                        Serialize_Fixed_Array_And_Allocate_From_Arena(serializer, state->arena, s32, level->tile_counts[TILE_LAYER_ROOF],       level->tile_layers[TILE_LAYER_ROOF]);
+                        Serialize_Fixed_Array_And_Allocate_From_Arena(serializer, state->arena, s32, level->tile_counts[TILE_LAYER_FOREGROUND], level->tile_layers[TILE_LAYER_FOREGROUND]);
+                    } break;
+                    default: {
                     
-                } break;
+                    } break;
+                }
+            } else {
+                /* the current version of the tile layering, we can just load them in order. */
+                for (s32 index = 0; index < TILE_LAYER_COUNT; ++index) {
+                    Serialize_Fixed_Array_And_Allocate_From_Arena(serializer, state->arena, s32, level->tile_counts[index], level->tile_layers[index]);
+                }
             }
         } else {
-            /* the current version of the tile layering, we can just load them in order. */
-            for (s32 index = 0; index < TILE_LAYER_COUNT; ++index) {
-                Serialize_Fixed_Array_And_Allocate_From_Arena_Top(serializer, state->arena, s32, level->tile_counts[index], level->tile_layers[index]);
+            Serialize_Fixed_Array_And_Allocate_From_Arena(serializer, state->arena, s32, level->tile_counts[TILE_LAYER_OBJECT], level->tile_layers[TILE_LAYER_OBJECT]);
+        }
+
+        if (level->version >= 1) {
+            _debugprintf("reading level transitions");
+            Serialize_Fixed_Array_And_Allocate_From_Arena(serializer, state->arena, s32, level->trigger_level_transition_count, level->trigger_level_transitions);
+            /* this thing is allergic to chest updates. Unfortunately it might happen a lot... */
+        }
+        if (level->version >= 2) {
+            _debugprintf("reading containers");
+            Serialize_Fixed_Array_And_Allocate_From_Arena(serializer, state->arena, s32, level->entity_chest_count, level->chests);
+        }
+        if (level->version >= 3) {
+            _debugprintf("reading scriptable triggers");
+            Serialize_Fixed_Array_And_Allocate_From_Arena(serializer, state->arena, s32, level->script_trigger_count, level->script_triggers);
+        }
+        if (level->version >= 5) {
+            struct level_area_entity current_packed_entity = {};
+
+            _debugprintf("reading and unpacking entities");
+
+            s32 entity_count = 0;
+            serialize_s32(serializer, &entity_count);
+            _debugprintf("Seeing %d entities to read", entity_count);
+
+            /* TODO: 
+               hack, this is incorrect behavior as we need to more fine-tune the iterator.
+           
+               Now since this additional "sentinel" entity is never initialized, it makes no difference anyways.
+               I'll correct this later.
+            */
+            level->entities = entity_list_create(state->arena, (entity_count+1), ENTITY_LIST_STORAGE_TYPE_PER_LEVEL);
+
+            for (s32 entity_index = 0; entity_index < entity_count; ++entity_index) {
+                Serialize_Structure(serializer, current_packed_entity);
+                struct entity* current_entity = 0;
+
+                entity_id new_ent = entity_list_create_entity(&level->entities);
+                current_entity    = entity_list_dereference_entity(&level->entities, new_ent);
+
+                struct entity_base_data* base_data = entity_database_find_by_name(&game_state->entity_database, string_from_cstring(current_packed_entity.base_name));
+                entity_base_data_unpack(base_data, current_entity);
+                level_area_entity_unpack(&current_packed_entity, current_entity);
             }
         }
-    } else {
-        Serialize_Fixed_Array_And_Allocate_From_Arena_Top(serializer, state->arena, s32, level->tile_counts[TILE_LAYER_OBJECT], level->tile_layers[TILE_LAYER_OBJECT]);
-    }
 
-    if (level->version >= 1) {
-        _debugprintf("reading level transitions");
-        Serialize_Fixed_Array_And_Allocate_From_Arena_Top(serializer, state->arena, s32, level->trigger_level_transition_count, level->trigger_level_transitions);
-        /* this thing is allergic to chest updates. Unfortunately it might happen a lot... */
-    }
-    if (level->version >= 2) {
-        _debugprintf("reading containers");
-        Serialize_Fixed_Array_And_Allocate_From_Arena_Top(serializer, state->arena, s32, level->entity_chest_count, level->chests);
-    }
-    if (level->version >= 3) {
-        _debugprintf("reading scriptable triggers");
-        Serialize_Fixed_Array_And_Allocate_From_Arena_Top(serializer, state->arena, s32, level->script_trigger_count, level->script_triggers);
-    }
-    if (level->version >= 5) {
-        struct level_area_entity current_packed_entity = {};
-
-        _debugprintf("reading and unpacking entities");
-
-        s32 entity_count = 0;
-        serialize_s32(serializer, &entity_count);
-        _debugprintf("Seeing %d entities to read", entity_count);
-
-        /* TODO: 
-           hack, this is incorrect behavior as we need to more fine-tune the iterator.
-           
-           Now since this additional "sentinel" entity is never initialized, it makes no difference anyways.
-           I'll correct this later.
-        */
-        level->entities = entity_list_create_top(state->arena, (entity_count+1), ENTITY_LIST_STORAGE_TYPE_PER_LEVEL);
-
-        for (s32 entity_index = 0; entity_index < entity_count; ++entity_index) {
-            Serialize_Structure(serializer, current_packed_entity);
-            struct entity* current_entity = 0;
-
-            entity_id new_ent = entity_list_create_entity(&level->entities);
-            current_entity    = entity_list_dereference_entity(&level->entities, new_ent);
-
-            struct entity_base_data* base_data = entity_database_find_by_name(&game_state->entity_database, string_from_cstring(current_packed_entity.base_name));
-            entity_base_data_unpack(base_data, current_entity);
-            level_area_entity_unpack(&current_packed_entity, current_entity);
+        /* until we have new area transititons or whatever. */
+        /* TODO dumb to assume only the player... but okay */
+        struct entity* player = entity_list_dereference_entity(&state->permenant_entities, player_id);
+        if (use_default_spawn) {
+            player->position.x             = level->default_player_spawn.x;
+            player->position.y             = level->default_player_spawn.y;
         }
-    }
 
-    /* until we have new area transititons or whatever. */
-    /* TODO dumb to assume only the player... but okay */
-    struct entity* player = entity_list_dereference_entity(&state->permenant_entities, player_id);
-    if (use_default_spawn) {
-        player->position.x             = level->default_player_spawn.x;
-        player->position.y             = level->default_player_spawn.y;
-    }
+        state->camera.xy.x = player->position.x;
+        state->camera.xy.y = player->position.y;
 
-    state->camera.xy.x = player->position.x;
-    state->camera.xy.y = player->position.y;
-
-    build_navigation_map_for_level_area(state->arena, level);
+        build_navigation_map_for_level_area(state->arena, level);
+    } memory_arena_set_allocation_region_bottom(state->arena);
 }
 
 local void load_area_script(struct memory_arena* arena, struct level_area* area, string script_name) {
     /* NOTE: all of this stuff needs to allocate memory from the top!!! */
     struct level_area_script_data* script_data = &area->script;
 
+    memory_arena_set_allocation_region_top(arena);
     if (file_exists(script_name)) {
         script_data->present     = true;
         /* This can technically be loaded into the arena top! */
@@ -789,6 +792,7 @@ local void load_area_script(struct memory_arena* arena, struct level_area* area,
     } else {
         _debugprintf("NOTE: %.*s does not exist! No script for this level.", script_name.length, script_name.data);
     }
+    memory_arena_set_allocation_region_bottom(arena);
 }
 
 struct lisp_form level_area_find_listener_for_object(struct game_state* state, struct level_area* area, s32 listener_type, s32 listener_target_type, s32 listener_target_id) {

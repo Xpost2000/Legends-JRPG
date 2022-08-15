@@ -23,35 +23,19 @@ IAllocator heap_allocator(void) {
     };
 }
 
-Allocator_Allocate_Function(memory_arena_allocator_allocate_top) {
+Allocator_Allocate_Function(memory_arena_allocator_allocate) {
     struct memory_arena* arena = (struct memory_arena*) allocator->userdata;
-    return memory_arena_push_top_unaligned(arena, amount);
-}
-
-Allocator_Allocate_Function(memory_arena_allocator_allocate_bottom) {
-    struct memory_arena* arena = (struct memory_arena*) allocator->userdata;
-    return memory_arena_push_bottom_unaligned(arena, amount);
+    return memory_arena_push(arena, amount);
 }
 
 /* memory arenas aren't expected for realloc purposes sorry! */
-IAllocator memory_arena_top_allocator(struct memory_arena* allocator) {
+IAllocator memory_arena_allocator(struct memory_arena* allocator) {
     return (IAllocator) {
         .userdata = allocator,
-        .alloc   = memory_arena_allocator_allocate_top,
-        .free    = stub_allocator_deallocate,
-        .realloc = stub_allocator_reallocate,
-    };
-}
-
-IAllocator memory_arena_bottom_allocator(struct memory_arena* allocator) {
-    return (IAllocator) {
-        .userdata = allocator,
-        .alloc    = memory_arena_allocator_allocate_bottom,
+        .alloc    = memory_arena_allocator_allocate,
         .free     = stub_allocator_deallocate,
         .realloc  = stub_allocator_reallocate,
     };
 }
-
-#define memory_arena_allocator(arena) memory_arena_bottom_allocator(arena)
 
 
