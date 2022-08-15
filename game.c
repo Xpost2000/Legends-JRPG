@@ -281,7 +281,7 @@ entity_id entity_list_create_badguy(struct entity_list* entities, v2f32 position
 }
 
 struct entity* game_get_player(struct game_state* state) {
-    return entity_list_dereference_entity(&state->entities, player_id);
+    return entity_list_dereference_entity(&state->permenant_entities, player_id);
 }
 
 #include "weather.c"
@@ -655,16 +655,16 @@ void serialize_level_area(struct game_state* state, struct binary_serializer* se
         serialize_s32(serializer, &entity_count);
         _debugprintf("Seeing %d entities to read", entity_count);
 
-        /* TODO, separate per level entities and permenant storage entities */
-        assertion(entity_count < 1024 && "Too many entities for the engine ATM");
+        level->entities.capacity = entity_count;
+        level->entities.generation_count = memory_arena_push_top(state->arena, entity_count * sizeof(*level->entities.generation_count));
+        level->entities.entities         = memory_arena_push_top(state->arena, entity_count * sizeof(*level->entities.entities));
 
         for (s32 entity_index = 0; entity_index < entity_count; ++entity_index) {
             Serialize_Structure(serializer, current_packed_entity);
-
             struct entity* current_entity = 0;
 
-            entity_id new_ent = entity_list_create_entity(&game_state->entities);
-            current_entity    = entity_list_dereference_entity(&game_state->entities, new_ent);
+            entity_id new_ent = entity_list_create_entity(&level->entities);
+            current_entity    = entity_list_dereference_entity(&level->entities, new_ent);
 
             struct entity_base_data* base_data = entity_database_find_by_name(&game_state->entity_database, string_from_cstring(current_packed_entity.base_name));
             entity_base_data_unpack(base_data, current_entity);
@@ -674,7 +674,7 @@ void serialize_level_area(struct game_state* state, struct binary_serializer* se
 
     /* until we have new area transititons or whatever. */
     /* TODO dumb to assume only the player... but okay */
-    struct entity* player = entity_list_dereference_entity(&state->entities, player_id);
+    struct entity* player = entity_list_dereference_entity(&state->permenant_entities, player_id);
     if (use_default_spawn) {
         player->position.x             = level->default_player_spawn.x;
         player->position.y             = level->default_player_spawn.y;
@@ -988,8 +988,8 @@ void game_initialize(void) {
       Save Record        (Saves some delta about entities and map state),
       Game Base Files    (Use if there is no existing save record on that level...)
      */
-    game_state->entities = entity_list_create(&game_arena, 512);
-    player_id            = entity_list_create_player(&game_state->entities, v2f32(70, 70));
+    game_state->permenant_entities = entity_list_create(&game_arena, GAME_MAX_PERMENANT_ENTITIES);
+    player_id                      = entity_list_create_player(&game_state->permenant_entities, v2f32(70, 70));
     /* entity_list_create_badguy(&game_state->entities, v2f32(8 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE)); */
     /* entity_list_create_badguy(&game_state->entities, v2f32(11 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE)); */
 
@@ -1058,7 +1058,7 @@ void game_deinitialize(void) {
 }
 
 local void game_loot_chest(struct game_state* state, struct entity_chest* chest) {
-    struct entity* player = entity_list_dereference_entity(&state->entities, player_id);
+    struct entity* player = game_get_player(state);
     
     bool permit_unlocking = true;
     if (chest->flags & ENTITY_CHEST_FLAGS_REQUIRES_ITEM_FOR_UNLOCK) {
@@ -1482,7 +1482,7 @@ local void recalculate_camera_shifting_bounds(struct software_framebuffer* frame
 local void update_game_camera_exploration_mode(struct game_state* state, f32 dt) {
     struct camera* camera = &state->camera;
 
-    struct entity* player = entity_list_dereference_entity(&state->entities, player_id);
+    struct entity* player = entity_list_dereference_entity(&state->permenant_entities, player_id);
     camera->tracking_xy = player->position;
 
     {
@@ -1520,7 +1520,7 @@ local void update_game_camera_exploration_mode(struct game_state* state, f32 dt)
 local void update_game_camera(struct game_state* state, f32 dt) {
     struct camera* camera = &state->camera;
 
-    struct entity* player = entity_list_dereference_entity(&state->entities, player_id);
+    struct entity* player = entity_list_dereference_entity(&state->permenant_entities, player_id);
     camera->centered    = true;
     camera->zoom        = 1;
 
@@ -1727,7 +1727,7 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
     {
         switch (screen_mode) {
             case GAME_SCREEN_INGAME: {
-                struct entity* player_entity = entity_list_dereference_entity(&game_state->entities, player_id);
+                struct entity* player_entity = game_get_player(game_state);
                 update_game_camera(game_state, dt);
 
                 struct render_commands commands = render_commands(game_state->camera);
@@ -1758,10 +1758,10 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                 render_ground_area(game_state, &commands, &game_state->loaded_area);
                 if (game_state->ui_state != UI_STATE_PAUSE) {
                     if (!storyboard_active) {
-                        entity_list_update_entities(game_state,&game_state->entities, dt, &game_state->loaded_area);
+                        entity_list_update_entities(game_state,&game_state->permenant_entities, dt, &game_state->loaded_area);
 
                         if (!game_state->combat_state.active_combat) {
-                            determine_if_combat_should_begin(game_state, &game_state->entities);
+                            determine_if_combat_should_begin(game_state, &game_state->permenant_entities);
                         } else {
                             update_combat(game_state, dt);
                         }
@@ -1770,7 +1770,7 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                     game_state->weather.timer += dt;
                 }
 
-                entity_list_render_entities(&game_state->entities, &graphics_assets, &commands, dt);
+                entity_list_render_entities(&game_state->permenant_entities, &graphics_assets, &commands, dt);
                 render_foreground_area(game_state, &commands, &game_state->loaded_area);
 
                 game_script_execute_awaiting_scripts(&scratch_arena, game_state, dt);

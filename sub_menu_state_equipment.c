@@ -377,7 +377,7 @@ local void do_entity_select_equipment_panel(struct software_framebuffer* framebu
 }
 
 local void update_and_render_character_equipment_screen(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
-    struct entity* target_entity = entity_list_dereference_entity(&state->entities, equipment_screen_state.focus_entity);
+    struct entity* target_entity = entity_list_dereference_entity(&state->permenant_entities, equipment_screen_state.focus_entity);
 
     {
         struct entity_animation* anim = find_animation_by_name(target_entity->model_index, facing_direction_strings_normal[equipment_screen_state.direction_index]);

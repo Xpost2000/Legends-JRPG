@@ -49,7 +49,7 @@ local void determine_if_combat_should_begin(struct game_state* state, struct ent
 local struct entity* find_current_combatant(struct game_state* state) {
     struct game_state_combat_state* combat_state        = &state->combat_state;
     entity_id                       active_combatant_id = combat_state->participants[combat_state->active_combatant];
-    return entity_list_dereference_entity(&state->entities, active_combatant_id);
+    return entity_list_dereference_entity(&state->permenant_entities, active_combatant_id);
 }
 
 void update_combat(struct game_state* state, f32 dt) {
@@ -61,7 +61,7 @@ void update_combat(struct game_state* state, f32 dt) {
     {
         struct entity* player = game_get_player(state);
         for (s32 index = 0; index < combat_state->count; ++index) {
-            struct entity* potential_combatant = entity_list_dereference_entity(&state->entities, combat_state->participants[index]);
+            struct entity* potential_combatant = entity_list_dereference_entity(&state->permenant_entities, combat_state->participants[index]);
 
             if (player != potential_combatant) {
                 bool aggressive = is_entity_aggressive_to_player(potential_combatant);
@@ -87,7 +87,7 @@ void update_combat(struct game_state* state, f32 dt) {
             combat_state->active_combatant += 1;
 
             if (combat_state->active_combatant >= combat_state->count) {
-                add_all_combat_participants(state, &state->entities);
+                add_all_combat_participants(state, &state->permenant_entities);
             }
         }
     }

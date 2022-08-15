@@ -198,7 +198,8 @@ struct level_area {
     struct entity_chest* chests;
 
     /* runtime data */
-    struct level_area_script_data script;
+    struct entity_list               entities;
+    struct level_area_script_data    script;
     struct level_area_navigation_map navigation_data;
     /* used for displaying what tiles you can walk to. */
     u8*                              combat_movement_visibility_map;

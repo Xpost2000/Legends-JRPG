@@ -37,7 +37,7 @@ local void update_and_render_party_inventory_screen(struct game_state* state, st
         if (item->type != ITEM_TYPE_MISC) {
             _debugprintf("use item \"%.*s\"", item->name.length, item->name.data);
 
-            struct entity* player = entity_list_dereference_entity(&state->entities, player_id);
+            struct entity* player = game_get_player(state);
             entity_inventory_use_item(inventory, index, player);
         }
     }

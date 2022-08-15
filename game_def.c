@@ -25,6 +25,8 @@
    However, a fair amount of effort will be done in the language script.
  */
 
+#define GAME_MAX_PERMENANT_ENTITIES (64)
+
 /* TODO */
 /*
   Everything should be represented in terms of virtual tile coordinates.
@@ -192,6 +194,12 @@ struct game_ui_nine_patch {
 /* TODO render and use ninepatches later :*/
 struct game_ui_nine_patch game_ui_nine_patch_load_from_directory(struct graphics_assets* graphics_assets, string directory, s32 tile_width, s32 tile_height);
 
+/* forward decl avoid linking problems (cause C can't have define anywhere.) */
+struct entity_list;
+struct level_area;
+
+#include "entity_model_def.c"
+#include "entities_def.c"
 #include "level_area_def.c"
 
 struct navigation_path {
@@ -322,9 +330,6 @@ static string interactable_type_strings[] = {
     string_literal("(count)"),
 };
 
-#include "entity_model_def.c"
-#include "entities_def.c"
-
 struct game_state_combat_state {
     bool      active_combat;
     s32       count;
@@ -388,7 +393,10 @@ struct game_state {
        It's simpler to handle rather than doing some more complicated sparse storage...
     */
     struct entity_database entity_database;
-    struct entity_list  entities;
+
+    /* player and their companions, or familiars or something like that. */
+    struct entity_list  permenant_entities;
+
     struct weather      weather;
 
     /* 

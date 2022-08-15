@@ -14,11 +14,16 @@ typedef struct entity_id {
            
            So this generally reduces code changes.
         */
+
+        /*
+          NOTE: these flags / extra bits do not influence the look up from entity list!
+          The flags are checked individually in the game code.
+         */
         struct {
-            u8  party_member_persistence;
-            u8  flags1;
-            u8  flags2;
-            u8  flags3;
+            /* though not sure if this is ever important as the script code has special handle
+               types for permenant entities. (PERM-ENT 0) == PLAYER, and stuff like that */
+            u8  permenant_store;
+            u8  flags[3];
             u32  index;
         };
         u64 full_id;

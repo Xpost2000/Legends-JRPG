@@ -88,10 +88,11 @@ local void start_combat_ui(void) {
     global_battle_ui_state.timer = 0;
 }
 
+/* TODO does not account for per entity objects! */
 local bool is_player_combat_turn(struct game_state* state) {
     struct game_state_combat_state* combat_state            = &state->combat_state;
-    struct entity*                  active_combatant_entity = entity_list_dereference_entity(&state->entities, combat_state->participants[combat_state->active_combatant]);
-    struct entity*                  player_entity           = entity_list_dereference_entity(&state->entities, player_id);
+    struct entity*                  active_combatant_entity = entity_list_dereference_entity(&state->permenant_entities, combat_state->participants[combat_state->active_combatant]);
+    struct entity*                  player_entity           = game_get_player(state);
 
     if (player_entity == active_combatant_entity) {
         /* check if player entity can do anything */
@@ -107,14 +108,15 @@ local bool is_player_combat_turn(struct game_state* state) {
 local void draw_turn_panel(struct game_state* state, struct software_framebuffer* framebuffer, f32 x, f32 y) {
     struct game_state_combat_state* combat_state = &state->combat_state;
 
-    struct entity* active_combatant_entity = entity_list_dereference_entity(&state->entities, combat_state->participants[combat_state->active_combatant]);
+    struct entity* active_combatant_entity = entity_list_dereference_entity(&state->permenant_entities, combat_state->participants[combat_state->active_combatant]);
     bool player_turn = is_player_combat_turn(state);
 
     for (s32 index = combat_state->active_combatant; index < combat_state->count; ++index) {
         union color32u8 color = color32u8(128, 128, 128, 255);
 
         {
-            struct entity* entity = entity_list_dereference_entity(&state->entities, combat_state->participants[index]);
+            struct entity* entity = entity_list_dereference_entity(&state->permenant_entities, combat_state->participants[index]);
+
             if (entity->flags & ENTITY_FLAGS_PLAYER_CONTROLLED) {
                 color = color32u8(0, 255, 0, 255);
             } else {
@@ -137,7 +139,7 @@ local void draw_turn_panel(struct game_state* state, struct software_framebuffer
 
 local void do_battle_selection_menu(struct game_state* state, struct software_framebuffer* framebuffer, f32 x, f32 y, bool allow_input) {
     struct game_state_combat_state* combat_state            = &state->combat_state;
-    struct entity*                  active_combatant_entity = entity_list_dereference_entity(&state->entities, combat_state->participants[combat_state->active_combatant]);
+    struct entity*                  active_combatant_entity = entity_list_dereference_entity(&state->permenant_entities, combat_state->participants[combat_state->active_combatant]);
 
     struct font_cache* normal_font      = game_get_font(MENU_FONT_COLOR_WHITE);
     struct font_cache* highlighted_font = game_get_font(MENU_FONT_COLOR_GOLD);
@@ -180,12 +182,12 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
             /* disable selecting attack if we don't have anyone within attack range */
             {
                 f32 attack_radius = 3;
-                struct entity_query_list nearby_potential_targets = find_entities_within_radius(&scratch_arena, &state->entities, game_get_player(state)->position, attack_radius * TILE_UNIT_SIZE);
+                struct entity_query_list nearby_potential_targets = find_entities_within_radius(&scratch_arena, &state->permenant_entities, game_get_player(state)->position, attack_radius * TILE_UNIT_SIZE);
 
                 s32 living_targets = 0;
 
                 for (s32 index = 0; index < nearby_potential_targets.count; ++index) {
-                    struct entity* potential_target = state->entities.entities + nearby_potential_targets.indices[index];
+                    struct entity* potential_target = state->permenant_entities.entities + nearby_potential_targets.indices[index];
 
                     if (!(potential_target->flags & ENTITY_FLAGS_PLAYER_CONTROLLED)) {
                         if ((potential_target->flags & ENTITY_FLAGS_ALIVE)) {
@@ -254,7 +256,7 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                             case BATTLE_MOVE: {
                                 global_battle_ui_state.submode = BATTLE_UI_SUBMODE_MOVING;
                             
-                                struct entity* active_combatant_entity = entity_list_dereference_entity(&state->entities, combat_state->participants[combat_state->active_combatant]);
+                                struct entity* active_combatant_entity = entity_list_dereference_entity(&state->permenant_entities, combat_state->participants[combat_state->active_combatant]);
                                 level_area_build_movement_visibility_map(&scratch_arena, &state->loaded_area, active_combatant_entity->position.x / TILE_UNIT_SIZE, active_combatant_entity->position.y / TILE_UNIT_SIZE, 6);
 
                                 global_battle_ui_state.movement_start_x                 = floorf((active_combatant_entity->position.x + active_combatant_entity->scale.x/2) / TILE_UNIT_SIZE);
@@ -294,14 +296,14 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
             /* TODO make attacking highlight the target obviously! Or focus on the target would work too. */
         case BATTLE_UI_SUBMODE_ATTACKING: {
             f32 attack_radius = 3;
-            struct entity_query_list nearby_potential_targets = find_entities_within_radius(&scratch_arena, &state->entities, game_get_player(state)->position, attack_radius * TILE_UNIT_SIZE);
+            struct entity_query_list nearby_potential_targets = find_entities_within_radius(&scratch_arena, &state->permenant_entities, game_get_player(state)->position, attack_radius * TILE_UNIT_SIZE);
 
             /* I mean, there's no battle this large... Ever */
             s32 target_list_count                = 0;
             s32 target_display_list_indices[512] = {};
 
             for (s32 index = 0; index < nearby_potential_targets.count; ++index) {
-                struct entity* current_entity = &state->entities.entities[nearby_potential_targets.indices[index]];
+                struct entity* current_entity = &state->permenant_entities.entities[nearby_potential_targets.indices[index]];
 
                 if (current_entity == game_get_player(state)) {
                     continue;
@@ -323,7 +325,7 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
             draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, ui_box_position, BOX_WIDTH, BOX_HEIGHT, UI_BATTLE_COLOR);
 
             for (s32 index = 0; index < target_list_count; ++index) {
-                struct entity* target_entity = &state->entities.entities[target_display_list_indices[index]];
+                struct entity* target_entity = &state->permenant_entities.entities[target_display_list_indices[index]];
 
                 string entity_name = target_entity->name;
                 v2f32 draw_point = ui_box_position;
@@ -358,7 +360,7 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
 
                 {
                     struct camera* camera = &state->camera;
-                    struct entity* target_entity = state->entities.entities + enemy_index;
+                    struct entity* target_entity = state->permenant_entities.entities + enemy_index;
 
                     camera_set_point_to_interpolate(camera, target_entity->position);
                 }
@@ -548,8 +550,8 @@ local string analyze_entity_and_display_tooltip(struct memory_arena* arena, v2f3
 
     struct rectangle_f32 cursor_rect = rectangle_f32(cursor_at.x, cursor_at.y, 8, 8);
 
-    for (s32 index = 0; index < state->entities.capacity && target_entity_to_analyze == 0; ++index) {
-        struct entity* current_entity = state->entities.entities + index;
+    for (s32 index = 0; index < state->permenant_entities.capacity && target_entity_to_analyze == 0; ++index) {
+        struct entity* current_entity = state->permenant_entities.entities + index;
 
         if (current_entity->flags & ENTITY_FLAGS_ACTIVE) {
             struct rectangle_f32 entity_rectangle = entity_rectangle_collision_bounds(current_entity);

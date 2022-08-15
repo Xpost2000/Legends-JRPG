@@ -174,7 +174,7 @@ GAME_LISP_FUNCTION(FOLLOW_PATH) {
     v2f32* path       = 0;
     s32    path_count = 0;
 
-    struct entity* target_entity = entity_list_dereference_entity(&state->entities, ptr.entity_id);
+    struct entity* target_entity = entity_list_dereference_entity(&state->permenant_entities, ptr.entity_id);
     assertion(target_entity && "no entity?");
 
     if (argument_count == 2) {
@@ -893,7 +893,7 @@ struct game_script_typed_ptr game_script_object_handle_decode(struct lisp_form o
                 if (lisp_form_symbol_matching(*id_form, string_literal("player"))) {
                     result.entity_id = player_id;
                 } else if (lisp_form_get_s32(*id_form, &real_id)) {
-                    result.entity_id = entity_list_get_id(&game_state->entities, real_id);
+                    result.entity_id = entity_list_get_id(&game_state->permenant_entities, real_id);
                 }
                 return result;
             } break;
@@ -945,7 +945,7 @@ bool game_script_waiting_on_form(struct game_script_script_instance* script_stat
         }
 
         if (lisp_form_symbol_matching(*first, string_literal("follow_path"))) {
-            struct entity* waiting_ent = entity_list_dereference_entity(&game_state->entities, current_stackframe->awaiters.entity_id);
+            struct entity* waiting_ent = entity_list_dereference_entity(&game_state->permenant_entities, current_stackframe->awaiters.entity_id);
 
             if (waiting_ent) {
                 if (waiting_ent->ai.current_action == ENTITY_ACTION_NONE) {
