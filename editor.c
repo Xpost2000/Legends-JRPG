@@ -2,6 +2,8 @@
   Having dense arrays while nice for cache locality, might be a bit difficult to reference?
   
   Oh well. I'll accept that.
+  
+  Having some text field widgets would be a good idea. That's next time.
 */
 
 /*

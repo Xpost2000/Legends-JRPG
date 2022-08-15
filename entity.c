@@ -417,25 +417,24 @@ void render_entities(struct game_state* state, struct graphics_assets* graphics_
     }
 }
 
-struct entity_query_list find_entities_within_radius(struct memory_arena* arena, struct entity_list* list, v2f32 position, f32 radius) {
+struct entity_query_list find_entities_within_radius(struct memory_arena* arena, struct game_state* state, v2f32 position, f32 radius) {
     struct entity_query_list result = {};
+    struct entity_iterator   it     = game_entity_iterator(state);
 
     /* marker pointer */
-    result.indices = memory_arena_push(arena, 0);
+    result.ids = memory_arena_push(arena, 0);
 
     f32 radius_sq = radius * radius;
 
-    for (s32 index = 0; index < list->capacity; ++index) {
-        struct entity* target = list->entities + index;
-
+    for (struct entity* target = entity_iterator_begin(&it); !entity_iterator_finished(&it); target = entity_iterator_advance(&it)) {
         if (!(target->flags & ENTITY_FLAGS_ACTIVE))
             continue;
 
         f32 entity_distance_sq = v2f32_distance_sq(position, target->position);
 
         if (entity_distance_sq <= radius_sq) {
-            memory_arena_push(arena, sizeof(s32));
-            result.indices[result.count++] = index;
+            memory_arena_push(arena, sizeof(*result.ids));
+            result.ids[result.count++] = it.current_id;
         }
     }
 
@@ -566,12 +565,12 @@ void entity_combat_submit_movement_action(struct entity* entity, v2f32* path_poi
     entity->ai.current_action  = ENTITY_ACTION_MOVEMENT;
 }
 
-void entity_combat_submit_attack_action(struct entity* entity, s32 attack_index) {
+void entity_combat_submit_attack_action(struct entity* entity, entity_id target_id) {
     if (entity->ai.current_action != ENTITY_ACTION_NONE)
         return;
 
-    entity->ai.current_action      = ENTITY_ACTION_ATTACK;
-    entity->ai.attack_target_index = attack_index;
+    entity->ai.current_action   = ENTITY_ACTION_ATTACK;
+    entity->ai.attack_target_id = target_id;
     entity->waiting_on_turn     = 0;
     _debugprintf("attacku");
 }
@@ -726,11 +725,9 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
 for now just do a fixed amount of damage
                  */
                   
-#if 0
                 /* TODO FIX */
-                struct entity* attacked_entity = entities->entities + target_entity->ai.attack_target_index;
+                struct entity* attacked_entity = game_dereference_entity(state, target_entity->ai.attack_target_id);
                 entity_do_physical_hurt(attacked_entity, 9999);
-#endif
             }
         } break;
     }

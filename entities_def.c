@@ -39,6 +39,16 @@ typedef struct entity_id {
     };
     s32  generation;
 } entity_id;
+bool entity_id_equal(entity_id a, entity_id b) {
+    /* same list origin */
+    if (a.full_id == b.full_id) {
+        if (a.generation == b.generation) {
+            return true;
+        }
+    }
+
+    return false;
+}
 
 enum entity_ai_flags {
     ENTITY_AI_FLAGS_NONE                 = 0,
@@ -149,7 +159,7 @@ struct entity_ai_data {
     s32                           current_action;
 
     u32                           flags;
-    s32                           attack_target_index;
+    entity_id                     attack_target_id;
 
     bool                          following_path;
     struct entity_navigation_path navigation_path;
@@ -270,11 +280,20 @@ void entity_inventory_unequip_item(struct entity_inventory* inventory, s32 limit
 void entity_inventory_use_item(struct entity_inventory* inventory, s32 item_index, struct entity* target);
 
 void entity_combat_submit_movement_action(struct entity* entity, v2f32* path_points, s32 path_count);
-void entity_combat_submit_attack_action(struct entity* entity, s32 attack_index);
+void entity_combat_submit_attack_action(struct entity* entity, entity_id target_id);
 #if 0
 void entity_combat_submit_item_use_action(struct entity* entity, s32 item_index, struct entity* target);
 #endif
 
+/* I think it'd be a better future note to do something like
+
+   or something similar...
+   struct entities {
+   struct entity* permenant;
+   struct entity* temporary;
+   struct entity* per_level;
+   };
+*/
 struct entity_list {
     u8             store_type;
     s32*           generation_count;
@@ -315,9 +334,9 @@ void               render_entities(struct game_state* state, struct graphics_ass
 struct rectangle_f32 entity_rectangle_collision_bounds(struct entity* entity);
 
 struct entity_query_list {
-    s32* indices;
-    s32  count;
+    entity_id* ids;
+    s32        count;
 };
-struct entity_query_list find_entities_within_radius(struct memory_arena* arena, struct entity_list* list, v2f32 position, f32 radius);
+struct entity_query_list find_entities_within_radius(struct memory_arena* arena, struct game_state* state, v2f32 position, f32 radius);
 
 #endif
