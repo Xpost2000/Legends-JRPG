@@ -1137,9 +1137,7 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
                                     draw_cursor_y += 16 * 2 * 1.5;
                                 }
                                 {
-                                    EDITOR_imgui_text_edit_u32(framebuffer, font, highlighted_font, 2, v2f32(10, draw_cursor_y), string_literal("entity flags raw: "), &entity->flags);
-                                    draw_cursor_y += 16 * 2 * 1.5;
-                                    EDITOR_imgui_text_edit_u32(framebuffer, font, highlighted_font, 2, v2f32(10, draw_cursor_y), string_literal("entity ai flags raw: "), &entity->ai_flags);
+                                    
                                     draw_cursor_y += 16 * 2 * 1.5;
                                 }
                             }

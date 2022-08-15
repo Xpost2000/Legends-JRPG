@@ -4,7 +4,13 @@
    
    This is obviously not a good implementation, it's very quick and dirty. But functional and surprisingly
    not broken.
+   
+   While this looks ugly as hell, it's usage is pretty smooth (just remove the obligatory software rendering params,
+   and it'd actually looks sane.)
+   
+   True beauty is obviously on the outside, and not the inside.
 */
+
 /* no layout stuff, mostly just simple widgets to play with */
 /* also bad code */
 bool _imgui_mouse_button_left_down        = false;
@@ -79,7 +85,7 @@ char _imgui_edit_buffer[512];
         _debugprintf("I am widget %d I serve " #type, me); \
         string str = {};                                                \
         if (EDITOR_imgui_targetted_widget(me)) {                          \
-            str = string_from_cstring(format_temp("%.*s : %s", label.length, label.data, current_text_buffer())); \
+            str = string_from_cstring(format_temp("[EDIT]%.*s : %s", label.length, label.data, current_text_buffer())); \
         } else {                                                        \
             str = string_from_cstring(format_temp("%.*s : " formatstr, label.length, label.data, *value)); \
         }                                                               \
@@ -118,5 +124,34 @@ Define_EDITOR_imgui_text_edit(u16, "%u", atoi, IMGUI_inttostring_u16);
 Define_EDITOR_imgui_text_edit(s32, "%d", atoi, IMGUI_inttostring_s32);
 Define_EDITOR_imgui_text_edit(u32, "%u", atoi, IMGUI_inttostring_u32);
 Define_EDITOR_imgui_text_edit(f32, "%f", atof, IMGUI_floattostring);
+void EDITOR_imgui_text_edit_cstring(struct software_framebuffer* framebuffer, struct font_cache* font, struct font_cache* highlighted_font, f32 draw_scale, v2f32 position, string label, char* value, s32 max_len) {
+    _imgui_current_widget_index += 1;
+    s32 me = _imgui_current_widget_index;
+    string str = {};
+    if (EDITOR_imgui_targetted_widget(me)) {
+        str = string_from_cstring(format_temp("[EDIT]%.*s : %s", label.length, label.data, current_text_buffer()));
+    } else {
+        str = string_from_cstring(format_temp("%.*s : %s", label.length, label.data, value));
+    }
+    if (EDITOR_imgui_button(framebuffer, font, highlighted_font, draw_scale, position, str) == 1) {
+        if (_imgui_text_edit_index == -1) {
+            _imgui_text_edit_index        = me;
+            cstring_copy(value, _imgui_edit_buffer, cstring_length(value));
+            start_text_edit(_imgui_edit_buffer, cstring_length(_imgui_edit_buffer));
+        }
+    }
+    if (is_key_pressed(KEY_RETURN) && !_imgui_confirmed_flag_for_text_input) {
+        if (EDITOR_imgui_targetted_widget(me)) {
+            _imgui_confirmed_flag_for_text_input = true;
+            _imgui_text_edit_index                                        = -1;
+            end_text_edit(_imgui_edit_buffer, max_len);
+            s32 min_len = max_len;
+            if (min_len > cstring_length(_imgui_edit_buffer)) {
+                min_len = cstring_length(_imgui_edit_buffer);
+            }
+            cstring_copy(_imgui_edit_buffer, value, min_len);
+        }
+    }
+}
 
 /* little IMGUI  */
