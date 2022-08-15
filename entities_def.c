@@ -264,9 +264,23 @@ void entity_combat_submit_item_use_action(struct entity* entity, s32 item_index,
 struct entity_list {
     s32*           generation_count;
     struct entity* entities;
-    /* s32            count; */
     s32            capacity;
 };
+
+#define MAX_ENTITY_LIST_COUNT (32)
+struct entity_iterator {
+    s32 list_count;
+    s32 index;
+    s32 entity_list_index;
+    struct entity_list* entity_lists[MAX_ENTITY_LIST_COUNT];
+};
+
+struct entity_iterator entity_iterator_create(void);
+void                   entity_iterator_push(struct entity_iterator* iterator, struct entity_list* list);
+struct entity*         entity_iterator_begin(struct entity_iterator* iterator);
+bool                   entity_iterator_finished(struct entity_iterator* iterator);
+struct entity*         entity_iterator_advance(struct entity_iterator* iterator);
+
 
 struct entity_list entity_list_create(struct memory_arena* arena, s32 capacity);
 entity_id          entity_list_create_entity(struct entity_list* entities);

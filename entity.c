@@ -818,3 +818,38 @@ struct entity_base_data* entity_database_find_by_name(struct entity_database* en
 
     return entity_database_find_by_name(entity_database, string_literal("__default__"));
 }
+
+struct entity_iterator entity_iterator_create(void) {
+    struct entity_iterator iterator = {};
+
+    return iterator;
+}
+
+void entity_iterator_push(struct entity_iterator* iterator, struct entity_list* list) {
+    iterator->entity_lists[iterator->list_count++] = list;
+}
+
+struct entity* entity_iterator_begin(struct entity_iterator* iterator) {
+    return entity_iterator_advance(iterator);
+}
+
+bool entity_iterator_finished(struct entity_iterator* iterator) {
+    if (iterator->index <= iterator->list_count) {
+        return false;
+    }
+
+    return true;
+}
+
+struct entity* entity_iterator_advance(struct entity_iterator* iterator) {
+    struct entity_list* current_iteration_list = iterator->entity_lists[iterator->index];
+    struct entity* current_iterated_entity     = current_iteration_list->entities + iterator->entity_list_index;
+
+    iterator->entity_list_index += 1;
+
+    if (iterator->entity_list_index >= current_iteration_list->capacity) {
+        iterator->index += 1;
+    }
+
+    return current_iterated_entity;
+}
