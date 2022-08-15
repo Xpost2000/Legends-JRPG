@@ -21,14 +21,15 @@ void EDITOR_imgui_end_frame(void) {
     _imgui_current_widget_index = 0;
     _imgui_confirmed_flag_for_text_input = false;
 }
-bool EDITOR_imgui_targetted_widget(void) {
-    if (_imgui_text_edit_index != -1) {
-        if (_imgui_text_edit_index == _imgui_current_widget_index) {
-            _debugprintf("I widget %d AM the chosen one. : )", _imgui_current_widget_index);
+bool EDITOR_imgui_targetted_widget(s32 i) {
+    if (i != -1) {
+        _debugprintf("The chosen one is widget %d\n", _imgui_text_edit_index);
+        if (_imgui_text_edit_index == i) {
+            _debugprintf("I widget %d AM the chosen one. : )", i);
             return true;
         }
 
-        _debugprintf("I widget %d am not the chosen one. : (", _imgui_current_widget_index);
+        _debugprintf("I widget %d am not the chosen one. : (", i);
     }
     
     return false;
@@ -73,31 +74,33 @@ char _imgui_edit_buffer[512];
 /* NOTE: may bug out with a few more interactions. I don't care for this case. I'll fix it I find time. */
 #define Define_EDITOR_imgui_text_edit(type, formatstr, string_to_v_fn, intostringfn) \
     void EDITOR_imgui_text_edit_##type(struct software_framebuffer* framebuffer, struct font_cache* font, struct font_cache* highlighted_font, f32 draw_scale, v2f32 position, string label, type* value) { \
-    _imgui_current_widget_index += 1;                                   \
-    _debugprintf("I am widget %d I serve " #type, _imgui_current_widget_index); \
-    string str = {};                                                    \
-    if (EDITOR_imgui_targetted_widget()) {                              \
-        str = string_from_cstring(format_temp("%.*s : %s", label.length, label.data, current_text_buffer())); \
-    } else {                                                            \
-        str = string_from_cstring(format_temp("%.*s : " formatstr, label.length, label.data, *value)); \
-    }                                                                   \
-    if (EDITOR_imgui_button(framebuffer, font, highlighted_font, draw_scale, position, str) == 1) { \
-        if (_imgui_text_edit_index == -1) {                             \
-            _imgui_text_edit_index        = _imgui_current_widget_index-1; \
-            _debugprintf("I %d(%d) have been selected", _imgui_text_edit_index, _imgui_current_widget_index); \
-            intostringfn(*value, _imgui_edit_buffer,512);                 \
-            start_text_edit(_imgui_edit_buffer, cstring_length(_imgui_edit_buffer)); \
+        _imgui_current_widget_index += 1;                               \
+        s32 me = _imgui_current_widget_index;                           \
+        _debugprintf("I am widget %d I serve " #type, me); \
+        string str = {};                                                \
+        if (EDITOR_imgui_targetted_widget(me)) {                          \
+            str = string_from_cstring(format_temp("%.*s : %s", label.length, label.data, current_text_buffer())); \
+        } else {                                                        \
+            str = string_from_cstring(format_temp("%.*s : " formatstr, label.length, label.data, *value)); \
         }                                                               \
-    }                                                                   \
-    if (is_key_pressed(KEY_RETURN) && !_imgui_confirmed_flag_for_text_input) { \
-        _imgui_confirmed_flag_for_text_input = true;                    \
-        if (EDITOR_imgui_targetted_widget()) {                          \
-            _imgui_text_edit_index                                        = -1; \
-            end_text_edit(_imgui_edit_buffer, array_count(_imgui_edit_buffer)); \
-            *value = string_to_v_fn(_imgui_edit_buffer);                \
-            _debugprintf("I widget %d have a new value of " formatstr, _imgui_current_widget_index, *value); \
+        if (EDITOR_imgui_button(framebuffer, font, highlighted_font, draw_scale, position, str) == 1) { \
+            if (_imgui_text_edit_index == -1) {                         \
+                _imgui_text_edit_index        = me; \
+                _debugprintf("I %d(%d) have been selected", _imgui_text_edit_index, me); \
+                intostringfn(*value, _imgui_edit_buffer,512);           \
+                start_text_edit(_imgui_edit_buffer, cstring_length(_imgui_edit_buffer)); \
+            }                                                           \
         }                                                               \
-    }                                                                   \
+        if (is_key_pressed(KEY_RETURN) && !_imgui_confirmed_flag_for_text_input) { \
+            _debugprintf("I want a new value!\n");                      \
+            if (EDITOR_imgui_targetted_widget(me)) {                     \
+                _imgui_confirmed_flag_for_text_input = true;            \
+                _imgui_text_edit_index                                        = -1; \
+                end_text_edit(_imgui_edit_buffer, array_count(_imgui_edit_buffer)); \
+                *value = string_to_v_fn(_imgui_edit_buffer);            \
+                _debugprintf("I widget %d have a new value of " formatstr, me, *value); \
+            }                                                           \
+        }                                                               \
     }
 
 void IMGUI_inttostring_s32(s32 x, char* str, s32 len) {snprintf(str, len, "%d", x);}
