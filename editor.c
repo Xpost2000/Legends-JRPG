@@ -50,7 +50,6 @@ local void clear_drag_candidate(void) {
     editor_state->drag_data.context = 0;
 }
 
-
 #include "editor_imgui.c"
 
 void editor_clear_all_allocations(struct editor_state* state) {
