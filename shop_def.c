@@ -43,4 +43,7 @@ bool purchase_item_from_shop_and_add_to_inventory(struct shop_instance* shop, st
 /* You cannot sell equipped items. Which is okay. */
 bool sell_item_to_shop(struct shop_instance* shop, struct entity_inventory* inventory, s32 inventory_limits, s32* refund_source, s32 item_index);
 
+void _debug_print_out_shop_contents(struct shop_instance* shop);
+void _debug_print_shop_item(struct shop_instance* shop, shop_item_id id);
+
 #endif
