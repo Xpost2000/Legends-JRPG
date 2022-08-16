@@ -362,6 +362,8 @@ struct game_variables {
     s32                   count;
 };
 
+#include "shop_def.c"
+
 struct game_state {
     struct memory_arena* arena;
 

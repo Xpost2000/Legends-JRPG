@@ -1053,11 +1053,11 @@ void game_initialize_game_world(void) {
 #if 1
     /* game_open_conversation_file(game_state, string_literal("./dlg/linear_test.txt")); */
     /* game_open_conversation_file(game_state, string_literal("./dlg/simple_choices.txt")); */
-    load_level_from_file(game_state, string_literal("pf.area"));
+    /* load_level_from_file(game_state, string_literal("pf.area")); */
 #endif
     /* load_level_from_file(game_state, string_literal("bt.area")); */
-    /* load_level_from_file(game_state, string_literal("testforest.area")); */
-    load_level_from_file(game_state, string_literal("level.area"));
+    load_level_from_file(game_state, string_literal("testforest.area"));
+    /* load_level_from_file(game_state, string_literal("level.area")); */
     /* load_level_from_file(game_state, string_literal("testisland.area")); */
     /* game_attempt_to_change_area_name(game_state, string_literal("Old Iyeila"), string_literal("Grave of Stars")); */
 #if 0
@@ -1824,3 +1824,4 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
 #include "save_data.c"
 #include "storyboard_presentation.c"
 #include "entity_model.c"
+#include "shop.c"
