@@ -66,6 +66,10 @@ local void shopping_ui_begin(void) {
     shopping_ui.coin_visual.current = shopping_ui.coin_visual.target = 150;
 }
 
+local void shopping_ui_finish(void) {
+    game_state->shopping = false;
+}
+
 local void do_shopping_menu(struct software_framebuffer* framebuffer, f32 x, bool allow_input) {
     struct font_cache* normal_font      = game_get_font(MENU_FONT_COLOR_WHITE);
     struct font_cache* highlighted_font = game_get_font(MENU_FONT_COLOR_GOLD);
@@ -80,14 +84,12 @@ local void do_shopping_menu(struct software_framebuffer* framebuffer, f32 x, boo
     bool selection_confirmation        = is_key_pressed(KEY_RETURN);
     bool selection_switch_tab_modifier = is_key_down(KEY_SHIFT);
     bool selection_switch_tab          = is_key_down_with_repeat(KEY_TAB);
+    bool selection_quit                = is_key_pressed(KEY_ESCAPE);
 
     f32 text_scale = 2;
 
     if (!allow_input) {
-        selection_down = selection_up =
-        selection_confirmation = selection_increment =
-        selection_decrement = false;
-
+        selection_down = selection_up = selection_confirmation = selection_increment = selection_decrement = selection_switch_tab_modifier = selection_switch_tab = selection_quit = false;
         modulation_color.a = ui_color.a = 0.5;
     }
 
@@ -233,6 +235,10 @@ local void do_shopping_menu(struct software_framebuffer* framebuffer, f32 x, boo
         if (selection_confirmation) {
             _debugprintf("TODO: shop!"); 
         }
+
+        if (selection_quit) {
+            shop_ui_set_phase(SHOPPING_UI_ANIMATION_PHASE_SLIDE_OUT_SHOPPING);
+        }
     }
 }
 
@@ -287,10 +293,36 @@ local void game_display_and_update_shop_ui(struct software_framebuffer* framebuf
             software_framebuffer_draw_text(framebuffer, normal_font, 4, v2f32(10, 10), string_literal("STORE"), color32f32_WHITE, BLEND_MODE_ALPHA);
         } break;
         case SHOPPING_UI_ANIMATION_PHASE_SLIDE_OUT_SHOPPING: {
-            
+            const f32 MAX_TIME = 1.6f;
+
+            game_postprocess_blur(framebuffer, blur_samples, max_blur, BLEND_MODE_ALPHA);
+            game_postprocess_grayscale(framebuffer, max_grayscale);
+
+            f32 t  = shopping_ui.timer / (MAX_TIME-0.6);
+            f32 t2 = (shopping_ui.timer-1.0) / 0.6;
+            if (t2 < 0)    t2 = 0.0;
+            if (t2 >= 1.0) t2 = 1.0;
+            if (t >= 1.0)  t  = 1.0;
+
+            if (shopping_ui.timer >= MAX_TIME) {
+                shop_ui_set_phase(SHOPPING_UI_ANIMATION_PHASE_PHASE_FADE_OUT);
+            }
+
+            do_shopping_menu(framebuffer, lerp_f32(-999, FINAL_SHOPPING_MENU_X, (1.0 - t)), false);
+            software_framebuffer_draw_text(framebuffer, normal_font, 4, v2f32(10, 10), string_literal("STORE"), color32f32(1,1,1,(1.0 - t2)), BLEND_MODE_ALPHA);
         } break;
         case SHOPPING_UI_ANIMATION_PHASE_PHASE_FADE_OUT: {
-            
+            const f32 MAX_TIME = 1.2f;
+
+            f32 t = shopping_ui.timer / MAX_TIME;
+            if (t >= 1.0) t = 1.0;
+
+            game_postprocess_blur(framebuffer, blur_samples, max_blur * (1.0 - t), BLEND_MODE_ALPHA);
+            game_postprocess_grayscale(framebuffer, max_grayscale * (1.0 - t));
+
+            if (shopping_ui.timer >= MAX_TIME) {
+                shopping_ui_finish();
+            }
         } break;
     }
 
