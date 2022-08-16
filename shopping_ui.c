@@ -60,6 +60,7 @@ local void shop_ui_set_phase(s32 phase) {
     shopping_ui.timer = 0;
 }
 
+/* TODO: To enable selling, to reduce complexity we'll just treat it as a separate sub-mode or something. Why do I feel like this is alwas doomed due to really bad art. */
 local void shopping_ui_begin(void) {
     _debugprintf("hi shopper");
     zero_memory(&shopping_ui, sizeof(shopping_ui));
@@ -227,6 +228,47 @@ local void do_shopping_menu(struct software_framebuffer* framebuffer, f32 x, boo
                     case SHOPPING_PAGE_EQUIPMENT:   filter_for = ITEM_TYPE_EQUIPMENT;      break;
                     case SHOPPING_PAGE_MISC:        filter_for = ITEM_TYPE_MISC;           break;
                     default: break;
+                }
+
+                /* NOTE: should be refactored */
+                /* It's lightly buggy anyways. */
+                s32 remapped_index = 0;
+                for (s32 item_index = 0; item_index < shop->item_count; ++item_index) {
+                    struct shop_item* current_shop_item = shop->items + item_index;
+                    struct font_cache* painting_text = normal_font;
+
+                    if (remapped_index == shopping_ui.shopping_item_index) {
+                        painting_text = highlighted_font;
+                    }
+
+                    struct item_def* item_base = item_database_find_by_id(current_shop_item->item);
+
+                    if (item_base->type != filter_for) {
+                        continue;
+                    }
+
+                    string item_name = item_base->name;
+
+                    software_framebuffer_draw_text(framebuffer, painting_text, text_scale, v2f32(x+15, y_cursor), item_name, modulation_color, BLEND_MODE_ALPHA);
+                    string cart_selection_text = {};
+
+                    /* NOTE: This should be tabular but whatever. */
+                    if (current_shop_item->count == SHOP_ITEM_INFINITE) {
+                        cart_selection_text = string_from_cstring(format_temp("%d", shopping_ui.cart_entry_count[remapped_index]));
+                    } else {
+                        if (shopping_ui.cart_entry_count[shopping_ui.shopping_item_index] > current_shop_item->count) {
+                            shopping_ui.cart_entry_count[shopping_ui.shopping_item_index] = current_shop_item->count;
+                        }
+
+                        cart_selection_text = string_from_cstring(format_temp("%d / %d", shopping_ui.cart_entry_count[remapped_index], current_shop_item->count));
+                    }
+
+                    f32 measurement_width = font_cache_text_width(painting_text, cart_selection_text, text_scale);
+
+                    software_framebuffer_draw_text(framebuffer, painting_text, text_scale, v2f32(x + ui_box_extents.x - (measurement_width), y_cursor), cart_selection_text, modulation_color, BLEND_MODE_ALPHA);
+                    y_cursor += 16*2*1.2;
+
+                    remapped_index += 1;
                 }
                 _debugprintf("TODO not done");
             } break;
