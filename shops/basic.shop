@@ -8,7 +8,7 @@
 # IE might add some basic conditional support (no more than if/else)
 # to allow for slight shop variances based on the game state.
 
-("item_accessory_wedding_ring" (stock 1))
+("item_accessory_wedding_ring" (stock 10))
 ("item_armor_bandage_wraps")
 ("item_armor_loincloth")
 ("item_sardine_fish_5")

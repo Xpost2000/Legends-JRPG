@@ -43,9 +43,15 @@ static void _thread_testing(void) {
     _debugprintf("okay finished %d", b - a);
 }
 
+static void _sandbox_shop_inventory(void) {
+    struct shop_instance s = load_shop_definition(&scratch_arena, string_literal("basic"));
+    _debug_print_out_shop_contents(&s);
+}
+
 static bool sandbox_testing(void) {
     _debugprintf("sandbox start");
     /* _thread_testing(); */
+    _sandbox_shop_inventory();
     _debugprintf("sandbox end");
     return false;
 }

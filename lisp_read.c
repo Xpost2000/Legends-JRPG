@@ -341,6 +341,15 @@ struct lisp_form lisp_form_symbol(string string_constant) {
 
 struct lisp_form* lisp_list_nth(struct lisp_form* f, s32 index);
 
+bool lisp_form_get_string(struct lisp_form form, string* value) {
+    if (form.type == LISP_FORM_SYMBOL || form.type == LISP_FORM_STRING) {
+        *value = form.string;
+        return true;
+    }
+
+    return false;
+}
+
 bool lisp_form_get_f32(struct lisp_form form, f32* value) {
     if (form.type == LISP_FORM_NUMBER) {
         if (form.is_real) {
@@ -372,9 +381,10 @@ bool lisp_form_get_s32(struct lisp_form form, s32* value) {
 bool lisp_form_get_v2f32(struct lisp_form form, v2f32* v) {
     if (form.type == LISP_FORM_LIST) {
         if (form.list.count == 2) {
-            lisp_form_get_f32(*lisp_list_nth(&form, 0), &v->x);
-            lisp_form_get_f32(*lisp_list_nth(&form, 1), &v->y);
-            return true;
+            bool result = true;
+            result &= lisp_form_get_f32(*lisp_list_nth(&form, 0), &v->x);
+            result &= lisp_form_get_f32(*lisp_list_nth(&form, 1), &v->y);
+            return result;
         }
     }
 

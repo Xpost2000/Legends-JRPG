@@ -37,7 +37,7 @@ struct shop_instance {
 s32 shop_item_get_effective_price(struct shop_instance* shop, shop_item_id id);
 
 /* always loads from a shops/ path and appends .shop to the end. */
-struct shop_instance load_shop_definition(struct memory_arena* arena, string shopename);
+struct shop_instance load_shop_definition(struct memory_arena* arena, string shopname);
 bool purchase_item_from_shop_and_add_to_inventory(struct shop_instance* shop, struct entity_inventory* inventory, s32 inventory_limits, s32* payment_source, shop_item_id item);
 
 /* You cannot sell equipped items. Which is okay. */
