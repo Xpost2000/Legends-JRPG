@@ -418,6 +418,25 @@ bool level_area_navigation_map_is_point_in_bounds(struct level_area_navigation_m
     return false;
 }
 
+/*
+  Shopping will be a bit more management. I could just save a checkpoint pointer for the usage, and restore
+  from there.
+
+  Since technically it's a form of stack allocation. Eh.
+*/
+local void shopping_ui_begin(void); /* UI will end itself. */
+local void game_stop_shopping(void) {
+    game_state->shopping = false;
+    /* TODO: unload shop contents */
+}
+local void game_begin_shopping(string storename) {
+    if (!game_state->shopping) {
+        game_state->shopping = true;
+        game_state->active_shop = load_shop_definition(game_state->arena, storename);
+        shopping_ui_begin();
+    }
+}
+
 /* This is just going to start as a breadth first search */
 struct navigation_path navigation_path_find(struct memory_arena* arena, struct level_area* area, v2f32 start, v2f32 end) {
     struct level_area_navigation_map* navigation_map          = &area->navigation_data;
@@ -1230,9 +1249,16 @@ local void dialogue_choice_try_to_execute_script_actions(struct game_state* stat
 
 #include "battle_ui.c"
 #include "conversation_ui.c"
+#include "shopping_ui.c"
 
 local void update_and_render_ingame_game_menu_ui(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
     game_display_and_update_damage_notifications(framebuffer, dt);
+
+    /* I seem to have a pretty inconsistent UI priority state thing. */
+    if (state->shopping) {
+        game_display_and_update_shop_ui(framebuffer, dt);
+        return;
+    }
 
     if (game_display_and_update_storyboard(framebuffer, dt))
         return;
@@ -1758,6 +1784,10 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                 commands.clear_buffer_color  = color32u8(0, 0, 0, 255);
 
                 execute_current_area_scripts(game_state, dt);
+
+                if (is_key_pressed(KEY_Y)) {
+                    game_begin_shopping(string_literal("basic"));
+                }
 
                 /* update all tile animations */
                 {

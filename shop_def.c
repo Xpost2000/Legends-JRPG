@@ -34,6 +34,11 @@ struct shop_instance {
     s32              buyback_item_count;
 };
 
+void shop_instance_clear(struct shop_instance* instance) {
+    instance->item_count         = 0;
+    instance->buyback_item_count = 0;
+}
+
 s32 shop_item_get_effective_price(struct shop_instance* shop, shop_item_id id);
 
 /* always loads from a shops/ path and appends .shop to the end. */

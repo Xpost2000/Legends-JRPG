@@ -389,6 +389,9 @@ struct game_state {
     /* TODO add party member stuff! */
     struct player_party_inventory inventory;
 
+    bool                 shopping;
+    struct shop_instance active_shop;
+
     /* 
        TODO:
 
