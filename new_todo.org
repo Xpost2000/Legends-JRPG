@@ -3,27 +3,23 @@ into it everytime.
 
 Right now I am:
 
-After that, work on loading cutscene scripts. Which isn't really that complicated, cutscenes are the simplest type of lisp script
-as they basically just operate top->down. That's literally all they are. (just gotta code lots of auxiliary functions)
+Really consider adding that SDL mixer driver since Soloud clearly doesn't fucking work.
 
-We just need to figure out how to wait on them. Though I suspect it's not too hard.
+Finish that shopping implementation (add the selling menu!)
 
-Then we need to investigate the dialogue system to see how broken it can possibly be at the moment.
+Start some cutscene stuff. Which isn't really much. We need to author a level for cutscenes...
+I'll just try out a march scene to create the constructs that I need.
 
-After that, we'll start moving our item database into files. We need to do something about other items as well...
+Introduce objects in the level editor (which are basically preauthored sprite-like structures, they can be collidable.)
 
-After that we'll work on a basic shopping UI. It might become the reference for the new inventory UI, but yeah.
+Also create the actor table from a list of actor files or something like that. Then I need to draw a few new actor types.
 
-We'll need to add our first entities, so we'll need to draw maybe a few new sprites? We'll just create some entity description
-files.
+Then work with the combat system to start producing animations, which is probably going to be done using some basic action style
+commands, with occasional hard coding.
 
+I want to start the big file packer at some point. Just to make distribution less painful as it would just be one giant binary blob.
 
-Day end. Day after, we'll see more RPG things to polish I suppose, and we'll add SDL_Mixer audio support (though add arbitrary support
-through a simple audio_driver system. Also research on XP/level curves I suppose, we need something balanced. We really should add our first
-combat animations and such. That's going to be a little painful?)
-
-All of this should be enough to allow us to prototype the RPG parts of the game.
-)
+Also while this isn't related to this project, I wanna start doing 3D stuff
 
 
 ** Might need to move things to more data files

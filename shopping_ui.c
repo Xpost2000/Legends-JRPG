@@ -5,6 +5,7 @@
  */
 enum shopping_ui_animation_phase {
     SHOPPING_UI_ANIMATION_PHASE_FADE_IN,
+    /* SHOPPING_UI_ANIMATION_PHASE_SELECT_SHOPPING_MODE */
     SHOPPING_UI_ANIMATION_PHASE_SLIDE_IN_SHOPPING,
     SHOPPING_UI_ANIMATION_PHASE_IDLE,
     SHOPPING_UI_ANIMATION_PHASE_SLIDE_OUT_SHOPPING,
@@ -33,8 +34,15 @@ local string shopping_page_filter_strings[] = {
     string_literal("(count)"),
 };
 
+enum shopping_mode_type {
+    SHOPPING_MODE_BUYING,
+    SHOPPING_MODE_SELLING,
+};
+
 struct {
     s32 phase;
+
+    u8 shopping_mode;
 
     s32 current_shopping_page_filter;
     s32 shopping_item_index;
@@ -233,42 +241,49 @@ local void do_shopping_menu(struct software_framebuffer* framebuffer, f32 x, boo
                 /* NOTE: should be refactored */
                 /* It's lightly buggy anyways. */
                 s32 remapped_index = 0;
-                for (s32 item_index = 0; item_index < shop->item_count; ++item_index) {
-                    struct shop_item* current_shop_item = shop->items + item_index;
-                    struct font_cache* painting_text = normal_font;
+                switch (shopping_ui.shopping_mode) {
+                    case SHOPPING_MODE_BUYING: {
+                        for (s32 item_index = 0; item_index < shop->item_count; ++item_index) {
+                            struct shop_item* current_shop_item = shop->items + item_index;
+                            struct font_cache* painting_text = normal_font;
 
-                    if (remapped_index == shopping_ui.shopping_item_index) {
-                        painting_text = highlighted_font;
-                    }
+                            if (remapped_index == shopping_ui.shopping_item_index) {
+                                painting_text = highlighted_font;
+                            }
 
-                    struct item_def* item_base = item_database_find_by_id(current_shop_item->item);
+                            struct item_def* item_base = item_database_find_by_id(current_shop_item->item);
 
-                    if (item_base->type != filter_for) {
-                        continue;
-                    }
+                            if (item_base->type != filter_for) {
+                                continue;
+                            }
 
-                    string item_name = item_base->name;
+                            string item_name = item_base->name;
 
-                    software_framebuffer_draw_text(framebuffer, painting_text, text_scale, v2f32(x+15, y_cursor), item_name, modulation_color, BLEND_MODE_ALPHA);
-                    string cart_selection_text = {};
+                            software_framebuffer_draw_text(framebuffer, painting_text, text_scale, v2f32(x+15, y_cursor), item_name, modulation_color, BLEND_MODE_ALPHA);
+                            string cart_selection_text = {};
 
-                    /* NOTE: This should be tabular but whatever. */
-                    if (current_shop_item->count == SHOP_ITEM_INFINITE) {
-                        cart_selection_text = string_from_cstring(format_temp("%d", shopping_ui.cart_entry_count[remapped_index]));
-                    } else {
-                        if (shopping_ui.cart_entry_count[shopping_ui.shopping_item_index] > current_shop_item->count) {
-                            shopping_ui.cart_entry_count[shopping_ui.shopping_item_index] = current_shop_item->count;
+                            /* NOTE: This should be tabular but whatever. */
+                            if (current_shop_item->count == SHOP_ITEM_INFINITE) {
+                                cart_selection_text = string_from_cstring(format_temp("%d", shopping_ui.cart_entry_count[remapped_index]));
+                            } else {
+                                if (shopping_ui.cart_entry_count[shopping_ui.shopping_item_index] > current_shop_item->count) {
+                                    shopping_ui.cart_entry_count[shopping_ui.shopping_item_index] = current_shop_item->count;
+                                }
+
+                                cart_selection_text = string_from_cstring(format_temp("%d / %d", shopping_ui.cart_entry_count[remapped_index], current_shop_item->count));
+                            }
+
+                            f32 measurement_width = font_cache_text_width(painting_text, cart_selection_text, text_scale);
+
+                            software_framebuffer_draw_text(framebuffer, painting_text, text_scale, v2f32(x + ui_box_extents.x - (measurement_width), y_cursor), cart_selection_text, modulation_color, BLEND_MODE_ALPHA);
+                            y_cursor += 16*2*1.2;
+
+                            remapped_index += 1;
                         }
-
-                        cart_selection_text = string_from_cstring(format_temp("%d / %d", shopping_ui.cart_entry_count[remapped_index], current_shop_item->count));
-                    }
-
-                    f32 measurement_width = font_cache_text_width(painting_text, cart_selection_text, text_scale);
-
-                    software_framebuffer_draw_text(framebuffer, painting_text, text_scale, v2f32(x + ui_box_extents.x - (measurement_width), y_cursor), cart_selection_text, modulation_color, BLEND_MODE_ALPHA);
-                    y_cursor += 16*2*1.2;
-
-                    remapped_index += 1;
+                    } break;
+                    case SHOPPING_MODE_SELLING: {
+                        _debugprintf("TODO selling, show the player inventory and work from there");
+                    } break;
                 }
                 _debugprintf("TODO not done");
             } break;
