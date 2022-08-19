@@ -32,6 +32,8 @@
 
    I'll read over the game script to figure out what I'm supposed to whitebox for the intro...
 */
+/* Also add game lighting (for graphics reasons. Also lamps and stuff like that.) */
+/* Lots of animation related things I guess */
 
 #define GAME_MAX_PERMENANT_ENTITIES (64)
 

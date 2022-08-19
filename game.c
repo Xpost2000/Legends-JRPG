@@ -1040,6 +1040,9 @@ void game_initialize(void) {
 
     {
         {
+            /* TODO should add more frame granualarity. Oh well. */
+            
+            /* He should have EVERY usable generic animation. Use as a fall back if animation is not drawn yet. */
             s32 base_guy = entity_model_database_add_model(&game_arena, string_literal("guy"));
             entity_model_add_animation(base_guy, string_literal("down"),       1, 0);
             entity_model_add_animation(base_guy, string_literal("up"),         1, 0);
@@ -1051,6 +1054,10 @@ void game_initialize(void) {
             entity_model_add_animation(base_guy, string_literal("up_walk"),    3, WALK_TIMINGS);
             entity_model_add_animation(base_guy, string_literal("left_walk"),  3, WALK_TIMINGS);
             entity_model_add_animation(base_guy, string_literal("right_walk"), 3, WALK_TIMINGS);
+
+            entity_model_add_animation(base_guy, string_literal("kneel_down"), 2, WALK_TIMINGS);
+            entity_model_add_animation(base_guy, string_literal("dead"),       1, 0);
+
         }
     }
 

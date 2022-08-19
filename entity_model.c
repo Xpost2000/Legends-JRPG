@@ -45,5 +45,6 @@ struct entity_animation* find_animation_by_name(s32 model_index, string name) {
         }
     }
 
-    return NULL;
+    /* The engine should always guarantee the base animation "guy" exists. */
+    return find_animation_by_name(0, name);
 }
