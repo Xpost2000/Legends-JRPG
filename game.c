@@ -1714,6 +1714,7 @@ void player_handle_radial_interactables(struct game_state* state, struct entity*
     if (!found_any_interactable) unmark_any_interactables(state);
 }
 
+/* Obviously this can be polished later. */
 local void  do_ui_passive_speaking_dialogue(struct render_commands* commands, f32 dt) {
     passive_speaking_dialogue_cleanup();
 
@@ -1723,6 +1724,7 @@ local void  do_ui_passive_speaking_dialogue(struct render_commands* commands, f3
         if (current_dialogue->showed_characters >= current_dialogue->text.length) {
             current_dialogue->time_until_death -= dt;
         } else {
+            current_dialogue->character_type_timer += dt;
             if (current_dialogue->character_type_timer >= PASSIVE_SPEAKING_DIALOGUE_TYPING_SPEED) {
                 current_dialogue->character_type_timer = 0;
                 current_dialogue->showed_characters += 1;
@@ -1735,7 +1737,7 @@ local void  do_ui_passive_speaking_dialogue(struct render_commands* commands, f3
         struct font_cache* font = game_get_font(current_dialogue->game_font_id);
 
         struct entity* speaker = game_dereference_entity(game_state, current_dialogue->speaker_entity);
-        render_commands_push_text(commands, font, 2, speaker->position, display_text, color32f32_WHITE, BLEND_MODE_ALPHA);
+        render_commands_push_text(commands, font, 2, v2f32_sub(speaker->position, v2f32(0, speaker->scale.y*2)), display_text, color32f32_WHITE, BLEND_MODE_ALPHA);
     }
 
 }
