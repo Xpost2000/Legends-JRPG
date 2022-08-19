@@ -397,9 +397,14 @@ void render_entities(struct game_state* state, struct graphics_assets* graphics_
         image_id sprite_to_use = anim->sprites[current_entity->animation.current_frame_index];
         v2f32 sprite_dimensions = entity_animation_get_frame_dimensions(anim, current_entity->animation.current_frame_index);
 
-        f32 scale = TILE_UNIT_SIZE / sprite_dimensions.x;
+        /*
+          Look no one said this was good, I think my brain is a little broken since I can't think of a proper way to scale up everything properly.
 
-        v2f32 real_dimensions  = v2f32(sprite_dimensions.x * scale, sprite_dimensions.y * scale);
+          However all the art is expected to be relative to 16x16 tiles
+        */
+        f32 scale_x = 2;
+        
+        v2f32 real_dimensions  = v2f32(sprite_dimensions.x * scale_x, sprite_dimensions.y * scale_x);
         v2f32 alignment_offset = v2f32(real_dimensions.x * anim->alignment_point.x, real_dimensions.y * anim->alignment_point.y);
 
         /* TODO sprite model anchor NOTE: does not account for model size? */
