@@ -1,3 +1,4 @@
+/* Needs lots of clean up. (Man I keep saying this every time I come back here, but it doesn't seem to matter too much.) */
 /* TODO fix coordinate system <3 */
 /* virtual pixels */
 #define TILE_UNIT_SIZE (32) /* measured with a reference of 640x480 */
