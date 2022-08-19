@@ -25,6 +25,14 @@
    However, a fair amount of effort will be done in the language script.
  */
 
+/* NOTE: */
+/* I need to give NPCs some dialogue associations. */
+/* So today, I'm going to double check the dialogue system and give it a facelift on the UI */
+/* Then try to revise some game animations and allow you attribute arbitrary scripts to a game region.
+
+   I'll read over the game script to figure out what I'm supposed to whitebox for the intro...
+*/
+
 #define GAME_MAX_PERMENANT_ENTITIES (64)
 
 /* TODO */
@@ -309,6 +317,45 @@ struct ui_pause_menu {
     /* reserved space */
     f32 shift_t[128];
 };
+
+/* Non-pausing text you can read. */
+#define MAX_PASSIVE_SPEAKING_DIALOGUES (512)
+/* seconds */
+#define PASSIVE_SPEAKING_DIALOGUE_TYPING_SPEED (0.054)
+#define PASSIVE_SPEAKING_DIALOGUE_FADE_TIME    (0.765)
+struct passive_speaking_dialogue {
+    entity_id speaker_entity;
+
+    string text;
+
+    s32    showed_characters;
+    f32    character_type_timer;
+    f32    time_until_death;
+
+    s32    game_font_id;
+};
+
+local s32                              passive_speaking_dialogue_count                            = 0;
+local struct passive_speaking_dialogue passive_speaking_dialogues[MAX_PASSIVE_SPEAKING_DIALOGUES] = {};
+
+local void passive_speaking_dialogue_cleanup(void) {
+    for (s32 index = passive_speaking_dialogue_count-1; index >= 0; --index) {
+        struct passive_speaking_dialogue* current_dialogue = (&passive_speaking_dialogues[index]);
+        if (current_dialogue->time_until_death <= 0) {
+            passive_speaking_dialogues[index] = passive_speaking_dialogues[--passive_speaking_dialogue_count];
+        }
+    }
+}
+
+local void passive_speaking_dialogue_push(entity_id who, string text, s32 font_id) {
+    struct passive_speaking_dialogue* new_dialogue = &passive_speaking_dialogues[passive_speaking_dialogue_count++];
+    new_dialogue->text                 = text;
+    new_dialogue->speaker_entity       = who;
+    new_dialogue->showed_characters    = 0;
+    new_dialogue->character_type_timer = 0;
+    new_dialogue->time_until_death     = PASSIVE_SPEAKING_DIALOGUE_FADE_TIME;
+    new_dialogue->game_font_id         = font_id;
+}
 
 enum ui_sub_menu_inventory_cursor_region {
     UI_SUB_MENU_INVENTORY_CURSOR_REGION_FILTER,

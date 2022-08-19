@@ -1714,6 +1714,32 @@ void player_handle_radial_interactables(struct game_state* state, struct entity*
     if (!found_any_interactable) unmark_any_interactables(state);
 }
 
+local void  do_ui_passive_speaking_dialogue(struct render_commands* commands, f32 dt) {
+    passive_speaking_dialogue_cleanup();
+
+    for (s32 message_index = 0; message_index < passive_speaking_dialogue_count; ++message_index) {
+        struct passive_speaking_dialogue* current_dialogue = passive_speaking_dialogues + message_index;
+
+        if (current_dialogue->showed_characters >= current_dialogue->text.length) {
+            current_dialogue->time_until_death -= dt;
+        } else {
+            if (current_dialogue->character_type_timer >= PASSIVE_SPEAKING_DIALOGUE_TYPING_SPEED) {
+                current_dialogue->character_type_timer = 0;
+                current_dialogue->showed_characters += 1;
+            }
+        }
+
+        string display_text = string_slice(current_dialogue->text, 0, current_dialogue->showed_characters);
+        /* TODO Need to have breathing text render commands. This would heavily benefit from that */
+        /* I mean I can render breathing glyphs one at a time, but that may overflow the command buffer... */
+        struct font_cache* font = game_get_font(current_dialogue->game_font_id);
+
+        struct entity* speaker = game_dereference_entity(game_state, current_dialogue->speaker_entity);
+        render_commands_push_text(commands, font, 2, speaker->position, display_text, color32f32_WHITE, BLEND_MODE_ALPHA);
+    }
+
+}
+
 #include "combat.c"
 #include "game_main_menu.c"
 
@@ -1787,7 +1813,8 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                 execute_current_area_scripts(game_state, dt);
 
                 if (is_key_pressed(KEY_Y)) {
-                    game_begin_shopping(string_literal("basic"));
+                    /* game_begin_shopping(string_literal("basic")); */
+                    passive_speaking_dialogue_push(player_id, string_literal("Hello world!"), MENU_FONT_COLOR_LIME);
                 }
 
                 /* update all tile animations */
@@ -1833,6 +1860,12 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                 render_commands_push_quad(&commands, rectangle_f32(commands.camera.xy.x-500,commands.camera.xy.y-500,9999,9999), global_color_grading_filter, BLEND_MODE_MULTIPLICATIVE);
                 software_framebuffer_render_commands(framebuffer, &commands);
                 game_postprocess_blur_ingame(framebuffer, 2, 0.62, BLEND_MODE_ALPHA);
+
+                {
+                    struct render_commands commands = render_commands(game_state->camera);
+                    do_ui_passive_speaking_dialogue(&commands, dt);
+                    software_framebuffer_render_commands(framebuffer, &commands);
+                }
 
                 /* color "grading" */
                 do_weather(framebuffer, game_state, dt);
