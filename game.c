@@ -1032,8 +1032,8 @@ void game_initialize(void) {
      */
     game_state->permenant_entities = entity_list_create(&game_arena, GAME_MAX_PERMENANT_ENTITIES, ENTITY_LIST_STORAGE_TYPE_PERMENANT_STORE);
     player_id                      = entity_list_create_player(&game_state->permenant_entities, v2f32(70, 70));
-    /* entity_list_create_badguy(&game_state->permenant_entities, v2f32(8 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE)); */
-    /* entity_list_create_badguy(&game_state->permenant_entities, v2f32(11 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE)); */
+    entity_list_create_badguy(&game_state->permenant_entities, v2f32(8 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE));
+    entity_list_create_badguy(&game_state->permenant_entities, v2f32(11 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE));
 
     {
         {

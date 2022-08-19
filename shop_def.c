@@ -1,3 +1,8 @@
+/* NOTE:
+
+   Going to leave in some buy back code in here, but it's unlikely I'm going to
+   use it.
+*/
 #ifndef SHOP_DEF_C
 #define SHOP_DEF_C
 

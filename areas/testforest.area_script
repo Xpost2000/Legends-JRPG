@@ -1,7 +1,7 @@
 # Figure out a way to make conversations block execution.
 # Might need to change the evaluation method.
 (on-enter
-        (game_set_environment_colors 'night)
+        (game_set_environment_colors 'day)
         (game_start_rain)
 	# (follow_path '(entity player) '(down down down down right right right up up up))
 	# (game_enable_input)

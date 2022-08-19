@@ -20,8 +20,8 @@ enum shopping_page_filter {
     SHOPPING_PAGE_WEAPONS,
     SHOPPING_PAGE_EQUIPMENT,
     SHOPPING_PAGE_MISC,
-    SHOPPING_PAGE_BUYBACK,
     SHOPPING_PAGE_COUNT,
+    SHOPPING_PAGE_BUYBACK,
 };
 
 local string shopping_page_filter_strings[] = {
