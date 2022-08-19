@@ -15,7 +15,7 @@ s32 entity_model_database_add_model(struct memory_arena* arena, string name) {
     return (s32)(result - global_entity_models.models);
 }
 
-s32 entity_model_add_animation(s32 entity_model_id, string name, s32 frames, f32 time_to_next) {
+s32 entity_model_add_animation(s32 entity_model_id, string name, s32 frames, f32 time_to_next, v2f32 alignment_point) {
     struct entity_model*     model = global_entity_models.models + entity_model_id;
     struct entity_animation* anim  = &model->animations[model->animation_count++];
 
@@ -24,6 +24,7 @@ s32 entity_model_add_animation(s32 entity_model_id, string name, s32 frames, f32
     anim->name                  = name;
     anim->time_until_next_frame = time_to_next;
     anim->frame_count           = frames;
+    anim->alignment_point       = alignment_point;
 
     assertion(frames < ENTITY_ANIMATION_MAX_FRAMES && "Too many frames for this engine!");
 
@@ -47,4 +48,13 @@ struct entity_animation* find_animation_by_name(s32 model_index, string name) {
 
     /* The engine should always guarantee the base animation "guy" exists. */
     return find_animation_by_name(0, name);
+}
+
+v2f32 entity_animation_get_frame_dimensions(struct entity_animation* anim, s32 frame) {
+    v2f32 result = {};
+    image_id img = anim->sprites[frame];
+    struct image_buffer* img_ptr = graphics_assets_get_image_by_id(&graphics_assets, img);
+    result.x = img_ptr->width;
+    result.y = img_ptr->height;
+    return result;
 }

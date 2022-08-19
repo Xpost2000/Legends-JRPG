@@ -329,18 +329,23 @@ void update_entities(struct game_state* state, f32 dt, struct level_area* area) 
             }
 
             /* implicit animation state setting for now. */
-            if (current_entity->velocity.x != 0 || current_entity->velocity.y != 0) {
-                if (current_entity->velocity.y < 0) {
-                    entity_play_animation(current_entity, string_literal("up_walk"));
-                } else if (current_entity->velocity.y > 0) {
-                    entity_play_animation(current_entity, string_literal("down_walk"));
-                } else if (current_entity->velocity.x > 0) {
-                    entity_play_animation(current_entity, string_literal("right_walk"));
-                } else if (current_entity->velocity.x < 0) {
-                    entity_play_animation(current_entity, string_literal("left_walk"));
-                }
+            if (!(current_entity->flags & ENTITY_FLAGS_ALIVE)) {
+                /* I want to add the kneeling animation, and we'll obviously require more intense animation state. Anyways... */    
+                entity_play_animation(current_entity, string_literal("dead"));
             } else {
-                entity_play_animation(current_entity, facing_direction_strings_normal[current_entity->facing_direction]);
+                if (current_entity->velocity.x != 0 || current_entity->velocity.y != 0) {
+                    if (current_entity->velocity.y < 0) {
+                        entity_play_animation(current_entity, string_literal("up_walk"));
+                    } else if (current_entity->velocity.y > 0) {
+                        entity_play_animation(current_entity, string_literal("down_walk"));
+                    } else if (current_entity->velocity.x > 0) {
+                        entity_play_animation(current_entity, string_literal("right_walk"));
+                    } else if (current_entity->velocity.x < 0) {
+                        entity_play_animation(current_entity, string_literal("left_walk"));
+                    }
+                } else {
+                    entity_play_animation(current_entity, facing_direction_strings_normal[current_entity->facing_direction]);
+                }
             }
         }
     }
@@ -390,14 +395,20 @@ void render_entities(struct game_state* state, struct graphics_assets* graphics_
         }
 
         image_id sprite_to_use = anim->sprites[current_entity->animation.current_frame_index];
+        v2f32 sprite_dimensions = entity_animation_get_frame_dimensions(anim, current_entity->animation.current_frame_index);
+
+        f32 scale = TILE_UNIT_SIZE / sprite_dimensions.x;
+
+        v2f32 real_dimensions  = v2f32(sprite_dimensions.x * scale, sprite_dimensions.y * scale);
+        v2f32 alignment_offset = v2f32(real_dimensions.x * anim->alignment_point.x, real_dimensions.y * anim->alignment_point.y);
 
         /* TODO sprite model anchor NOTE: does not account for model size? */
         render_commands_push_image(commands,
                                    graphics_assets_get_image_by_id(graphics_assets, sprite_to_use),
-                                   rectangle_f32(current_entity->position.x,
-                                                 current_entity->position.y - (TILE_UNIT_SIZE*1.5),
-                                                 TILE_UNIT_SIZE,
-                                                 TILE_UNIT_SIZE * 2),
+                                   rectangle_f32(current_entity->position.x - alignment_offset.x,
+                                                 current_entity->position.y - alignment_offset.y,
+                                                 real_dimensions.x,
+                                                 real_dimensions.y),
                                    RECTANGLE_F32_NULL, color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
 
 #ifndef RELEASE
