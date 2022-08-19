@@ -678,10 +678,12 @@ void software_framebuffer_copy_into(struct software_framebuffer* target, struct 
     }
 }
 
-struct render_commands render_commands(struct camera camera) {
-    return (struct render_commands) {
-        .camera = camera 
-    };
+struct render_commands render_commands(struct memory_arena* arena, s32 capacity, struct camera camera) {
+    struct render_commands result = {};
+    result.camera = camera;
+    result.command_capacity = capacity;
+    result.commands         = memory_arena_push(arena, capacity * sizeof(*result.commands));
+    return result;
 }
 
 struct render_command* render_commands_new_command(struct render_commands* commands, s16 type) {

@@ -3,9 +3,6 @@
 
 #include "camera_def.c"
 
-/* This is a pretty generous number, pretty sure only particles would hit this...  */
-/* should match the operations found above */
-#define RENDER_COMMANDS_MAX (4096)
 enum render_command_type{
     RENDER_COMMAND_DRAW_QUAD,
     RENDER_COMMAND_DRAW_IMAGE,
@@ -45,14 +42,15 @@ struct render_command {
 };
 
 struct render_commands {
-    struct camera         camera;
-    u8                    should_clear_buffer;
-    union color32u8       clear_buffer_color;
-    struct render_command commands[RENDER_COMMANDS_MAX];
-    s32                   command_count;
+    struct camera          camera;
+    u8                     should_clear_buffer;
+    union color32u8        clear_buffer_color;
+    struct render_command* commands;
+    s32                    command_count;
+    s32                    command_capacity;
 };
 
-struct render_commands render_commands(struct camera camera);
+struct render_commands render_commands(struct memory_arena* arena, s32 capacity, struct camera camera);
 
 void render_commands_push_quad(struct render_commands* commands, struct rectangle_f32 destination, union color32u8 rgba, u8 blend_mode);
 void render_commands_push_image(struct render_commands* commands, struct image_buffer* image, struct rectangle_f32 destination, struct rectangle_f32 source, union color32f32 rgba, u32 flags, u8 blend_mode);

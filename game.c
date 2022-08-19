@@ -1809,7 +1809,7 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                 struct entity* player_entity = game_get_player(game_state);
                 update_game_camera(game_state, dt);
 
-                struct render_commands commands = render_commands(game_state->camera);
+                struct render_commands commands = render_commands(&scratch_arena, 4096, game_state->camera);
 
                 commands.should_clear_buffer = true;
                 commands.clear_buffer_color  = color32u8(0, 0, 0, 255);
@@ -1818,7 +1818,9 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
 
                 if (is_key_pressed(KEY_Y)) {
                     /* game_begin_shopping(string_literal("basic")); */
+#if 0
                     passive_speaking_dialogue_push(player_id, string_literal("Hello world!"), MENU_FONT_COLOR_LIME);
+#endif
                 }
 
                 /* update all tile animations */
@@ -1866,7 +1868,7 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                 game_postprocess_blur_ingame(framebuffer, 2, 0.62, BLEND_MODE_ALPHA);
 
                 {
-                    struct render_commands commands = render_commands(game_state->camera);
+                    struct render_commands commands = render_commands(&scratch_arena, 1024, game_state->camera);
                     do_ui_passive_speaking_dialogue(&commands, dt);
                     software_framebuffer_render_commands(framebuffer, &commands);
                 }

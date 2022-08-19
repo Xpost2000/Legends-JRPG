@@ -1325,7 +1325,7 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
 }
 
 void update_and_render_editor(struct software_framebuffer* framebuffer, f32 dt) {
-    struct render_commands commands = render_commands(editor_state->camera);
+    struct render_commands commands = render_commands(&scratch_arena, 4096,  editor_state->camera);
 
     commands.should_clear_buffer = true;
     commands.clear_buffer_color  = color32u8(100, 128, 148, 255);
