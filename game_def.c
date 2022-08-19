@@ -335,8 +335,8 @@ struct passive_speaking_dialogue {
     s32    game_font_id;
 };
 
-local s32                              passive_speaking_dialogue_count                            = 0;
-local struct passive_speaking_dialogue passive_speaking_dialogues[MAX_PASSIVE_SPEAKING_DIALOGUES] = {};
+local s32 passive_speaking_dialogue_count                          = 0;
+local struct passive_speaking_dialogue *passive_speaking_dialogues = 0;
 
 local void passive_speaking_dialogue_cleanup(void) {
     for (s32 index = passive_speaking_dialogue_count-1; index >= 0; --index) {

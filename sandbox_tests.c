@@ -51,7 +51,7 @@ static void _sandbox_shop_inventory(void) {
 static bool sandbox_testing(void) {
     _debugprintf("sandbox start");
     /* _thread_testing(); */
-    _sandbox_shop_inventory();
+    /* _sandbox_shop_inventory(); */
     _debugprintf("sandbox end");
     return false;
 }
