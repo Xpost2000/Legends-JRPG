@@ -345,13 +345,13 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
 
             if (selection_up) {
                 global_battle_ui_state.selection--;
-                if (global_battle_ui_state.selection >= target_list_count) {
-                    global_battle_ui_state.selection = 0;
+                if (global_battle_ui_state.selection < 0) {
+                    global_battle_ui_state.selection = target_list_count-1;
                 }
             } else if (selection_down) {
                 global_battle_ui_state.selection++;
-                if (global_battle_ui_state.selection < 0) {
-                    global_battle_ui_state.selection = target_list_count-1;
+                if (global_battle_ui_state.selection >= target_list_count) {
+                    global_battle_ui_state.selection = 0;
                 }
             }
 
