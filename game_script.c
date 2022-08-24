@@ -428,6 +428,7 @@ static struct game_script_function_builtin script_function_table[] = {
     GAME_LISP_FUNCTION(GAME_SET_ENVIRONMENT_COLORS),
     GAME_LISP_FUNCTION(GAME_MESSAGE_QUEUE),
     GAME_LISP_FUNCTION(GAME_SET_REGION_NAME),
+    GAME_LISP_FUNCTION(OPEN_SHOP),
 };
 
 local game_script_function lookup_script_function(string name) {
