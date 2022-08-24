@@ -231,6 +231,9 @@ struct entity {
     s32_range                     magic;
     struct entity_stat_block      stat_block;
 
+    /* Will search in /dlg/*.txt*/ */
+    bool                          has_dialogue;
+    char                          dialogue_file[64];
     /* mostly runtime data. */
     struct entity_ai_data         ai;
     bool                          waiting_on_turn;
@@ -240,6 +243,10 @@ struct entity {
     s32                           interacted_script_trigger_write_index;
     s32                           interacted_script_trigger_ids[32];
 };
+
+void entity_set_dialogue_file(struct entity* entity, string str) {
+    
+}
 
 struct entity_base_data {
     string                        name;

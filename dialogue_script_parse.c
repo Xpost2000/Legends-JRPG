@@ -1,6 +1,8 @@
 #include "lisp_read.c"
 /*
  * TODO error checking
+ * I guess most dialogue should be pretty linear so we can do a lot of tricks to change things
+ * with area scripts and what not.
  */
 
 local void dialogue_node_evaluate_code(struct memory_arena* arena, struct conversation* conversation, u32 node_index, string code_string) {

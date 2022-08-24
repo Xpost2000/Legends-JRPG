@@ -267,6 +267,15 @@ GAME_LISP_FUNCTION(OBJ_ACTIVATIONS) {
 
     return LISP_nil;
 }
+
+GAME_LISP_FUNCTION(OPEN_SHOP) {
+    if (argument_count == 1) {
+        string shop_name = {};
+        assert(lisp_form_get_string(arguments[0], &shop_name));
+        game_begin_shopping(shop_name);
+    }
+}
+
 GAME_LISP_FUNCTION(random) {
     /* expect an object handle. Not checking right now */
     if (argument_count == 1) {
