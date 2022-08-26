@@ -24,8 +24,8 @@ local bool SCREEN_IS_FULLSCREEN = false;
 /* real res */
 /* consider a better way to decouple this from the editor logic. */
 /* game logic is okay because we don't use the mouse for UI. (I mean I probably should allow it, but whatever.) */
-local u32 REAL_SCREEN_WIDTH  = 1280 * 1;
-local u32 REAL_SCREEN_HEIGHT = 720 * 1;
+local u32 REAL_SCREEN_WIDTH  = 640;
+local u32 REAL_SCREEN_HEIGHT = 480;
 
 #include "thread_pool.c"
 #include "serializer.c"
@@ -327,6 +327,7 @@ local void initialize(void) {
 }
 
 void deinitialize(void) {
+    software_framebuffer_finish(&global_default_framebuffer);
     audio_deinitialize();
     synchronize_and_finish_thread_pool();
     game_deinitialize();

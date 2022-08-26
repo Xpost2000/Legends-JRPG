@@ -1,3 +1,7 @@
+/* 8/26, man this thing has been code rotting... */
+struct {
+    
+} dialogue_ui;
 local void update_and_render_conversation_ui(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
     /* TODO no layout right now, do that later or tomorrow as warmup */
     /* TODO animation! */
@@ -10,6 +14,11 @@ local void update_and_render_conversation_ui(struct game_state* state, struct so
     software_framebuffer_draw_quad(framebuffer, rectangle_f32(50, 480-150, 640-100, 130), color32u8(90, 30, 255, 255), BLEND_MODE_ALPHA);
     software_framebuffer_draw_text(framebuffer, font, 2, v2f32(60, 480-150+10), current_conversation_node->text, color32f32(1,1,1,1), BLEND_MODE_ALPHA);
     software_framebuffer_draw_text(framebuffer, font2, 3, v2f32(60, 480-180), current_conversation_node->speaker_name, color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+
+    u32 BOX_WIDTH = 32;
+    u32 BOX_HEIGHT = 8;
+    v2f32 dialogue_box_extents = nine_patch_estimate_extents(ui_chunky, 1, BOX_WIDTH, BOX_HEIGHT);
+    draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, v2f32(SCREEN_WIDTH/2 - dialogue_box_extents.x/2, (SCREEN_HEIGHT * 0.9) - dialogue_box_extents.y), BOX_WIDTH, BOX_HEIGHT, UI_DEFAULT_COLOR);
 
     if (current_conversation_node->choice_count == 0) {
         software_framebuffer_draw_text(framebuffer, font, 2, v2f32(60, 480-40), string_literal("(next)"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);

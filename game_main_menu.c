@@ -260,8 +260,7 @@ local void update_and_render_main_menu(struct game_state* state, struct software
                 switch (choice) {
                     case 1: {
                         screen_mode = GAME_SCREEN_INGAME;
-                        void open_TEST_storyboard();
-                        /*TODO*/open_TEST_storyboard();
+
                     } break;
                     case 3: {
                         main_menu.timer = 0;
