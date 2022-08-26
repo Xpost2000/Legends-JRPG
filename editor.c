@@ -17,16 +17,6 @@
   I can modify it slightly I guess...
 */
 
-/*
-  NOTE:
-
-  Doesn't technically account for a different screen resolution.
-  (some parts anyways...)
-
-  The framebuffer is always 640x480(or whatever resolution I decide it should always stay at),
-  and I do allow the window to change size to scale up. So I have to bake lots of scaling to fix this later.
-*/
-
 local bool is_dragging(void) {
     return editor_state->drag_data.context != NULL;
 }
@@ -48,6 +38,12 @@ local void set_drag_candidate(void* context, v2f32 initial_mouse_worldspace, v2f
 
 local void clear_drag_candidate(void) {
     editor_state->drag_data.context = 0;
+}
+
+local v2f32 editor_get_world_space_mouse_location(void) {
+    s32 mouse_location[2];
+    get_mouse_location(mouse_location, mouse_location+1);
+    return camera_project(&editor_state->camera, v2f32(mouse_location[0], mouse_location[1]), SCREEN_WIDTH, SCREEN_HEIGHT);
 }
 
 #include "editor_imgui.c"
@@ -216,7 +212,7 @@ void editor_place_or_drag_level_transition_trigger(v2f32 point_in_tilespace) {
 
             if (rectangle_f32_intersect(current_trigger->bounds, rectangle_f32(point_in_tilespace.x, point_in_tilespace.y, 0.25, 0.25))) {
                 editor_state->last_selected = current_trigger;
-                set_drag_candidate_rectangle(current_trigger, get_mouse_in_tile_space(&editor_state->camera, REAL_SCREEN_WIDTH, REAL_SCREEN_HEIGHT),
+                set_drag_candidate_rectangle(current_trigger, get_mouse_in_tile_space(&editor_state->camera, SCREEN_WIDTH, SCREEN_HEIGHT),
                                              v2f32(current_trigger->bounds.x, current_trigger->bounds.y),
                                              v2f32(current_trigger->bounds.w, current_trigger->bounds.h));
                 return;
@@ -245,7 +241,7 @@ void editor_place_or_drag_actor(v2f32 point_in_tilespace) {
 
             if (rectangle_f32_intersect(rectangle_f32(current_entity->position.x, current_entity->position.y-1, 1, 2), rectangle_f32(point_in_tilespace.x, point_in_tilespace.y, 0.25, 0.25))) {
                 editor_state->last_selected = current_entity;
-                set_drag_candidate(current_entity, get_mouse_in_tile_space(&editor_state->camera, REAL_SCREEN_WIDTH, REAL_SCREEN_HEIGHT), current_entity->position);
+                set_drag_candidate(current_entity, get_mouse_in_tile_space(&editor_state->camera, SCREEN_WIDTH, SCREEN_HEIGHT), current_entity->position);
                 return;
             }
         }
@@ -295,7 +291,7 @@ void editor_place_or_drag_scriptable_transition_trigger(v2f32 point_in_tilespace
 
             if (rectangle_f32_intersect(current_trigger->bounds, rectangle_f32(point_in_tilespace.x, point_in_tilespace.y, 0.25, 0.25))) {
                 editor_state->last_selected = current_trigger;
-                set_drag_candidate_rectangle(current_trigger, get_mouse_in_tile_space(&editor_state->camera, REAL_SCREEN_WIDTH, REAL_SCREEN_HEIGHT),
+                set_drag_candidate_rectangle(current_trigger, get_mouse_in_tile_space(&editor_state->camera, SCREEN_WIDTH, SCREEN_HEIGHT),
                                              v2f32(current_trigger->bounds.x, current_trigger->bounds.y),
                                              v2f32(current_trigger->bounds.w, current_trigger->bounds.h));
                 return;
@@ -331,7 +327,7 @@ void editor_place_or_drag_chest(v2f32 point_in_tilespace) {
                 )) {
                 /* TODO drag candidate */
                 editor_state->last_selected = current_chest;
-                set_drag_candidate(current_chest, get_mouse_in_tile_space(&editor_state->camera, REAL_SCREEN_WIDTH, REAL_SCREEN_HEIGHT),
+                set_drag_candidate(current_chest, get_mouse_in_tile_space(&editor_state->camera, SCREEN_WIDTH, SCREEN_HEIGHT),
                                    v2f32(current_chest->position.x, current_chest->position.y));
                 return;
             }
@@ -388,7 +384,7 @@ local void handle_rectangle_dragging_and_scaling(void) {
                                                                  editor_state->drag_data.initial_object_position);
             struct rectangle_f32* object_rectangle   = (struct rectangle_f32*) editor_state->drag_data.context;
 
-            v2f32 mouse_position_in_tilespace_rounded = get_mouse_in_tile_space_integer(&editor_state->camera, REAL_SCREEN_WIDTH, REAL_SCREEN_HEIGHT);
+            v2f32 mouse_position_in_tilespace_rounded = get_mouse_in_tile_space_integer(&editor_state->camera, SCREEN_WIDTH, SCREEN_HEIGHT);
 
             if (is_key_down(KEY_SHIFT) && editor_state->drag_data.has_size) {
                 object_rectangle->w =  mouse_position_in_tilespace_rounded.x - editor_state->drag_data.initial_object_position.x;
@@ -439,7 +435,7 @@ local void handle_editor_tool_mode_input(struct software_framebuffer* framebuffe
     get_mouse_location(mouse_location, mouse_location+1);
 
     v2f32 world_space_mouse_location =
-        camera_project(&editor_state->camera, v2f32(mouse_location[0], mouse_location[1]), REAL_SCREEN_WIDTH, REAL_SCREEN_HEIGHT);
+        camera_project(&editor_state->camera, v2f32(mouse_location[0], mouse_location[1]), SCREEN_WIDTH, SCREEN_HEIGHT);
 
     /* for tiles */
     v2f32 tile_space_mouse_location = world_space_mouse_location; {
@@ -525,7 +521,7 @@ local void handle_editor_tool_mode_input(struct software_framebuffer* framebuffe
 
                             /* Is there a reason this is here? */
                             v2f32 world_space_mouse_location =
-                                camera_project(&editor_state->camera, v2f32(mouse_location[0], mouse_location[1]), REAL_SCREEN_WIDTH, REAL_SCREEN_HEIGHT);
+                                camera_project(&editor_state->camera, v2f32(mouse_location[0], mouse_location[1]), SCREEN_WIDTH, SCREEN_HEIGHT);
 
                             /* for tiles */
                             v2f32 tile_space_mouse_location = world_space_mouse_location; {
@@ -855,8 +851,7 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
     bool left_clicked   = 0; bool right_clicked  = 0; bool middle_clicked = 0;
     get_mouse_buttons(&left_clicked, &middle_clicked, &right_clicked);
 
-    v2f32 world_space_mouse_location =
-        camera_project(&editor_state->camera, v2f32(mouse_location[0], mouse_location[1]), REAL_SCREEN_WIDTH, REAL_SCREEN_HEIGHT);
+    v2f32 world_space_mouse_location = editor_get_world_space_mouse_location();
 
     /* for tiles */
     v2f32 tile_space_mouse_location = world_space_mouse_location; {
@@ -1463,8 +1458,7 @@ void update_and_render_editor(struct software_framebuffer* framebuffer, f32 dt) 
                     s32 mouse_location[2];
                     get_mouse_location(mouse_location, mouse_location+1);
 
-                    v2f32 world_space_mouse_location =
-                        camera_project(&editor_state->camera, v2f32(mouse_location[0], mouse_location[1]), REAL_SCREEN_WIDTH, REAL_SCREEN_HEIGHT);
+                    v2f32 world_space_mouse_location = editor_get_world_space_mouse_location();
                     v2f32 tile_space_mouse_location = world_space_mouse_location; {
                         tile_space_mouse_location.x = floorf(world_space_mouse_location.x / TILE_UNIT_SIZE);
                         tile_space_mouse_location.y = floorf(world_space_mouse_location.y / TILE_UNIT_SIZE);

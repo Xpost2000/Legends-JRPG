@@ -16,14 +16,14 @@ static f32                         global_elapsed_time          = 0.0f;
 static struct memory_arena         scratch_arena                = {};
 
 /* target engine res */
-local u32 SCREEN_WIDTH        = 640;
-local u32 SCREEN_HEIGHT       = 480;
+local u32 SCREEN_WIDTH        = 0;
+local u32 SCREEN_HEIGHT       = 0;
 
 /* real res */
 /* consider a better way to decouple this from the editor logic. */
 /* game logic is okay because we don't use the mouse for UI. (I mean I probably should allow it, but whatever.) */
-local u32 REAL_SCREEN_WIDTH  = 1600;
-local u32 REAL_SCREEN_HEIGHT = 900;
+local u32 REAL_SCREEN_WIDTH  = 1280 * 1;
+local u32 REAL_SCREEN_HEIGHT = 720 * 1;
 
 #include "thread_pool.c"
 #include "serializer.c"
@@ -183,8 +183,8 @@ void handle_sdl_events(void) {
     {
         SDL_Event current_event;
 
-        f32 resolution_scale_x = REAL_SCREEN_WIDTH / SCREEN_WIDTH;
-        f32 resolution_scale_y = REAL_SCREEN_HEIGHT / SCREEN_HEIGHT;
+        f32 resolution_scale_x = (f32)REAL_SCREEN_WIDTH / SCREEN_WIDTH;
+        f32 resolution_scale_y = (f32)REAL_SCREEN_HEIGHT / SCREEN_HEIGHT;
 
         while (SDL_PollEvent(&current_event)) {
             switch (current_event.type) {
@@ -267,6 +267,8 @@ local void initialize_framebuffer(void) {
     SCREEN_WIDTH  = framebuffer_resolution.x;
     SCREEN_HEIGHT = framebuffer_resolution.y;
 
+
+    _debugprintf("framebuffer resolution is: (%d, %d) vs (%d, %d) real resolution", SCREEN_WIDTH, SCREEN_HEIGHT, REAL_SCREEN_WIDTH, REAL_SCREEN_HEIGHT);
     global_default_framebuffer  = software_framebuffer_create(framebuffer_resolution.x, framebuffer_resolution.y);
 
     if (global_game_texture_surface) {
