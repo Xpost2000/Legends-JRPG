@@ -179,6 +179,10 @@ void swap_framebuffers_onto_screen(void) {
     SDL_RenderPresent(global_game_sdl_renderer);
 }
 
+local void change_resolution(s32 new_resolution_x, s32 new_resolution_y) {
+    SDL_SetWindowSize(global_game_window, new_resolution_x, new_resolution_y);
+}
+
 #include "game.c"
 
 /* scale based off of vertical height */
@@ -213,9 +217,6 @@ local void initialize_framebuffer(void) {
     global_game_texture_surface = SDL_CreateTexture(global_game_sdl_renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STREAMING, global_default_framebuffer.width, global_default_framebuffer.height);
 }
 
-local void change_resolution(s32 new_resolution_x, s32 new_resolution_y) {
-    SDL_SetWindowSize(global_game_window, new_resolution_x, new_resolution_y);
-}
 
 void handle_sdl_events(void) {
     {

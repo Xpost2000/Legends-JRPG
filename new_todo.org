@@ -67,7 +67,8 @@ Besides, I'm kind of motivated by getting to show this to Kelly... So I better m
 :Effort:   1:00:00
 :END:
 :LOGBOOK:
-CLOCK: [2022-08-26 Fri 12:27]
+CLOCK: [2022-08-26 Fri 13:00]
+CLOCK: [2022-08-26 Fri 12:27]--[2022-08-26 Fri 12:58] =>  0:31
 :END:
 We need to find a base resolution that we can use to scale from.
 Optimally it's integer scale, but realistically that's not possible,
