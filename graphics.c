@@ -186,6 +186,7 @@ void software_framebuffer_clear_buffer(struct software_framebuffer* framebuffer,
         }                                                               \
     } while(0)
 
+/* NOTE: Since I rarely draw standard quads for *legit* reasons, these don't have the ability to be shaded. */
 #ifdef USE_SIMD_OPTIMIZATIONS
 void software_framebuffer_draw_quad_clipped(struct software_framebuffer* framebuffer, struct rectangle_f32 destination, union color32u8 rgba, u8 blend_mode, struct rectangle_f32 clip_rect) {
     __m128i rect_edges_end   = _mm_set_epi32(clip_rect.x+clip_rect.w, clip_rect.y+clip_rect.h, clip_rect.x + clip_rect.w, clip_rect.y + clip_rect.h);
@@ -215,6 +216,7 @@ void software_framebuffer_draw_quad_clipped(struct software_framebuffer* framebu
     s32 stride = framebuffer->width;
     for (s32 y_cursor = start_y; y_cursor < end_y; ++y_cursor) {
         for (s32 x_cursor = start_x; x_cursor < end_x; x_cursor += 4) {
+
             __m128 red_destination_channels = _mm_set_ps(
                 framebuffer->pixels[y_cursor * stride * 4 + (x_cursor+3) * 4 + 0],
                 framebuffer->pixels[y_cursor * stride * 4 + (x_cursor+2) * 4 + 0],
@@ -233,7 +235,6 @@ void software_framebuffer_draw_quad_clipped(struct software_framebuffer* framebu
                 framebuffer->pixels[y_cursor * stride * 4 + (x_cursor+1) * 4 + 2],
                 framebuffer->pixels[y_cursor * stride * 4 + (x_cursor+0) * 4 + 2]
             );
-
 
             switch (blend_mode) {
                 case BLEND_MODE_NONE: {
@@ -303,11 +304,11 @@ void software_framebuffer_draw_quad(struct software_framebuffer* framebuffer, st
 }
 
 void software_framebuffer_draw_image_ex(struct software_framebuffer* framebuffer, struct image_buffer* image, struct rectangle_f32 destination, struct rectangle_f32 src, union color32f32 modulation, u32 flags, u8 blend_mode) {
-    software_framebuffer_draw_image_ex_clipped(framebuffer, image, destination, src, modulation, flags, blend_mode, rectangle_f32(0,0,framebuffer->width,framebuffer->height));
+    software_framebuffer_draw_image_ex_clipped(framebuffer, image, destination, src, modulation, flags, blend_mode, rectangle_f32(0,0,framebuffer->width,framebuffer->height), 0, 0);
 }
 
 #ifndef USE_SIMD_OPTIMIZATIONS
-void software_framebuffer_draw_image_ex_clipped(struct software_framebuffer* framebuffer, struct image_buffer* image, struct rectangle_f32 destination, struct rectangle_f32 src, union color32f32 modulation, u32 flags, u8 blend_mode, struct rectangle_f32 clip_rect) {
+void software_framebuffer_draw_image_ex_clipped(struct software_framebuffer* framebuffer, struct image_buffer* image, struct rectangle_f32 destination, struct rectangle_f32 src, union color32f32 modulation, u32 flags, u8 blend_mode, struct rectangle_f32 clip_rect, shader_fn shader, void* shader_ctx) {
     if ((destination.x == 0) && (destination.y == 0) && (destination.w == 0) && (destination.h == 0)) {
         destination.w = framebuffer->width;
         destination.h = framebuffer->height;
@@ -355,6 +356,10 @@ void software_framebuffer_draw_image_ex_clipped(struct software_framebuffer* fra
                                                         image->pixels[image_sample_y * image_stride * 4 + image_sample_x * 4 + 2],
                                                         image->pixels[image_sample_y * image_stride * 4 + image_sample_x * 4 + 3]);
 
+            if (shader) {
+                sampled_pixel = shader(framebuffer, sampled_pixel, shader_ctx);
+            }
+
             sampled_pixel.r *= modulation.r;
             sampled_pixel.g *= modulation.g;
             sampled_pixel.b *= modulation.b;
@@ -365,7 +370,7 @@ void software_framebuffer_draw_image_ex_clipped(struct software_framebuffer* fra
     }
 }
 #else
-void software_framebuffer_draw_image_ex_clipped(struct software_framebuffer* framebuffer, struct image_buffer* image, struct rectangle_f32 destination, struct rectangle_f32 src, union color32f32 modulation, u32 flags, u8 blend_mode, struct rectangle_f32 clip_rect) {
+void software_framebuffer_draw_image_ex_clipped(struct software_framebuffer* framebuffer, struct image_buffer* image, struct rectangle_f32 destination, struct rectangle_f32 src, union color32f32 modulation, u32 flags, u8 blend_mode, struct rectangle_f32 clip_rect, shader_fn shader, void* shader_ctx) {
     if ((destination.x == 0) && (destination.y == 0) && (destination.w == 0) && (destination.h == 0)) {
         destination.w = clip_rect.w;
         destination.h = clip_rect.h;
@@ -433,30 +438,43 @@ void software_framebuffer_draw_image_ex_clipped(struct software_framebuffer* fra
             if ((flags & SOFTWARE_FRAMEBUFFER_DRAW_IMAGE_FLIP_VERTICALLY))
                 image_sample_y = (s32)(((unclamped_end_y - y_cursor) * scale_ratio_h) + src.y);
 
-            __m128 red_channels = _mm_set_ps(
+            union color32f32 sampled_pixels[4];
+            sampled_pixels[0] = color32f32(
                 image->pixels[image_sample_y * image_stride * 4 + image_sample_x3 * 4 + 0],
-                image->pixels[image_sample_y * image_stride * 4 + image_sample_x2 * 4 + 0],
-                image->pixels[image_sample_y * image_stride * 4 + image_sample_x1 * 4 + 0],
-                image->pixels[image_sample_y * image_stride * 4 + image_sample_x  * 4 + 0]
-            );
-            __m128 green_channels = _mm_set_ps(
                 image->pixels[image_sample_y * image_stride * 4 + image_sample_x3 * 4 + 1],
-                image->pixels[image_sample_y * image_stride * 4 + image_sample_x2 * 4 + 1],
-                image->pixels[image_sample_y * image_stride * 4 + image_sample_x1 * 4 + 1],
-                image->pixels[image_sample_y * image_stride * 4 + image_sample_x  * 4 + 1]
-            );
-            __m128 blue_channels = _mm_set_ps(
                 image->pixels[image_sample_y * image_stride * 4 + image_sample_x3 * 4 + 2],
+                image->pixels[image_sample_y * image_stride * 4 + image_sample_x3 * 4 + 3]
+            );
+            sampled_pixels[1] = color32f32(
+                image->pixels[image_sample_y * image_stride * 4 + image_sample_x2 * 4 + 0],
+                image->pixels[image_sample_y * image_stride * 4 + image_sample_x2 * 4 + 1],
                 image->pixels[image_sample_y * image_stride * 4 + image_sample_x2 * 4 + 2],
+                image->pixels[image_sample_y * image_stride * 4 + image_sample_x2 * 4 + 3]
+            );
+            sampled_pixels[2] = color32f32(
+                image->pixels[image_sample_y * image_stride * 4 + image_sample_x1 * 4 + 0],
+                image->pixels[image_sample_y * image_stride * 4 + image_sample_x1 * 4 + 1],
                 image->pixels[image_sample_y * image_stride * 4 + image_sample_x1 * 4 + 2],
-                image->pixels[image_sample_y * image_stride * 4 + image_sample_x  * 4 + 2]
+                image->pixels[image_sample_y * image_stride * 4 + image_sample_x1 * 4 + 3]
             );
-            __m128 alpha_channels  = _mm_set_ps(
-                image->pixels[image_sample_y * image_stride * 4 + image_sample_x3 * 4 + 3],
-                image->pixels[image_sample_y * image_stride * 4 + image_sample_x2 * 4 + 3],
-                image->pixels[image_sample_y * image_stride * 4 + image_sample_x1 * 4 + 3],
-                image->pixels[image_sample_y * image_stride * 4 + image_sample_x  * 4 + 3]
+            sampled_pixels[3] = color32f32(
+                image->pixels[image_sample_y * image_stride * 4 + image_sample_x * 4 + 0],
+                image->pixels[image_sample_y * image_stride * 4 + image_sample_x * 4 + 1],
+                image->pixels[image_sample_y * image_stride * 4 + image_sample_x * 4 + 2],
+                image->pixels[image_sample_y * image_stride * 4 + image_sample_x * 4 + 3]
             );
+
+            if (shader) {
+                sampled_pixels[0] = shader(framebuffer, sampled_pixels[0], shader_ctx);
+                sampled_pixels[1] = shader(framebuffer, sampled_pixels[1], shader_ctx);
+                sampled_pixels[2] = shader(framebuffer, sampled_pixels[2], shader_ctx);
+                sampled_pixels[3] = shader(framebuffer, sampled_pixels[3], shader_ctx);
+            }
+
+            __m128 red_channels   = _mm_set_ps(sampled_pixels[0].r, sampled_pixels[1].r, sampled_pixels[2].r, sampled_pixels[3].r);
+            __m128 green_channels = _mm_set_ps(sampled_pixels[0].g, sampled_pixels[1].g, sampled_pixels[2].g, sampled_pixels[3].g);
+            __m128 blue_channels  = _mm_set_ps(sampled_pixels[0].b, sampled_pixels[1].b, sampled_pixels[2].b, sampled_pixels[3].b);
+            __m128 alpha_channels = _mm_set_ps(sampled_pixels[0].a, sampled_pixels[1].a, sampled_pixels[2].a, sampled_pixels[3].a);
 
             __m128 red_destination_channels = _mm_set_ps(
                 framebuffer->pixels[y_cursor * stride * 4 + (x_cursor+3) * 4 + 0],
@@ -627,7 +645,8 @@ local void software_framebuffer_draw_glyph_clipped(struct software_framebuffer* 
         modulation,
         NO_FLAGS,
         blend_mode,
-        clip_rect
+        clip_rect,
+        0,0
     );
 }
 
@@ -801,7 +820,9 @@ void software_framebuffer_render_commands_tiled(struct software_framebuffer* fra
                     command->modulation,
                     command->flags,
                     command->blend_mode,
-                    clip_rect
+                    clip_rect,
+                    command->shader,
+                    command->shader_ctx
                 );
             } break;
             case RENDER_COMMAND_DRAW_TEXT: {
