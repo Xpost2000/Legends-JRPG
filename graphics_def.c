@@ -135,7 +135,12 @@ struct font_cache*     graphics_assets_get_font_by_id(struct graphics_assets* as
 
 struct image_buffer*   graphics_assets_get_image_by_id(struct graphics_assets* assets, image_id image);
 
-struct software_framebuffer software_framebuffer_create(struct memory_arena* arena, u32 width, u32 height);
+/* no longer using memory arenas as we are dynamically able to resize this. */
+struct software_framebuffer software_framebuffer_create(u32 width, u32 height);
+/* Used for creating temporaries. */
+struct software_framebuffer software_framebuffer_create_from_arena(struct memory_arena* arena, u32 width, u32 height);
+/* only from non-arenas. Which is okay */
+void                        software_framebuffer_finish(struct software_framebuffer* framebuffer);
 void                        software_framebuffer_copy_into(struct software_framebuffer* target, struct software_framebuffer* source);
 
 enum software_framebuffer_draw_image_ex_flags {

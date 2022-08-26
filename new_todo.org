@@ -1,72 +1,180 @@
-Okay I'll just erase this at the end of each session and write new stuff
-into it everytime.
+*Try to clear this everyday when it's done!*
+Kelly is cute. That's all I wanted to say.
 
-Right now I am:
+"Nothing to my name, 'cept my sword, and my shame."
 
-Really consider adding that SDL mixer driver since Soloud clearly doesn't fucking work.
+In theory if I work these days I can get about 20-30 hours a week... Not that much, barely as much as a part time job,
+however if I do some quality work it is possible I can actually push for a late September Act 1 release.
 
-Finish that shopping implementation (add the selling menu!)
+Since most of the work is at the early stages (in producing Act1, I would've done a good portion of the content phase), the
+other acts are going to do asset reuse to avoid the time slog. The idea is we seek a *full* release in November or December.
 
-Start some cutscene stuff. Which isn't really much. We need to author a level for cutscenes...
-I'll just try out a march scene to create the constructs that I need.
+We are probably starting another project concurrently by the Act1 deadline, since I would be bored if this was all I did, also
+I wouldn't be able to learn anything lmao.
 
-Introduce objects in the level editor (which are basically preauthored sprite-like structures, they can be collidable.)
+* General Plot Outline
+This was the original brainstorming list of stuff that I wanted to revise the story as, and this
+looks like it's okay.
 
-Also create the actor table from a list of actor files or something like that. Then I need to draw a few new actor types.
+- Former Ruler makes pact with devil for power, gets tricked and stripped of everything,
+- Given a magical sword that has hidden abilities
+- Ruler fights as a mercenary as the devil slowly destroys his nation
+- Local lords(kind of tyrants) who had been previously conspiring, take opportunities to seize and hold certain areas around the nation
+- Former Ruler has traveled far from his lands as he had been exiled, and now he tries to return for his throne
+* General Working Schedule
+First row is the day of the week
+Second row is whether I'm working
+Third row is general overview of task types.
+    
+| Monday | Tuesday | Wednesday | Thursday             | Friday | Saturday | Sunday      |
+| NO     | NO      | MAYBE     | MAYBE(AT NIGHT ONLY) | YES    | YES      | YES(less)   |
+| -      | -       | X         | Storyboard Writing   | Coding | Coding   | Coding/Art? |
 
-Then work with the combat system to start producing animations, which is probably going to be done using some basic action style
-commands, with occasional hard coding.
+* Tasks by Days of the Week
+** Monday
+None.
+** Tuesday
+None.
+** Wednesday
+None this week.
+** Thursday
+*** Story Writing!
+I'm going to mainly be trying to come up with a reasonable script for Act1's intro and middle point. That's going
+to mostly be done at night or whatever free time I have.
 
-I want to start the big file packer at some point. Just to make distribution less painful as it would just be one giant binary blob.
+Write in an act1.org file, with vague outlining. Doesn't really need organization. I don't really have a checklist since I obviously
+don't know how to quantify anything I'm doing.
 
-Also while this isn't related to this project, I wanna start doing 3D stuff
+However I should be able to have a rough outline of a more fleshed out Act 1. I do have the general outlines of the plot.
+** Friday
+This is a programming day! Let's get some codings done!
+
+This seems small, but these things are mostly polish and smaller things to provide
+motivation. If I can do these, it makes the incoming release of an Act1 seem more and more realistic.
+
+My game is not technically complicated to program or even create. However an RPG no matter how simple, the second
+we have graphics. Is an extremely difficult undertaking. Thankfully once we have something fleshed out I can take some time
+to learn pixel art to "remaster" the original act demos. Might be a bit of a pain in the ass though since it will take at least
+a month to even have a minor bump in graphical quality.
+
+However, the true mark of a creator is that they're willing to do whatever it takes for their vision. They have the motivation
+and drive to do what is necessary.
+
+I am a good programmer, and a good game developer. I *have to believe this* if I want this game to succeed, even if I actually
+think otherwise.
+
+Besides, I'm kind of motivated by getting to show this to Kelly... So I better make it good...
+
+*** TODO Resolution Scaling support (16:9, 16:10, 4:3 scaled)
+:PROPERTIES:
+:Effort:   1:00:00
+:END:
+:LOGBOOK:
+CLOCK: [2022-08-26 Fri 12:27]
+:END:
+We need to find a base resolution that we can use to scale from.
+Optimally it's integer scale, but realistically that's not possible,
+so hope it generally looks good. 
+
+This should be easy...
+
+- [ ] 4:3
+- [ ] 16:10
+- [ ] 16:9
+- [ ] Options Menu for resolution scaling
+- [ ] Add scaling resolution options, and the other accepted resolution baselines
+  This is simple but necessary work required to ease me back into things.
+  I'll determine that vertical resolution is generally more important to keep
+  consistent, so I'll do that. I want to avoid having letterboxing as much as possible.
+*** TODO Dialogue System UI Upgrade
+  (Have it open up in a phase setup like every other UI animation I implemented)
+  (might need to rework the way it does scripts, as we have a stronger memory arena implementation,
+  that allows us to allocate the script structures basically ahead of time.)
+*** TODO Combat System changes
+These are some more adjustments to the combat system core.
+
+We don't have really many items right now,
+- [ ] Add the usage of abilities
+  I haven't quite figured out the uh, animation problem. Since there
+  may be many complexities in the animation. Now anyway this is done
+  I have to encode the animations as commands, and that might override
+  lots of state. We're not doing that right now.
+
+  We're just going to focus on getting the ability infrastructure to
+  work without animations.
+
+  I suspect the animations aren't going to be too difficult to do though.
+  
+- [ ] Add standard attack animations
+  While this technically requires more art, we can animate a violent bump
+  for now if we lack any animations otherwise (along with a damage flash).
+
+  This isn't very difficult to do. It will also be the default animation
+  if we lack any other type of animation.
+*** TODO Items from Files
+Our item formats are probably going to be kept very simple. We're
+going to try to constrain what we can and cannot do for the sake
+of avoiding scope-creep.
+
+Chrono Trigger in many ways was both a simple and complicated game. Simple
+in it's mechanics, complicated with it's execution.
+
+Items don't need to be able to do literally everything. If they need to
+do more impressive things, we will handle that when the time comes however
+we need to basically only assume a few basica archetypes of items.
+*** TODO Command Line / Command Entering
+This is just useful for debugging. Very very useful. I would like
+more advanced debugging tools but it simply shouldn't be required,
+I just need to be able to input commands and that might solve the
+vast majority of my problems.
+*** TODO SDL2 Mixer Audio Backend.
+This should be trivial, my audio system should have a very sane design.
+*** TODO [extra] Figure out some decent damage calculations
+** Saturday
+** Sunday
+
+* OLD TASK LIST. 
+When I'm ready to work today:
+
+Technically this isn't that much, and once this is done, we can get
+to work on the story writing (for a week or so, until I have a passable script,
+and then produce the game. We may have to revamp the pixel art, which is okay...
+Although I want to keep this art for the Act 1 Demo. Possibly for the whole release
+but who knows...)
+
+Anyways I've learned, making game tools is extremely important. Also I need to
+make tools to make the majority of work extremely convenient.
+
+Most of Wednesday expected work
+  
+Extra time or the next avaliable work day.
+- NPCs from Files
+- Allow arbitrary scripts to be associated with a level, to make things easier to test within the editor.
+- Allow single command entering (for faster debugging and level testing...)
+- Create a scenario (writing.)
+
+Do this stuff (some of it)
+
+Art is most likely to be done on the weekend.
+
+- SDL2 Mixer Audio
+
+- Master Tileset from a file. Want to avoid compiling too much.
+
+- Setup the save record system for save states.
+
+- Check the game variable system to see if it works.
+
+- Particle System (later)
+- Lighting (later)
 
 
-** Might need to move things to more data files
-** SDL Mixer Audio
-   Too lazy to do real audio mixing (also I don't know how to.)
-** Need a normal game UI
-** Start writing a GDD
-** Add more game "kernel" features
-   The core of the game is not done but we're getting closer to
-   my revengence
-** End Turn
-** Also add a game start up script.
-** Do we need a world map?
-   Probably...
-** Draw some new sprites for actors and animals
-   Yeah, we need them like now!
-** More focused dialogue? Focus on a specific entity
-** Weapon and Armor item types
-   We need an item equip screen as well, we would also preferably
-   draw sprites for each weapon. However, I might avoid that since
-   I don't have that capacity...
-   
-** Party Members
-   We need some party member actors, and obviously our new UI
-   has to be updated to account for the fact we have new party members.
+- Maybe find a few days to make some pixel art
 
-   Party members will be transferred from their level storage and auto-level?
-** Combat First Attacks!
-   We need to add ability lists for our characters! They are
-   also preferably animated, however that might be a PITA. I might
-   have to hard code the animations, I don't have the time to produce
-   a full editor UI for animations. So yeah...
+- for myself, since I kind of need it... Aligning pixel
+  art is going to be a bit of a bitch but, I don't have the tooling
+  to facilitate any of it.
+- Okay, I do need a testing tileset. Need to draw that today
 
-   I want it to allow us to have Disgaea Style Animations, so that's
-   why I kind of need this to work...
+Open for business on Wednesday, Friday, Saturday, maybe sunday
 
-   Each animation is just going to be a unique function. Unfortunately
-   that's the best way to do this as animation data otherwise would
-   be extraordinarily painful to program in for.
-
-   NOTE the combat is action-points based
-
-   - [ ] Basic Attack!
-   - [ ] Skip Turn
-   - [ ] Weapon Specific Abilities?! (add Sword, Fist)
-     - [ ] Blade Rush    (Sword)
-     - [ ] Triple Strike (Fist)
-
-** Fix the word wrap
-** Improve the dialogue UI

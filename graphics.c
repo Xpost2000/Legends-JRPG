@@ -96,16 +96,33 @@ f32 font_cache_text_width(struct font_cache* font_cache, string text, f32 scale)
     return font_cache->tile_width * text.length * scale;
 }
 
-/* we would like temporary arenas yes... */
-struct software_framebuffer software_framebuffer_create(struct memory_arena* arena, u32 width, u32 height) {
-    u8* pixels = memory_arena_push(arena, width * height * sizeof(u32));
-    /* u8* pixels = system_heap_memory_allocate(width*height*sizeof(u32)); */
+struct software_framebuffer software_framebuffer_create(u32 width, u32 height) {
+    u8* pixels = system_heap_memory_allocate(width * height * sizeof(u32));
 
     return (struct software_framebuffer) {
         .width  = width,
         .height = height,
         .pixels = pixels,
     };
+}
+
+struct software_framebuffer software_framebuffer_create_from_arena(struct memory_arena* arena, u32 width, u32 height) {
+    u8* pixels = memory_arena_push(arena, width * height * sizeof(u32));
+
+    return (struct software_framebuffer) {
+        .width  = width,
+        .height = height,
+        .pixels = pixels,
+    };
+}
+
+void software_framebuffer_finish(struct software_framebuffer* framebuffer) {
+    if (framebuffer->pixels) {
+        system_heap_memory_deallocate(framebuffer->pixels);
+        framebuffer->width  = 0;
+        framebuffer->height = 0;
+        framebuffer->pixels = 0;
+    }
 }
 
 void software_framebuffer_clear_buffer(struct software_framebuffer* framebuffer, union color32u8 rgba) {
@@ -938,7 +955,7 @@ void software_framebuffer_kernel_convolution_ex(struct memory_arena* arena, stru
     software_framebuffer_copy_into(&unaltered_copy, framebuffer);
     software_framebuffer_kernel_convolution_ex_bounded(unaltered_copy, framebuffer, kernel, kernel_width, kernel_height, divisor, blend_t, passes, rectangle_f32(0,0,framebuffer->width,framebuffer->height));
 #else
-    struct software_framebuffer unaltered_buffer = software_framebuffer_create(arena, framebuffer->width, framebuffer->height);
+    struct software_framebuffer unaltered_buffer = software_framebuffer_create_from_arena(arena, framebuffer->width, framebuffer->height);
     software_framebuffer_copy_into(&unaltered_buffer, framebuffer);
 
     /* We don't handle un-even divisions, which is kind of bad. This is mostly a "proof of concept" */

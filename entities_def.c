@@ -231,7 +231,7 @@ struct entity {
     s32_range                     magic;
     struct entity_stat_block      stat_block;
 
-    /* Will search in /dlg/*.txt*/ */
+    /* Will search in dlg text */
     bool                          has_dialogue;
     char                          dialogue_file[64];
     /* mostly runtime data. */

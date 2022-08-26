@@ -889,7 +889,7 @@ void game_postprocess_blur(struct software_framebuffer* framebuffer, s32 quality
         1,1,1,
     };
 
-    struct software_framebuffer blur_buffer = software_framebuffer_create(&scratch_arena, framebuffer->width/quality_scale, framebuffer->height/quality_scale);
+    struct software_framebuffer blur_buffer = software_framebuffer_create_from_arena(&scratch_arena, framebuffer->width/quality_scale, framebuffer->height/quality_scale);
     software_framebuffer_copy_into(&blur_buffer, framebuffer);
     software_framebuffer_kernel_convolution_ex(&scratch_arena, &blur_buffer, box_blur, 3, 3, 12, t, 2);
     software_framebuffer_draw_image_ex(framebuffer, (struct image_buffer*)&blur_buffer, RECTANGLE_F32_NULL, RECTANGLE_F32_NULL, color32f32(1,1,1,1), NO_FLAGS, blend_mode);
@@ -907,7 +907,7 @@ void game_postprocess_blur_ingame(struct software_framebuffer* framebuffer, s32 
     };
 
     /* output buffer */
-    struct software_framebuffer blur_buffer = software_framebuffer_create(&scratch_arena, framebuffer->width/quality_scale, framebuffer->height/quality_scale);
+    struct software_framebuffer blur_buffer = software_framebuffer_create_from_arena(&scratch_arena, framebuffer->width/quality_scale, framebuffer->height/quality_scale);
     software_framebuffer_copy_into(&blur_buffer, framebuffer);
     software_framebuffer_kernel_convolution_ex(&scratch_arena, &blur_buffer, box_blur, 3, 3, 10, t, 1);
     software_framebuffer_draw_image_ex(framebuffer, (struct image_buffer*)&blur_buffer, RECTANGLE_F32_NULL, RECTANGLE_F32_NULL, color32f32(1,1,1,1), NO_FLAGS, blend_mode);

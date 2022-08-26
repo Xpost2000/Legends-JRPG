@@ -246,7 +246,17 @@ void handle_sdl_events(void) {
 
 #include "game.c"
 
-void initialize(void) {
+local void initialize_framebuffer(void) {
+    software_framebuffer_finish(&global_default_framebuffer);
+    global_default_framebuffer  = software_framebuffer_create(SCREEN_WIDTH, SCREEN_HEIGHT);
+
+    if (global_game_texture_surface) {
+        SDL_DestroyTexture(global_game_texture_surface);
+    }
+    global_game_texture_surface = SDL_CreateTexture(global_game_sdl_renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STREAMING, global_default_framebuffer.width, global_default_framebuffer.height);
+}
+
+local void initialize(void) {
     SDL_Init(SDL_INIT_EVERYTHING);
 
     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, 0);
@@ -255,11 +265,11 @@ void initialize(void) {
     global_game_window          = SDL_CreateWindow("RPG", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, REAL_SCREEN_WIDTH, REAL_SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
     global_game_sdl_renderer    = SDL_CreateRenderer(global_game_window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 
-    game_initialize();
-
-    global_default_framebuffer  = software_framebuffer_create(&game_arena, SCREEN_WIDTH, SCREEN_HEIGHT);
-    global_game_texture_surface = SDL_CreateTexture(global_game_sdl_renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STREAMING, global_default_framebuffer.width, global_default_framebuffer.height);
     initialize_thread_pool();
+
+    game_initialize();
+    initialize_framebuffer();
+
     audio_initialize();
 }
 

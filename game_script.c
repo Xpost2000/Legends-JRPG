@@ -274,6 +274,8 @@ GAME_LISP_FUNCTION(OPEN_SHOP) {
         assert(lisp_form_get_string(arguments[0], &shop_name));
         game_begin_shopping(shop_name);
     }
+
+    return LISP_nil;
 }
 
 GAME_LISP_FUNCTION(random) {
@@ -416,6 +418,7 @@ GAME_LISP_FUNCTION(GAME_MESSAGE_QUEUE) {
 #define STRINGIFY(x) #x
 #define GAME_LISP_FUNCTION(NAME) (struct game_script_function_builtin) { .name = #NAME, .function = NAME ## __script_proc }
 #undef STRINGIFY
+/* this can and should be metaprogrammed. */
 static struct game_script_function_builtin script_function_table[] = {
     GAME_LISP_FUNCTION(DLG_NEXT),
     GAME_LISP_FUNCTION(OBJ_ACTIVATIONS),
