@@ -48,6 +48,9 @@ struct image_buffer {
 /* always an RGBA32 bit framebuffer */
 struct software_framebuffer {
     Image_Buffer_Base;
+
+    shader_fn active_shader;
+    void*     active_shader_context;
 };
 
 union color32u8 {
@@ -173,6 +176,9 @@ void software_framebuffer_kernel_convolution_ex(struct memory_arena* arena, stru
 
 typedef void (*shader_fn)(struct software_framebuffer* framebuffer, s32 pixel_x, s32 pixel_y, void* context);
 void software_framebuffer_run_shader(struct software_framebuffer* framebuffer, struct rectangle_f32 src_rect, shader_fn shader, void* context);
+
+/* NOTE:  */
+void software_framebuffer_use_shader(struct software_framebuffer* framebuffer, shader_fn shader, void* context);
 
 /*
   This is intended for threading work, and kernel convolution samples from the neighbors which

@@ -709,6 +709,12 @@ struct render_command* render_commands_new_command(struct render_commands* comma
     return command;
 }
 
+void render_commands_set_shader(struct render_commands* commands, shader_fn shader, void* context) {
+    struct render_command* last_command = commands->commands[commands->command_count - 1];
+    last_command->shader = shader;
+    last_command->shader_ctx = context;
+}
+
 void render_commands_push_quad(struct render_commands* commands, struct rectangle_f32 destination, union color32u8 rgba, u8 blend_mode) {
     struct render_command* command = render_commands_new_command(commands, RENDER_COMMAND_DRAW_QUAD);
     command->destination   = destination;
@@ -752,7 +758,12 @@ void render_commands_clear(struct render_commands* commands) {
 }
 
 void sort_render_commands(struct render_commands* commands) {
-    /* TODO */
+    /* NOTE: Not needed? I seem to know the explicit order of everything I'm drawing... */
+}
+
+void software_framebuffer_use_shader(struct software_framebuffer* framebuffer, shader_fn shader, void* context) {
+    framebuffer->active_shader         = shader;
+    framebuffer->active_shader_context = context;
 }
 
 /* TODO: The main benefit of render commands, is that we should be able to parallelize them.

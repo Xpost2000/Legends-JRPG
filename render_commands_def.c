@@ -39,6 +39,8 @@ struct render_command {
 
     u32 flags;
     u8  blend_mode;
+    shader_fn shader;
+    void*     shader_ctx;
 };
 
 struct render_commands {
@@ -56,6 +58,10 @@ void render_commands_push_quad(struct render_commands* commands, struct rectangl
 void render_commands_push_image(struct render_commands* commands, struct image_buffer* image, struct rectangle_f32 destination, struct rectangle_f32 source, union color32f32 rgba, u32 flags, u8 blend_mode);
 void render_commands_push_line(struct render_commands* commands, v2f32 start, v2f32 end, union color32u8 rgba, u8 blend_mode);
 void render_commands_push_text(struct render_commands* commands, struct font_cache* font, f32 scale, v2f32 xy, string cstring, union color32f32 rgba, u8 blend_mode);
+
+/* NOTE: weird backwards compatible method... Just changes the last shader */
+/* This is probably how opengl evolved. Anyways let's hope I change this to be more proper. Chances are probably not */
+void render_commands_set_shader(struct render_commands* commands, shader_fn shader, void* context);
 void render_commands_clear(struct render_commands* commands);
 
 #endif

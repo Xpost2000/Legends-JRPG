@@ -84,7 +84,7 @@ This should be easy...
   This is simple but necessary work required to ease me back into things.
   I'll determine that vertical resolution is generally more important to keep
   consistent, so I'll do that. I want to avoid having letterboxing as much as possible.
-*** TODO Dialogue System UI Upgrade
+*** DONE Dialogue System UI Upgrade
   (Have it open up in a phase setup like every other UI animation I implemented)
   (might need to rework the way it does scripts, as we have a stronger memory arena implementation,
   that allows us to allocate the script structures basically ahead of time.)
