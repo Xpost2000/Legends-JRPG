@@ -351,13 +351,17 @@ void software_framebuffer_draw_image_ex_clipped(struct software_framebuffer* fra
             if ((flags & SOFTWARE_FRAMEBUFFER_DRAW_IMAGE_FLIP_VERTICALLY))
                 image_sample_y = (s32)(((unclamped_end_y - y_cursor) * scale_ratio_h) + src.y);
 
-            union color32f32 sampled_pixel = color32f32(image->pixels[image_sample_y * image_stride * 4 + image_sample_x * 4 + 0],
-                                                        image->pixels[image_sample_y * image_stride * 4 + image_sample_x * 4 + 1],
-                                                        image->pixels[image_sample_y * image_stride * 4 + image_sample_x * 4 + 2],
-                                                        image->pixels[image_sample_y * image_stride * 4 + image_sample_x * 4 + 3]);
+            union color32f32 sampled_pixel = color32f32(image->pixels[image_sample_y * image_stride * 4 + image_sample_x * 4 + 0] / 255.0f,
+                                                        image->pixels[image_sample_y * image_stride * 4 + image_sample_x * 4 + 1] / 255.0f,
+                                                        image->pixels[image_sample_y * image_stride * 4 + image_sample_x * 4 + 2] / 255.0f,
+                                                        image->pixels[image_sample_y * image_stride * 4 + image_sample_x * 4 + 3] / 255.0f);
 
             if (shader) {
                 sampled_pixel = shader(framebuffer, sampled_pixel, shader_ctx);
+                sampled_pixel.r *= 255.0f;
+                sampled_pixel.g *= 255.0f;
+                sampled_pixel.b *= 255.0f;
+                sampled_pixel.a *= 255.0f;
             }
 
             sampled_pixel.r *= modulation.r;
@@ -464,11 +468,48 @@ void software_framebuffer_draw_image_ex_clipped(struct software_framebuffer* fra
                 image->pixels[image_sample_y * image_stride * 4 + image_sample_x * 4 + 3]
             );
 
+            /* NOTE: This too can be SIMD-ed */
+            {
+                sampled_pixels[0].r /= 255.0f;
+                sampled_pixels[1].r /= 255.0f;
+                sampled_pixels[2].r /= 255.0f;
+                sampled_pixels[3].r /= 255.0f;
+                sampled_pixels[0].g /= 255.0f;
+                sampled_pixels[1].g /= 255.0f;
+                sampled_pixels[2].g /= 255.0f;
+                sampled_pixels[3].g /= 255.0f;
+                sampled_pixels[0].b /= 255.0f;
+                sampled_pixels[1].b /= 255.0f;
+                sampled_pixels[2].b /= 255.0f;
+                sampled_pixels[3].b /= 255.0f;
+                sampled_pixels[0].a /= 255.0f;
+                sampled_pixels[1].a /= 255.0f;
+                sampled_pixels[2].a /= 255.0f;
+                sampled_pixels[3].a /= 255.0f;
+            }
             if (shader) {
                 sampled_pixels[0] = shader(framebuffer, sampled_pixels[0], shader_ctx);
                 sampled_pixels[1] = shader(framebuffer, sampled_pixels[1], shader_ctx);
                 sampled_pixels[2] = shader(framebuffer, sampled_pixels[2], shader_ctx);
                 sampled_pixels[3] = shader(framebuffer, sampled_pixels[3], shader_ctx);
+            }
+            {
+                sampled_pixels[0].r *= 255.0f;
+                sampled_pixels[1].r *= 255.0f;
+                sampled_pixels[2].r *= 255.0f;
+                sampled_pixels[3].r *= 255.0f;
+                sampled_pixels[0].g *= 255.0f;
+                sampled_pixels[1].g *= 255.0f;
+                sampled_pixels[2].g *= 255.0f;
+                sampled_pixels[3].g *= 255.0f;
+                sampled_pixels[0].b *= 255.0f;
+                sampled_pixels[1].b *= 255.0f;
+                sampled_pixels[2].b *= 255.0f;
+                sampled_pixels[3].b *= 255.0f;
+                sampled_pixels[0].a *= 255.0f;
+                sampled_pixels[1].a *= 255.0f;
+                sampled_pixels[2].a *= 255.0f;
+                sampled_pixels[3].a *= 255.0f;
             }
 
             __m128 red_channels   = _mm_set_ps(sampled_pixels[0].r, sampled_pixels[1].r, sampled_pixels[2].r, sampled_pixels[3].r);

@@ -183,12 +183,6 @@ local void render_tile_layer(struct render_commands* commands, struct level_area
                                    rectangle_f32(area->tile_layers[layer][index].x * TILE_UNIT_SIZE, area->tile_layers[layer][index].y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE),
                                    tile_data->sub_rectangle,
                                    color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
-
-        /* HACK TESTING. */
-        if (layer == TILE_LAYER_OBJECT) {
-            union color32f32 grayscale_shader(struct software_framebuffer* framebuffer, union color32f32 source_pixel, void* context);
-            render_commands_set_shader(commands, grayscale_shader, 0);
-        }
     }
 }
 
@@ -925,7 +919,7 @@ union color32f32 grayscale_shader(struct software_framebuffer* framebuffer, unio
         t = *(float*)context; 
     }
     f32 average = (source_pixel.r + source_pixel.g + source_pixel.b) / 3.0f;
-    return color32f32(average, average, average, 1.0);
+    return color32f32(average, average, average, source_pixel.a);
 }
 
 void game_postprocess_grayscale(struct software_framebuffer* framebuffer, f32 t) {
