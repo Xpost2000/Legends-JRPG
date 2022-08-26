@@ -1,6 +1,8 @@
 "Guy" : "Here's a choice..." => (CHOICES
      ("Yes?") 
+     ("Uh...")
      ("No?" (NEXT 1))
+     ("Maybe?" (NEXT 1))
 )
 "Me": "Yes."
 "Me": "Wait... No?"

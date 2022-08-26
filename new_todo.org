@@ -125,8 +125,9 @@ This is just useful for debugging. Very very useful. I would like
 more advanced debugging tools but it simply shouldn't be required,
 I just need to be able to input commands and that might solve the
 vast majority of my problems.
-*** TODO SDL2 Mixer Audio Backend.
+*** TODO [extra] SDL2 Mixer Audio Backend.
 This should be trivial, my audio system should have a very sane design.
+*** TODO Scenario writing.
 *** TODO [extra] Figure out some decent damage calculations
 ** Saturday
 ** Sunday

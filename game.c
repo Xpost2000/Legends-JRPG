@@ -1075,8 +1075,8 @@ void game_initialize_game_world(void) {
     entity_inventory_add((struct entity_inventory*)&game_state->inventory, MAX_PARTY_ITEMS, item_id_make(string_literal("item_accessory_wedding_ring")));
 
 #if 1
-    game_open_conversation_file(game_state, string_literal("./dlg/linear_test.txt"));
-    /* game_open_conversation_file(game_state, string_literal("./dlg/simple_choices.txt")); */
+    /* game_open_conversation_file(game_state, string_literal("./dlg/linear_test.txt")); */
+    game_open_conversation_file(game_state, string_literal("./dlg/simple_choices.txt"));
     /* load_level_from_file(game_state, string_literal("pf.area")); */
 #endif
     /* load_level_from_file(game_state, string_literal("bt.area")); */

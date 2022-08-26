@@ -174,4 +174,7 @@ local void game_open_conversation_file(struct game_state* state, string filename
     while (!lexer_done(&lexer_state)) {
         parse_and_compose_dialogue(state, &lexer_state);
     }
+
+    void dialogue_ui_setup_for_next_line_of_dialogue(void);
+    dialogue_ui_setup_for_next_line_of_dialogue();
 }
