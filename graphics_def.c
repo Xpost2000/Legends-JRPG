@@ -46,6 +46,9 @@ struct image_buffer {
 };
 
 /* always an RGBA32 bit framebuffer */
+struct software_framebuffer;
+typedef union color32f32 (*shader_fn)(struct software_framebuffer* framebuffer, union color32f32 source_pixel, void* context);
+
 struct software_framebuffer {
     Image_Buffer_Base;
 
@@ -174,7 +177,6 @@ void software_framebuffer_draw_line(struct software_framebuffer* framebuffer, v2
 
 void software_framebuffer_kernel_convolution_ex(struct memory_arena* arena, struct software_framebuffer* framebuffer, f32* kernel, s16 width, s16 height, f32 divisor, f32 blend_t, s32 passes);
 
-typedef void (*shader_fn)(struct software_framebuffer* framebuffer, s32 pixel_x, s32 pixel_y, void* context);
 void software_framebuffer_run_shader(struct software_framebuffer* framebuffer, struct rectangle_f32 src_rect, shader_fn shader, void* context);
 
 /* NOTE:  */

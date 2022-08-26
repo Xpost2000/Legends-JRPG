@@ -710,7 +710,7 @@ struct render_command* render_commands_new_command(struct render_commands* comma
 }
 
 void render_commands_set_shader(struct render_commands* commands, shader_fn shader, void* context) {
-    struct render_command* last_command = commands->commands[commands->command_count - 1];
+    struct render_command* last_command = &commands->commands[commands->command_count - 1];
     last_command->shader = shader;
     last_command->shader_ctx = context;
 }
@@ -1120,7 +1120,24 @@ s32 thread_software_framebuffer_run_shader(void* context) {
 
     for (s32 y = src_rect.y; y < src_rect.y+src_rect.h; ++y) {
         for (s32 x = src_rect.x; x < src_rect.x+src_rect.w; ++x) {
-            job_details->shared->shader(job_details->shared->framebuffer, x, y, job_details->shared->context);
+            union color32f32 source_pixel = color32f32(
+                job_details->shared->framebuffer->pixels[y * job_details->shared->framebuffer->width * 4 + x * 4 + 0] / 255.0f,
+                job_details->shared->framebuffer->pixels[y * job_details->shared->framebuffer->width * 4 + x * 4 + 1] / 255.0f,
+                job_details->shared->framebuffer->pixels[y * job_details->shared->framebuffer->width * 4 + x * 4 + 2] / 255.0f,
+                job_details->shared->framebuffer->pixels[y * job_details->shared->framebuffer->width * 4 + x * 4 + 3] / 255.0f
+            );
+
+            union color32f32 new_pixel = job_details->shared->shader(job_details->shared->framebuffer, source_pixel, job_details->shared->context);
+
+            new_pixel.r = clamp_f32(new_pixel.r, 0, 1);
+            new_pixel.g = clamp_f32(new_pixel.g, 0, 1);
+            new_pixel.b = clamp_f32(new_pixel.b, 0, 1);
+            new_pixel.a = clamp_f32(new_pixel.a, 0, 1);
+
+            job_details->shared->framebuffer->pixels[y * job_details->shared->framebuffer->width * 4 + x * 4 + 0] = new_pixel.r * 255.0f;
+            job_details->shared->framebuffer->pixels[y * job_details->shared->framebuffer->width * 4 + x * 4 + 1] = new_pixel.g * 255.0f;
+            job_details->shared->framebuffer->pixels[y * job_details->shared->framebuffer->width * 4 + x * 4 + 2] = new_pixel.b * 255.0f;
+            job_details->shared->framebuffer->pixels[y * job_details->shared->framebuffer->width * 4 + x * 4 + 3] = new_pixel.a * 255.0f;
         }
     }
 
@@ -1131,7 +1148,24 @@ void software_framebuffer_run_shader(struct software_framebuffer* framebuffer, s
 #ifndef MULTITHREADED_EXPERIMENTAL
     for (s32 y = src_rect.y; y < src_rect.y+src_rect.h; ++y) {
         for (s32 x = src_rect.x; x < src_rect.x+src_rect.w; ++x) {
-            shader(framebuffer, x, y, context);
+            union color32f32 source_pixel = color32f32(
+                framebuffer->pixels[y * framebuffer->width * 4 + x * 4 + 0] / 255.0f,
+                framebuffer->pixels[y * framebuffer->width * 4 + x * 4 + 1] / 255.0f,
+                framebuffer->pixels[y * framebuffer->width * 4 + x * 4 + 2] / 255.0f,
+                framebuffer->pixels[y * framebuffer->width * 4 + x * 4 + 3] / 255.0f
+            );
+
+            union color32f32 new_pixel = shader(framebuffer, source_pixel, context);
+
+            new_pixel.r = clamp_f32(new_pixel.r, 0, 1);
+            new_pixel.g = clamp_f32(new_pixel.g, 0, 1);
+            new_pixel.b = clamp_f32(new_pixel.b, 0, 1);
+            new_pixel.a = clamp_f32(new_pixel.a, 0, 1);
+
+            framebuffer->pixels[y * framebuffer->width * 4 + x * 4 + 0] = new_pixel.r * 255.0f;
+            framebuffer->pixels[y * framebuffer->width * 4 + x * 4 + 1] = new_pixel.g * 255.0f;
+            framebuffer->pixels[y * framebuffer->width * 4 + x * 4 + 2] = new_pixel.b * 255.0f;
+            framebuffer->pixels[y * framebuffer->width * 4 + x * 4 + 3] = new_pixel.a * 255.0f;
         }
     }
 #else

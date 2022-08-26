@@ -913,15 +913,10 @@ void game_postprocess_blur_ingame(struct software_framebuffer* framebuffer, s32 
     software_framebuffer_draw_image_ex(framebuffer, (struct image_buffer*)&blur_buffer, RECTANGLE_F32_NULL, RECTANGLE_F32_NULL, color32f32(1,1,1,1), NO_FLAGS, blend_mode);
 }
 
-void grayscale_shader(struct software_framebuffer* framebuffer, s32 pixel_x, s32 pixel_y, void* context) {
+union color32f32 grayscale_shader(struct software_framebuffer* framebuffer, union color32f32 source_pixel, void* context) {
     f32 t = *(float*)context;
-    u8 r = framebuffer->pixels[pixel_y * framebuffer->width * 4 + pixel_x * 4 + 0];
-    u8 g = framebuffer->pixels[pixel_y * framebuffer->width * 4 + pixel_x * 4 + 1];
-    u8 b = framebuffer->pixels[pixel_y * framebuffer->width * 4 + pixel_x * 4 + 2];
-    f32 average = (r + g + b) / 3.0f;
-    framebuffer->pixels[pixel_y * framebuffer->width * 4 + pixel_x * 4 + 0] = framebuffer->pixels[pixel_y * framebuffer->width * 4 + pixel_x * 4 + 0] * (1 - t) + average * t;
-    framebuffer->pixels[pixel_y * framebuffer->width * 4 + pixel_x * 4 + 1] = framebuffer->pixels[pixel_y * framebuffer->width * 4 + pixel_x * 4 + 1] * (1 - t) + average * t;
-    framebuffer->pixels[pixel_y * framebuffer->width * 4 + pixel_x * 4 + 2] = framebuffer->pixels[pixel_y * framebuffer->width * 4 + pixel_x * 4 + 2] * (1 - t) + average * t;
+    f32 average = (source_pixel.r + source_pixel.g + source_pixel.b) / 3.0f;
+    return color32f32(average, average, average, 1.0);
 }
 
 void game_postprocess_grayscale(struct software_framebuffer* framebuffer, f32 t) {
