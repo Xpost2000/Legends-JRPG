@@ -343,7 +343,7 @@ local void update_and_render_main_menu(struct game_state* state, struct software
                         change_resolution(new_resolution->w, new_resolution->h);
                     } break;
                     case 1: {
-                        /* TODO set full screen */
+                        toggle_fullscreen();
                     } break;
                     case 2: {
                         main_menu.phase = MAIN_MENU_OPTIONS_PAGE_MOVE_OUT;
@@ -354,5 +354,5 @@ local void update_and_render_main_menu(struct game_state* state, struct software
         } break;
     } 
 
-    main_menu.timer += dt; 
+    main_menu.timer += dt * 2.41; 
 }

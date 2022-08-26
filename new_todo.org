@@ -62,12 +62,12 @@ think otherwise.
 
 Besides, I'm kind of motivated by getting to show this to Kelly... So I better make it good...
 
-*** TODO Resolution Scaling support (16:9, 16:10, 4:3 scaled)
+*** DONE Resolution Scaling support (16:9, 16:10, 4:3 scaled)
 :PROPERTIES:
 :Effort:   1:00:00
 :END:
 :LOGBOOK:
-CLOCK: [2022-08-26 Fri 13:00]
+CLOCK: [2022-08-26 Fri 13:00]--[2022-08-26 Fri 13:36] =>  0:36
 CLOCK: [2022-08-26 Fri 12:27]--[2022-08-26 Fri 12:58] =>  0:31
 :END:
 We need to find a base resolution that we can use to scale from.
@@ -76,11 +76,11 @@ so hope it generally looks good.
 
 This should be easy...
 
-- [ ] 4:3
-- [ ] 16:10
-- [ ] 16:9
-- [ ] Options Menu for resolution scaling
-- [ ] Add scaling resolution options, and the other accepted resolution baselines
+- [X] 4:3
+- [X] 16:10
+- [X] 16:9
+- [X] Options Menu for resolution scaling
+- [X] Add scaling resolution options, and the other accepted resolution baselines
   This is simple but necessary work required to ease me back into things.
   I'll determine that vertical resolution is generally more important to keep
   consistent, so I'll do that. I want to avoid having letterboxing as much as possible.

@@ -16,8 +16,10 @@ static f32                         global_elapsed_time          = 0.0f;
 static struct memory_arena         scratch_arena                = {};
 
 /* target engine res */
-local u32 SCREEN_WIDTH        = 0;
-local u32 SCREEN_HEIGHT       = 0;
+local u32 SCREEN_WIDTH  = 0;
+local u32 SCREEN_HEIGHT = 0;
+
+local bool SCREEN_IS_FULLSCREEN = false;
 
 /* real res */
 /* consider a better way to decouple this from the editor logic. */
@@ -181,6 +183,16 @@ void swap_framebuffers_onto_screen(void) {
 
 local void change_resolution(s32 new_resolution_x, s32 new_resolution_y) {
     SDL_SetWindowSize(global_game_window, new_resolution_x, new_resolution_y);
+}
+
+local void toggle_fullscreen(void) {
+    if (SCREEN_IS_FULLSCREEN) {
+        SDL_SetWindowFullscreen(global_game_window, 0);
+        SCREEN_IS_FULLSCREEN = false;
+    } else {
+        SDL_SetWindowFullscreen(global_game_window, SDL_WINDOW_FULLSCREEN_DESKTOP);
+        SCREEN_IS_FULLSCREEN = true;
+    }
 }
 
 #include "game.c"
