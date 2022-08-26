@@ -951,12 +951,6 @@ local void draw_ui_breathing_text_centered(struct software_framebuffer* framebuf
         glyph_position.y += character_displacement_y;
         glyph_position.x += font->tile_width * scale * character_index;
 
-        /* TODO: fix this later */
-        /* while (glyph_position.x > bounds.w) { */
-        /*     glyph_position.x -= bounds.w; */
-        /*     glyph_position.y += font_height; */
-        /* } */
-
         software_framebuffer_draw_text(framebuffer, font, scale, glyph_position, string_slice(text, character_index, character_index+1), modulation, BLEND_MODE_ALPHA);
     }
 }

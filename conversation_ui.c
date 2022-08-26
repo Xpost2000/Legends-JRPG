@@ -10,15 +10,16 @@ local void update_and_render_conversation_ui(struct game_state* state, struct so
     struct conversation* conversation = &game_state->current_conversation;
     struct conversation_node* current_conversation_node = &conversation->nodes[game_state->current_conversation_node_id-1];
 
-    software_framebuffer_draw_quad(framebuffer, rectangle_f32(50, 480-180, 200, 30), color32u8(90, 30, 255, 255), BLEND_MODE_ALPHA);
-    software_framebuffer_draw_quad(framebuffer, rectangle_f32(50, 480-150, 640-100, 130), color32u8(90, 30, 255, 255), BLEND_MODE_ALPHA);
-    software_framebuffer_draw_text(framebuffer, font, 2, v2f32(60, 480-150+10), current_conversation_node->text, color32f32(1,1,1,1), BLEND_MODE_ALPHA);
-    software_framebuffer_draw_text(framebuffer, font2, 3, v2f32(60, 480-180), current_conversation_node->speaker_name, color32f32(1,1,1,1), BLEND_MODE_ALPHA);
-
-    u32 BOX_WIDTH = 32;
+    u32 BOX_WIDTH = 36;
     u32 BOX_HEIGHT = 8;
     v2f32 dialogue_box_extents = nine_patch_estimate_extents(ui_chunky, 1, BOX_WIDTH, BOX_HEIGHT);
-    draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, v2f32(SCREEN_WIDTH/2 - dialogue_box_extents.x/2, (SCREEN_HEIGHT * 0.9) - dialogue_box_extents.y), BOX_WIDTH, BOX_HEIGHT, UI_DEFAULT_COLOR);
+    v2f32 dialogue_box_start_position = v2f32(SCREEN_WIDTH/2 - dialogue_box_extents.x/2, (SCREEN_HEIGHT * 0.9) - dialogue_box_extents.y);
+    {
+        draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, dialogue_box_start_position, BOX_WIDTH, BOX_HEIGHT, UI_DEFAULT_COLOR);
+        draw_ui_breathing_text(framebuffer, v2f32(dialogue_box_start_position.x + 20, dialogue_box_start_position.y + 15), font2, 3, current_conversation_node->speaker_name, 0, color32f32(1,1,1,1));
+        draw_ui_breathing_text(framebuffer, v2f32(dialogue_box_start_position.x + 30, dialogue_box_start_position.y + 60), font, 2, current_conversation_node->text, 1492, color32f32(1,1,1,1));
+    }
+
 
     if (current_conversation_node->choice_count == 0) {
         software_framebuffer_draw_text(framebuffer, font, 2, v2f32(60, 480-40), string_literal("(next)"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
