@@ -16,14 +16,14 @@ static f32                         global_elapsed_time          = 0.0f;
 static struct memory_arena         scratch_arena                = {};
 
 /* target engine res */
-const local u32   SCREEN_WIDTH        = 640;
-const local u32   SCREEN_HEIGHT       = 480;
+local u32 SCREEN_WIDTH        = 640;
+local u32 SCREEN_HEIGHT       = 480;
 
 /* real res */
 /* consider a better way to decouple this from the editor logic. */
 /* game logic is okay because we don't use the mouse for UI. (I mean I probably should allow it, but whatever.) */
-local u32 REAL_SCREEN_WIDTH  = SCREEN_WIDTH * 2;
-local u32 REAL_SCREEN_HEIGHT = SCREEN_HEIGHT * 2;
+local u32 REAL_SCREEN_WIDTH  = 1600;
+local u32 REAL_SCREEN_HEIGHT = 900;
 
 #include "thread_pool.c"
 #include "serializer.c"
@@ -246,13 +246,33 @@ void handle_sdl_events(void) {
 
 #include "game.c"
 
+/* scale based off of vertical height */
+const u32 ENGINE_BASE_VERTICAL_RESOLUTION = 480;
+
+local v2f32 get_scaled_screen_resolution(v2f32 base_resolution) {
+    f32 scale_factor = base_resolution.y / ENGINE_BASE_VERTICAL_RESOLUTION;
+
+    base_resolution.x /= scale_factor;
+    base_resolution.x = ceilf(base_resolution.x);
+
+    return v2f32(base_resolution.x, ENGINE_BASE_VERTICAL_RESOLUTION);
+}
+
 local void initialize_framebuffer(void) {
     software_framebuffer_finish(&global_default_framebuffer);
-    global_default_framebuffer  = software_framebuffer_create(SCREEN_WIDTH, SCREEN_HEIGHT);
+
+    v2f32 framebuffer_resolution = get_scaled_screen_resolution(v2f32(REAL_SCREEN_WIDTH, REAL_SCREEN_HEIGHT));
+
+    /* I know these sound like constants. They really aren't... */
+    SCREEN_WIDTH  = framebuffer_resolution.x;
+    SCREEN_HEIGHT = framebuffer_resolution.y;
+
+    global_default_framebuffer  = software_framebuffer_create(framebuffer_resolution.x, framebuffer_resolution.y);
 
     if (global_game_texture_surface) {
         SDL_DestroyTexture(global_game_texture_surface);
     }
+
     global_game_texture_surface = SDL_CreateTexture(global_game_sdl_renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STREAMING, global_default_framebuffer.width, global_default_framebuffer.height);
 }
 
