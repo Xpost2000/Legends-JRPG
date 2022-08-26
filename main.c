@@ -51,7 +51,7 @@ static SDL_Renderer*               global_game_sdl_renderer     = NULL;
 static SDL_Texture*                global_game_texture_surface  = NULL;
 static SDL_GameController*         global_controller_devices[4] = {};
 static SDL_Haptic*                 global_haptic_devices[4]     = {};
-static struct software_framebuffer global_default_framebuffer;
+static struct software_framebuffer global_default_framebuffer   = {};
 static struct graphics_assets      graphics_assets              = {};
 
 
