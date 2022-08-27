@@ -492,6 +492,7 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                 }
             }
 
+            f32 y_cursor = ui_box_position.y + 10;
             for (s32 ability_index = 0; ability_index < user->ability_count; ++ability_index) {
                 struct font_cache* painting_font = normal_font;
                 struct entity_ability_slot slot = user->abilities[ability_index];
@@ -502,8 +503,30 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                     painting_font = highlighted_font;
                 }
 
-                draw_ui_breathing_text(framebuffer, v2f32(ui_box_position.x + 10, ui_box_position.y + 10 + ability_index * 32), painting_font,
+                draw_ui_breathing_text(framebuffer, v2f32(ui_box_position.x + 10, y_cursor), painting_font,
                                        2, ability->name, ability_index, color32f32_WHITE);
+
+                y_cursor += 32;
+            }
+            y_cursor = (ui_box_position.y + ui_box_size.y) + 20;
+            {
+                /* NOTE: don't ask how any of the UI was calculated. It was all funged and happened to look good within a few tries. */
+                s32 BOX_SQUARE_SIZE = 8+1;
+                v2f32 ui_box_size = nine_patch_estimate_extents(ui_chunky, 1, BOX_SQUARE_SIZE, BOX_SQUARE_SIZE);
+                v2f32 ui_box_position = v2f32(framebuffer->width * 0.9 - ui_box_size.x, y_cursor);
+                draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, ui_box_position, BOX_SQUARE_SIZE+1, BOX_SQUARE_SIZE+1, UI_BATTLE_COLOR);
+
+                /* draw target region */
+                f32 square_size            = ui_box_size.x / ENTITY_ABILITY_SELECTION_FIELD_MAX_X;
+                f32 nearest_perfect_square = (square_size + 2);
+
+                for (s32 y_index = 0; y_index < ENTITY_ABILITY_SELECTION_FIELD_MAX_Y; ++y_index) {
+                    for (s32 x_index = 0; x_index < ENTITY_ABILITY_SELECTION_FIELD_MAX_X; ++x_index) {
+                        f32 x_cursor = ui_box_position.x + 8 + x_index * nearest_perfect_square;
+                        f32 y_cursor = ui_box_position.y + 8 + y_index * nearest_perfect_square;;
+                        software_framebuffer_draw_quad(framebuffer, rectangle_f32(x_cursor, y_cursor, square_size, square_size), color32u8(0,0,0,255), BLEND_MODE_ALPHA);
+                    }
+                }
             }
         } break;
 
