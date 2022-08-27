@@ -58,6 +58,12 @@ struct battle_ui_state {
     s32   max_remembered_path_points_count;
     v2f32 max_remembered_path_points[256];
 
+    bool selecting_ability_target;
+    /* I need to copy this to allow myself to rotate the grid. */
+    u8   selection_field[ENTITY_ABILITY_SELECTION_FIELD_MAX_Y][ENTITY_ABILITY_SELECTION_FIELD_MAX_X];
+    s32 ability_target_x;
+    s32 ability_target_y;
+
     entity_id currently_selected_entity_id;
 } global_battle_ui_state;
 
@@ -157,16 +163,20 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
 
     if (selection_cancel) {
         if (global_battle_ui_state.submode != BATTLE_UI_SUBMODE_NONE) {
-            global_battle_ui_state.submode                             = BATTLE_UI_SUBMODE_NONE;
+            if (global_battle_ui_state.selecting_ability_target) {
+                global_battle_ui_state.selecting_ability_target = false;
+            } else {
+                global_battle_ui_state.submode                             = BATTLE_UI_SUBMODE_NONE;
 
-            if (global_battle_ui_state.remembered_original_camera_position) {
-                global_battle_ui_state.remembered_original_camera_position = false;
-                state->camera.xy                                           = global_battle_ui_state.prelooking_mode_camera_position;
+                if (global_battle_ui_state.remembered_original_camera_position) {
+                    global_battle_ui_state.remembered_original_camera_position = false;
+                    state->camera.xy                                           = global_battle_ui_state.prelooking_mode_camera_position;
+                }
+
+                global_battle_ui_state.max_remembered_path_points_count = 0;
+                level_area_clear_movement_visibility_map(&state->loaded_area);
+                _debugprintf("restore to previous menu state");
             }
-
-            global_battle_ui_state.max_remembered_path_points_count = 0;
-            level_area_clear_movement_visibility_map(&state->loaded_area);
-            _debugprintf("restore to previous menu state");
         }
     }
 
@@ -476,76 +486,86 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
             s32 BOX_WIDTH  = 8;
             s32 BOX_HEIGHT = 1 + 2 * user->ability_count;
 
-            v2f32 ui_box_size     = nine_patch_estimate_extents(ui_chunky, 1, BOX_WIDTH, BOX_HEIGHT);
-            v2f32 ui_box_position = v2f32(framebuffer->width*0.9-ui_box_size.x, 50);
-            draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, ui_box_position, BOX_WIDTH, BOX_HEIGHT, UI_BATTLE_COLOR);
+            if (!global_battle_ui_state.selecting_ability_target) {
+                v2f32 ui_box_size     = nine_patch_estimate_extents(ui_chunky, 1, BOX_WIDTH, BOX_HEIGHT);
+                v2f32 ui_box_position = v2f32(framebuffer->width*0.9-ui_box_size.x, 50);
+                draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, ui_box_position, BOX_WIDTH, BOX_HEIGHT, UI_BATTLE_COLOR);
 
-            if (selection_up) {
-                global_battle_ui_state.selection--;
-                if (global_battle_ui_state.selection < 0) {
-                    global_battle_ui_state.selection = user->ability_count-1;
-                }
-            } else if (selection_down) {
-                global_battle_ui_state.selection++;
-                if (global_battle_ui_state.selection >= user->ability_count) {
-                    global_battle_ui_state.selection = 0;
-                }
-            }
-
-            f32 y_cursor = ui_box_position.y + 10;
-            for (s32 ability_index = 0; ability_index < user->ability_count; ++ability_index) {
-                struct font_cache* painting_font = normal_font;
-                struct entity_ability_slot slot = user->abilities[ability_index];
-                /* should keep track of ability count. */
-                struct entity_ability*     ability = dereference_ability(slot.ability);
-
-                if (ability_index == global_battle_ui_state.selection) {
-                    painting_font = highlighted_font;
-                }
-
-                draw_ui_breathing_text(framebuffer, v2f32(ui_box_position.x + 10, y_cursor), painting_font,
-                                       2, ability->name, ability_index, color32f32_WHITE);
-
-                y_cursor += 32;
-            }
-            y_cursor = (ui_box_position.y + ui_box_size.y) + 20;
-            {
-                /* NOTE: don't ask how any of the UI was calculated. It was all funged and happened to look good within a few tries. */
-                s32 BOX_SQUARE_SIZE = 8+1;
-                v2f32 ui_box_size = nine_patch_estimate_extents(ui_chunky, 1, BOX_SQUARE_SIZE, BOX_SQUARE_SIZE);
-                v2f32 ui_box_position = v2f32(framebuffer->width * 0.9 - ui_box_size.x, y_cursor);
-                draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, ui_box_position, BOX_SQUARE_SIZE+1, BOX_SQUARE_SIZE+1, UI_BATTLE_COLOR);
-
-                /* draw target region */
-                f32 square_size            = ui_box_size.x / ENTITY_ABILITY_SELECTION_FIELD_MAX_X;
-                f32 nearest_perfect_square = (square_size + 2);
-
-                struct entity_ability_slot slot = user->abilities[global_battle_ui_state.selection];
-                struct entity_ability*     ability = dereference_ability(slot.ability);
-
-                for (s32 y_index = 0; y_index < ENTITY_ABILITY_SELECTION_FIELD_MAX_Y; ++y_index) {
-                    for (s32 x_index = 0; x_index < ENTITY_ABILITY_SELECTION_FIELD_MAX_X; ++x_index) {
-                        f32 x_cursor = ui_box_position.x + 8 + x_index * nearest_perfect_square;
-                        f32 y_cursor = ui_box_position.y + 8 + y_index * nearest_perfect_square;;
-
-                        union color32u8 grid_color = color32u8(0,0,0,255);
-
-                        {
-                            if (ability->selection_field[y_index][x_index]) {
-                                if (ability->selection_type == ABILITY_SELECTION_TYPE_FIELD) {
-                                    grid_color = color32u8(132, 140, 207, 255);
-                                } else {
-                                    grid_color = color32u8(225, 30, 30, 255);
-                                }
-
-                                if (y_index == ENTITY_ABILITY_SELECTION_FIELD_CENTER_Y && x_index == ENTITY_ABILITY_SELECTION_FIELD_CENTER_X)
-                                    grid_color = color32u8(30, 225, 30, 255);
-                            }
-                        }
-
-                        software_framebuffer_draw_quad(framebuffer, rectangle_f32(x_cursor, y_cursor, square_size, square_size), grid_color, BLEND_MODE_ALPHA);
+                if (selection_up) {
+                    global_battle_ui_state.selection--;
+                    if (global_battle_ui_state.selection < 0) {
+                        global_battle_ui_state.selection = user->ability_count-1;
+                    }
+                } else if (selection_down) {
+                    global_battle_ui_state.selection++;
+                    if (global_battle_ui_state.selection >= user->ability_count) {
+                        global_battle_ui_state.selection = 0;
                     }
                 }
+
+                if (selection_confirm) {
+                    global_battle_ui_state.selecting_ability_target = true;
+                    global_battle_ui_state.ability_target_x = user->position.x/TILE_UNIT_SIZE;
+                    global_battle_ui_state.ability_target_y = user->position.y/TILE_UNIT_SIZE;
+                }
+
+                f32 y_cursor = ui_box_position.y + 10;
+                for (s32 ability_index = 0; ability_index < user->ability_count; ++ability_index) {
+                    struct font_cache* painting_font = normal_font;
+                    struct entity_ability_slot slot = user->abilities[ability_index];
+                    /* should keep track of ability count. */
+                    struct entity_ability*     ability = dereference_ability(slot.ability);
+
+                    if (ability_index == global_battle_ui_state.selection) {
+                        painting_font = highlighted_font;
+                    }
+
+                    draw_ui_breathing_text(framebuffer, v2f32(ui_box_position.x + 10, y_cursor), painting_font,
+                                           2, ability->name, ability_index, color32f32_WHITE);
+
+                    y_cursor += 32;
+                }
+                y_cursor = (ui_box_position.y + ui_box_size.y) + 20;
+                {
+                    /* NOTE: don't ask how any of the UI was calculated. It was all funged and happened to look good within a few tries. */
+                    s32 BOX_SQUARE_SIZE = 8+1;
+                    v2f32 ui_box_size = nine_patch_estimate_extents(ui_chunky, 1, BOX_SQUARE_SIZE, BOX_SQUARE_SIZE);
+                    v2f32 ui_box_position = v2f32(framebuffer->width * 0.9 - ui_box_size.x, y_cursor);
+                    draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, ui_box_position, BOX_SQUARE_SIZE+1, BOX_SQUARE_SIZE+1, UI_BATTLE_COLOR);
+
+                    /* draw target region */
+                    f32 square_size            = ui_box_size.x / ENTITY_ABILITY_SELECTION_FIELD_MAX_X;
+                    f32 nearest_perfect_square = (square_size + 2);
+
+                    struct entity_ability_slot slot = user->abilities[global_battle_ui_state.selection];
+                    struct entity_ability*     ability = dereference_ability(slot.ability);
+
+                    for (s32 y_index = 0; y_index < ENTITY_ABILITY_SELECTION_FIELD_MAX_Y; ++y_index) {
+                        for (s32 x_index = 0; x_index < ENTITY_ABILITY_SELECTION_FIELD_MAX_X; ++x_index) {
+                            f32 x_cursor = ui_box_position.x + 8 + x_index * nearest_perfect_square;
+                            f32 y_cursor = ui_box_position.y + 8 + y_index * nearest_perfect_square;;
+
+                            union color32u8 grid_color = color32u8(0,0,0,255);
+
+                            {
+                                if (ability->selection_field[y_index][x_index]) {
+                                    if (ability->selection_type == ABILITY_SELECTION_TYPE_FIELD) {
+                                        grid_color = color32u8(132, 140, 207, 255);
+                                    } else {
+                                        grid_color = color32u8(225, 30, 30, 255);
+                                    }
+
+                                    if (y_index == ENTITY_ABILITY_SELECTION_FIELD_CENTER_Y && x_index == ENTITY_ABILITY_SELECTION_FIELD_CENTER_X)
+                                        grid_color = color32u8(30, 225, 30, 255);
+                                }
+                            }
+
+                            software_framebuffer_draw_quad(framebuffer, rectangle_f32(x_cursor, y_cursor, square_size, square_size), grid_color, BLEND_MODE_ALPHA);
+                        }
+                    }
+                }
+            } else {
+                
             }
         } break;
 
