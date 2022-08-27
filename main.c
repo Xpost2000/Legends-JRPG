@@ -219,11 +219,13 @@ local void initialize_framebuffer(void) {
     SCREEN_HEIGHT = framebuffer_resolution.y;
 
 
+    /* TODO: Seems to be a variable crash sometimes. Check this later. */
     _debugprintf("framebuffer resolution is: (%d, %d) vs (%d, %d) real resolution", SCREEN_WIDTH, SCREEN_HEIGHT, REAL_SCREEN_WIDTH, REAL_SCREEN_HEIGHT);
     global_default_framebuffer  = software_framebuffer_create(framebuffer_resolution.x, framebuffer_resolution.y);
 
     if (global_game_texture_surface) {
         SDL_DestroyTexture(global_game_texture_surface);
+        global_game_texture_surface = NULL;
     }
 
     global_game_texture_surface = SDL_CreateTexture(global_game_sdl_renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STREAMING, global_default_framebuffer.width, global_default_framebuffer.height);

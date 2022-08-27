@@ -1,3 +1,4 @@
+/* TODO: Regression! The "LOOK" cursor does not seem to work if not at native resolution(640x480), or maybe stopped working anymore? */
 enum battle_ui_animation_phase {
     BATTLE_UI_FADE_IN_DARK,
     BATTLE_UI_FLASH_IN_BATTLE_TEXT,
