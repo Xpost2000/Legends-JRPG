@@ -952,7 +952,7 @@ local void render_combat_area_information(struct game_state* state, struct rende
                         union color32u8 color = color32u8(0, 0, 255, 128);
 
                         if (ability->selection_type == ABILITY_SELECTION_TYPE_FIELD_SHAPE) {
-                            if (grid_x == x_index && grid_y == y_index) {
+                            if (global_battle_ui_state.ability_target_x == x_index && global_battle_ui_state.ability_target_y == y_index) {
                                 color = color32u8(255, 0, 0, 128);
                             }
                         }
