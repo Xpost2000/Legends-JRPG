@@ -81,4 +81,18 @@ static struct entity_stat_block_modifiers entity_stat_block_modifiers_identity =
         .luck                                                       = 1,
     };
 
+/* This is the generic damage formula */
+/* Does not account for defense. */
+f32 damage_formula_raw2(s32 entity_level, f32 factor_a, f32 factor_a_contribution, f32 factor_b, f32 factor_b_contribution) {
+    f32 factor_a_amount = factor_a * factor_a_contribution;
+    f32 factor_b_amount = factor_b * factor_b_contribution;
+
+    return (factor_a_amount + factor_b_amount)/2 * (0.9 + (f32)(entity_level*entity_level)/50);
+}
+/* Singular factors have the potential to be stronger. */
+f32 damage_formula_raw(s32 entity_leve, f32 factor_a, f32 factor_a_contribution) {
+    f32 factor_a_amount = factor_a * factor_a_contribution;
+    return (factor_a_amount)/1.3 * (0.9 + (f32)(entity_level*entity_level)/50);
+}
+
 #endif

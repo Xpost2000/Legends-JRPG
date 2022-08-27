@@ -113,6 +113,13 @@ vast majority of my problems.
 This should be trivial, my audio system should have a very sane design.
 *** TODO Scenario writing.
 *** TODO [extra] Figure out some decent damage calculations
+I guess I'm technically doing this now on Desmos.
+
+Constraints are:
+Low Level = 1
+Max Level = 45
+Low  Stat  = 10
+High Stat  = 1000
 ** Sunday
 
 * OLD TASK LIST. 

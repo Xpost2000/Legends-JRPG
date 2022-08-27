@@ -94,6 +94,9 @@ struct item_def {
         Entity_Stat_Block_Base(s32);
     } stats;
 
+    /* armor stat calculations DR */
+    s32 defensive_value;
+
     /* TODO: not flags anymore */
     u8 equipment_slot_flags;
 
