@@ -172,7 +172,7 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
 
     /* These all need to be animated and polished much more in the future. */
     switch (global_battle_ui_state.submode) {
-        case BATTLE_UI_SUBMODE_NONE: {
+        case BATTLE_UI_SUBMODE_NONE: { /* I want to also show this main menu during specific UIs but whatever. */
             union color32f32 modulation_color = color32f32_WHITE;
             union color32f32 ui_color         = UI_BATTLE_COLOR;
 
@@ -279,8 +279,7 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                                 global_battle_ui_state.submode = BATTLE_UI_SUBMODE_ATTACKING;
                             } break;
                             case BATTLE_ABILITY: {
-                                /* global_battle_ui_state.submode = BATTLE_UI_SUBMODE_USING_ABILITY; */
-                                _debugprintf("TODO: using abilities!");
+                                global_battle_ui_state.submode = BATTLE_UI_SUBMODE_USING_ABILITY;
                             } break;
                             case BATTLE_ITEM: {
                                 /* global_battle_ui_state.submode = BATTLE_UI_SUBMODE_USING_ITEM; */
@@ -395,10 +394,8 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
 
             {
                 if (is_key_pressed(KEY_W)) {
-                    _debugprintf("nani?");
                     proposed_y--;
                 } else if (is_key_pressed(KEY_S)) {
-                    _debugprintf("nani?");
                     proposed_y++;
                 }
 
@@ -414,10 +411,8 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
 
             {
                 if (is_key_pressed(KEY_A)) {
-                    _debugprintf("nani?");
                     proposed_x--;
                 } else if (is_key_pressed(KEY_D)) {
-                    _debugprintf("nani?");
                     proposed_x++;
                 }
 
@@ -476,8 +471,44 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
             
         } break;
 
+        case BATTLE_UI_SUBMODE_USING_ABILITY: {
+            struct entity* user = game_get_player(state);
+            s32 BOX_WIDTH  = 8;
+            s32 BOX_HEIGHT = 1 + 2 * user->ability_count;
+
+            v2f32 ui_box_size     = nine_patch_estimate_extents(ui_chunky, 1, BOX_WIDTH, BOX_HEIGHT);
+            v2f32 ui_box_position = v2f32(framebuffer->width*0.9-ui_box_size.x, 50);
+            draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, ui_box_position, BOX_WIDTH, BOX_HEIGHT, UI_BATTLE_COLOR);
+
+            if (selection_up) {
+                global_battle_ui_state.selection--;
+                if (global_battle_ui_state.selection < 0) {
+                    global_battle_ui_state.selection = user->ability_count-1;
+                }
+            } else if (selection_down) {
+                global_battle_ui_state.selection++;
+                if (global_battle_ui_state.selection >= user->ability_count) {
+                    global_battle_ui_state.selection = 0;
+                }
+            }
+
+            for (s32 ability_index = 0; ability_index < user->ability_count; ++ability_index) {
+                struct font_cache* painting_font = normal_font;
+                struct entity_ability_slot slot = user->abilities[ability_index];
+                /* should keep track of ability count. */
+                struct entity_ability*     ability = dereference_ability(slot.ability);
+
+                if (ability_index == global_battle_ui_state.selection) {
+                    painting_font = highlighted_font;
+                }
+
+                draw_ui_breathing_text(framebuffer, v2f32(ui_box_position.x + 10, ui_box_position.y + 10 + ability_index * 32), painting_font,
+                                       2, ability->name, ability_index, color32f32_WHITE);
+            }
+        } break;
+
         case BATTLE_UI_SUBMODE_LOOKING: {
-            /**/
+            /* This could be done more cleanly with a better input layer where I can change the layer of control but this is okay too... */
             {
                 if (!global_battle_ui_state.remembered_original_camera_position) {
                     global_battle_ui_state.remembered_original_camera_position = true;
@@ -619,6 +650,10 @@ local void draw_battle_tooltips(struct game_state* state, struct software_frameb
             tip = analyze_entity_and_display_tooltip(&scratch_arena,
                                                      v2f32(state->camera.xy.x - 4, state->camera.xy.y - 4),
                                                      state);
+        } break;
+        case BATTLE_UI_SUBMODE_USING_ABILITY: {
+            struct entity_ability* ability = dereference_ability(game_get_player(state)->abilities[global_battle_ui_state.selection].ability);
+            tip = ability->description;
         } break;
         case BATTLE_UI_SUBMODE_NONE: {
             tip = battle_menu_main_option_descriptions[global_battle_ui_state.selection];

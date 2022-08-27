@@ -31,3 +31,7 @@ entity_ability_id find_ability_by_name(string id_name) {
 struct entity_ability* dereference_ability(entity_ability_id id) {
     return global_ability_database.abilities + id.index;
 }
+
+void build_ability_database(void) {
+    
+}

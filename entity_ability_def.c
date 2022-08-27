@@ -27,6 +27,8 @@ struct entity_ability {
     string name;
     string description;
     u8 selection_type;
+    u8 moving_field;   /* Disgaea style selection. Whether the selection field is planted or movable */
+    /* Should support reflection of 90 degrees for all fields... */
     u8 selection_field[ENTITY_ABILITY_SELECTION_FIELD_MAX_Y][ENTITY_ABILITY_SELECTION_FIELD_MAX_X];
     /* TODO add animation sequence to do things */
 };
@@ -48,6 +50,7 @@ struct entity_ability_slot {
 };
 
 void                   initialize_ability_database(struct memory_arena* arena);
+void                   build_ability_database(void);
 entity_ability_id      add_ability_to_database(struct entity_ability ability, string id_name);
 entity_ability_id      find_ability_by_name(string id_name);
 struct entity_ability* dereference_ability(entity_ability_id id);

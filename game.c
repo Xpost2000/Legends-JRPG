@@ -1005,6 +1005,11 @@ void game_initialize(void) {
     /* selection_sword_img   = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/selection_sword.png")); */
     global_entity_models = entity_model_database_create(&game_arena, 512);
 
+    initialize_ability_database(&game_arena);
+    {
+        build_ability_database();
+    }
+
     game_script_initialize(&game_arena);
 
     passive_speaking_dialogues = memory_arena_push(&game_arena, MAX_PASSIVE_SPEAKING_DIALOGUES * sizeof(*passive_speaking_dialogues));
@@ -1029,6 +1034,12 @@ void game_initialize(void) {
     player_id                      = entity_list_create_player(&game_state->permenant_entities, v2f32(70, 70));
     entity_list_create_badguy(&game_state->permenant_entities, v2f32(8 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE));
     entity_list_create_badguy(&game_state->permenant_entities, v2f32(11 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE));
+
+    {
+        struct entity* player = game_get_player(state);
+        entity_add_ability(player, string_literal("ability_shock"));
+        entity_add_ability(player, string_literal("ability_sword_rush"));
+    }
 
     {
         {
@@ -1074,7 +1085,7 @@ void game_initialize_game_world(void) {
 
 #if 1
     /* game_open_conversation_file(game_state, string_literal("./dlg/linear_test.txt")); */
-    game_open_conversation_file(game_state, string_literal("./dlg/simple_choices.txt"));
+    /* game_open_conversation_file(game_state, string_literal("./dlg/simple_choices.txt")); */
     /* load_level_from_file(game_state, string_literal("pf.area")); */
 #endif
     /* load_level_from_file(game_state, string_literal("bt.area")); */
