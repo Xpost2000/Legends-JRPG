@@ -7,7 +7,9 @@ local void add_all_combat_participants(struct game_state* state) {
     struct entity_iterator it = game_entity_iterator(state);
 
     for (struct entity* current_entity = entity_iterator_begin(&it); !entity_iterator_finished(&it); current_entity = entity_iterator_advance(&it)) {
+        /* snap everyone to the combat grid (might be a bit jarring, which is okay for the demo.) */
         if (current_entity->flags & ENTITY_FLAGS_ALIVE) {
+            entity_snap_to_grid_position(current_entity);
             current_entity->waiting_on_turn                   = true;
             current_entity->ai.wait_timer                     = 0;
             combat_state->participants[combat_state->count++] = it.current_id;

@@ -72,6 +72,14 @@ It's okay, since this is the first time in a while I'm working on the project so
 
 Sunday is the day I'm not supposed to be doing as much but that's okay that I'm slacking a little.
 
+*** TODO Command Line / Command Entering
+This is just useful for debugging. Very very useful. I would like
+more advanced debugging tools but it simply shouldn't be required,
+I just need to be able to input commands and that might solve the
+vast majority of my problems.
+*** TODO SDL2 Mixer Audio Backend.
+This should be trivial, my audio system should have a very sane design.
+
 *** TODO Combat System changes
 :LOGBOOK:
 CLOCK: [2022-08-27 Sat 15:20]--[2022-08-27 Sat 15:24] =>  0:04
@@ -80,6 +88,11 @@ CLOCK: [2022-08-27 Sat 13:27]--[2022-08-27 Sat 15:04] =>  1:37
 These are some more adjustments to the combat system core.
 
 We don't have really many items right now,
+
+I have some of the ability UI done which is very nice I guess. Going to level design later... So I can still get some work that isn't
+engine work done.
+
+- [ ] Entity selection with abilities (and highlighting obviously.)
 - [ ] Add the usage of abilities
   I haven't quite figured out the uh, animation problem. Since there
   may be many complexities in the animation. Now anyway this is done
@@ -108,13 +121,6 @@ in it's mechanics, complicated with it's execution.
 Items don't need to be able to do literally everything. If they need to
 do more impressive things, we will handle that when the time comes however
 we need to basically only assume a few basica archetypes of items.
-*** TODO Command Line / Command Entering
-This is just useful for debugging. Very very useful. I would like
-more advanced debugging tools but it simply shouldn't be required,
-I just need to be able to input commands and that might solve the
-vast majority of my problems.
-*** TODO [extra] SDL2 Mixer Audio Backend.
-This should be trivial, my audio system should have a very sane design.
 *** TODO Scenario writing.
 *** TODO [extra] Figure out some decent damage calculations
 I guess I'm technically doing this now on Desmos.

@@ -216,7 +216,7 @@ local void initialize_framebuffer(void) {
 
     /* I know these sound like constants. They really aren't... */
     SCREEN_WIDTH  = framebuffer_resolution.x;
-    SCREEN_HEIGHT = framebuffer_resolution.y;
+    SCREEN_HEIGHT = 480;
 
 
     /* TODO: Seems to be a variable crash sometimes. Check this later. */

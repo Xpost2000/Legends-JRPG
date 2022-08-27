@@ -17,7 +17,7 @@ void weather_start_rain(struct game_state* state) {
     /* NOTE needs framebuffer to determine width/height */
     for (s32 index = 0; index < MAX_WEATHER_PARTICLES; ++index) {
         v2f32* rain_droplet_position = weather->rain_positions + index;
-        rain_droplet_position->x = random_ranged_integer(&state->rng, 0, 640);
+        rain_droplet_position->x = random_ranged_integer(&state->rng, 0, SCREEN_WIDTH);
         rain_droplet_position->y = random_ranged_integer(&state->rng, 0, 480) - 480;
     }
 
@@ -33,7 +33,7 @@ void weather_start_snow(struct game_state* state) {
     /* NOTE needs framebuffer to determine width/height */
     for (s32 index = 0; index < MAX_WEATHER_PARTICLES; ++index) {
         v2f32* snow_droplet_position = weather->snow_positions + index;
-        snow_droplet_position->x = random_ranged_integer(&state->rng, 0, 640);
+        snow_droplet_position->x = random_ranged_integer(&state->rng, 0, SCREEN_WIDTH);
         snow_droplet_position->y = random_ranged_integer(&state->rng, 0, 480) - 480;
     }
 

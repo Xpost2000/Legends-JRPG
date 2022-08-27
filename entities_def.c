@@ -249,6 +249,13 @@ struct entity {
     s32                           interacted_script_trigger_ids[32];
 };
 
+void entity_snap_to_grid_position(struct entity* entity) {
+    v2f32 position   = entity->position;
+    position.x       = floorf(position.x / TILE_UNIT_SIZE) * TILE_UNIT_SIZE;
+    position.y       = floorf(position.y / TILE_UNIT_SIZE) * TILE_UNIT_SIZE;
+    entity->position = position;
+}
+
 void entity_add_ability_by_name(struct entity* entity, string id) {
     if (entity->ability_count < ENTITY_MAX_ABILITIES) {
         struct entity_ability_slot* ability_slot = &entity->abilities[entity->ability_count++];
