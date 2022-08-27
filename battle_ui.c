@@ -164,6 +164,8 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
 
     bool selection_down    = is_key_down_with_repeat(KEY_DOWN);
     bool selection_up      = is_key_down_with_repeat(KEY_UP);
+    bool selection_left    = is_key_down_with_repeat(KEY_LEFT);
+    bool selection_right   = is_key_down_with_repeat(KEY_RIGHT);
     bool selection_confirm = is_key_pressed(KEY_RETURN);
     bool selection_cancel  = is_key_pressed(KEY_BACKSPACE);
 
@@ -511,12 +513,19 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
 
                 if (selection_confirm) {
                     global_battle_ui_state.selecting_ability_target = true;
-                    global_battle_ui_state.ability_target_x = user->position.x/TILE_UNIT_SIZE;
-                    global_battle_ui_state.ability_target_y = user->position.y/TILE_UNIT_SIZE;
+
+                    struct entity_ability_slot slot = user->abilities[global_battle_ui_state.selection];
+                    struct entity_ability*     ability = dereference_ability(slot.ability);
+
+                    if (ability->selection_type == ABILITY_SELECTION_TYPE_FIELD_SHAPE) {
+                        global_battle_ui_state.ability_target_x = ENTITY_ABILITY_SELECTION_FIELD_CENTER_X;
+                        global_battle_ui_state.ability_target_y = ENTITY_ABILITY_SELECTION_FIELD_CENTER_Y;
+                    } else {
+                        global_battle_ui_state.ability_target_x = user->position.x/TILE_UNIT_SIZE;
+                        global_battle_ui_state.ability_target_y = user->position.y/TILE_UNIT_SIZE;
+                    }
 
                     {
-                        struct entity_ability_slot slot = user->abilities[global_battle_ui_state.selection];
-                        struct entity_ability*     ability = dereference_ability(slot.ability);
                         copy_selection_field_rotated_as(ability, (u8*)global_battle_ui_state.selection_field, facing_direction_to_quadrant(user->facing_direction));
                     }
                 }
@@ -577,7 +586,39 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                     }
                 }
             } else {
-                
+                bool recalculate_selection_field = false;
+                struct entity_ability_slot slot = user->abilities[global_battle_ui_state.selection];
+                struct entity_ability*     ability = dereference_ability(slot.ability);
+
+                if (ability->selection_type == ABILITY_SELECTION_TYPE_FIELD && !ability->moving_field) {
+                    if (selection_up) {
+                        user->facing_direction = DIRECTION_UP;
+                        recalculate_selection_field = true;
+                    } else if (selection_down) {
+                        user->facing_direction = DIRECTION_DOWN;
+                        recalculate_selection_field = true;
+                    } else if (selection_right) {
+                        user->facing_direction = DIRECTION_RIGHT;
+                        recalculate_selection_field = true;
+                    } else if (selection_left) {
+                        user->facing_direction = DIRECTION_LEFT;
+                        recalculate_selection_field = true;
+                    }
+                } else {
+                    if (selection_up) {
+                        global_battle_ui_state.ability_target_y -= 1;
+                    } else if (selection_down) {
+                        global_battle_ui_state.ability_target_y += 1;
+                    } else if (selection_right) {
+                        global_battle_ui_state.ability_target_x += 1;
+                    } else if (selection_left) {
+                        global_battle_ui_state.ability_target_x -= 1;
+                    }
+                }
+
+                if (recalculate_selection_field) {
+                    copy_selection_field_rotated_as(ability, (u8*)global_battle_ui_state.selection_field, facing_direction_to_quadrant(user->facing_direction));
+                }
             }
         } break;
 
