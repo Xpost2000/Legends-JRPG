@@ -61,6 +61,12 @@ struct battle_ui_state {
     bool selecting_ability_target;
     /* I need to copy this to allow myself to rotate the grid. */
     u8   selection_field[ENTITY_ABILITY_SELECTION_FIELD_MAX_Y][ENTITY_ABILITY_SELECTION_FIELD_MAX_X];
+
+    /* NOTE: This coordinate means different things based on the mode of selection*/
+    /*
+      if it's FIELD it's an absolute world coordinate
+      if it's a FIELD SHAPE it's relative to the grid itself.
+     */
     s32 ability_target_x;
     s32 ability_target_y;
 
@@ -869,6 +875,45 @@ local void render_combat_area_information(struct game_state* state, struct rende
         for (s32 index = 0; index < global_battle_ui_state.max_remembered_path_points_count; ++index) {
             v2f32 point = global_battle_ui_state.max_remembered_path_points[index];
             render_commands_push_quad(commands, rectangle_f32(point.x * TILE_UNIT_SIZE, point.y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE), color32u8(255, 0, 255, 128), BLEND_MODE_ALPHA);
+        }
+    }
+
+    if (global_battle_ui_state.submode == BATTLE_UI_SUBMODE_USING_ABILITY) {
+        struct entity* user = game_get_player(state);
+
+        if (global_battle_ui_state.selecting_ability_target) {
+            struct entity_ability* ability = dereference_ability(user->abilities[global_battle_ui_state.selection].ability);
+
+            s32 grid_x = 0;
+            s32 grid_y = 0;
+
+            if (ability->selection_type == ABILITY_SELECTION_TYPE_FIELD_SHAPE) {
+                grid_x = user->position.x / TILE_UNIT_SIZE;
+                grid_y = user->position.y / TILE_UNIT_SIZE;
+            } else if (ability->selection_type == ABILITY_SELECTION_TYPE_FIELD) {
+                grid_x = global_battle_ui_state.ability_target_x;
+                grid_y = global_battle_ui_state.ability_target_y;
+            }
+
+            /* Coordinate centering. */
+            grid_x -= ENTITY_ABILITY_SELECTION_FIELD_CENTER_X;
+            grid_y -= ENTITY_ABILITY_SELECTION_FIELD_CENTER_Y;
+
+            for (s32 y_index = 0; y_index < ENTITY_ABILITY_SELECTION_FIELD_MAX_Y; ++y_index) {
+                for (s32 x_index = 0; x_index < ENTITY_ABILITY_SELECTION_FIELD_MAX_X; ++x_index) {
+                    if (ability->selection_field[y_index][x_index]) {
+                        union color32u8 color = color32u8(0, 0, 255, 128);
+
+                        if (ability->selection_type == ABILITY_SELECTION_TYPE_FIELD_SHAPE) {
+                            if (grid_x == x_index && grid_y == y_index) {
+                                color = color32u8(255, 0, 0, 128);
+                            }
+                        }
+
+                        render_commands_push_quad(commands, rectangle_f32(grid_x * TILE_UNIT_SIZE + x_index * TILE_UNIT_SIZE, grid_y * TILE_UNIT_SIZE + y_index * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE), color, BLEND_MODE_ALPHA);
+                    }
+                }
+            }
         }
     }
 }
