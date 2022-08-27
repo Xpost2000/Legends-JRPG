@@ -1,3 +1,9 @@
+/*
+  This should probably all stop depending on the player as the main target since that's
+  not good if we want multiple party members lol.
+ */
+
+
 enum battle_ui_animation_phase {
     BATTLE_UI_FADE_IN_DARK,
     BATTLE_UI_FLASH_IN_BATTLE_TEXT,
@@ -178,7 +184,6 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
             draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, v2f32(x, y), 8, 14, ui_color);
 
             bool disabled_actions[array_count(battle_menu_main_options)] = {};
-
             /* disable selecting attack if we don't have anyone within attack range */
             {
                 f32 attack_radius = 3;
@@ -201,7 +206,12 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
             }
             {
                 /* when the user is ability locked... TODO */
-                disabled_actions[BATTLE_ABILITY];
+                struct entity* user = game_get_player(state);
+
+                {
+                    if (user->ability_count > 0) disabled_actions[BATTLE_ABILITY] = false;
+                    else                         disabled_actions[BATTLE_ABILITY] = true;
+                }
             }
 
 
