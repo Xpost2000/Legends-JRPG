@@ -513,6 +513,12 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                     global_battle_ui_state.selecting_ability_target = true;
                     global_battle_ui_state.ability_target_x = user->position.x/TILE_UNIT_SIZE;
                     global_battle_ui_state.ability_target_y = user->position.y/TILE_UNIT_SIZE;
+
+                    {
+                        struct entity_ability_slot slot = user->abilities[global_battle_ui_state.selection];
+                        struct entity_ability*     ability = dereference_ability(slot.ability);
+                        copy_selection_field_rotated_as(ability, (u8*)global_battle_ui_state.selection_field, facing_direction_to_quadrant(user->facing_direction));
+                    }
                 }
 
                 f32 y_cursor = ui_box_position.y + 10;
@@ -901,7 +907,7 @@ local void render_combat_area_information(struct game_state* state, struct rende
 
             for (s32 y_index = 0; y_index < ENTITY_ABILITY_SELECTION_FIELD_MAX_Y; ++y_index) {
                 for (s32 x_index = 0; x_index < ENTITY_ABILITY_SELECTION_FIELD_MAX_X; ++x_index) {
-                    if (ability->selection_field[y_index][x_index]) {
+                    if (global_battle_ui_state.selection_field[y_index][x_index]) {
                         union color32u8 color = color32u8(0, 0, 255, 128);
 
                         if (ability->selection_type == ABILITY_SELECTION_TYPE_FIELD_SHAPE) {

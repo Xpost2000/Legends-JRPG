@@ -64,6 +64,17 @@ void build_ability_database(void) {
     }
 }
 
+s32 facing_direction_to_quadrant(s32 facing_dir) {
+    switch (facing_dir) {
+        case DIRECTION_LEFT : return 1;
+        case DIRECTION_UP   : return 0;
+        case DIRECTION_RIGHT: return 3;
+        case DIRECTION_DOWN : return 2;
+    }
+
+    return 0;
+}
+
 void copy_selection_field_rotated_as(struct entity_ability* ability, u8* field_copy, s32 quadrant) {
     quadrant %= 4;
 
