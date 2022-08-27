@@ -1,4 +1,3 @@
-/* TODO: Regression! The "LOOK" cursor does not seem to work if not at native resolution(640x480), or maybe stopped working anymore? */
 enum battle_ui_animation_phase {
     BATTLE_UI_FADE_IN_DARK,
     BATTLE_UI_FLASH_IN_BATTLE_TEXT,
@@ -554,7 +553,7 @@ local string analyze_entity_and_display_tooltip(struct memory_arena* arena, v2f3
     struct rectangle_f32 cursor_rect = rectangle_f32(cursor_at.x, cursor_at.y, 8, 8);
 
     struct entity_iterator it = game_entity_iterator(state);
-    for (struct entity* current_entity = entity_iterator_begin(&it); !entity_iterator_finished(&it) && target_entity_to_analyze; current_entity = entity_iterator_advance(&it)) {
+    for (struct entity* current_entity = entity_iterator_begin(&it); !entity_iterator_finished(&it) && !target_entity_to_analyze; current_entity = entity_iterator_advance(&it)) {
         if (current_entity->flags & ENTITY_FLAGS_ACTIVE) {
             struct rectangle_f32 entity_rectangle = entity_rectangle_collision_bounds(current_entity);
 
