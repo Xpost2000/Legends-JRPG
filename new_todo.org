@@ -73,6 +73,9 @@ It's okay, since this is the first time in a while I'm working on the project so
 Sunday is the day I'm not supposed to be doing as much but that's okay that I'm slacking a little.
 
 *** TODO Combat System changes
+:LOGBOOK:
+CLOCK: [2022-08-27 Sat 13:27]
+:END:
 These are some more adjustments to the combat system core.
 
 We don't have really many items right now,

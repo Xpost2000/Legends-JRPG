@@ -24,20 +24,24 @@ enum entity_ability_selection_mask {
                                          ABILITY_SELECTION_MASK_ALLIES)
 };
 
-/* TODO: Need to animate these things? */
 struct entity_ability {
     /* valid target selections */
+    string name;
+    string description;
     u8 selection_type;
     u8 selection_field[ENTITY_ABILITY_SELECTION_FIELD_MAX_Y][ENTITY_ABILITY_SELECTION_FIELD_MAX_X];
+    s32 mastery_usages;
+    /* TODO add animation sequence to do things */
 };
 
 typedef struct entity_ability_id {
-    s32 index;
+    s16 index;
 } entity_ability_id;
 
 struct entity_ability_slot {
     entity_ability_id ability;
     s32 usages;
+    u8 ability_level;
 };
 
 /* This needs to be augmented more... Oh well. Not my issue. */
@@ -230,6 +234,7 @@ enum entity_equip_slot_index {
     ENTITY_EQUIP_SLOT_INDEX_COUNT,
 };
 
+#define ENTITY_MAX_ABILITIES (2048)
 struct entity {
     string name;
 
@@ -262,6 +267,9 @@ struct entity {
         };
         item_id equip_slots[ENTITY_EQUIP_SLOT_INDEX_COUNT];
     };
+
+    s16 ability_count;
+    struct entity_ability_slot abilities[ENTITY_MAX_ABILITIES];
 
     s32_range                     health;
     s32_range                     magic;
@@ -328,15 +336,6 @@ void entity_combat_submit_attack_action(struct entity* entity, entity_id target_
 void entity_combat_submit_item_use_action(struct entity* entity, s32 item_index, struct entity* target);
 #endif
 
-/* I think it'd be a better future note to do something like
-
-   or something similar...
-   struct entities {
-   struct entity* permenant;
-   struct entity* temporary;
-   struct entity* per_level;
-   };
-*/
 struct entity_list {
     u8             store_type;
     s32*           generation_count;
