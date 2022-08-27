@@ -33,6 +33,7 @@ struct entity_ability {
 
 struct entity_ability_database {
     struct memory_arena* arena;
+    s32                    ability_count;
     struct entity_ability* abilities;
 };
 
@@ -46,8 +47,9 @@ struct entity_ability_slot {
     u8 ability_level;
 };
 
-void initialize_ability_database(struct memory_arena* arena);
-entity_ability_id add_ability_to_database(struct entity_ability ability);
-entity_ability_id find_ability_by_name(string id_name);
+void                   initialize_ability_database(struct memory_arena* arena);
+entity_ability_id      add_ability_to_database(struct entity_ability ability, string id_name);
+entity_ability_id      find_ability_by_name(string id_name);
+struct entity_ability* dereference_ability(entity_ability_id id);
 
 #endif
