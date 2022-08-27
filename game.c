@@ -1036,9 +1036,9 @@ void game_initialize(void) {
     entity_list_create_badguy(&game_state->permenant_entities, v2f32(11 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE));
 
     {
-        struct entity* player = game_get_player(state);
-        entity_add_ability(player, string_literal("ability_shock"));
-        entity_add_ability(player, string_literal("ability_sword_rush"));
+        struct entity* player = game_get_player(game_state);
+        entity_add_ability_by_name(player, string_literal("ability_shock"));
+        entity_add_ability_by_name(player, string_literal("ability_sword_rush"));
     }
 
     {

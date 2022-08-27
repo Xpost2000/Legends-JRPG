@@ -249,6 +249,13 @@ struct entity {
     s32                           interacted_script_trigger_ids[32];
 };
 
+void entity_add_ability_by_name(struct entity* entity, string id) {
+    if (entity->ability_count < ENTITY_MAX_ABILITIES) {
+        struct entity_ability_slot* ability_slot = &entity->abilities[entity->ability_count++];
+        ability_slot->ability = find_ability_by_name(id);
+    }
+}
+
 void entity_set_dialogue_file(struct entity* entity, string str) {
     
 }
