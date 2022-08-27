@@ -63,3 +63,17 @@ void build_ability_database(void) {
         add_ability_to_database(shock, string_literal("ability_shock"));
     }
 }
+
+void copy_selection_field_rotated_as(struct entity_ability* ability, u8* field_copy, s32 quadrant) {
+    quadrant %= 4;
+
+    for (s32 y = 0; y < ENTITY_ABILITY_SELECTION_FIELD_MAX_Y; ++y) {
+        for (s32 x = 0; x < ENTITY_ABILITY_SELECTION_FIELD_MAX_X; ++x) {
+            field_copy[y * ENTITY_ABILITY_SELECTION_FIELD_MAX_X + x] = ability->selection_field[y][x];
+        }
+    }
+
+    for (s32 rotations = 0; rotations < quadrant; ++rotations) {
+        /* -y rotation */
+    }
+}

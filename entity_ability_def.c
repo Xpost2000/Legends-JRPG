@@ -56,9 +56,21 @@ struct entity_ability {
 
       Like the number represents the minimum ability level required to see the slot as selectable or something.
     */
+    /* NOTE: This field is relative to direction */
+    /* the default shapes should assume the user is facing *up* */
     u8 selection_field[ENTITY_ABILITY_SELECTION_FIELD_MAX_Y][ENTITY_ABILITY_SELECTION_FIELD_MAX_X];
     /* TODO add animation sequence to do things */
 };
+
+/*
+  0 - north
+  1 - west
+  2 - south
+  3 - east
+
+  Counter clockwise rotations.
+ */
+void copy_selection_field_rotated_as(struct entity_ability* ability, u8* field_copy, s32 quadrant);
 
 struct entity_ability_database {
     struct memory_arena* arena;
