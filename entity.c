@@ -912,3 +912,5 @@ struct entity_iterator entity_iterator_clone(struct entity_iterator* base) {
 
     return iterator;
 }
+
+#include "entity_ability.c"
