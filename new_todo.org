@@ -74,7 +74,8 @@ Sunday is the day I'm not supposed to be doing as much but that's okay that I'm 
 
 *** TODO Combat System changes
 :LOGBOOK:
-CLOCK: [2022-08-27 Sat 13:27]
+CLOCK: [2022-08-27 Sat 15:20]--[2022-08-27 Sat 15:24] =>  0:04
+CLOCK: [2022-08-27 Sat 13:27]--[2022-08-27 Sat 15:04] =>  1:37
 :END:
 These are some more adjustments to the combat system core.
 
