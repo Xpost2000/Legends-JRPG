@@ -520,11 +520,30 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                 f32 square_size            = ui_box_size.x / ENTITY_ABILITY_SELECTION_FIELD_MAX_X;
                 f32 nearest_perfect_square = (square_size + 2);
 
+                struct entity_ability_slot slot = user->abilities[global_battle_ui_state.selection];
+                struct entity_ability*     ability = dereference_ability(slot.ability);
+
                 for (s32 y_index = 0; y_index < ENTITY_ABILITY_SELECTION_FIELD_MAX_Y; ++y_index) {
                     for (s32 x_index = 0; x_index < ENTITY_ABILITY_SELECTION_FIELD_MAX_X; ++x_index) {
                         f32 x_cursor = ui_box_position.x + 8 + x_index * nearest_perfect_square;
                         f32 y_cursor = ui_box_position.y + 8 + y_index * nearest_perfect_square;;
-                        software_framebuffer_draw_quad(framebuffer, rectangle_f32(x_cursor, y_cursor, square_size, square_size), color32u8(0,0,0,255), BLEND_MODE_ALPHA);
+
+                        union color32u8 grid_color = color32u8(0,0,0,255);
+
+                        {
+                            if (ability->selection_field[y_index][x_index]) {
+                                if (ability->selection_type == ABILITY_SELECTION_TYPE_FIELD) {
+                                    grid_color = color32u8(132, 140, 207, 255);
+                                } else {
+                                    grid_color = color32u8(225, 30, 30, 255);
+                                }
+
+                                if (y_index == ENTITY_ABILITY_SELECTION_FIELD_CENTER_Y && x_index == ENTITY_ABILITY_SELECTION_FIELD_CENTER_X)
+                                    grid_color = color32u8(30, 225, 30, 255);
+                            }
+                        }
+
+                        software_framebuffer_draw_quad(framebuffer, rectangle_f32(x_cursor, y_cursor, square_size, square_size), grid_color, BLEND_MODE_ALPHA);
                     }
                 }
             }
