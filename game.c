@@ -1813,7 +1813,7 @@ void update_and_render_game_console(struct game_state* state, struct software_fr
         start_text_edit(game_command_console_line_input, cstring_length(game_command_console_line_input));
         disable_game_input = false;
         /* single line of inputs */
-        software_framebuffer_draw_quad(framebuffer, rectangle_f32(0, 0, framebuffer->width, 32), color32u8(0, 0, 25, 128), BLEND_MODE_ALPHA);
+        software_framebuffer_draw_quad(framebuffer, rectangle_f32(0, 0, framebuffer->width, 17), color32u8(0, 0, 25, 128), BLEND_MODE_ALPHA);
 
         string draw_string = string_from_cstring(game_command_console_line_input);
 
@@ -1821,15 +1821,15 @@ void update_and_render_game_console(struct game_state* state, struct software_fr
             draw_string = string_from_cstring(current_text_buffer());
         }
 
-        software_framebuffer_draw_text(framebuffer, game_get_font(MENU_FONT_COLOR_GOLD), 2, v2f32(0, 0), draw_string, color32f32_WHITE, BLEND_MODE_ALPHA);
+        software_framebuffer_draw_text(framebuffer, game_get_font(MENU_FONT_COLOR_GOLD), 1, v2f32(0, 5), draw_string, color32f32_WHITE, BLEND_MODE_ALPHA);
 
         if (is_key_pressed(KEY_RETURN)) {
             end_text_edit(game_command_console_line_input, GAME_COMMAND_CONSOLE_LINE_INPUT_MAX);
 
             struct lisp_form code = lisp_read_form(&scratch_arena, string_from_cstring(game_command_console_line_input));
-            game_script_enqueue_form_to_execute(code);
-
-            zero_memory(game_command_console_line_input, array_count(game_command_console_line_input));
+            /* Since the console doesn't really need to wait ever. We can just evaluate forms straight up like this. */
+            game_script_evaluate_form(&scratch_arena, state, &code);
+            zero_memory(game_command_console_line_input, GAME_COMMAND_CONSOLE_LINE_INPUT_MAX);
         }
     } else {
         disable_game_input                 = game_command_before_disabled_input;
