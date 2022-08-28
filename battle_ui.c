@@ -162,12 +162,19 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
     struct font_cache* normal_font      = game_get_font(MENU_FONT_COLOR_WHITE);
     struct font_cache* highlighted_font = game_get_font(MENU_FONT_COLOR_GOLD);
 
+    if (disable_game_input) allow_input = false;
+
     bool selection_down    = is_key_down_with_repeat(KEY_DOWN);
     bool selection_up      = is_key_down_with_repeat(KEY_UP);
     bool selection_left    = is_key_down_with_repeat(KEY_LEFT);
     bool selection_right   = is_key_down_with_repeat(KEY_RIGHT);
     bool selection_confirm = is_key_pressed(KEY_RETURN);
     bool selection_cancel  = is_key_pressed(KEY_BACKSPACE);
+
+    /* TODO: weirdo */
+    if (!allow_input || game_command_console_enabled) {
+        selection_down = selection_up = selection_left = selection_right =  selection_confirm = selection_cancel = false;
+    }
 
     if (selection_cancel) {
         if (global_battle_ui_state.submode != BATTLE_UI_SUBMODE_NONE) {
@@ -641,6 +648,8 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
 }
 
 local void do_after_action_report_screen(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt, f32 y, bool allow_input) {
+    if (disable_game_input) allow_input = false;
+
     struct font_cache* normal_font      = game_get_font(MENU_FONT_COLOR_WHITE);
     struct font_cache* highlighted_font = game_get_font(MENU_FONT_COLOR_GOLD);
 
@@ -648,6 +657,11 @@ local void do_after_action_report_screen(struct game_state* state, struct softwa
     bool selection_up      = is_key_down_with_repeat(KEY_UP);
     bool selection_confirm = is_key_pressed(KEY_RETURN);
     bool selection_cancel  = is_key_pressed(KEY_BACKSPACE);
+
+    /* TODO: weirdo */
+    if (!allow_input || game_command_console_enabled) {
+        selection_down = selection_up = selection_confirm = selection_cancel = false;
+    }
 
     union color32f32 modulation_color = color32f32_WHITE;
     union color32f32 ui_color         = UI_BATTLE_COLOR;
