@@ -1756,6 +1756,8 @@ local void  do_ui_passive_speaking_dialogue(struct render_commands* commands, f3
 }
 
 #include "combat.c"
+
+#include "game_demo_alert.c"
 #include "game_main_menu.c"
 
 local void execute_current_area_scripts(struct game_state* state, f32 dt) {
@@ -1816,6 +1818,9 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
     
     {
         switch (screen_mode) {
+            case GAME_SCREEN_PREVIEW_DEMO_ALERT: {
+                update_and_render_preview_demo_alert(game_state, framebuffer, dt);
+            } break;
             case GAME_SCREEN_INGAME: {
                 struct entity* player_entity = game_get_player(game_state);
                 update_game_camera(game_state, dt);

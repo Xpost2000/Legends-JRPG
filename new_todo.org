@@ -93,6 +93,8 @@ I have some of the ability UI done which is very nice I guess. Going to level de
 engine work done.
 
 - [ ] Entity selection with abilities (and highlighting obviously.)
+- [ ] Confirmation of ability selection.
+- [ ] Also turn investment! (For now I will do pure turn based (just set action points to 0 after each action.))
 - [ ] Add the usage of abilities
   I haven't quite figured out the uh, animation problem. Since there
   may be many complexities in the animation. Now anyway this is done
@@ -103,13 +105,15 @@ engine work done.
   work without animations.
 
   I suspect the animations aren't going to be too difficult to do though.
-  
+*** TODO Combat Animations
+- [ ] Ability animation structure
 - [ ] Add standard attack animations
   While this technically requires more art, we can animate a violent bump
   for now if we lack any animations otherwise (along with a damage flash).
 
   This isn't very difficult to do. It will also be the default animation
   if we lack any other type of animation.
+
 *** TODO Items from Files
 Our item formats are probably going to be kept very simple. We're
 going to try to constrain what we can and cannot do for the sake

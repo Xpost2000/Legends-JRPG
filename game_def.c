@@ -392,11 +392,12 @@ struct game_state_combat_state {
 };
 
 enum game_screen_mode {
+    GAME_SCREEN_PREVIEW_DEMO_ALERT,
     GAME_SCREEN_MAIN_MENU,
     GAME_SCREEN_INGAME,
 };
 
-s32 screen_mode = GAME_SCREEN_MAIN_MENU;
+s32 screen_mode = GAME_SCREEN_PREVIEW_DEMO_ALERT;
 
 struct game_variable {
     // big names ****************
