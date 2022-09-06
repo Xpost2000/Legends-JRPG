@@ -1824,7 +1824,7 @@ void update_and_render_game_console(struct game_state* state, struct software_fr
         software_framebuffer_draw_text(framebuffer, game_get_font(MENU_FONT_COLOR_GOLD), 1, v2f32(0, 5), draw_string, color32f32_WHITE, BLEND_MODE_ALPHA);
 
         if (is_key_pressed(KEY_RETURN)) {
-            end_text_edit(game_command_console_line_input, GAME_COMMAND_CONSOLE_LINE_INPUT_MAX);
+            end_text_edit(game_command_console_line_input, GAME_COMMAND_CONSOLE_LINE_INPUT_MAX-1);
 
             struct lisp_form code = lisp_read_form(&scratch_arena, string_from_cstring(game_command_console_line_input));
             /* Since the console doesn't really need to wait ever. We can just evaluate forms straight up like this. */

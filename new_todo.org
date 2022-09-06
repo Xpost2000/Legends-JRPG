@@ -29,57 +29,34 @@ Third row is general overview of task types.
 
 * Tasks by Days of the Week
 ** Monday
-None.
 ** Tuesday
 None.
 ** Wednesday
 None this week.
 ** Thursday
-*** Story Writing!
-I'm going to mainly be trying to come up with a reasonable script for Act1's intro and middle point. That's going
-to mostly be done at night or whatever free time I have.
+Some of these goals are basically to finish off the main game loop, and theoretically put it into the
+content / polish stage. Mostly content first and some polish after. But we are very close to completing the core
+game loop. We should ideally be able to do it by that week but it's entirely possible I just can't accomplish that.
 
-Write in an act1.org file, with vague outlining. Doesn't really need organization. I don't really have a checklist since I obviously
-don't know how to quantify anything I'm doing.
+Who knows.
+*** TODO Fade out cutscene power
+Using for dreamy fade out sequences.
 
-However I should be able to have a rough outline of a more fleshed out Act 1. I do have the general outlines of the plot.
-** Friday
-This is a programming day! Let's get some codings done!
+(Screenshot the current framebuffer, then let it fade out into the new scene).
+Not very difficult and is a cheap effect I can do.
 
-This seems small, but these things are mostly polish and smaller things to provide
-motivation. If I can do these, it makes the incoming release of an Act1 seem more and more realistic.
+- [ ] Screenshot current buffer (of the game world, not with UI)
+- [ ] Allow fade out
 
-My game is not technically complicated to program or even create. However an RPG no matter how simple, the second
-we have graphics. Is an extremely difficult undertaking. Thankfully once we have something fleshed out I can take some time
-to learn pixel art to "remaster" the original act demos. Might be a bit of a pain in the ass though since it will take at least
-a month to even have a minor bump in graphical quality.
-
-However, the true mark of a creator is that they're willing to do whatever it takes for their vision. They have the motivation
-and drive to do what is necessary.
-
-I am a good programmer, and a good game developer. I *have to believe this* if I want this game to succeed, even if I actually
-think otherwise.
-
-Besides, I'm kind of motivated by getting to show this to Kelly... So I better make it good...
-
-** Saturday
-So again it did not seem like I was seriously expecting to finish all of this...
-
-I seem to always work two hours a day, and seem to call it quits at that discretion. So I know I can always
-do 2 hours. However I never seem to do more work... I *should* and *could* but I need to choose to do it.
-
-It's okay, since this is the first time in a while I'm working on the project so pushing back some stuff is okay.
-
-Sunday is the day I'm not supposed to be doing as much but that's okay that I'm slacking a little.
-
-*** TODO Command Line / Command Entering
-This is just useful for debugging. Very very useful. I would like
-more advanced debugging tools but it simply shouldn't be required,
-I just need to be able to input commands and that might solve the
-vast majority of my problems.
+*** TODO Sepia filter.
+Might need to figure out how to get this to blend properly with the grayscale filter
+tr = 0.393R + 0.769G + 0.189B
+tg = 0.349R + 0.686G + 0.168B
+tb = 0.272R + 0.534G + 0.131B
 *** TODO SDL2 Mixer Audio Backend.
 This should be trivial, my audio system should have a very sane design.
 
+*** TODO Adding gold!
 *** TODO Combat System changes
 :LOGBOOK:
 CLOCK: [2022-08-27 Sat 15:20]--[2022-08-27 Sat 15:24] =>  0:04
@@ -114,6 +91,10 @@ engine work done.
   This isn't very difficult to do. It will also be the default animation
   if we lack any other type of animation.
 
+*** TODO Getting the shop to actually work
+We have the UI for the shop system (done last week), but we never actually got it's behavior to work as intended.
+
+Also obviously, I want to animate stuff.
 *** TODO Items from Files
 Our item formats are probably going to be kept very simple. We're
 going to try to constrain what we can and cannot do for the sake
@@ -125,15 +106,29 @@ in it's mechanics, complicated with it's execution.
 Items don't need to be able to do literally everything. If they need to
 do more impressive things, we will handle that when the time comes however
 we need to basically only assume a few basica archetypes of items.
-*** TODO Scenario writing.
-*** TODO [extra] Figure out some decent damage calculations
-I guess I'm technically doing this now on Desmos.
 
-Constraints are:
-Low Level = 1
-Max Level = 45
-Low  Stat  = 10
-High Stat  = 1000
+*** TODO Entities will drop items at the end of battle
+*** TODO Parameter adjustable Postprocessing
+*** TODO Lighting
+We're doing a simple sprite per pixel lighting system. It will likely not obey obstructions to start, but that's okay for now.
+*** TODO Level Up Curve
+*** TODO ambient affectors (birds, light shafts, clouds, fog)
+These are minor, but easy things to program so the game looks less dumb.
+
+Might not do birds, probably just keeping clouds and fog.
+*** TODO Sprite Props/Objects (Generally these are custom scripted objects within the engine. Fun.)
+These things don't have to obey tile lock limitations but they can snap to the grid if needed. They are also separated
+into layers. These things will be done later, not necessarily needed.
+*** TODO Level planning,
+*** TODO More scenario writing
+*** TODO Entities defined from files
+*** TODO initial save record work
+After most of this we should be in good enough shape to start doing the save system as that would constitute most of the game mechanics.
+** Friday
+*** Story Writing!
+I'm going to mainly be trying to come up with a reasonable script for Act1's intro and middle point. That's going
+to mostly be done at night or whatever free time I have.
+** Saturday
 ** Sunday
 
 * OLD TASK LIST. 
