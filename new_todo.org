@@ -40,6 +40,8 @@ None of the inventory code understands how to scroll but we also don't simply ha
 There's a lot of dirt that needs to be cleaned up at some point.
 *** TODO Pathfinding stuck bug.
 This happens inconsistently, don't know what the cause of it is right now.
+*** TODO Minor shop related bugs.
+I suspect as I compress the shop code, it'll fix itself, but it's a little unwieldy.
 ** Monday
 ** Tuesday
 
@@ -61,10 +63,26 @@ and such don't really do anything to save files since the only place those thing
 IE: Schema-like data formats are okay to serialize pretty early since while their consequences are far reaching, that's its most
 powerful asset.
 
-*** TODO Getting the shop to actually work
+*** DONE Getting the shop to actually work
 We have the UI for the shop system (done last week), but we never actually got it's behavior to work as intended.
 
 Also obviously, I want to animate stuff.
+*** DONE Frozen weather?
+*** DONE Realign all sprites to be at a central reference point.
+All "entity" sprites should be aligned at their feet, and center. Once this code change is made all sprites
+should work without manual alignment, so long as they are made following the guy template guidelines. This makes
+most of the pixel art extremely easy to work with.
+*** DONE Draw Shadows for all entities (NPCs)
+*** DONE SDL2 Mixer Audio Backend.
+This should be trivial, my audio system should have a very sane design.
+
+*** DONE Adding gold!
+** Thursday
+NOTE This is most of the major game loop stuff. Once this is done we can start prototyping the game content
+almost full speed ahead!
+
+Cause then the game vision stuff will be immediately obvious since we have more game content stuff happening.
+
 *** TODO Items from Files
 Our item formats are probably going to be kept very simple. We're
 going to try to constrain what we can and cannot do for the sake
@@ -81,16 +99,6 @@ we need to basically only assume a few basica archetypes of items.
 We need some confirmations to make it better, although for now in the release candidate just to avoid spending time on
 the UI, I'll avoid this...
 *** TODO Allow the cart to remember which items I'm selecting.
-*** DONE Frozen weather?
-*** DONE Realign all sprites to be at a central reference point.
-All "entity" sprites should be aligned at their feet, and center. Once this code change is made all sprites
-should work without manual alignment, so long as they are made following the guy template guidelines. This makes
-most of the pixel art extremely easy to work with.
-*** DONE Draw Shadows for all entities (NPCs)
-*** DONE SDL2 Mixer Audio Backend.
-This should be trivial, my audio system should have a very sane design.
-
-*** TODO Adding gold!
 *** TODO Game Over State/Screen
 *** TODO Tile Data From Files
 *** TODO Add a more involved animation state system.
@@ -99,12 +107,6 @@ so we will include a separate animation state... state.
 
 I've learned that keeping state is the primary problem that surfaces even mildly complicated games, and the best way to handle that
 complexity is to bear wrestle it directly instead of trying to pretend it isn't there.
-
-** Thursday
-NOTE This is most of the major game loop stuff. Once this is done we can start prototyping the game content
-almost full speed ahead!
-
-Cause then the game vision stuff will be immediately obvious since we have more game content stuff happening.
 
 *** TODO "Fluid" Obstacles (Liquid Fire/Water/Oil/Acid)
 I need to draw and use autotiling for these, but they should be pretty easy...

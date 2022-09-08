@@ -1,6 +1,16 @@
 /*
   TODO: This should become the new basis for the inventory system UI.
   TODO: Needs a confirm menu.
+
+  I think the sanest solution is to actually just populate a filter list which will make this
+  not want me shoot myself.
+
+  Using these conditionals is frankly really fucking confusing.
+
+  And rewriting it to use a filtered array would be so much easier and faster than trying to work with whatever's
+  here.
+
+  We can try tomorrow morning...
 */
 enum shopping_ui_animation_phase {
     SHOPPING_UI_ANIMATION_PHASE_FADE_IN,
@@ -239,14 +249,28 @@ local void do_shopping_menu(struct software_framebuffer* framebuffer, f32 x, boo
         if (selection_down) {
             shopping_ui.shopping_item_index += 1;
 
-            if (shopping_ui.shopping_item_index >= shop->item_count) {
-                shopping_ui.shopping_item_index = 0;
+            if (shopping_ui.shopping_mode == SHOPPING_MODE_BUYING) {
+                if (shopping_ui.shopping_item_index >= shop->item_count) {
+                    shopping_ui.shopping_item_index = 0;
+                }
+            } else {
+                struct entity_inventory* inventory = (struct entity_inventory*)(&game_state->inventory);
+                if (shopping_ui.shopping_item_index >= inventory->count) {
+                    shopping_ui.shopping_item_index = 0;
+                }
             }
         } else if (selection_up) {
             shopping_ui.shopping_item_index -= 1;
 
-            if (shopping_ui.shopping_item_index < 0) {
-                shopping_ui.shopping_item_index = shop->item_count - 1;
+            if (shopping_ui.shopping_mode == SHOPPING_MODE_BUYING) {
+                if (shopping_ui.shopping_item_index < 0) {
+                    shopping_ui.shopping_item_index = shop->item_count - 1;
+                }
+            } else {
+                struct entity_inventory* inventory = (struct entity_inventory*)(&game_state->inventory);
+                if (shopping_ui.shopping_item_index < 0) {
+                    shopping_ui.shopping_item_index = inventory->count-1;
+                }
             }
         }
 
@@ -454,6 +478,54 @@ local void do_shopping_menu(struct software_framebuffer* framebuffer, f32 x, boo
         if (selection_confirmation) {
             _debugprintf("TODO: shop!"); 
             /* We would sell the item or buy the item now. Not implemented until needed. */
+            struct entity_inventory* inventory    = (struct entity_inventory*)(&game_state->inventory);
+            s32                      gold_count   = entity_inventory_count_instances_of(inventory, string_literal("item_gold"));
+
+            s32 current_shop_filter = find_shop_filter();
+
+            if (shopping_ui.shopping_mode == SHOPPING_MODE_BUYING) {
+                struct shop_instance* shop = &game_state->active_shop;
+
+                s32 remapped_index = 0;
+                for (s32 index = 0; index < shop->item_count; ++index) {
+                    struct shop_item* cart_item = &shop->items[index];
+                    struct item_def* item_base = item_database_find_by_id(cart_item->item);
+
+                    if (current_shop_filter != -1 && item_base->type != current_shop_filter) {
+                        continue;
+                    }
+
+                    /* We try to buy as much as possible, (which might be odd behavior but whatever...) */
+                    for (s32 count = 0; count < shopping_ui.cart_entry_count[remapped_index]; ++count) {
+                        if (purchase_item_from_shop_and_add_to_inventory(shop, inventory, MAX_PARTY_ITEMS, &gold_count, shop_item_id_standard(index))) {
+                            _debugprintf("thanks for shopping");
+                        }
+                    }
+                    remapped_index += 1;
+                }
+            } else {
+                s32 remapped_index = 0;
+
+                for (s32 index = 0; index < inventory->count; ++index) {
+                    struct item_instance* current_inventory_item = inventory->items + index;
+                    struct item_def* item_base = item_database_find_by_id(current_inventory_item->item);
+
+                    if (current_shop_filter != -1 && item_base->type != current_shop_filter) {
+                        continue;
+                    }
+
+                    for (s32 count = 0; count < shopping_ui.cart_entry_count[remapped_index]; ++count) {
+                        if (sell_item_to_shop(shop, inventory, MAX_PARTY_ITEMS, &gold_count, index)) {
+                            _debugprintf("thanks for selling");
+                        }
+                    }
+
+                    remapped_index += 1;
+                }
+            }
+
+            entity_inventory_set_gold_count(inventory, gold_count);
+            zero_array(shopping_ui.cart_entry_count);
         }
 
         if (selection_quit) {

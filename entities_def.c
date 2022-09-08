@@ -308,6 +308,7 @@ void entity_inventory_use_item(struct entity_inventory* inventory, s32 item_inde
 
 s32  entity_inventory_count_instances_of(struct entity_inventory* inventory, string item_name);
 s32  entity_inventory_get_gold_count(struct entity_inventory* inventory);
+void entity_inventory_set_gold_count(struct entity_inventory* inventory, s32 amount);
 
 void entity_combat_submit_movement_action(struct entity* entity, v2f32* path_points, s32 path_count);
 void entity_combat_submit_attack_action(struct entity* entity, entity_id target_id);

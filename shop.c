@@ -112,6 +112,7 @@ bool purchase_item_from_shop_and_add_to_inventory(struct shop_instance* shop, st
     *payment_source           = new_payment_source_price;
 
     entity_inventory_add(inventory, inventory_limits, target_item->item);
+    /* NOTE:  I should be removing it from the inventory if it's gone but whatever. Still provides the same effect... */
     if (target_item->count != SHOP_ITEM_INFINITE) target_item->count -= 1;
 
     update_buyback_inventory(shop);

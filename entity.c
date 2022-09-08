@@ -514,6 +514,20 @@ s32 entity_inventory_get_gold_count(struct entity_inventory* inventory) {
     return entity_inventory_count_instances_of(inventory, string_literal("item_gold"));
 }
 
+void entity_inventory_set_gold_count(struct entity_inventory* inventory, s32 amount) {
+    if (!entity_inventory_has_item(inventory, item_id_make(string_literal("item_gold")))) {
+        /* there should always be *some* room for gold, so not even going to bother getting limits... */
+        entity_inventory_add(inventory, 9999, item_id_make(string_literal("item_gold")));
+    } 
+
+    for (s32 index = 0; index < inventory->count; ++index) {
+        if (item_id_equal(inventory->items[index].item, item_id_make(string_literal("item_gold")))) {
+            inventory->items[index].count = amount;
+            break;
+        }
+    }
+}
+
 void entity_inventory_remove_item(struct entity_inventory* inventory, s32 item_index, bool remove_all) {
     struct item_instance* item = inventory->items + item_index;
     item->count -= 1;
