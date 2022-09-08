@@ -51,7 +51,11 @@ local void update_and_render_party_inventory_screen(struct game_state* state, st
         }
 
         char tmp[255] = {};
-        snprintf(tmp,255,"x%d/%d", inventory->items[index].count, item->max_stack_value);
+        if (item->max_stack_value == -1) {
+            snprintf(tmp,255,"x%d", inventory->items[index].count);
+        } else {
+            snprintf(tmp,255,"x%d/%d", inventory->items[index].count, item->max_stack_value);
+        }
         software_framebuffer_draw_text(framebuffer, font2, item_font_scale, v2f32(350, y_cursor), string_from_cstring(tmp), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
         y_cursor += item_font_scale * 16;
     }

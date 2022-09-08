@@ -474,7 +474,9 @@ void entity_inventory_add(struct entity_inventory* inventory, s32 limits, item_i
 
     for (unsigned index = 0; index < inventory->count; ++index) {
         if (inventory->items[index].item.id_hash == item.id_hash) {
-            if (inventory->items[index].count < item_base->max_stack_value) {
+            bool infinite_item = item_base->max_stack_value == -1;
+
+            if (infinite_item || inventory->items[index].count < item_base->max_stack_value) {
                 inventory->items[index].count++;
                 return;
             }
