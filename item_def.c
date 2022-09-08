@@ -103,7 +103,7 @@ struct item_def {
     struct entity_stat_block_modifiers modifiers;
 
     s32 flags;
-    s32 max_stack_value;
+    s32 max_stack_value; /* -1 == infinite... */
     s32 gold_value;
 
     /* 
@@ -152,68 +152,84 @@ local void init_item_icon(s32 index) {
 
 /* NOTE: need to load this from a file */
 static void initialize_items_database(void) {
-    item_database[0].id_name                  = string_literal("item_trout_fish_5");
-    item_database[0].name                     = string_literal("Dead Trout(?)");
-    item_database[0].description              = string_literal("I found this at the bottom of the river. Still edible.");
-    item_database[0].type                     = ITEM_TYPE_CONSUMABLE_ITEM;
-    item_database[0].health_restoration_value = 5;
-    item_database[0].gold_value               = 5;
-    item_database[0].max_stack_value          = 20;
-    init_item_icon(0);
+    s32 id = 0;
+    item_database[id].id_name                  = string_literal("item_gold");
+    item_database[id].name                     = string_literal("Gold");
+    item_database[id].description              = string_literal("What makes the world go round...");
+    item_database[id].type                     = ITEM_TYPE_MISC;
+    item_database[id].gold_value               = 1;
+    item_database[id].max_stack_value          = -1;
+    init_item_icon(id);
+    id += 1;
 
-    item_database[1].id_name                  = string_literal("item_sardine_fish_5");
-    item_database[1].name                     = string_literal("Dead Sardine(?)");
-    item_database[1].description              = string_literal("... Something about rule number one...");
-    item_database[1].type                     = ITEM_TYPE_CONSUMABLE_ITEM;
-    item_database[1].health_restoration_value = 5;
-    item_database[1].gold_value               = 5;
-    item_database[1].max_stack_value          = 20;
-    init_item_icon(1);
+    item_database[id].id_name                  = string_literal("item_trout_fish_5");
+    item_database[id].name                     = string_literal("Dead Trout(?)");
+    item_database[id].description              = string_literal("I found this at the bottom of the river. Still edible.");
+    item_database[id].type                     = ITEM_TYPE_CONSUMABLE_ITEM;
+    item_database[id].health_restoration_value = 5;
+    item_database[id].gold_value               = 5;
+    item_database[id].max_stack_value          = 20;
+    init_item_icon(id);
+    id += 1;
 
-    item_database[2].id_name                  = string_literal("item_armor_rags");
-    item_database[2].name                     = string_literal("Beggers' Rags");
-    item_database[2].description              = string_literal("Found these in the street. Smells off...");
-    item_database[2].stats.constitution       = 10;
-    item_database[2].stats.agility            = -10;
-    item_database[2].type                     = ITEM_TYPE_EQUIPMENT;
-    item_database[2].equipment_slot_flags     = EQUIPMENT_SLOT_FLAG_BODY;
-    item_database[2].modifiers                = entity_stat_block_modifiers_identity;
-    item_database[2].gold_value               = 50;
-    item_database[2].max_stack_value          = 20;
-    init_item_icon(2);
+    item_database[id].id_name                  = string_literal("item_sardine_fish_5");
+    item_database[id].name                     = string_literal("Dead Sardine(?)");
+    item_database[id].description              = string_literal("... Something about rule number one...");
+    item_database[id].type                     = ITEM_TYPE_CONSUMABLE_ITEM;
+    item_database[id].health_restoration_value = 5;
+    item_database[id].gold_value               = 5;
+    item_database[id].max_stack_value          = 20;
+    init_item_icon(id);
+    id += 1;
+
+    item_database[id].id_name                  = string_literal("item_armor_rags");
+    item_database[id].name                     = string_literal("Beggers' Rags");
+    item_database[id].description              = string_literal("Found these in the street. Smells off...");
+    item_database[id].stats.constitution       = 10;
+    item_database[id].stats.agility            = -10;
+    item_database[id].type                     = ITEM_TYPE_EQUIPMENT;
+    item_database[id].equipment_slot_flags     = EQUIPMENT_SLOT_FLAG_BODY;
+    item_database[id].modifiers                = entity_stat_block_modifiers_identity;
+    item_database[id].gold_value               = 50;
+    item_database[id].max_stack_value          = 20;
+    init_item_icon(id);
+    id += 1;
     
-    item_database[3].id_name                  = string_literal("item_armor_loincloth");
-    item_database[3].name                     = string_literal("Loincloth");
-    item_database[3].description              = string_literal("Fashioned from my old bathing towels.");
-    item_database[3].type                     = ITEM_TYPE_EQUIPMENT;
-    item_database[3].stats.constitution       = 10;
-    item_database[3].equipment_slot_flags     = EQUIPMENT_SLOT_FLAG_LEGS;
-    item_database[3].modifiers                = entity_stat_block_modifiers_identity;
-    item_database[3].gold_value               = 50;
-    item_database[3].max_stack_value          = 20;
-    init_item_icon(3);
+    item_database[id].id_name                  = string_literal("item_armor_loincloth");
+    item_database[id].name                     = string_literal("Loincloth");
+    item_database[id].description              = string_literal("Fashioned from my old bathing towels.");
+    item_database[id].type                     = ITEM_TYPE_EQUIPMENT;
+    item_database[id].stats.constitution       = 10;
+    item_database[id].equipment_slot_flags     = EQUIPMENT_SLOT_FLAG_LEGS;
+    item_database[id].modifiers                = entity_stat_block_modifiers_identity;
+    item_database[id].gold_value               = 50;
+    item_database[id].max_stack_value          = 20;
+    init_item_icon(id);
+    id += 1;
 
-    item_database[4].id_name                  = string_literal("item_armor_bandage_wraps");
-    item_database[4].name                     = string_literal("Bandages");
-    item_database[4].stats.constitution       = 20;
-    item_database[4].stats.agility            = -15;
-    item_database[4].description              = string_literal("These are still bloody!");
-    item_database[4].type                     = ITEM_TYPE_EQUIPMENT;
-    item_database[4].equipment_slot_flags     = EQUIPMENT_SLOT_FLAG_HANDS;
-    item_database[4].modifiers                = entity_stat_block_modifiers_identity;
-    item_database[4].gold_value               = 50;
-    item_database[4].max_stack_value          = 20;
-    init_item_icon(4);
+    item_database[id].id_name                  = string_literal("item_armor_bandage_wraps");
+    item_database[id].name                     = string_literal("Bandages");
+    item_database[id].stats.constitution       = 20;
+    item_database[id].stats.agility            = -15;
+    item_database[id].description              = string_literal("These are still bloody!");
+    item_database[id].type                     = ITEM_TYPE_EQUIPMENT;
+    item_database[id].equipment_slot_flags     = EQUIPMENT_SLOT_FLAG_HANDS;
+    item_database[id].modifiers                = entity_stat_block_modifiers_identity;
+    item_database[id].gold_value               = 50;
+    item_database[id].max_stack_value          = 20;
+    init_item_icon(id);
+    id += 1;
 
-    item_database[5].id_name                  = string_literal("item_accessory_wedding_ring");
-    item_database[5].name                     = string_literal("Wedding Ring");
-    item_database[5].description              = string_literal("Fetches a nice price at a vendor. Sanctity? What's that?");
-    item_database[5].type                     = ITEM_TYPE_EQUIPMENT;
-    item_database[5].equipment_slot_flags     = EQUIPMENT_SLOT_FLAG_MISC;
-    item_database[5].modifiers                = entity_stat_block_modifiers_identity;
-    item_database[5].gold_value               = 150;
-    item_database[5].max_stack_value          = 20;
-    init_item_icon(5);
+    item_database[id].id_name                  = string_literal("item_accessory_wedding_ring");
+    item_database[id].name                     = string_literal("Wedding Ring");
+    item_database[id].description              = string_literal("Fetches a nice price at a vendor. Sanctity? What's that?");
+    item_database[id].type                     = ITEM_TYPE_EQUIPMENT;
+    item_database[id].equipment_slot_flags     = EQUIPMENT_SLOT_FLAG_MISC;
+    item_database[id].modifiers                = entity_stat_block_modifiers_identity;
+    item_database[id].gold_value               = 150;
+    item_database[id].max_stack_value          = 20;
+    init_item_icon(id);
+    id += 1;
 }
 
 static struct item_def* item_database_find_by_id(item_id id) {

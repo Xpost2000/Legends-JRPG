@@ -1,6 +1,7 @@
 /*
   TODO: This should become the new basis for the inventory system UI.
- */
+  TODO: Needs a confirm menu.
+*/
 enum shopping_ui_animation_phase {
     SHOPPING_UI_ANIMATION_PHASE_FADE_IN,
     SHOPPING_UI_ANIMATION_PHASE_SELECT_SHOPPING_MODE,
@@ -82,6 +83,7 @@ local void shopping_ui_finish(void) {
     game_state->shopping = false;
 }
 
+/* There is duplicated code. Beware, and maybe try and shrink this. */
 local void do_shopping_menu(struct software_framebuffer* framebuffer, f32 x, bool allow_input) {
     struct font_cache* normal_font      = game_get_font(MENU_FONT_COLOR_WHITE);
     struct font_cache* highlighted_font = game_get_font(MENU_FONT_COLOR_GOLD);

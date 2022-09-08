@@ -1092,7 +1092,7 @@ void game_initialize(void) {
 }
 
 void game_initialize_game_world(void) {
-    entity_inventory_add((struct entity_inventory*)&game_state->inventory, MAX_PARTY_ITEMS, item_id_make(string_literal("item_trout_fish_5")));
+    for (s32 i = 0; i < 450; ++i) entity_inventory_add((struct entity_inventory*)&game_state->inventory, MAX_PARTY_ITEMS, item_id_make(string_literal("item_gold")));
     entity_inventory_add((struct entity_inventory*)&game_state->inventory, MAX_PARTY_ITEMS, item_id_make(string_literal("item_armor_rags")));
     entity_inventory_add((struct entity_inventory*)&game_state->inventory, MAX_PARTY_ITEMS, item_id_make(string_literal("item_armor_loincloth")));
     entity_inventory_add((struct entity_inventory*)&game_state->inventory, MAX_PARTY_ITEMS, item_id_make(string_literal("item_armor_bandage_wraps")));
@@ -1884,7 +1884,7 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                 execute_current_area_scripts(game_state, dt);
 
                 if (is_key_pressed(KEY_Y)) {
-                    /* game_begin_shopping(string_literal("basic")); */
+                    game_begin_shopping(string_literal("basic"));
 #if 0
                     passive_speaking_dialogue_push(player_id, string_literal("Hello world!"), MENU_FONT_COLOR_LIME);
 #endif
