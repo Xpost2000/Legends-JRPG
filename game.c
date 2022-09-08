@@ -1930,6 +1930,7 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                 game_script_execute_awaiting_scripts(&scratch_arena, game_state, dt);
                 game_script_run_all_timers(dt);
 
+                /* color "grading" should just be the lighting solution... TODO: when doing lighting generate a buffer and render into that. Don't worry about obstructions. Those don't matter anymore... */
                 render_commands_push_quad(&commands, rectangle_f32(commands.camera.xy.x-500,commands.camera.xy.y-500,9999,9999), global_color_grading_filter, BLEND_MODE_MULTIPLICATIVE);
                 software_framebuffer_render_commands(framebuffer, &commands);
                 game_postprocess_blur_ingame(framebuffer, 2, 0.62, BLEND_MODE_ALPHA);
@@ -1940,7 +1941,6 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                     software_framebuffer_render_commands(framebuffer, &commands);
                 }
 
-                /* color "grading" */
                 do_weather(framebuffer, game_state, dt);
                 update_and_render_game_menu_ui(game_state, framebuffer, dt);
                 update_and_render_game_console(game_state, framebuffer, dt);

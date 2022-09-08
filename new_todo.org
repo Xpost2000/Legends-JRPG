@@ -32,6 +32,45 @@ Third row is general overview of task types.
 | -      | -       | X         | Storyboard Writing   | Coding | Coding   | Coding/Art? |
 
 * Tasks by Days of the Week
+** Post-Release Candidate Important tasks.
+*** TODO Add a more involved animation state system.
+While the core animations are dictated by an implicit state animation system, sometimes we need to change things up a bit,
+so we will include a separate animation state... state.
+
+I've learned that keeping state is the primary problem that surfaces even mildly complicated games, and the best way to handle that
+complexity is to bear wrestle it directly instead of trying to pretend it isn't there.
+
+*** TODO Shopping Confirmation
+We need some confirmations to make it better, although for now in the release candidate just to avoid spending time on
+the UI, I'll avoid this...
+*** TODO Allow the cart to remember which items I'm selecting.
+*** TODO Think of doing an art retreat?
+I mean some of the art stuff here is strictly necessary, but after we have that strictly necessary art we can
+try a little harder to do some more stuff.
+
+Most of the visuals in the release candidate are supposed to merely be passable.
+
+*** TODO Weapon animations!
+This is mostly art related, I have to draw some placeholder "guy" animations to use as templates.
+*** TODO Combat Sprite Animations
+The RC version doesn't have combat sprite animations.
+*** TODO ambient affectors (birds, light shafts, clouds, fog)
+These are minor, but easy things to program so the game looks less dumb.
+
+Might not do birds, probably just keeping clouds and fog.
+
+These things however do take time and are non-essential.
+
+*** TODO Companion System
+While the game didn't originally have companions (in it's current iteration), I've decided to add companions for
+Act I and Act II.
+
+(The release candidate will have a slightly editted version of these acts.)
+
+- [ ] Following Companions in the overworld with basic flocking behavior?
+- [ ] Selecting where companions spawn on the battlefield when a fight begins
+- [ ] Controlling Companions
+After most of this we should be in good enough shape to start doing the save system as that would constitute most of the game mechanics.
 ** Later But unspecified
 *** TODO Cleanup in the future, remove scale field from entities. They are now redundant.
 *** TODO Code cleanup for the API stuff.
@@ -83,6 +122,15 @@ almost full speed ahead!
 
 Cause then the game vision stuff will be immediately obvious since we have more game content stuff happening.
 
+(In the interest with the release candidate soft "deadline" (which is either the end of the month or October 9th?)
+(which I might not even meet with my inconsistent schedule.)
+
+I need to start culling out unnecessary things or difficult things. Basically if I cannot think of a decent solution very
+quickly, I cannot spend time implementing it for the release candidate build because I need to get the rest of the game to work.
+
+So most of the combat animations will be phased out since I just cannot think of a great solution. I'll have to just use bumps and
+flashes (which are still going to be present in the full build, we just don't animate the sprite.))
+
 *** TODO Items from Files
 Our item formats are probably going to be kept very simple. We're
 going to try to constrain what we can and cannot do for the sake
@@ -95,22 +143,13 @@ Items don't need to be able to do literally everything. If they need to
 do more impressive things, we will handle that when the time comes however
 we need to basically only assume a few basica archetypes of items.
 
-*** TODO Shopping Confirmation
-We need some confirmations to make it better, although for now in the release candidate just to avoid spending time on
-the UI, I'll avoid this...
-*** TODO Allow the cart to remember which items I'm selecting.
 *** TODO Game Over State/Screen
 *** TODO Tile Data From Files
-*** TODO Add a more involved animation state system.
-While the core animations are dictated by an implicit state animation system, sometimes we need to change things up a bit,
-so we will include a separate animation state... state.
-
-I've learned that keeping state is the primary problem that surfaces even mildly complicated games, and the best way to handle that
-complexity is to bear wrestle it directly instead of trying to pretend it isn't there.
-
+*** TODO Particle System
 *** TODO "Fluid" Obstacles (Liquid Fire/Water/Oil/Acid)
 I need to draw and use autotiling for these, but they should be pretty easy...
 Also thankfully these only happen on one layer.
+*** TODO Enemy AI/Thinking
 *** TODO Combat System changes
 :LOGBOOK:
 CLOCK: [2022-08-27 Sat 15:20]--[2022-08-27 Sat 15:24] =>  0:04
@@ -150,9 +189,6 @@ This thing is actually now going to be inspired by Action Sequences from RPG Mak
 We have to have droppable items in the list, and obviously set percentages for drops. This isn't super difficult
 and can be specified as part of the entity drop system.
 *** TODO Think of cutscenes?
-*** TODO Think of doing an art retreat?
-I mean some of the art stuff here is strictly necessary, but after we have that strictly necessary art we can
-try a little harder to do some more stuff.
 *** TODO Do we have to page assets?
 While we may eventually convert all assets into palette bitmaps (Makes recoloring easier anyways), we have to
 right now use full color pngs, which are moderately expensive to store in memory. Though thankfully these sprites
@@ -180,11 +216,12 @@ tb = 0.272R + 0.534G + 0.131B
 *** TODO Parameter adjustable Postprocessing
 *** TODO Lighting
 We're doing a simple sprite per pixel lighting system. It will likely not obey obstructions to start, but that's okay for now.
-*** TODO Level Up Curve
-*** TODO ambient affectors (birds, light shafts, clouds, fog)
-These are minor, but easy things to program so the game looks less dumb.
+Yeah no obstructions, just full screenspace lighting.
 
-Might not do birds, probably just keeping clouds and fog.
+Color grading might serve as a minor obstacle as it convolutes the light masking system.
+
+(Probably just going to make an additive light that's going to be clamped...)
+*** TODO Level Up Curve
 *** TODO Sprite Props/Objects (Generally these are custom scripted objects within the engine. Fun.)
 These things don't have to obey tile lock limitations but they can snap to the grid if needed. They are also separated
 into layers. These things will be done later, not necessarily needed.
@@ -196,15 +233,6 @@ I'm probably going to avoid going too ham on the puzzle things and generally des
 *** TODO More scenario writing
 *** TODO Entities defined from files
 *** TODO initial save record work
-*** TODO Companion System
-While the game didn't originally have companions (in it's current iteration), I've decided to add companions for
-Act I and Act II.
-- [ ] Following Companions in the overworld with basic flocking behavior?
-- [ ] Selecting where companions spawn on the battlefield when a fight begins
-- [ ] Controlling Companions
-After most of this we should be in good enough shape to start doing the save system as that would constitute most of the game mechanics.
-*** TODO Weapon animations!
-This is mostly art related, I have to draw some placeholder "guy" animations to use as templates.
 *** TODO Synopsis Diary System?
 ** Friday
 ** Saturday

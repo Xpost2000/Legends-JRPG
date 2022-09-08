@@ -22,7 +22,7 @@ void entity_play_animation(struct entity* entity, string name) {
 struct rectangle_f32 entity_rectangle_collision_bounds(struct entity* entity) {
     f32 model_width_units = entity_model_get_width_units(entity->model_index);
 
-    return rectangle_f32(entity->position.x,
+    return rectangle_f32(entity->position.x+2.75, /* collision oddities, this removes sticking */
                          entity->position.y,
                          entity->scale.x * model_width_units,
                          entity->scale.y-10);
@@ -416,12 +416,12 @@ void render_entities(struct game_state* state, struct graphics_assets* graphics_
 
         bool should_shift_up = (real_dimensions.y / TILE_UNIT_SIZE) >= 1;
 
-        v2f32 alignment_offset = v2f32(0, real_dimensions.y * should_shift_up);
+        v2f32 alignment_offset = v2f32(0, real_dimensions.y * should_shift_up * 0.8);
 
         render_commands_push_image(commands,
                                    graphics_assets_get_image_by_id(graphics_assets, drop_shadow),
                                    rectangle_f32(current_entity->position.x - alignment_offset.x,
-                                                 current_entity->position.y - TILE_UNIT_SIZE*0.8,
+                                                 current_entity->position.y - TILE_UNIT_SIZE*0.4,
                                                  TILE_UNIT_SIZE * roundf(real_dimensions.x/TILE_UNIT_SIZE),
                                                  TILE_UNIT_SIZE * max(roundf(real_dimensions.y/(TILE_UNIT_SIZE*2)), 1)),
                                    RECTANGLE_F32_NULL, color32f32(1,1,1,0.72), NO_FLAGS, BLEND_MODE_ALPHA);
@@ -700,7 +700,7 @@ local s32 find_best_direction_index(v2f32 direction) {
 local void entity_update_and_perform_actions(struct game_state* state, struct entity* entity, struct level_area* area, f32 dt) {
     struct entity* target_entity = entity;
 
-    const f32 CLOSE_ENOUGH_EPISILON = 0.1556;
+    const f32 CLOSE_ENOUGH_EPISILON = 0.1896;
 
     switch (target_entity->ai.current_action) {
         case ENTITY_ACTION_NONE: {
