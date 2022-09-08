@@ -1072,6 +1072,7 @@ void game_initialize(void) {
 #else
         {
             s32 base_guy = entity_model_database_add_model(&game_arena, string_literal("critter_big"));
+            entity_model_set_width(base_guy, 2);
             entity_model_add_animation(base_guy, string_literal("down"),       1, 0);
         }
 #endif

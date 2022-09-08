@@ -406,7 +406,10 @@ void render_entities(struct game_state* state, struct graphics_assets* graphics_
         f32 scale_x = 2;
         
         v2f32 real_dimensions  = v2f32(sprite_dimensions.x * scale_x, sprite_dimensions.y * scale_x);
-        v2f32 alignment_offset = v2f32(0, real_dimensions.y);
+
+        bool should_shift_up = (real_dimensions.y / TILE_UNIT_SIZE) >= 1;
+
+        v2f32 alignment_offset = v2f32(0, real_dimensions.y * should_shift_up);
 
         /* TODO sprite model anchor NOTE: does not account for model size? */
         render_commands_push_image(commands,

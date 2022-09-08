@@ -8,9 +8,9 @@ struct entity_model_database entity_model_database_create(struct memory_arena* a
 s32 entity_model_database_add_model(struct memory_arena* arena, string name) {
     struct entity_model* result = &global_entity_models.models[global_entity_models.count++];
 
-    result->name = name;
+    result->name            = name;
     result->animation_count = 0;
-
+    result->width_units     = 1;
 
     return (s32)(result - global_entity_models.models);
 }
@@ -52,6 +52,11 @@ struct entity_animation* find_animation_by_name(s32 model_index, string name) {
 
     /* The engine should always guarantee the base animation "guy" exists. */
     return find_animation_by_name(FALLBACK_MODEL_ID, name);
+}
+
+void entity_model_set_width(s32 entity_model_id, f32 width_units) {
+    struct entity_model* model = &global_entity_models.models[entity_model_id];
+    model->width_units = width_units;
 }
 
 v2f32 entity_animation_get_frame_dimensions(struct entity_animation* anim, s32 frame) {
