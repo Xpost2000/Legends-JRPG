@@ -83,7 +83,7 @@ All "entity" sprites should be aligned at their feet, and center. Once this code
 should work without manual alignment, so long as they are made following the guy template guidelines. This makes
 most of the pixel art extremely easy to work with.
 *** DONE Draw Shadows for all entities (NPCs)
-*** TODO SDL2 Mixer Audio Backend.
+*** DONE SDL2 Mixer Audio Backend.
 This should be trivial, my audio system should have a very sane design.
 
 *** TODO Adding gold!

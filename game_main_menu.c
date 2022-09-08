@@ -156,10 +156,14 @@ local s32 main_menu_do_menu_ui(v2f32 where, struct software_framebuffer* framebu
 
     if (up) {
         (*option_ptr) -= 1;
+        _debugprintf("hi up");
+        play_sound(ui_blip);
     }
 
     if (down) {
         (*option_ptr) += 1;
+        _debugprintf("hi down");
+        play_sound(ui_blip);
     }
 
     if ((*option_ptr) < 0) {

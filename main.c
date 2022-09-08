@@ -313,8 +313,9 @@ void handle_sdl_events(void) {
 
 local void initialize(void) {
     SDL_Init(SDL_INIT_EVERYTHING);
-
     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, 0);
+
+    audio_initialize();
 
     /* global_game_window          = SDL_CreateWindow("RPG", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN); */
     global_game_window          = SDL_CreateWindow("RPG", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, REAL_SCREEN_WIDTH, REAL_SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
@@ -324,8 +325,6 @@ local void initialize(void) {
 
     game_initialize();
     initialize_framebuffer();
-
-    audio_initialize();
 }
 
 void deinitialize(void) {
