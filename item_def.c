@@ -20,6 +20,10 @@ item_id item_id_make(string id_name) {
     return result;
 }
 
+bool item_id_equal(item_id a, item_id b) {
+    return a.id_hash == b.id_hash;
+}
+
 struct item_instance {
     item_id item; 
     s32 count;/* for inventory stacking, as long as they are not equippable  */

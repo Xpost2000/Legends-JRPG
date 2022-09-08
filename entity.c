@@ -497,6 +497,23 @@ void entity_inventory_add_multiple(struct entity_inventory* inventory, s32 limit
     }
 }
 
+s32 entity_inventory_count_instances_of(struct entity_inventory* inventory, string item_name) {
+    s32 counter = 0;
+
+    item_id id_to_match = item_id_make(item_name);
+    for (s32 index = 0; index < inventory->count; ++index) {
+        if (item_id_equal(id_to_match, inventory->items[index].item)) {
+            counter += inventory->items[index].count;
+        }
+    }
+
+    return counter;
+}
+
+s32 entity_inventory_get_gold_count(struct entity_inventory* inventory) {
+    return entity_inventory_count_instances_of(inventory, string_literal("item_gold"));
+}
+
 void entity_inventory_remove_item(struct entity_inventory* inventory, s32 item_index, bool remove_all) {
     struct item_instance* item = inventory->items + item_index;
     item->count -= 1;
