@@ -36,6 +36,7 @@ s32 entity_model_add_animation(s32 entity_model_id, string name, s32 frames, f32
     return (model->animation_count-1);
 }
 
+#define FALLBACK_MODEL_ID (0)
 struct entity_animation* find_animation_by_name(s32 model_index, string name) {
     struct entity_model* model = &global_entity_models.models[model_index];
 
@@ -45,12 +46,21 @@ struct entity_animation* find_animation_by_name(s32 model_index, string name) {
         }
     }
 
+    if (model_index == FALLBACK_MODEL_ID) {
+        return NULL;
+    }
+
     /* The engine should always guarantee the base animation "guy" exists. */
-    return find_animation_by_name(0, name);
+    return find_animation_by_name(FALLBACK_MODEL_ID, name);
 }
 
 v2f32 entity_animation_get_frame_dimensions(struct entity_animation* anim, s32 frame) {
     v2f32 result = {};
+
+    if (frame >= anim->frame_count) {
+        frame = 0;
+    }
+
     image_id img = anim->sprites[frame];
     struct image_buffer* img_ptr = graphics_assets_get_image_by_id(&graphics_assets, img);
     result.x = img_ptr->width;

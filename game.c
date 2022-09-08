@@ -1048,6 +1048,7 @@ void game_initialize(void) {
     }
 
     {
+#if 0
         {
             /* TODO should add more frame granualarity. Oh well. */
             
@@ -1068,6 +1069,12 @@ void game_initialize(void) {
             entity_model_add_animation(base_guy, string_literal("dead"),       1, 0);
 
         }
+#else
+        {
+            s32 base_guy = entity_model_database_add_model(&game_arena, string_literal("critter_big"));
+            entity_model_add_animation(base_guy, string_literal("down"),       1, 0);
+        }
+#endif
     }
 
 #ifdef USE_EDITOR

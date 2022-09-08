@@ -381,6 +381,7 @@ void render_entities(struct game_state* state, struct graphics_assets* graphics_
         if (!anim) {
             _debugprintf("cannot find anim: %.*s. Falling back to \"down direction\"", current_entity->animation.name.length, current_entity->animation.name.data);
             anim = find_animation_by_name(model_index, string_literal("down"));
+            assertion(anim && "no fallback anim? That is bad!");
         }
 
         current_entity->animation.timer += dt;
