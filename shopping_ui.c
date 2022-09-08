@@ -123,10 +123,22 @@ local void do_gold_counter(struct software_framebuffer* framebuffer, f32 dt) {
                     continue;
                 }
 
-                current_cart_value += cart_item->price * shopping_ui.cart_entry_count[remapped_index];
+                current_cart_value += shop_item_get_effective_price(shop, shop_item_id_standard(index)) * shopping_ui.cart_entry_count[remapped_index];
                 remapped_index += 1;
             }
         } else {
+            s32 remapped_index = 0;
+            for (s32 index = 0; index < inventory->count; ++index) {
+                struct item_instance* current_inventory_item = inventory->items + index;
+                struct item_def* item_base = item_database_find_by_id(current_inventory_item->item);
+
+                if (current_shop_filter != -1 && item_base->type != current_shop_filter) {
+                    continue;
+                }
+
+                current_cart_value += item_base->gold_value * shopping_ui.cart_entry_count[remapped_index];
+                remapped_index += 1;
+            }
         }
     } 
 
@@ -277,14 +289,16 @@ local void do_shopping_menu(struct software_framebuffer* framebuffer, f32 x, boo
                             string cart_selection_text = {};
 
                             /* NOTE: This should be tabular but whatever. */
+                            s32 price = shop_item_get_effective_price(shop, shop_item_id_standard(item_index));
+
                             if (current_shop_item->count == SHOP_ITEM_INFINITE) {
-                                cart_selection_text = string_from_cstring(format_temp("%d", shopping_ui.cart_entry_count[item_index]));
+                                cart_selection_text = string_from_cstring(format_temp("%d (%d)", shopping_ui.cart_entry_count[item_index], price * shopping_ui.cart_entry_count[item_index]));
                             } else {
                                 if (shopping_ui.cart_entry_count[shopping_ui.shopping_item_index] > current_shop_item->count) {
                                     shopping_ui.cart_entry_count[shopping_ui.shopping_item_index] = current_shop_item->count;
                                 }
 
-                                cart_selection_text = string_from_cstring(format_temp("%d / %d", shopping_ui.cart_entry_count[item_index], current_shop_item->count));
+                                cart_selection_text = string_from_cstring(format_temp("%d / %d (%d)", shopping_ui.cart_entry_count[item_index], current_shop_item->count, price * shopping_ui.cart_entry_count[item_index]));
                             }
 
                             f32 measurement_width = font_cache_text_width(painting_text, cart_selection_text, text_scale);
@@ -312,13 +326,13 @@ local void do_shopping_menu(struct software_framebuffer* framebuffer, f32 x, boo
 
                             /* NOTE: This should be tabular but whatever. */
                             if (current_inventory_item->count == SHOP_ITEM_INFINITE) {
-                                cart_selection_text = string_from_cstring(format_temp("%d", shopping_ui.cart_entry_count[item_index]));
+                                cart_selection_text = string_from_cstring(format_temp("%d (%d)", shopping_ui.cart_entry_count[item_index], item_base->gold_value * shopping_ui.cart_entry_count[item_index]));
                             } else {
                                 if (shopping_ui.cart_entry_count[shopping_ui.shopping_item_index] > current_inventory_item->count) {
                                     shopping_ui.cart_entry_count[shopping_ui.shopping_item_index] = current_inventory_item->count;
                                 }
 
-                                cart_selection_text = string_from_cstring(format_temp("%d / %d", shopping_ui.cart_entry_count[item_index], current_inventory_item->count));
+                                cart_selection_text = string_from_cstring(format_temp("%d / %d (%d)", shopping_ui.cart_entry_count[item_index], current_inventory_item->count, item_base->gold_value * shopping_ui.cart_entry_count[item_index]));
                             }
 
                             f32 measurement_width = font_cache_text_width(painting_text, cart_selection_text, text_scale);
@@ -363,14 +377,16 @@ local void do_shopping_menu(struct software_framebuffer* framebuffer, f32 x, boo
                             string cart_selection_text = {};
 
                             /* NOTE: This should be tabular but whatever. */
+                            s32 price = shop_item_get_effective_price(shop, shop_item_id_standard(item_index));
+
                             if (current_shop_item->count == SHOP_ITEM_INFINITE) {
-                                cart_selection_text = string_from_cstring(format_temp("%d", shopping_ui.cart_entry_count[remapped_index]));
+                                cart_selection_text = string_from_cstring(format_temp("%d (%d)", shopping_ui.cart_entry_count[remapped_index], price * shopping_ui.cart_entry_count[item_index]));
                             } else {
                                 if (shopping_ui.cart_entry_count[shopping_ui.shopping_item_index] > current_shop_item->count) {
                                     shopping_ui.cart_entry_count[shopping_ui.shopping_item_index] = current_shop_item->count;
                                 }
 
-                                cart_selection_text = string_from_cstring(format_temp("%d / %d", shopping_ui.cart_entry_count[remapped_index], current_shop_item->count));
+                                cart_selection_text = string_from_cstring(format_temp("%d / %d (%d)", shopping_ui.cart_entry_count[remapped_index], current_shop_item->count, price * shopping_ui.cart_entry_count[remapped_index]));
                             }
 
                             f32 measurement_width = font_cache_text_width(painting_text, cart_selection_text, text_scale);
@@ -404,13 +420,13 @@ local void do_shopping_menu(struct software_framebuffer* framebuffer, f32 x, boo
 
                             /* NOTE: This should be tabular but whatever. */
                             if (current_inventory_item->count == SHOP_ITEM_INFINITE) {
-                                cart_selection_text = string_from_cstring(format_temp("%d", shopping_ui.cart_entry_count[remapped_index]));
+                                cart_selection_text = string_from_cstring(format_temp("%d (%d)", shopping_ui.cart_entry_count[remapped_index], item_base->gold_value * shopping_ui.cart_entry_count[remapped_index]));
                             } else {
                                 if (shopping_ui.cart_entry_count[shopping_ui.shopping_item_index] > current_inventory_item->count) {
                                     shopping_ui.cart_entry_count[shopping_ui.shopping_item_index] = current_inventory_item->count;
                                 }
 
-                                cart_selection_text = string_from_cstring(format_temp("%d / %d", shopping_ui.cart_entry_count[remapped_index], current_inventory_item->count));
+                                cart_selection_text = string_from_cstring(format_temp("%d / %d (%d)", shopping_ui.cart_entry_count[remapped_index], current_inventory_item->count, item_base->gold_value * shopping_ui.cart_entry_count[remapped_index]));
                             }
 
                             f32 measurement_width = font_cache_text_width(painting_text, cart_selection_text, text_scale);
