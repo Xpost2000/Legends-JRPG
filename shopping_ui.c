@@ -310,35 +310,41 @@ local void do_shopping_menu(struct software_framebuffer* framebuffer, f32 x, boo
                     case SHOPPING_MODE_SELLING: {
                         struct entity_inventory* inventory = (struct entity_inventory*)(&game_state->inventory);
 
+                        s32 remapped_index = 0;
                         for (s32 item_index = 0; item_index < inventory->count; ++item_index) {
                             struct item_instance* current_inventory_item = inventory->items + item_index;
                             struct font_cache* painting_text = normal_font;
 
-                            if (item_index == shopping_ui.shopping_item_index) {
+                            if (remapped_index == shopping_ui.shopping_item_index) {
                                 painting_text = highlighted_font;
                             }
 
                             struct item_def* item_base = item_database_find_by_id(current_inventory_item->item);
                             string item_name = item_base->name;
 
+                            if (item_id_equal(item_get_id(item_base), item_id_make(string_literal("item_gold")))) {
+                                continue;
+                            }
+
                             software_framebuffer_draw_text(framebuffer, painting_text, text_scale, v2f32(x+15, y_cursor), item_name, modulation_color, BLEND_MODE_ALPHA);
                             string cart_selection_text = {};
 
                             /* NOTE: This should be tabular but whatever. */
                             if (current_inventory_item->count == SHOP_ITEM_INFINITE) {
-                                cart_selection_text = string_from_cstring(format_temp("%d (%d)", shopping_ui.cart_entry_count[item_index], item_base->gold_value * shopping_ui.cart_entry_count[item_index]));
+                                cart_selection_text = string_from_cstring(format_temp("%d (%d)", shopping_ui.cart_entry_count[remapped_index], item_base->gold_value * shopping_ui.cart_entry_count[remapped_index]));
                             } else {
                                 if (shopping_ui.cart_entry_count[shopping_ui.shopping_item_index] > current_inventory_item->count) {
                                     shopping_ui.cart_entry_count[shopping_ui.shopping_item_index] = current_inventory_item->count;
                                 }
 
-                                cart_selection_text = string_from_cstring(format_temp("%d / %d (%d)", shopping_ui.cart_entry_count[item_index], current_inventory_item->count, item_base->gold_value * shopping_ui.cart_entry_count[item_index]));
+                                cart_selection_text = string_from_cstring(format_temp("%d / %d (%d)", shopping_ui.cart_entry_count[remapped_index], current_inventory_item->count, item_base->gold_value * shopping_ui.cart_entry_count[remapped_index]));
                             }
 
                             f32 measurement_width = font_cache_text_width(painting_text, cart_selection_text, text_scale);
 
                             software_framebuffer_draw_text(framebuffer, painting_text, text_scale, v2f32(x + ui_box_extents.x - (measurement_width), y_cursor), cart_selection_text, modulation_color, BLEND_MODE_ALPHA);
                             y_cursor += 16*2*1.2;
+                            remapped_index += 1;
                         }
                     } break;
                 }
@@ -408,6 +414,9 @@ local void do_shopping_menu(struct software_framebuffer* framebuffer, f32 x, boo
                             }
 
                             struct item_def* item_base = item_database_find_by_id(current_inventory_item->item);
+                            if (item_id_equal(item_get_id(item_base), item_id_make(string_literal("item_gold")))) {
+                                continue;
+                            }
 
                             if (item_base->type != filter_for) {
                                 continue;
