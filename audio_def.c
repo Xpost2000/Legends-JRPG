@@ -10,8 +10,8 @@
 #ifndef AUDIO_DEF_C
 #define AUDIO_DEF_C
 
-#define MAX_LOADED_SAMPLES (1024)
-#define MAX_LOADED_STREAMS (1024)
+#define MAX_LOADED_SAMPLES (2048)
+#define MAX_LOADED_STREAMS (512)
 
 typedef struct sound_id {
     u8  streaming;
@@ -23,5 +23,6 @@ void audio_deinitialize(void);
 
 sound_id load_sound(string filepath, bool streamed);
 void     play_sound(sound_id sound);
+void     stop_music(void);
 
 #endif

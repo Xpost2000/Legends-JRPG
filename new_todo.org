@@ -35,6 +35,8 @@ Third row is general overview of task types.
 ** Later But unspecified
 *** TODO Cleanup in the future, remove scale field from entities. They are now redundant.
 *** TODO Code cleanup for the API stuff.
+*** TODO Scrollable item inventory related stuff
+None of the inventory code understands how to scroll but we also don't simply have enough stuff for that to happen!
 There's a lot of dirt that needs to be cleaned up at some point.
 *** TODO Pathfinding stuck bug.
 This happens inconsistently, don't know what the cause of it is right now.

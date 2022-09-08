@@ -32,7 +32,7 @@ local u32 REAL_SCREEN_HEIGHT = 480*2;
 #include "input.c"
 #include "sdl_scancode_table.c"
 #include "graphics.c"
-#include "audio_none.c"
+#include "audio_sdl2_mixer.c"
 
 const char* _build_flags =
 #ifdef USE_SIMD_OPTIMIZATIONS
