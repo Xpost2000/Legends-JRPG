@@ -80,7 +80,7 @@ we need to basically only assume a few basica archetypes of items.
 All "entity" sprites should be aligned at their feet, and center. Once this code change is made all sprites
 should work without manual alignment, so long as they are made following the guy template guidelines. This makes
 most of the pixel art extremely easy to work with.
-*** TODO Draw Shadows for all entities (NPCs)
+*** DONE Draw Shadows for all entities (NPCs)
 *** TODO SDL2 Mixer Audio Backend.
 This should be trivial, my audio system should have a very sane design.
 

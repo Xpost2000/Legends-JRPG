@@ -418,7 +418,13 @@ void render_entities(struct game_state* state, struct graphics_assets* graphics_
 
         v2f32 alignment_offset = v2f32(0, real_dimensions.y * should_shift_up);
 
-        /* TODO sprite model anchor NOTE: does not account for model size? */
+        render_commands_push_image(commands,
+                                   graphics_assets_get_image_by_id(graphics_assets, drop_shadow),
+                                   rectangle_f32(current_entity->position.x - alignment_offset.x,
+                                                 current_entity->position.y - TILE_UNIT_SIZE*0.8,
+                                                 TILE_UNIT_SIZE * roundf(real_dimensions.x/TILE_UNIT_SIZE),
+                                                 TILE_UNIT_SIZE * max(roundf(real_dimensions.y/(TILE_UNIT_SIZE*2)), 1)),
+                                   RECTANGLE_F32_NULL, color32f32(1,1,1,0.72), NO_FLAGS, BLEND_MODE_ALPHA);
         render_commands_push_image(commands,
                                    graphics_assets_get_image_by_id(graphics_assets, sprite_to_use),
                                    rectangle_f32(current_entity->position.x - alignment_offset.x,

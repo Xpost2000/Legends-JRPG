@@ -13,6 +13,8 @@
 struct game_state* game_state         = 0;
 local bool         disable_game_input = false;
 
+image_id           drop_shadow        = {};
+
 static struct memory_arena game_arena   = {};
 /* compile out */
 #ifdef USE_EDITOR
@@ -1003,6 +1005,7 @@ void game_initialize(void) {
 
     combat_square_unselected = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/cmbt/cmbt_grid_sq.png"));
     combat_square_selected   = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/cmbt/cmbt_selected_sq.png"));
+    drop_shadow              = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/dropshadow.png"));
 
     chest_closed_img      = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/chestclosed.png"));
     chest_open_bottom_img = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/chestopenbottom.png"));
