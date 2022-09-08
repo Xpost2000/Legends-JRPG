@@ -397,7 +397,8 @@ enum game_screen_mode {
     GAME_SCREEN_INGAME,
 };
 
-s32 screen_mode = GAME_SCREEN_PREVIEW_DEMO_ALERT;
+/* s32 screen_mode = GAME_SCREEN_PREVIEW_DEMO_ALERT; */
+s32 screen_mode = GAME_SCREEN_MAIN_MENU;
 
 struct game_variable {
     // big names ****************

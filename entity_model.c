@@ -57,3 +57,13 @@ v2f32 entity_animation_get_frame_dimensions(struct entity_animation* anim, s32 f
     result.y = img_ptr->height;
     return result;
 }
+
+image_id entity_animation_get_sprite_frame(struct entity_animation* anim, s32 index) {
+    image_id result = anim->sprites[index];
+
+    if (index >= anim->frame_count) {
+        result = anim->sprites[0];
+    }
+
+    return result;
+}

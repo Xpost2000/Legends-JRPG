@@ -41,4 +41,7 @@ struct entity_animation* find_animation_by_name(s32 model_index, string name);
 
 v2f32 entity_animation_get_frame_dimensions(struct entity_animation* anim, s32 frame);
 
+/* returns frame 0 if the frame doesn't exist. */
+image_id entity_animation_get_sprite_frame(struct entity_animation* anim, s32 index);
+
 #endif

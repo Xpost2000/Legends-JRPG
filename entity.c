@@ -379,8 +379,8 @@ void render_entities(struct game_state* state, struct graphics_assets* graphics_
         struct entity_animation* anim = find_animation_by_name(model_index, current_entity->animation.name);
 
         if (!anim) {
-            _debugprintf("cannot find anim: %.*s", current_entity->animation.name.length, current_entity->animation.name.data);
-            continue;
+            _debugprintf("cannot find anim: %.*s. Falling back to \"down direction\"", current_entity->animation.name.length, current_entity->animation.name.data);
+            anim = find_animation_by_name(model_index, string_literal("down"));
         }
 
         current_entity->animation.timer += dt;
@@ -394,7 +394,7 @@ void render_entities(struct game_state* state, struct graphics_assets* graphics_
             }
         }
 
-        image_id sprite_to_use = anim->sprites[current_entity->animation.current_frame_index];
+        image_id sprite_to_use  = entity_animation_get_sprite_frame(anim, current_entity->animation.current_frame_index);
         v2f32 sprite_dimensions = entity_animation_get_frame_dimensions(anim, current_entity->animation.current_frame_index);
 
         /*
