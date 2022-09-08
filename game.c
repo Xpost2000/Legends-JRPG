@@ -1053,19 +1053,19 @@ void game_initialize(void) {
             
             /* He should have EVERY usable generic animation. Use as a fall back if animation is not drawn yet. */
             s32 base_guy = entity_model_database_add_model(&game_arena, string_literal("guy"));
-            entity_model_add_animation(base_guy, string_literal("down"),       1, 0, v2f32(0.0, 0.8));
-            entity_model_add_animation(base_guy, string_literal("up"),         1, 0, v2f32(0.0, 0.8));
-            entity_model_add_animation(base_guy, string_literal("left"),       1, 0, v2f32(0.0, 0.8));
-            entity_model_add_animation(base_guy, string_literal("right"),      1, 0, v2f32(0.0, 0.8));
+            entity_model_add_animation(base_guy, string_literal("down"),       1, 0);
+            entity_model_add_animation(base_guy, string_literal("up"),         1, 0);
+            entity_model_add_animation(base_guy, string_literal("left"),       1, 0);
+            entity_model_add_animation(base_guy, string_literal("right"),      1, 0);
 
             const f32 WALK_TIMINGS = 0.13;
-            entity_model_add_animation(base_guy, string_literal("down_walk"),  3, WALK_TIMINGS, v2f32(0.0, 0.8));
-            entity_model_add_animation(base_guy, string_literal("up_walk"),    3, WALK_TIMINGS, v2f32(0.0, 0.8));
-            entity_model_add_animation(base_guy, string_literal("left_walk"),  3, WALK_TIMINGS, v2f32(0.0, 0.8));
-            entity_model_add_animation(base_guy, string_literal("right_walk"), 3, WALK_TIMINGS, v2f32(0.0, 0.8));
+            entity_model_add_animation(base_guy, string_literal("down_walk"),  3, WALK_TIMINGS);
+            entity_model_add_animation(base_guy, string_literal("up_walk"),    3, WALK_TIMINGS);
+            entity_model_add_animation(base_guy, string_literal("left_walk"),  3, WALK_TIMINGS);
+            entity_model_add_animation(base_guy, string_literal("right_walk"), 3, WALK_TIMINGS);
 
-            entity_model_add_animation(base_guy, string_literal("kneel_down"), 2, WALK_TIMINGS, v2f32(0.0, 0.8));
-            entity_model_add_animation(base_guy, string_literal("dead"),       1, 0, v2f32(0.0, 0.5));
+            entity_model_add_animation(base_guy, string_literal("kneel_down"), 2, WALK_TIMINGS);
+            entity_model_add_animation(base_guy, string_literal("dead"),       1, 0);
 
         }
     }

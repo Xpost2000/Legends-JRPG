@@ -1,5 +1,7 @@
 /*
   Excuse to program a small preview screen for releasing as a demo.
+
+  TODO: re-enable later.
 */
 
 enum preview_demo_phase {

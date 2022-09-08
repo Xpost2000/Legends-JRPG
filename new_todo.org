@@ -30,15 +30,77 @@ Third row is general overview of task types.
 * Tasks by Days of the Week
 ** Monday
 ** Tuesday
-None.
-** Wednesday
-None this week.
-** Thursday
-Some of these goals are basically to finish off the main game loop, and theoretically put it into the
-content / polish stage. Mostly content first and some polish after. But we are very close to completing the core
-game loop. We should ideally be able to do it by that week but it's entirely possible I just can't accomplish that.
 
-Who knows.
+So it seems like a large majority of the tasks right now are finishing up core engine features, and gameplay mechanics.
+While also encouraging a push towards a more data-driven game engine. This is to reduce the strain of producing content, and
+obviously while some mechanics and content still has to sort of be hard-coded, a vast majority of the game assets can be
+loaded from data and should basically be avaliable on demand.
+
+** Wednesday
+Frankly I'm a bit reluctant to allow myself to do *from file* tasks, as data formats are commonly rewritten
+really really frequently. However, since some of the data hasn't appeared to change so much it's fine...
+
+Another large thing is that most of these data formats are "schemas", or otherwise have like one source of truth.
+
+It's not like the entries in a save file, which might be very difficult to retroactively upgrade. Item schema changes
+and such don't really do anything to save files since the only place those things are referenced are by ID or some smaller
+"core essentials" of the data which are basically never updated.
+
+IE: Schema-like data formats are okay to serialize pretty early since while their consequences are far reaching, that's its most
+powerful asset.
+
+*** TODO Getting the shop to actually work
+We have the UI for the shop system (done last week), but we never actually got it's behavior to work as intended.
+
+Also obviously, I want to animate stuff.
+*** TODO Items from Files
+Our item formats are probably going to be kept very simple. We're
+going to try to constrain what we can and cannot do for the sake
+of avoiding scope-creep.
+
+Chrono Trigger in many ways was both a simple and complicated game. Simple
+in it's mechanics, complicated with it's execution.
+
+Items don't need to be able to do literally everything. If they need to
+do more impressive things, we will handle that when the time comes however
+we need to basically only assume a few basica archetypes of items.
+
+*** TODO Realign all sprites to be at a central reference point.
+All "entity" sprites should be aligned at their feet, and center. Once this code change is made all sprites
+should work without manual alignment, so long as they are made following the guy template guidelines. This makes
+most of the pixel art extremely easy to work with.
+*** TODO Draw Shadows for all entities (NPCs)
+*** TODO SDL2 Mixer Audio Backend.
+This should be trivial, my audio system should have a very sane design.
+
+*** TODO Adding gold!
+*** TODO Game Over State/Screen
+*** TODO Tile Data From Files
+*** TODO Add a more involved animation state system.
+While the core animations are dictated by an implicit state animation system, sometimes we need to change things up a bit,
+so we will include a separate animation state... state.
+
+I've learned that keeping state is the primary problem that surfaces even mildly complicated games, and the best way to handle that
+complexity is to bear wrestle it directly instead of trying to pretend it isn't there.
+
+** Thursday
+*** TODO "Fluid" Obstacles (Liquid Fire/Water/Oil/Acid)
+I need to draw and use autotiling for these, but they should be pretty easy...
+Also thankfully these only happen on one layer.
+*** TODO Think of cutscenes?
+*** TODO Think of doing an art retreat?
+I mean some of the art stuff here is strictly necessary, but after we have that strictly necessary art we can
+try a little harder to do some more stuff.
+*** TODO Do we have to page assets?
+While we may eventually convert all assets into palette bitmaps (Makes recoloring easier anyways), we have to
+right now use full color pngs, which are moderately expensive to store in memory. Though thankfully these sprites
+are pretty small.
+*** TODO Consider adding optional sprite mirroring options.
+*** TODO Maybe entity model files?
+To avoid hardcoding all the types, and that way once we have most of the game mechanics, we can kind of just
+mass produce entities pretty fast.
+*** TODO Rewrite the act outlines
+I DIDN'T SYNC....
 *** TODO Fade out cutscene power
 Using for dreamy fade out sequences.
 
@@ -53,10 +115,6 @@ Might need to figure out how to get this to blend properly with the grayscale fi
 tr = 0.393R + 0.769G + 0.189B
 tg = 0.349R + 0.686G + 0.168B
 tb = 0.272R + 0.534G + 0.131B
-*** TODO SDL2 Mixer Audio Backend.
-This should be trivial, my audio system should have a very sane design.
-
-*** TODO Adding gold!
 *** TODO Combat System changes
 :LOGBOOK:
 CLOCK: [2022-08-27 Sat 15:20]--[2022-08-27 Sat 15:24] =>  0:04
@@ -83,6 +141,7 @@ engine work done.
 
   I suspect the animations aren't going to be too difficult to do though.
 *** TODO Combat Animations
+This thing is actually now going to be inspired by Action Sequences from RPG Maker
 - [ ] Ability animation structure
 - [ ] Add standard attack animations
   While this technically requires more art, we can animate a violent bump
@@ -91,23 +150,9 @@ engine work done.
   This isn't very difficult to do. It will also be the default animation
   if we lack any other type of animation.
 
-*** TODO Getting the shop to actually work
-We have the UI for the shop system (done last week), but we never actually got it's behavior to work as intended.
-
-Also obviously, I want to animate stuff.
-*** TODO Items from Files
-Our item formats are probably going to be kept very simple. We're
-going to try to constrain what we can and cannot do for the sake
-of avoiding scope-creep.
-
-Chrono Trigger in many ways was both a simple and complicated game. Simple
-in it's mechanics, complicated with it's execution.
-
-Items don't need to be able to do literally everything. If they need to
-do more impressive things, we will handle that when the time comes however
-we need to basically only assume a few basica archetypes of items.
-
-*** TODO Entities will drop items at the end of battle
+*** TODO Entities can drop items at the end of a battle when they die.
+We have to have droppable items in the list, and obviously set percentages for drops. This isn't super difficult
+and can be specified as part of the entity drop system.
 *** TODO Parameter adjustable Postprocessing
 *** TODO Lighting
 We're doing a simple sprite per pixel lighting system. It will likely not obey obstructions to start, but that's okay for now.
@@ -119,15 +164,25 @@ Might not do birds, probably just keeping clouds and fog.
 *** TODO Sprite Props/Objects (Generally these are custom scripted objects within the engine. Fun.)
 These things don't have to obey tile lock limitations but they can snap to the grid if needed. They are also separated
 into layers. These things will be done later, not necessarily needed.
+This is going to kind of suck. We do have chests as our only special entity type (okay?) Might need to consider
+adding world/doors/obstacles.
+
+I'm probably going to avoid going too ham on the puzzle things and generally design dungeons to be very linear.
 *** TODO Level planning,
 *** TODO More scenario writing
 *** TODO Entities defined from files
 *** TODO initial save record work
+*** TODO Companion System
+While the game didn't originally have companions (in it's current iteration), I've decided to add companions for
+Act I and Act II.
+- [ ] Following Companions in the overworld with basic flocking behavior?
+- [ ] Selecting where companions spawn on the battlefield when a fight begins
+- [ ] Controlling Companions
 After most of this we should be in good enough shape to start doing the save system as that would constitute most of the game mechanics.
+*** TODO Weapon animations!
+This is mostly art related, I have to draw some placeholder "guy" animations to use as templates.
+*** TODO Synopsis Diary System?
 ** Friday
-*** Story Writing!
-I'm going to mainly be trying to come up with a reasonable script for Act1's intro and middle point. That's going
-to mostly be done at night or whatever free time I have.
 ** Saturday
 ** Sunday
 

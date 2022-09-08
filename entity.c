@@ -405,7 +405,7 @@ void render_entities(struct game_state* state, struct graphics_assets* graphics_
         f32 scale_x = 2;
         
         v2f32 real_dimensions  = v2f32(sprite_dimensions.x * scale_x, sprite_dimensions.y * scale_x);
-        v2f32 alignment_offset = v2f32(real_dimensions.x * anim->alignment_point.x, real_dimensions.y * anim->alignment_point.y);
+        v2f32 alignment_offset = v2f32(0, real_dimensions.y);
 
         /* TODO sprite model anchor NOTE: does not account for model size? */
         render_commands_push_image(commands,

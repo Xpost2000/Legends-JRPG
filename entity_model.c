@@ -15,7 +15,7 @@ s32 entity_model_database_add_model(struct memory_arena* arena, string name) {
     return (s32)(result - global_entity_models.models);
 }
 
-s32 entity_model_add_animation(s32 entity_model_id, string name, s32 frames, f32 time_to_next, v2f32 alignment_point) {
+s32 entity_model_add_animation(s32 entity_model_id, string name, s32 frames, f32 time_to_next) {
     struct entity_model*     model = global_entity_models.models + entity_model_id;
     struct entity_animation* anim  = &model->animations[model->animation_count++];
 
@@ -24,7 +24,6 @@ s32 entity_model_add_animation(s32 entity_model_id, string name, s32 frames, f32
     anim->name                  = name;
     anim->time_until_next_frame = time_to_next;
     anim->frame_count           = frames;
-    anim->alignment_point       = alignment_point;
 
     assertion(frames < ENTITY_ANIMATION_MAX_FRAMES && "Too many frames for this engine!");
 
