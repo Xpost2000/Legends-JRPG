@@ -1,5 +1,7 @@
 #ifndef WEATHER_DEF_C
 #define WEATHER_DEF_C
+
+#define WEATHER_FIXED_UPDATE_RATE (60) /* in FPS */
 /* mostly for screen displays, actual other weather effects would be a bit more complicated
    and require more renderer outreach. Like a skew matrix. I can hard-code special rendering procedures
    for this, but... Oh you know what whatever, I'm unlikely to do hardware acceleration since that's just
