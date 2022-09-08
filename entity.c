@@ -1,4 +1,9 @@
 #include "entities_def.c"
+/*
+ * CLEANUP/TODO: As models are now the source of truth for entity collision sizes,
+ * and thus arbitrary scales are not needed (entities can just be represented as points with an implied rectangle),
+ * I can remove those later.
+ */
 
 void _debug_print_id(entity_id id) {
     _debugprintf("ent id[g:%d]: %d, %d", id.generation, id.store_type, id.index);
@@ -15,9 +20,11 @@ void entity_play_animation(struct entity* entity, string name) {
 }
 
 struct rectangle_f32 entity_rectangle_collision_bounds(struct entity* entity) {
+    f32 model_width_units = entity_model_get_width_units(entity->model_index);
+
     return rectangle_f32(entity->position.x,
                          entity->position.y,
-                         entity->scale.x,
+                         entity->scale.x * model_width_units,
                          entity->scale.y-10);
 }
 

@@ -59,6 +59,11 @@ void entity_model_set_width(s32 entity_model_id, f32 width_units) {
     model->width_units = width_units;
 }
 
+f32 entity_model_get_width_units(s32 entity_model_id) {
+    struct entity_model* model = &global_entity_models.models[entity_model_id];
+    return model->width_units;
+}
+
 v2f32 entity_animation_get_frame_dimensions(struct entity_animation* anim, s32 frame) {
     v2f32 result = {};
 

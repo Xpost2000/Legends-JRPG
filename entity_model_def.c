@@ -50,6 +50,7 @@ s32 entity_model_database_add_model(struct memory_arena* arena, string name);
 /* these apis are very inconsistent.... Oh well... */
 s32  entity_model_add_animation(s32 entity_model_id, string name, s32 frames, f32 time_to_next);
 void entity_model_set_width(s32 entity_model_id, f32 width_units);
+f32  entity_model_get_width_units(s32 entity_model_id);
 struct entity_animation* find_animation_by_name(s32 model_index, string name);
 
 v2f32 entity_animation_get_frame_dimensions(struct entity_animation* anim, s32 frame);

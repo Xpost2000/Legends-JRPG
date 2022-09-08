@@ -9,6 +9,7 @@ other acts are going to do asset reuse to avoid the time slog. The idea is we se
 We are probably starting another project concurrently by the Act1 deadline, since I would be bored if this was all I did, also
 I wouldn't be able to learn anything lmao.
 
+
 * General Plot Outline
 This was the original brainstorming list of stuff that I wanted to revise the story as, and this
 looks like it's okay.
@@ -28,6 +29,11 @@ Third row is general overview of task types.
 | -      | -       | X         | Storyboard Writing   | Coding | Coding   | Coding/Art? |
 
 * Tasks by Days of the Week
+** Later But unspecified
+*** TODO Cleanup in the future, remove scale field from entities. They are now redundant.
+*** TODO Code cleanup for the API stuff.
+*** TODO Pathfinding stuck bug.
+*** TODO Frozen weather?
 ** Monday
 ** Tuesday
 
@@ -65,7 +71,7 @@ Items don't need to be able to do literally everything. If they need to
 do more impressive things, we will handle that when the time comes however
 we need to basically only assume a few basica archetypes of items.
 
-*** TODO Realign all sprites to be at a central reference point.
+*** DONE Realign all sprites to be at a central reference point.
 All "entity" sprites should be aligned at their feet, and center. Once this code change is made all sprites
 should work without manual alignment, so long as they are made following the guy template guidelines. This makes
 most of the pixel art extremely easy to work with.
