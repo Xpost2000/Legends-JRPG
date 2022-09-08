@@ -35,6 +35,7 @@ struct shop_instance {
     struct shop_item* items;
     s32               item_count;
 
+    /* TODO: remove buyback. */
     struct shop_item buyback_items[SHOP_BUYBACK_MAX];
     s32              buyback_item_count;
 };

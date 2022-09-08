@@ -68,6 +68,18 @@ struct {
     /* bool open_quit_confirmation; */
 } shopping_ui = {};
 
+local s32 find_shop_filter(void) {
+    switch (shopping_ui.current_shopping_page_filter) {
+        case SHOPPING_PAGE_CONSUMABLES: return ITEM_TYPE_CONSUMABLE_ITEM;break;
+        case SHOPPING_PAGE_WEAPONS:     return ITEM_TYPE_WEAPON;         break;
+        case SHOPPING_PAGE_EQUIPMENT:   return ITEM_TYPE_EQUIPMENT;      break;
+        case SHOPPING_PAGE_MISC:        return ITEM_TYPE_MISC;           break;
+        default: break;
+    }
+
+    return -1;
+}
+
 local void shop_ui_set_phase(s32 phase) {
     shopping_ui.phase = phase;
     shopping_ui.timer = 0;
@@ -81,6 +93,57 @@ local void shopping_ui_begin(void) {
 
 local void shopping_ui_finish(void) {
     game_state->shopping = false;
+}
+
+local void do_gold_counter(struct software_framebuffer* framebuffer, f32 dt) {
+    /* TODO: Consider animating */
+    f32 TEXT_SCALE = 4;
+
+    struct entity_inventory* inventory    = (struct entity_inventory*)(&game_state->inventory);
+    s32                      gold_count   = entity_inventory_count_instances_of(inventory, string_literal("item_gold"));
+    string                   value_string = string_from_cstring(format_temp("%d Gold", gold_count));
+
+    struct font_cache* painting_font = game_get_font(MENU_FONT_COLOR_STEEL);
+    f32                text_width    = font_cache_text_width(painting_font, value_string, TEXT_SCALE); 
+    f32                text_height   = font_cache_text_height(painting_font) * TEXT_SCALE;
+
+    s32 current_cart_value = 0;
+    {
+        s32 current_shop_filter = find_shop_filter();
+
+        if (shopping_ui.shopping_mode == SHOPPING_MODE_BUYING) {
+            struct shop_instance* shop = &game_state->active_shop;
+
+            s32 remapped_index = 0;
+            for (s32 index = 0; index < shop->item_count; ++index) {
+                struct shop_item* cart_item = &shop->items[index];
+                struct item_def* item_base = item_database_find_by_id(cart_item->item);
+
+                if (current_shop_filter != -1 && item_base->type != current_shop_filter) {
+                    continue;
+                }
+
+                current_cart_value += cart_item->price * shopping_ui.cart_entry_count[remapped_index];
+                remapped_index += 1;
+            }
+        } else {
+        }
+    } 
+
+    draw_ui_breathing_text(framebuffer, v2f32(SCREEN_WIDTH - text_width, 15), painting_font, TEXT_SCALE, value_string, 2142, color32f32_WHITE);
+
+    if (current_cart_value != 0) {
+        if (shopping_ui.shopping_mode == SHOPPING_MODE_BUYING) {
+            painting_font = game_get_font(MENU_FONT_COLOR_BLOODRED);
+            value_string = string_from_cstring(format_temp("- %d", current_cart_value));
+        } else {
+            painting_font = game_get_font(MENU_FONT_COLOR_LIME);
+            value_string = string_from_cstring(format_temp("+ %d", current_cart_value));
+        }
+        
+        text_width   = font_cache_text_width(painting_font, value_string, TEXT_SCALE); 
+        draw_ui_breathing_text(framebuffer, v2f32(SCREEN_WIDTH - text_width, 15 + text_height*1.1), painting_font, TEXT_SCALE, value_string, 2142, color32f32_WHITE);
+    }
 }
 
 /* There is duplicated code. Beware, and maybe try and shrink this. */
@@ -272,14 +335,7 @@ local void do_shopping_menu(struct software_framebuffer* framebuffer, f32 x, boo
             default: {
                 f32 y_cursor = 120;
 
-                s32 filter_for = -1;
-                switch (shopping_ui.current_shopping_page_filter) {
-                    case SHOPPING_PAGE_CONSUMABLES: filter_for = ITEM_TYPE_CONSUMABLE_ITEM;break;
-                    case SHOPPING_PAGE_WEAPONS:     filter_for = ITEM_TYPE_WEAPON;         break;
-                    case SHOPPING_PAGE_EQUIPMENT:   filter_for = ITEM_TYPE_EQUIPMENT;      break;
-                    case SHOPPING_PAGE_MISC:        filter_for = ITEM_TYPE_MISC;           break;
-                    default: break;
-                }
+                s32 filter_for = find_shop_filter();
 
                 /* NOTE: should be refactored */
                 /* NOTE: Turn prices into a table, which will allow me to reuse the same code for both modes. Outside of having to display prices. */
@@ -508,6 +564,7 @@ local void game_display_and_update_shop_ui(struct software_framebuffer* framebuf
             game_postprocess_blur(framebuffer, blur_samples, max_blur, BLEND_MODE_ALPHA);
             game_postprocess_grayscale(framebuffer, max_grayscale);
             
+            do_gold_counter(framebuffer, dt);
             do_shopping_menu(framebuffer, FINAL_SHOPPING_MENU_X, true);
             software_framebuffer_draw_text(framebuffer, normal_font, 4, v2f32(10, 10), shopping_mode_type_strings[shopping_ui.shopping_mode], color32f32_WHITE, BLEND_MODE_ALPHA);
         } break;

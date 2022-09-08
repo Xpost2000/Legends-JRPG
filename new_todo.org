@@ -77,6 +77,10 @@ Items don't need to be able to do literally everything. If they need to
 do more impressive things, we will handle that when the time comes however
 we need to basically only assume a few basica archetypes of items.
 
+*** TODO Shopping Confirmation
+We need some confirmations to make it better, although for now in the release candidate just to avoid spending time on
+the UI, I'll avoid this...
+*** TODO Allow the cart to remember which items I'm selecting.
 *** DONE Frozen weather?
 *** DONE Realign all sprites to be at a central reference point.
 All "entity" sprites should be aligned at their feet, and center. Once this code change is made all sprites
