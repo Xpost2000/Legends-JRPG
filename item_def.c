@@ -125,8 +125,8 @@ item_id item_get_id(struct item_def* item) {
     return item_id_make(item->id_name);
 }
 
-#define MAX_ITEMS_DATABASE_SIZE (8192)
-static struct item_def item_database[MAX_ITEMS_DATABASE_SIZE] = {};
+static s32              item_database_count = 0;
+static struct item_def* item_database       = 0;
 
 local void init_item_icon(s32 index) {
     if (item_database[index].frame_count == 0)
@@ -153,90 +153,9 @@ local void init_item_icon(s32 index) {
     item_database[index].icon_name = icon_name;
 }
 
-/* NOTE: need to load this from a file */
-static void initialize_items_database(void) {
-    s32 id = 0;
-    item_database[id].id_name                  = string_literal("item_gold");
-    item_database[id].name                     = string_literal("Gold");
-    item_database[id].description              = string_literal("What makes the world go round...");
-    item_database[id].type                     = ITEM_TYPE_MISC;
-    item_database[id].gold_value               = 1;
-    item_database[id].max_stack_value          = -1;
-    init_item_icon(id);
-    id += 1;
-
-    item_database[id].id_name                  = string_literal("item_trout_fish_5");
-    item_database[id].name                     = string_literal("Dead Trout(?)");
-    item_database[id].description              = string_literal("I found this at the bottom of the river. Still edible.");
-    item_database[id].type                     = ITEM_TYPE_CONSUMABLE_ITEM;
-    item_database[id].health_restoration_value = 5;
-    item_database[id].gold_value               = 5;
-    item_database[id].max_stack_value          = 20;
-    init_item_icon(id);
-    id += 1;
-
-    item_database[id].id_name                  = string_literal("item_sardine_fish_5");
-    item_database[id].name                     = string_literal("Dead Sardine(?)");
-    item_database[id].description              = string_literal("... Something about rule number one...");
-    item_database[id].type                     = ITEM_TYPE_CONSUMABLE_ITEM;
-    item_database[id].health_restoration_value = 5;
-    item_database[id].gold_value               = 5;
-    item_database[id].max_stack_value          = 20;
-    init_item_icon(id);
-    id += 1;
-
-    item_database[id].id_name                  = string_literal("item_armor_rags");
-    item_database[id].name                     = string_literal("Beggers' Rags");
-    item_database[id].description              = string_literal("Found these in the street. Smells off...");
-    item_database[id].stats.constitution       = 10;
-    item_database[id].stats.agility            = -10;
-    item_database[id].type                     = ITEM_TYPE_EQUIPMENT;
-    item_database[id].equipment_slot_flags     = EQUIPMENT_SLOT_FLAG_BODY;
-    item_database[id].modifiers                = entity_stat_block_modifiers_identity;
-    item_database[id].gold_value               = 50;
-    item_database[id].max_stack_value          = 20;
-    init_item_icon(id);
-    id += 1;
-    
-    item_database[id].id_name                  = string_literal("item_armor_loincloth");
-    item_database[id].name                     = string_literal("Loincloth");
-    item_database[id].description              = string_literal("Fashioned from my old bathing towels.");
-    item_database[id].type                     = ITEM_TYPE_EQUIPMENT;
-    item_database[id].stats.constitution       = 10;
-    item_database[id].equipment_slot_flags     = EQUIPMENT_SLOT_FLAG_LEGS;
-    item_database[id].modifiers                = entity_stat_block_modifiers_identity;
-    item_database[id].gold_value               = 50;
-    item_database[id].max_stack_value          = 20;
-    init_item_icon(id);
-    id += 1;
-
-    item_database[id].id_name                  = string_literal("item_armor_bandage_wraps");
-    item_database[id].name                     = string_literal("Bandages");
-    item_database[id].stats.constitution       = 20;
-    item_database[id].stats.agility            = -15;
-    item_database[id].description              = string_literal("These are still bloody!");
-    item_database[id].type                     = ITEM_TYPE_EQUIPMENT;
-    item_database[id].equipment_slot_flags     = EQUIPMENT_SLOT_FLAG_HANDS;
-    item_database[id].modifiers                = entity_stat_block_modifiers_identity;
-    item_database[id].gold_value               = 50;
-    item_database[id].max_stack_value          = 20;
-    init_item_icon(id);
-    id += 1;
-
-    item_database[id].id_name                  = string_literal("item_accessory_wedding_ring");
-    item_database[id].name                     = string_literal("Wedding Ring");
-    item_database[id].description              = string_literal("Fetches a nice price at a vendor. Sanctity? What's that?");
-    item_database[id].type                     = ITEM_TYPE_EQUIPMENT;
-    item_database[id].equipment_slot_flags     = EQUIPMENT_SLOT_FLAG_MISC;
-    item_database[id].modifiers                = entity_stat_block_modifiers_identity;
-    item_database[id].gold_value               = 150;
-    item_database[id].max_stack_value          = 20;
-    init_item_icon(id);
-    id += 1;
-}
-
+static void initialize_items_database(void);
 static struct item_def* item_database_find_by_id(item_id id) {
-    for (unsigned index = 0; index < MAX_ITEMS_DATABASE_SIZE; ++index) {
+    for (unsigned index = 0; index < item_database_count; ++index) {
         struct item_def* candidate = &item_database[index];
         s32 hash = hash_bytes_fnv1a((u8*) candidate->id_name.data, candidate->id_name.length);
 
@@ -252,14 +171,14 @@ static struct item_def* item_database_find_by_id(item_id id) {
 static bool verify_no_item_id_name_hash_collisions(void) {
     bool bad = false;
 #ifndef RELEASE
-    for(unsigned i = 0; i < MAX_ITEMS_DATABASE_SIZE; ++i) {
+    for(unsigned i = 0; i < item_database_count; ++i) {
         string first = item_database[i].id_name;
 
         if (first.length <= 0) {
             continue;
         }
 
-        for (unsigned j = i; j < MAX_ITEMS_DATABASE_SIZE; ++j) {
+        for (unsigned j = i; j < item_database_count; ++j) {
             if (i == j) {
                 continue;
             }

@@ -1168,7 +1168,9 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
                                     editor_state->chest_property_menu.item_list_scroll_y = 0;
                                 }
 
-                                for (unsigned index = 0; index < MAX_ITEMS_DATABASE_SIZE; ++index) {
+                                /* NOTE: The chest is probably code rotting, since I haven't seen it in a good minute. */
+                                /* probably go back and check these things. */
+                                for (unsigned index = 0; index < item_database_count; ++index) {
                                     struct item_def* item_base = item_database + index;
 
                                     if (editor_state->chest_property_menu.item_sort_filter) {

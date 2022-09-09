@@ -9,6 +9,11 @@ other acts are going to do asset reuse to avoid the time slog. The idea is we se
 We are probably starting another project concurrently by the Act1 deadline, since I would be bored if this was all I did, also
 I wouldn't be able to learn anything lmao.
 
+(I think for future reference, I should spend much more time on debug infrastructure... Debugging is not just printf and reading some
+text. It means having more interactivity with parts of your game engine. Is it more complicated? Yes. Is it a lot of work? Yes... But does
+it save a lot of headaches... Most definitely yes. More complicated projects need increasingly powerful tools. Thankfully this thing is on
+the complexity level where it's not strictly necessary.)
+
 *NOTE: working on the combat system is an extremely big priority!*
 *So while it's okay to tackle minor stuff, I should focus on the combat system and it's flourish (abilities and such, as well as AI.)*
 

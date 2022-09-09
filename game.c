@@ -1960,6 +1960,7 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
 }
 
 #include "game_script.c"
+#include "item_data.c"
 #include "save_data.c"
 #include "storyboard_presentation.c"
 #include "entity_model.c"
