@@ -82,7 +82,6 @@ struct item_def {
     s32 type;
 
     s32 health_restoration_value;
-    s32 damage_value;
 
     /* override the default type icon */
     /* animation time is going to be the same for all items */

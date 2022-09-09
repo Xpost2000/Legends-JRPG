@@ -32,7 +32,7 @@ Third row is general overview of task types.
 | -      | -       | X         | Storyboard Writing   | Coding | Coding   | Coding/Art? |
 
 * Tasks by Days of the Week
-** Post-Release Candidate Important tasks.
+** Post- (alpha candidate) Important tasks.
 *** TODO Add a more involved animation state system.
 While the core animations are dictated by an implicit state animation system, sometimes we need to change things up a bit,
 so we will include a separate animation state... state.
@@ -71,6 +71,8 @@ Act I and Act II.
 - [ ] Selecting where companions spawn on the battlefield when a fight begins
 - [ ] Controlling Companions
 After most of this we should be in good enough shape to start doing the save system as that would constitute most of the game mechanics.
+*** TODO Lots of things need to scroll
+now that I think about it the vast majority of stuff needs to be scrollable...
 ** Later But unspecified
 *** TODO Cleanup in the future, remove scale field from entities. They are now redundant.
 *** TODO Code cleanup for the API stuff.
