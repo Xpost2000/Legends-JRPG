@@ -149,7 +149,7 @@ do more impressive things, we will handle that when the time comes however
 we need to basically only assume a few basica archetypes of items.
 
 *** TODO Game Over State/Screen
-*** TODO Tile Data From Files
+*** DONE Tile Data From Files
 *** TODO Particle System
 *** TODO "Fluid" Obstacles (Liquid Fire/Water/Oil/Acid)
 I need to draw and use autotiling for these, but they should be pretty easy...

@@ -16,8 +16,16 @@ image_id get_tile_image_id(struct tile_data_definition* tile_def) {
 /* NOTE: This is because all gamescript strings are intended to be read-only and this happens to be easy to do. */
 struct file_buffer tile_data_source_file = {};
 
+/*
+  NOTE: For future projects should experiment with different allocation patterns.
+
+  IE: In debug mode, I should always use dynamic allocators for everything just so I can just hotswap things or hotreload stuff whenever possible.
+  In release mode replace everything with arenas, (IE I have a lot of debug only paths... Right now I'm coding everything in a nearly release mode style
+  path which is fine and all but this is kind of annoying to do sometimes...)
+*/
 static void initialize_static_table_data(void) {
     tile_data_source_file       = read_entire_file(memory_arena_allocator(&game_arena), string_literal("./res/tile_data.txt"));
+    /* NOTE: it would be cleaner to copy all strings and own them directly here. It's not too much of a change but the lisp form reader makes certain assumptions. */
     struct lisp_list file_forms = lisp_read_string_into_forms(&game_arena, file_buffer_as_string(&tile_data_source_file));
 
     tile_table_data_count = file_forms.count;
