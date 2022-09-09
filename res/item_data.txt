@@ -1,0 +1,84 @@
+# Giant item schema file
+# Order doesn't matter thankfully.
+
+# gold is important, try not to change it or it might break
+# the engine with some assumptions?
+("item_gold"
+"Gold"
+"Makes the world go round..."
+(type 'misc)
+(value 1)
+(max-stack -1))
+
+("item_trout_fish_5"
+"Dead Trout(?)"
+"I found this at the bottom of the river. Still tastes good"
+(type 'consumable)
+(restores-health 5)
+(value 5)
+(max-stack 20))
+
+("item_sardine_fish_5"
+"Dead Sardine(?)"
+"Something about a rule number one..."
+(type 'consumable)
+(restores-health 5)
+(value 5)
+(max-stack 20))
+
+("item_armor_rags"
+"Beggars' Rags"
+"Found these in the street. Smells off..."
+(stat-block
+        (constitution 10)
+        (agility      10)
+)
+(type 'equipment)
+(equip-slot 'body)
+(value 50)
+(max-stack 2))
+
+("item_armor_loincloth"
+"Loincloth"
+"Fashioned from my old bathing towels."
+(stat-block
+        (constitution 10)
+)
+(type 'equipment)
+(equip-slot 'legs)
+(value 50)
+(max-stack 2))
+
+("item_armor_bandage_wraps"
+"Bandages"
+"These are still bloody!"
+(stat-block
+        (constitution 20)
+        (agility -15)
+)
+(type 'equipment)
+(equip-slot hands)
+(value 50)
+(max-stack 2))
+
+("item_accessory_wedding_ring"
+"Wedding Ring"
+"On death did we part."
+(type 'equipment)
+(equip-slot 'misc)
+(value 150)
+(max-stack 1))
+
+("item_weapon_club"
+"Wooden Club"
+"This branch makes a funny shape."
+(type 'weapon)
+(equip-slot 'weapon)
+(value 5)
+(stat-block
+        (strength 50)
+        (speed    -10)
+        (agility  -10)
+        (intelligence  -10)
+)
+(max-stack 1))
