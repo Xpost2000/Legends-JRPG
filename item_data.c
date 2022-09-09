@@ -18,7 +18,7 @@ local void parse_stat_form(struct item_def* item_definition, struct lisp_form* s
         } else {                                \
             error  |= !lisp_form_get_s32(*stat_param, &item_definition->stats.stat); \
         }                                       \
-        assertion(error && "Problem reading a stat form!"); \
+        assertion(!error && "Problem reading a stat form! " # stat); \
     } while (0);
 
     if (lisp_form_symbol_matching(*stat_name, string_literal("health"))) {
@@ -121,85 +121,4 @@ static void initialize_items_database(void) {
             }
         }
     }
-
-#if 0
-    s32 id = 0;
-    item_database[id].id_name                  = string_literal("item_gold");
-    item_database[id].name                     = string_literal("Gold");
-    item_database[id].description              = string_literal("What makes the world go round...");
-    item_database[id].type                     = ITEM_TYPE_MISC;
-    item_database[id].gold_value               = 1;
-    item_database[id].max_stack_value          = -1;
-    init_item_icon(id);
-    id += 1;
-
-    item_database[id].id_name                  = string_literal("item_trout_fish_5");
-    item_database[id].name                     = string_literal("Dead Trout(?)");
-    item_database[id].description              = string_literal("I found this at the bottom of the river. Still edible.");
-    item_database[id].type                     = ITEM_TYPE_CONSUMABLE_ITEM;
-    item_database[id].health_restoration_value = 5;
-    item_database[id].gold_value               = 5;
-    item_database[id].max_stack_value          = 20;
-    init_item_icon(id);
-    id += 1;
-
-    item_database[id].id_name                  = string_literal("item_sardine_fish_5");
-    item_database[id].name                     = string_literal("Dead Sardine(?)");
-    item_database[id].description              = string_literal("... Something about rule number one...");
-    item_database[id].type                     = ITEM_TYPE_CONSUMABLE_ITEM;
-    item_database[id].health_restoration_value = 5;
-    item_database[id].gold_value               = 5;
-    item_database[id].max_stack_value          = 20;
-    init_item_icon(id);
-    id += 1;
-
-    item_database[id].id_name                  = string_literal("item_armor_rags");
-    item_database[id].name                     = string_literal("Beggers' Rags");
-    item_database[id].description              = string_literal("Found these in the street. Smells off...");
-    item_database[id].stats.constitution       = 10;
-    item_database[id].stats.agility            = -10;
-    item_database[id].type                     = ITEM_TYPE_EQUIPMENT;
-    item_database[id].equipment_slot_flags     = EQUIPMENT_SLOT_FLAG_BODY;
-    item_database[id].modifiers                = entity_stat_block_modifiers_identity;
-    item_database[id].gold_value               = 50;
-    item_database[id].max_stack_value          = 20;
-    init_item_icon(id);
-    id += 1;
-    
-    item_database[id].id_name                  = string_literal("item_armor_loincloth");
-    item_database[id].name                     = string_literal("Loincloth");
-    item_database[id].description              = string_literal("Fashioned from my old bathing towels.");
-    item_database[id].type                     = ITEM_TYPE_EQUIPMENT;
-    item_database[id].stats.constitution       = 10;
-    item_database[id].equipment_slot_flags     = EQUIPMENT_SLOT_FLAG_LEGS;
-    item_database[id].modifiers                = entity_stat_block_modifiers_identity;
-    item_database[id].gold_value               = 50;
-    item_database[id].max_stack_value          = 20;
-    init_item_icon(id);
-    id += 1;
-
-    item_database[id].id_name                  = string_literal("item_armor_bandage_wraps");
-    item_database[id].name                     = string_literal("Bandages");
-    item_database[id].stats.constitution       = 20;
-    item_database[id].stats.agility            = -15;
-    item_database[id].description              = string_literal("These are still bloody!");
-    item_database[id].type                     = ITEM_TYPE_EQUIPMENT;
-    item_database[id].equipment_slot_flags     = EQUIPMENT_SLOT_FLAG_HANDS;
-    item_database[id].modifiers                = entity_stat_block_modifiers_identity;
-    item_database[id].gold_value               = 50;
-    item_database[id].max_stack_value          = 20;
-    init_item_icon(id);
-    id += 1;
-
-    item_database[id].id_name                  = string_literal("item_accessory_wedding_ring");
-    item_database[id].name                     = string_literal("Wedding Ring");
-    item_database[id].description              = string_literal("Fetches a nice price at a vendor. Sanctity? What's that?");
-    item_database[id].type                     = ITEM_TYPE_EQUIPMENT;
-    item_database[id].equipment_slot_flags     = EQUIPMENT_SLOT_FLAG_MISC;
-    item_database[id].modifiers                = entity_stat_block_modifiers_identity;
-    item_database[id].gold_value               = 150;
-    item_database[id].max_stack_value          = 20;
-    init_item_icon(id);
-    id += 1;
-#endif
 }

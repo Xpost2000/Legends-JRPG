@@ -149,6 +149,7 @@ bool is_alphabetic(char c) {
 }
 
 bool is_numeric(char c) {
+    if (c == '-') return true;
     if (c >= '0' && c <= '9') {
         return true;
     }
@@ -156,7 +157,7 @@ bool is_numeric(char c) {
 }
 
 bool is_numeric_with_decimal(char c) {
-    return is_numeric(c) || c == '.';
+    return is_numeric(c) || c == '.' || c == '-';
 }
 
 bool is_valid_real_number(string str) {
