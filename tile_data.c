@@ -1,6 +1,12 @@
 /* I think we'll probably change this a lot more later... But anyways... */
 image_id get_tile_image_id(struct tile_data_definition* tile_def) {
-    return graphics_assets_get_image_by_filepath(&graphics_assets, tile_def->frames[tile_def->frame_index]);
+    string frame_path       = tile_def->frames[tile_def->frame_index];
+    /*
+      NOTE: Almost everything expects Cstrings and these strings originate from the file data which we
+      don't copy. But just have pointers into...
+    */
+    string sanitized_string = string_from_cstring(format_temp("%.*s", frame_path.length, frame_path.data));
+    return graphics_assets_get_image_by_filepath(&graphics_assets, sanitized_string);
 }
 
 /* memory is read at start up */
@@ -24,11 +30,12 @@ static void initialize_static_table_data(void) {
         struct tile_data_definition* current_tile_entry = tile_table_data + index;
 
         {
-            zero_struct(current_tile_entry);
+            zero_struct(*current_tile_entry);
         }
 
         {
             struct lisp_form* name_string = lisp_list_nth(file_list_form, 0);
+            _debugprintf("NAME STRING: %.*s", name_string->string.length, name_string->string.data);
 
             for (s32 remaining_form_index = 1; remaining_form_index < file_list_form->list.count; ++remaining_form_index) {
                 struct lisp_form* current_subform = lisp_list_nth(file_list_form, remaining_form_index);
@@ -43,6 +50,7 @@ static void initialize_static_table_data(void) {
 
                         for (s32 frame_index = 0; frame_index < frame_count; ++frame_index) {
                             struct lisp_form* current_frame_path = lisp_list_nth(&form_arguments, frame_index);
+                            _debugprintf("FRAME PATH STRING: %.*s", current_frame_path->string.length, current_frame_path->string.data);
                             lisp_form_get_string(*current_frame_path, &current_tile_entry->frames[frame_index]);
                         }
                     } else if (lisp_form_symbol_matching(*form_name, string_literal("flags"))) {

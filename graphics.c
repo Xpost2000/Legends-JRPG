@@ -13,6 +13,11 @@ struct image_buffer image_buffer_load_from_file(string filepath) {
     s32 components;
 
     u8* image_buffer = stbi_load(filepath.data, &width, &height, &components, 4);
+    _debugprintf("tried to load: \"%.*s\"", filepath.length, filepath.data);
+    if (!image_buffer) {
+        _debugprintf("Failed to load \"%.*s\"", filepath.length, filepath.data);
+    }
+    assertion(image_buffer && "image load failed!");
     struct image_buffer result = (struct image_buffer) {
         .pixels = image_buffer,
         .width  = width,
@@ -1303,10 +1308,10 @@ image_id graphics_assets_load_image(struct graphics_assets* assets, string path)
     image_id new_id = (image_id) { .index = assets->image_count + 1 };
     _debugprintf("img loaded: %.*s", path.length, path.data);
 
-    struct image_buffer* new_image = &assets->images[assets->image_count];
+    struct image_buffer* new_image           = &assets->images[assets->image_count];
     string*              new_filepath_string = &assets->image_file_strings[assets->image_count++];
-    *new_image                     = image_buffer_load_from_file(path);
-    *new_filepath_string           = memory_arena_push_string(assets->arena, path);
+    *new_image                               = image_buffer_load_from_file(path);
+    *new_filepath_string                     = memory_arena_push_string(assets->arena, path);
 
     return new_id;
 }
