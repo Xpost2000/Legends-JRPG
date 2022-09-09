@@ -41,9 +41,6 @@
 ("house block"
 (frames "./res/img/building/home_block.png")
 (flags 'solid))
-("house block"
-(frames "./res/img/building/home_block.png")
-(flags 'solid))
 ("house block top"
 (frames "./res/img/building/home_top_block.png")
 (flags 'solid))
@@ -58,7 +55,7 @@
 (frames "./res/img/building/home_wood_floor.png"))
 
 ("home wood wall"
-(frames "./res/img/building/home_wood_floor.png")
+(frames "./res/img/building/home_wood_wall.png")
 (flags 'solid))
 
 ("home wood wall top"
