@@ -77,7 +77,7 @@ After most of this we should be in good enough shape to start doing the save sys
 *** TODO Scrollable item inventory related stuff
 None of the inventory code understands how to scroll but we also don't simply have enough stuff for that to happen!
 There's a lot of dirt that needs to be cleaned up at some point.
-*** TODO Pathfinding stuck bug.
+*** DONE Pathfinding stuck bug.
 This happens inconsistently, don't know what the cause of it is right now.
 *** TODO Minor shop related bugs.
 I suspect as I compress the shop code, it'll fix itself, but it's a little unwieldy.
@@ -131,6 +131,11 @@ quickly, I cannot spend time implementing it for the release candidate build bec
 So most of the combat animations will be phased out since I just cannot think of a great solution. I'll have to just use bumps and
 flashes (which are still going to be present in the full build, we just don't animate the sprite.))
 
+** Friday
+*** TODO Projectiles for ranged weapons!
+*** TODO Fix the Entity draw order problem!
+*** TODO Fix the shop behavior
+Since it's been broken as of the last build.
 *** TODO Items from Files
 Our item formats are probably going to be kept very simple. We're
 going to try to constrain what we can and cannot do for the sake
@@ -234,7 +239,6 @@ I'm probably going to avoid going too ham on the puzzle things and generally des
 *** TODO Entities defined from files
 *** TODO initial save record work
 *** TODO Synopsis Diary System?
-** Friday
 ** Saturday
 ** Sunday
 

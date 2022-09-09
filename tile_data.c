@@ -3,7 +3,70 @@ image_id get_tile_image_id(struct tile_data_definition* tile_def) {
     return graphics_assets_get_image_by_filepath(&graphics_assets, tile_def->frames[tile_def->frame_index]);
 }
 
+/* memory is read at start up */
+/* this is kind of expensive since the entire file is kept in memory just to keep the strings. */
+/* I mean it's a small amount of memory relative to the whole thing so it's something to think about. */
+/* Anyways this is not really possible to hotreload. Oh well. */
+/* NOTE: This is because all gamescript strings are intended to be read-only and this happens to be easy to do. */
+struct file_buffer tile_data_source_file = {};
+
 static void initialize_static_table_data(void) {
+#if 1
+    tile_data_source_file       = read_entire_file(memory_arena_allocator(&game_arena), string_literal("./res/tile_data.txt"));
+    struct lisp_list file_forms = lisp_read_string_into_forms(&game_arena, file_buffer_as_string(&tile_data_source_file));
+
+    tile_table_data_count = file_forms.count;
+    tile_table_data = memory_arena_push(&game_arena, sizeof(*tile_table_data) * tile_table_data_count);
+
+    /* TODO error checking? */
+    for (s32 index = 0; index < file_forms.count; ++index) {
+        struct lisp_form*            file_list_form     = file_forms.forms + index;
+        struct tile_data_definition* current_tile_entry = tile_table_data + index;
+
+        {
+            zero_struct(current_tile_entry);
+        }
+
+        {
+            struct lisp_form* name_string = lisp_list_nth(file_list_form, 0);
+
+            for (s32 remaining_form_index = 1; remaining_form_index < file_list_form->list.count; ++remaining_form_index) {
+                struct lisp_form* current_subform = lisp_list_nth(file_list_form, remaining_form_index);
+
+                {
+                    struct lisp_form* form_name      = lisp_list_nth(current_subform, 0);
+                    struct lisp_form  form_arguments = lisp_list_sliced(*current_subform, 1, -1);
+
+                    if (lisp_form_symbol_matching(*form_name, string_literal("frames"))) {
+                        s32 frame_count                 = form_arguments.list.count;
+                        current_tile_entry->frame_count = frame_count;
+
+                        for (s32 frame_index = 0; frame_index < frame_count; ++frame_index) {
+                            struct lisp_form* current_frame_path = lisp_list_nth(&form_arguments, frame_index);
+                            lisp_form_get_string(*current_frame_path, &current_tile_entry->frames[frame_index]);
+                        }
+                    } else if (lisp_form_symbol_matching(*form_name, string_literal("flags"))) {
+                        s32 flags = TILE_DATA_FLAGS_NONE;
+
+                        for (s32 flag_index = 0; flag_index < form_arguments.list.count; ++flag_index) {
+                            struct lisp_form* f = lisp_list_nth(&form_arguments, flag_index);
+
+                            if (lisp_form_symbol_matching(*f, string_literal("solid"))) {
+                                flags |= TILE_DATA_FLAGS_SOLID;
+                            }
+                        }
+
+                        current_tile_entry->flags = flags;
+                    } else if (lisp_form_symbol_matching(*form_name, string_literal("time-until-next-frame"))) {
+                        struct lisp_form* arg0 = lisp_list_nth(&form_arguments, 0);
+                        lisp_form_get_f32(*arg0, &current_tile_entry->time_until_next_frame);
+                    }
+                }
+            }
+        }
+    }
+
+#else
     /* a very generous amount of table data... */
     tile_table_data = memory_arena_push(&game_arena, sizeof(*tile_table_data) * 2048);
     auto_tile_info  = memory_arena_push(&game_arena, sizeof(*auto_tile_info)  * 1024);
@@ -165,4 +228,5 @@ static void initialize_static_table_data(void) {
 #undef AT_insert 
 #undef current_AT 
     tile_table_data_count = i;
+#endif
 }

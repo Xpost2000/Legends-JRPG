@@ -150,7 +150,7 @@ enum tile_data_flags {
 struct autotile_table {s32 neighbors[256];};
 struct tile_data_definition {
     string               name;
-    string               frames[16];
+    string               frames[24];
     s32 frame_index;
     s32 frame_count;
     f32 time_until_next_frame;

@@ -268,6 +268,7 @@ static inline void zero_memory(void* memory, size_t amount) {
     }
 }
 #define zero_array(x) zero_memory(x, array_count(x))
+#define zero_struct(x) zero_memory(&x, sizeof(x));
 
 static inline void memory_set8(void* memory, size_t amount, u8 value) {
     u8* memory_u8 = memory;
