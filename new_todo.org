@@ -143,7 +143,7 @@ flashes (which are still going to be present in the full build, we just don't an
 *** TODO Fix the Entity draw order problem!
 *** TODO Fix the shop behavior
 Since it's been broken as of the last build.
-*** TODO Items from Files
+*** DONE Items from Files
 Our item formats are probably going to be kept very simple. We're
 going to try to constrain what we can and cannot do for the sake
 of avoiding scope-creep.
@@ -155,13 +155,15 @@ Items don't need to be able to do literally everything. If they need to
 do more impressive things, we will handle that when the time comes however
 we need to basically only assume a few basica archetypes of items.
 
-*** TODO Game Over State/Screen
 *** DONE Tile Data From Files
+*** TODO Game Over State/Screen
 *** TODO Particle System
 *** TODO "Fluid" Obstacles (Liquid Fire/Water/Oil/Acid)
 I need to draw and use autotiling for these, but they should be pretty easy...
 Also thankfully these only happen on one layer.
 *** TODO Enemy AI/Thinking
+*** TODO Adding action points into the equation?
+*** TODO My end turn is broken.
 *** TODO Combat System changes
 :LOGBOOK:
 CLOCK: [2022-08-27 Sat 15:20]--[2022-08-27 Sat 15:24] =>  0:04
