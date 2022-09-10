@@ -91,6 +91,7 @@ struct {
 
 local void shopping_ui_clear_cart(void) {
     shopping_ui.cart_entry_count = 0;
+    zero_array(shopping_ui.cart_entries);
 }
 
 local s32 shopping_ui_find_cart_entry_for(s32 item_index) {
@@ -153,6 +154,7 @@ local void shopping_ui_populate_filtered_page(void) {
     shopping_ui.shop_filtered_array_count = 0;
 
     if (shopping_ui.shopping_mode == SHOPPING_MODE_BUYING) {
+        _debugprintf("Buying!");
         struct shop_instance* shop = &game_state->active_shop;
 
         for (s32 shop_item_index = 0; shop_item_index < shop->item_count; ++shop_item_index) {
@@ -164,19 +166,32 @@ local void shopping_ui_populate_filtered_page(void) {
             }
         }
     } else if (shopping_ui.shopping_mode == SHOPPING_MODE_SELLING) {
+        _debugprintf("Selling!");
         struct entity_inventory* inventory = (struct entity_inventory*)(&game_state->inventory);
 
         for (s32 inventory_item_index = 0; inventory_item_index < inventory->count; ++inventory_item_index) {
             struct item_instance* current_inventory_item = inventory->items + inventory_item_index;
             struct item_def*      item_definition        = item_database_find_by_id(current_inventory_item->item);
 
+            bool allow_item = true;
+
             if (item_id_equal(item_get_id(item_definition), item_id_make(string_literal("item_gold")))) {
-                continue;
+                _debugprintf("I found gold!");
+                allow_item = false;
             }
 
-            if (item_definition->type == item_filter || shopping_ui.current_shopping_page_filter == SHOPPING_PAGE_ALL) {
+            if (shopping_ui.current_shopping_page_filter != SHOPPING_PAGE_ALL) {
+                if (item_definition->type != item_filter) {
+                    allow_item = false;
+                }
+            }
+
+            _debugprintf("%d", allow_item);
+            if (allow_item) {
+                _debugprintf("I'm going to add this item (\"%.*s\")", item_definition->name.length, item_definition->name.data);
                 shopping_ui.shop_filtered_array[shopping_ui.shop_filtered_array_count++] = inventory_item_index;
             }
+            _debugprintf("next item");
         }
     }
 }
@@ -189,7 +204,6 @@ local void shop_ui_set_phase(s32 phase) {
 local void shopping_ui_begin(void) {
     _debugprintf("hi shopper");
     zero_memory(&shopping_ui, sizeof(shopping_ui));
-    shopping_ui_populate_filtered_page();
 }
 
 local void shopping_ui_finish(void) {
@@ -368,6 +382,8 @@ local void do_shopping_menu(struct software_framebuffer* framebuffer, f32 x, boo
             shopping_ui_populate_filtered_page();
         }
 
+        y_cursor += 10;
+
         /* It would be nice to have essentially matching pointers to make dereferencing easier. */
         for (s32 item_index = 0; item_index < shopping_ui.shop_filtered_array_count; ++item_index) {
             s32                lookup_index  = shopping_ui.shop_filtered_array[item_index];
@@ -389,11 +405,11 @@ local void do_shopping_menu(struct software_framebuffer* framebuffer, f32 x, boo
                 item_stack_size                     = current_shop_item->count;
                 item_max_size                       = item_stack_size;
             } else {
-                struct item_instance* current_inventory_item = inventory->items + item_index;
+                struct item_instance* current_inventory_item = inventory->items + lookup_index;
                 item_base                                    = item_database_find_by_id(current_inventory_item->item);
                 price                                        = item_base->gold_value;
                 item_stack_size                              = current_inventory_item->count;
-                item_max_size                                = item_base->max_stack_value;
+                item_max_size                                = current_inventory_item->count;
             }
 
             string item_name = item_base->name;
@@ -559,6 +575,7 @@ local void game_display_and_update_shop_ui(struct software_framebuffer* framebuf
                                 shopping_ui.shopping_mode = SHOPPING_MODE_SELLING;
                             }
 
+                            shopping_ui_populate_filtered_page();
                             shopping_ui.shopping_item_index = 0;
                             shop_ui_set_phase(SHOPPING_UI_ANIMATION_PHASE_SLIDE_IN_SHOPPING);
                         }

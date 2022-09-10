@@ -37,6 +37,9 @@ Third row is general overview of task types.
 | -      | -       | X         | Storyboard Writing   | Coding | Coding   | Coding/Art? |
 
 * Tasks by Days of the Week
+** Almost before alpha candidate release
+Basically a small bug witch hunt.
+*** TODO Fix UI state bugs, sometimes we suddenly jump state when I'm not supposed to.
 ** Post- (alpha candidate) Important tasks.
 *** TODO Add a more involved animation state system.
 While the core animations are dictated by an implicit state animation system, sometimes we need to change things up a bit,
