@@ -121,9 +121,32 @@ local s32 shopping_ui_find_or_add_cart_entry_for(s32 item_index) {
 }
 
 void shopping_ui_increment_cart(s32 item_index) {
-    /* TODO: Check the stock to make sure we can't exceed the stock. */
+    struct shop_instance*    shop      = &game_state->active_shop;
+    struct entity_inventory* inventory = (struct entity_inventory*)(&game_state->inventory);
+
     s32 cart_item_index = shopping_ui_find_or_add_cart_entry_for(item_index);
     shopping_ui.cart_entries[cart_item_index].count += 1;
+
+    s32 item_stock_size = 0;
+    bool is_infinite_item = false;
+
+    if (shopping_ui.shopping_mode == SHOPPING_MODE_BUYING) {
+        struct shop_item* current_shop_item = shop->items + item_index;
+        item_stock_size                     = current_shop_item->count;
+
+        if (item_stock_size == -1) {
+            is_infinite_item = true;
+        }
+    } else {
+        struct item_instance* current_inventory_item = inventory->items + item_index;
+        item_stock_size                              = current_inventory_item->count;
+    }
+
+    if (!is_infinite_item) {
+        if (shopping_ui.cart_entries[cart_item_index].count > item_stock_size) {
+            shopping_ui.cart_entries[cart_item_index].count = item_stock_size;
+        }
+    }
 }
 
 void shopping_ui_decrement_cart(s32 item_index) {
@@ -429,10 +452,6 @@ local void do_shopping_menu(struct software_framebuffer* framebuffer, f32 x, boo
                 if (item_max_size == SHOP_ITEM_INFINITE) {
                     cart_selection_text = string_from_cstring(format_temp("%d (%d)", cart_amount, price * cart_amount));
                 } else {
-                    if (shopping_ui.cart_entries[lookup_index].count > item_stack_size) {
-                        shopping_ui.cart_entries[lookup_index].count = item_stack_size;
-                    }
-
                     cart_selection_text = string_from_cstring(format_temp("%d / %d (%d)", cart_amount, item_stack_size, price * cart_amount));
                 }
             }
@@ -475,6 +494,8 @@ local void do_shopping_menu(struct software_framebuffer* framebuffer, f32 x, boo
         }
 
         if (selection_quit) {
+            shopping_ui_clear_cart();
+            shopping_ui.shopping_item_index = 0;
             shop_ui_set_phase(SHOPPING_UI_ANIMATION_PHASE_SLIDE_OUT_SHOPPING);
         }
     }
