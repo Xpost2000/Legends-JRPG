@@ -51,7 +51,7 @@ complexity is to bear wrestle it directly instead of trying to pretend it isn't 
 *** TODO Shopping Confirmation
 We need some confirmations to make it better, although for now in the release candidate just to avoid spending time on
 the UI, I'll avoid this...
-*** TODO Allow the cart to remember which items I'm selecting.
+*** DONE Allow the cart to remember which items I'm selecting.
 *** TODO Think of doing an art retreat?
 I mean some of the art stuff here is strictly necessary, but after we have that strictly necessary art we can
 try a little harder to do some more stuff.
@@ -89,7 +89,7 @@ None of the inventory code understands how to scroll but we also don't simply ha
 There's a lot of dirt that needs to be cleaned up at some point.
 *** DONE Pathfinding stuck bug.
 This happens inconsistently, don't know what the cause of it is right now.
-*** TODO Minor shop related bugs.
+*** DONE Minor shop related bugs.
 I suspect as I compress the shop code, it'll fix itself, but it's a little unwieldy.
 ** Monday
 ** Tuesday
@@ -144,7 +144,7 @@ flashes (which are still going to be present in the full build, we just don't an
 ** Friday
 *** TODO Projectiles for ranged weapons!
 *** TODO Fix the Entity draw order problem!
-*** TODO Fix the shop behavior
+*** DONE Fix the shop behavior
 Since it's been broken as of the last build.
 *** DONE Items from Files
 Our item formats are probably going to be kept very simple. We're

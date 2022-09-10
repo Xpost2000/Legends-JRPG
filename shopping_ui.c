@@ -1,8 +1,10 @@
 /*
   TODO: This should become the new basis for the inventory system UI.
-  TODO: Needs a confirm menu.
+  TODO: Needs a confirm menu. (can be done much later.)
 
   We need to pagify some things pretty soon.
+
+  TODO: Accurate seeking
 */
 enum shopping_ui_animation_phase {
     SHOPPING_UI_ANIMATION_PHASE_FADE_IN,
