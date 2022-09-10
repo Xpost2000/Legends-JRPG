@@ -20,6 +20,7 @@ item_id item_id_make(string id_name) {
     return result;
 }
 
+/* need to avoid having to "dereference items so much... It's more indirection but yeah...." */
 bool item_id_equal(item_id a, item_id b) {
     return a.id_hash == b.id_hash;
 }

@@ -23,6 +23,7 @@ shop_item_id shop_item_id_buyback(s32 index) {
     return (struct shop_item_id) { .is_buyback = true, .index = index };
 }
 
+/* I can try to simplify code by just making price a separate table parallel which would allow me to reuse code? */
 struct shop_item {
     item_id item;
     s32     count;
