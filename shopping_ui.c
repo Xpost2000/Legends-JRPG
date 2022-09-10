@@ -2,15 +2,7 @@
   TODO: This should become the new basis for the inventory system UI.
   TODO: Needs a confirm menu.
 
-  I think the sanest solution is to actually just populate a filter list which will make this
-  not want me shoot myself.
-
-  Using these conditionals is frankly really fucking confusing.
-
-  And rewriting it to use a filtered array would be so much easier and faster than trying to work with whatever's
-  here.
-
-  We can try tomorrow morning...
+  We need to pagify some things pretty soon.
 */
 enum shopping_ui_animation_phase {
     SHOPPING_UI_ANIMATION_PHASE_FADE_IN,
@@ -234,10 +226,10 @@ local void shopping_ui_finish(void) {
 }
 
 local void do_gold_counter(struct software_framebuffer* framebuffer, f32 dt) {
-#if 0
     /* TODO: Consider animating */
     f32 TEXT_SCALE = 4;
 
+    struct shop_instance*    shop         = &game_state->active_shop;
     struct entity_inventory* inventory    = (struct entity_inventory*)(&game_state->inventory);
     s32                      gold_count   = entity_inventory_count_instances_of(inventory, string_literal("item_gold"));
     string                   value_string = string_from_cstring(format_temp("%d Gold", gold_count));
@@ -250,34 +242,23 @@ local void do_gold_counter(struct software_framebuffer* framebuffer, f32 dt) {
     {
         s32 current_shop_filter = find_shop_filter();
 
-        if (shopping_ui.shopping_mode == SHOPPING_MODE_BUYING) {
-            struct shop_instance* shop = &game_state->active_shop;
+        for (s32 cart_item_index = 0; cart_item_index < shopping_ui.cart_entry_count; ++cart_item_index) {
+            struct cart_entry* current_cart_entry = &shopping_ui.cart_entries[cart_item_index];
 
-            s32 remapped_index = 0;
-            for (s32 index = 0; index < shop->item_count; ++index) {
-                struct shop_item* cart_item = &shop->items[index];
-                struct item_def* item_base = item_database_find_by_id(cart_item->item);
+            struct item_def* item_base       = 0;
+            s32              price           = 0;
 
-                if (current_shop_filter != -1 && item_base->type != current_shop_filter) {
-                    continue;
-                }
-
-                current_cart_value += shop_item_get_effective_price(shop, shop_item_id_standard(index)) * shopping_ui.cart_entry_count[remapped_index];
-                remapped_index += 1;
+            if (shopping_ui.shopping_mode == SHOPPING_MODE_BUYING) {
+                struct shop_item* current_shop_item = shop->items + current_cart_entry->item_index;
+                item_base                           = item_database_find_by_id(current_shop_item->item);
+                price                               = shop_item_get_effective_price(shop, shop_item_id_standard(current_cart_entry->item_index));
+            } else {
+                struct item_instance* current_inventory_item = inventory->items + current_cart_entry->item_index;
+                item_base                                    = item_database_find_by_id(current_inventory_item->item);
+                price                                        = item_base->gold_value;
             }
-        } else {
-            s32 remapped_index = 0;
-            for (s32 index = 0; index < inventory->count; ++index) {
-                struct item_instance* current_inventory_item = inventory->items + index;
-                struct item_def* item_base = item_database_find_by_id(current_inventory_item->item);
 
-                if (current_shop_filter != -1 && item_base->type != current_shop_filter) {
-                    continue;
-                }
-
-                current_cart_value += item_base->gold_value * shopping_ui.cart_entry_count[remapped_index];
-                remapped_index += 1;
-            }
+            current_cart_value += price * current_cart_entry->count;
         }
     } 
 
@@ -295,7 +276,6 @@ local void do_gold_counter(struct software_framebuffer* framebuffer, f32 dt) {
         text_width   = font_cache_text_width(painting_font, value_string, TEXT_SCALE); 
         draw_ui_breathing_text(framebuffer, v2f32(SCREEN_WIDTH - text_width, 15 + text_height*1.1), painting_font, TEXT_SCALE, value_string, 2142, color32f32_WHITE);
     }
-#endif
 }
 
 /* There is duplicated code. Beware, and maybe try and shrink this. */
@@ -491,6 +471,9 @@ local void do_shopping_menu(struct software_framebuffer* framebuffer, f32 x, boo
 
             entity_inventory_set_gold_count(inventory, gold_count);
             shopping_ui_clear_cart();
+            shopping_ui_populate_filtered_page();
+            /* In reality I should keep my cursor on the nearest item to be less confusing. */
+            shopping_ui.shopping_item_index = 0;
         }
 
         if (selection_quit) {
