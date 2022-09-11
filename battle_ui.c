@@ -164,6 +164,13 @@ local void draw_turn_panel(struct game_state* state, struct software_framebuffer
     }
 }
 
+local void cancel_ability_selections(void) {
+    {
+        global_battle_ui_state.selected_entities_for_abilities_count = 0;
+        zero_array(global_battle_ui_state.selected_entities_for_abilities);
+    }
+}
+
 local void recalculate_targeted_entities_by_ability(struct entity_ability* ability, u8* selection_field, struct game_state* state) {
     /* TODO: This only targets level entities, */
     /* this isn't a hard fix since we only need ids in the list but just an FYI. */
@@ -171,14 +178,15 @@ local void recalculate_targeted_entities_by_ability(struct entity_ability* abili
     struct entity*     user                  = game_get_player(state);
     const f32          SMALL_ENOUGH_EPISILON = 0.03;
 
-    {
-        global_battle_ui_state.selected_entities_for_abilities_count = 0;
-        zero_array(global_battle_ui_state.selected_entities_for_abilities);
-    }
+    cancel_ability_selections();
+
+    struct entity_iterator entities = game_entity_iterator(state);
 
     if (ability->selection_type == ABILITY_SELECTION_TYPE_FIELD && !ability->moving_field) {
-        for (s32 entity_index = 0; entity_index < area->entities.capacity; ++entity_index) {
-            struct entity* potential_target = area->entities.entities + entity_index;
+        for (struct entity* potential_target = entity_iterator_begin(&entities); !entity_iterator_finished(&entities); potential_target = entity_iterator_advance(&entities)) {
+            if (potential_target == user) {
+                continue;
+            }
 
             if (!(potential_target->flags & ENTITY_FLAGS_ALIVE)) {
                 continue;
@@ -198,7 +206,6 @@ local void recalculate_targeted_entities_by_ability(struct entity_ability* abili
                             f32 delta_x = fabs(potential_target->position.x - real_x);
                             f32 delta_y = fabs(potential_target->position.y - real_y);
 
-                            _debugprintf("(lvl ent %d) %f, %f, delta? (cursor at: %f, %f)(target at: %f, %f)", entity_index, delta_x, delta_y, real_x, real_y, potential_target->position.x, potential_target->position.y);
                             if (delta_x <= SMALL_ENOUGH_EPISILON && delta_y <= SMALL_ENOUGH_EPISILON) {
                                 should_add_to_targets_list = true;
                             }
@@ -208,12 +215,14 @@ local void recalculate_targeted_entities_by_ability(struct entity_ability* abili
             }
 
             if (should_add_to_targets_list) {
-                global_battle_ui_state.selected_entities_for_abilities[global_battle_ui_state.selected_entities_for_abilities_count++] = entity_list_get_id(&area->entities, entity_index);
+                global_battle_ui_state.selected_entities_for_abilities[global_battle_ui_state.selected_entities_for_abilities_count++] = entities.current_id;
             }
         }
     } else {
-        for (s32 entity_index = 0; entity_index < area->entities.capacity; ++entity_index) {
-            struct entity* potential_target = area->entities.entities + entity_index;
+        for (struct entity* potential_target = entity_iterator_begin(&entities); !entity_iterator_finished(&entities); potential_target = entity_iterator_advance(&entities)) {
+            if (potential_target == user) {
+                continue;
+            }
 
             if (!(potential_target->flags & ENTITY_FLAGS_ALIVE)) {
                 continue;
@@ -228,15 +237,13 @@ local void recalculate_targeted_entities_by_ability(struct entity_ability* abili
                 f32 delta_x = fabs(potential_target->position.x - real_x);
                 f32 delta_y = fabs(potential_target->position.y - real_y);
 
-                _debugprintf("(player at %f, %f)", user->position.x, user->position.y);
-                _debugprintf("(lvl ent %d) %f, %f, delta? (cursor at: %f, %f)(target at: %f, %f)", entity_index, delta_x, delta_y, real_x, real_y, potential_target->position.x, potential_target->position.y);
                 if (delta_x <= SMALL_ENOUGH_EPISILON && delta_y <= SMALL_ENOUGH_EPISILON) {
                     should_add_to_targets_list = true;
                 }
             }
 
             if (should_add_to_targets_list) {
-                global_battle_ui_state.selected_entities_for_abilities[global_battle_ui_state.selected_entities_for_abilities_count++] = entity_list_get_id(&area->entities, entity_index);
+                global_battle_ui_state.selected_entities_for_abilities[global_battle_ui_state.selected_entities_for_abilities_count++] = entities.current_id;
             }
         }
     }
@@ -267,6 +274,7 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
         if (global_battle_ui_state.submode != BATTLE_UI_SUBMODE_NONE) {
             if (global_battle_ui_state.selecting_ability_target) {
                 global_battle_ui_state.selecting_ability_target = false;
+                cancel_ability_selections();
             } else {
                 global_battle_ui_state.submode                             = BATTLE_UI_SUBMODE_NONE;
 
