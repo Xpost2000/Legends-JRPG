@@ -394,12 +394,33 @@ void render_entities(struct game_state* state, struct graphics_assets* graphics_
     entity_id* sorted_entity_ids = memory_arena_push(&scratch_arena, sizeof(*sorted_entity_ids) * entity_total_capacities);
     s32        sorted_entity_id_count = 0;
 
-    for (struct entity* current_entity = entity_iterator_begin(&it); !entity_iterator_finished(&it); current_entity = entity_iterator_advance(&it)) {
-        if (!(current_entity->flags & ENTITY_FLAGS_ACTIVE)) {
-            continue;
+    {
+        for (struct entity* current_entity = entity_iterator_begin(&it); !entity_iterator_finished(&it); current_entity = entity_iterator_advance(&it)) {
+            if (!(current_entity->flags & ENTITY_FLAGS_ACTIVE)) {
+                continue;
+            }
+
+            sorted_entity_ids[sorted_entity_id_count++] = it.current_id;
         }
 
-        sorted_entity_ids[sorted_entity_id_count++] = it.current_id;
+        for (s32 sorted_entity_index = 1; sorted_entity_index < sorted_entity_id_count; ++sorted_entity_index) {
+            entity_id key_id = sorted_entity_ids[sorted_entity_index];
+            struct entity* key_entity = game_dereference_entity(state, sorted_entity_ids[sorted_entity_index]);
+
+            s32 sorted_entity_insertion_index = sorted_entity_index;
+            for (; sorted_entity_insertion_index > 0; --sorted_entity_insertion_index) {
+                struct entity* comparison_entity = game_dereference_entity(state, sorted_entity_ids[sorted_entity_insertion_index-1]);
+
+                if (comparison_entity->position.y < key_entity->position.y) {
+                    break;
+                } else {
+                    sorted_entity_ids[sorted_entity_insertion_index] = sorted_entity_ids[sorted_entity_insertion_index-1];
+                }
+            }
+
+            sorted_entity_ids[sorted_entity_insertion_index] = key_id;
+
+        }
     }
 
     for (s32 sorted_entity_index = 0; sorted_entity_index < sorted_entity_id_count; ++sorted_entity_index) {
