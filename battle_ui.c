@@ -1071,3 +1071,15 @@ local void end_combat_ui(void) {
         global_battle_ui_state.phase = BATTLE_UI_FADE_OUT_DETAILS_AFTER_BATTLE_COMPLETION;
     }
 }
+
+local bool is_entity_under_ability_selection(entity_id who) {
+    for (s32 entity_under_ability_selection_index = 0; entity_under_ability_selection_index < global_battle_ui_state.selected_entities_for_abilities_count; ++entity_under_ability_selection_index) {
+        entity_id current_id = global_battle_ui_state.selected_entities_for_abilities[entity_under_ability_selection_index];
+
+        if (entity_id_equal(current_id, who)) {
+            return true;
+        }
+    }
+
+    return false;
+}

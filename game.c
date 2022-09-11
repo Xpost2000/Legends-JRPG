@@ -29,6 +29,9 @@ bool       game_command_before_disabled_input                                   
 local bool game_command_console_enabled                                         = false;
 local char game_command_console_line_input[GAME_COMMAND_CONSOLE_LINE_INPUT_MAX] = {};
 
+/* defined in battle_ui.c */
+local bool is_entity_under_ability_selection(entity_id who);
+
 /* using GNSH fonts, which are public domain, but credits to open game art, this font looks cool */
 enum menu_font_variation {
     MENU_FONT_COLOR_GOLD,

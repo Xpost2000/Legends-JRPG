@@ -425,13 +425,21 @@ void render_entities(struct game_state* state, struct graphics_assets* graphics_
                                                  TILE_UNIT_SIZE * roundf(real_dimensions.x/TILE_UNIT_SIZE),
                                                  TILE_UNIT_SIZE * max(roundf(real_dimensions.y/(TILE_UNIT_SIZE*2)), 1)),
                                    RECTANGLE_F32_NULL, color32f32(1,1,1,0.72), NO_FLAGS, BLEND_MODE_ALPHA);
+
+        union color32f32 modulation_color = color32f32_WHITE;
+
+        if (is_entity_under_ability_selection(it.current_id)) {
+            /* red for now. We want better effects maybe? */
+            modulation_color.g = modulation_color.b = 0;
+        }
+
         render_commands_push_image(commands,
                                    graphics_assets_get_image_by_id(graphics_assets, sprite_to_use),
                                    rectangle_f32(current_entity->position.x - alignment_offset.x,
                                                  current_entity->position.y - alignment_offset.y,
                                                  real_dimensions.x,
                                                  real_dimensions.y),
-                                   RECTANGLE_F32_NULL, color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
+                                   RECTANGLE_F32_NULL, modulation_color, NO_FLAGS, BLEND_MODE_ALPHA);
 
 #ifndef RELEASE
         struct rectangle_f32 collision_bounds = entity_rectangle_collision_bounds(current_entity);
