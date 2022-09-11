@@ -1115,7 +1115,8 @@ void game_initialize_game_world(void) {
     /* load_level_from_file(game_state, string_literal("pf.area")); */
 #endif
     /* load_level_from_file(game_state, string_literal("bt.area")); */
-    load_level_from_file(game_state, string_literal("testforest.area"));
+    /* load_level_from_file(game_state, string_literal("testforest.area")); */
+    load_level_from_file(game_state, string_literal("lighttest.area"));
     /* load_level_from_file(game_state, string_literal("level.area")); */
     /* load_level_from_file(game_state, string_literal("testisland.area")); */
     /* game_attempt_to_change_area_name(game_state, string_literal("Old Iyeila"), string_literal("Grave of Stars")); */

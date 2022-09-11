@@ -250,6 +250,8 @@ I have some of the ability UI done which is very nice I guess. Going to level de
 engine work done.
 
 - [X] Entity selection with abilities (and highlighting obviously.)
+- [ ] Make it more Disgaea like (action is queued up, and we can undo movement and such if they haven't been executed)
+  This is after everything is confirmed to already work.
 - [ ] Confirmation of ability selection.
 - [ ] Also turn investment! (For now I will do pure turn based (just set action points to 0 after each action.))
 - [ ] Add the usage of abilities

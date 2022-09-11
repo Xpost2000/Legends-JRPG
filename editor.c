@@ -8,6 +8,11 @@
 */
 
 /*
+  NOTE: would be nice ot make the rendering apply lighting later.
+  Not doing it right now though.
+*/
+
+/*
   WHOCARES: May crash if touching the last_selected pointer incorrectly?
 */
 
@@ -1037,253 +1042,271 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
                 draw_cursor_y += 12 * 1.5 * 3;
             }
         } else if (editor_state->tab_menu_open & TAB_MENU_CTRL_BIT) {
-            switch (editor_state->tool_mode) {
-                /* I would show images, but this is easier for now */
-                case EDITOR_TOOL_TILE_PAINTING: {} break;
-                case EDITOR_TOOL_TRIGGER_PLACEMENT: {
-                    switch (editor_state->trigger_placement_type) {
-                        case TRIGGER_PLACEMENT_TYPE_LEVEL_TRANSITION: {
-                            f32 draw_cursor_y = 30;
-                            struct trigger_level_transition* trigger = editor_state->last_selected;
+            if (!editor_state->last_selected) {
+                editor_state->tab_menu_open = 0;
+            } else {
+                switch (editor_state->tool_mode) {
+                    /* I would show images, but this is easier for now */
+                    case EDITOR_TOOL_TILE_PAINTING: {} break;
+                    case EDITOR_TOOL_TRIGGER_PLACEMENT: {
+                        switch (editor_state->trigger_placement_type) {
+                            case TRIGGER_PLACEMENT_TYPE_LEVEL_TRANSITION: {
+                                f32 draw_cursor_y = 30;
+                                struct trigger_level_transition* trigger = editor_state->last_selected;
 
-                            char tmp_string[1024] = {};
-                            snprintf(tmp_string, 1024, "Transition Area: \"%s\" <%f, %f> (SET?)", trigger->target_level, trigger->spawn_location.x, trigger->spawn_location.y);
-                            if(EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(16, draw_cursor_y), string_from_cstring(tmp_string))) {
-                                /* open another file selection menu */
-                                editor_state->serialize_menu_mode   = 2;
-                                editor_state->serialize_menu_reason = 1;
-                                struct ui_pause_menu* menu_state = &state->ui_pause;
-                                game_state_set_ui_state(game_state, UI_STATE_PAUSE);
-                                game_state->ui_pause.transition_t    = 0;
-                                game_state->ui_pause.selection       = 0;
-                                zero_array(game_state->ui_pause.shift_t);
-                                menu_state->animation_state = UI_PAUSE_MENU_NO_ANIM;
-                                editor_state->tab_menu_open = 0;
-                            }
-
-                            draw_cursor_y += 12 * 1.2 * 2;
-                            if(EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(16, draw_cursor_y), string_concatenate(&scratch_arena, string_literal("Facing Direction: "), facing_direction_strings[trigger->new_facing_direction]))) {
-                                trigger->new_facing_direction += 1;
-                                if (trigger->new_facing_direction > 4) trigger->new_facing_direction = 0;
-                            }
-                        } break;
-                        case TRIGGER_PLACEMENT_TYPE_SCRIPTABLE_TRIGGER: {
-                            f32 draw_cursor_y = 30;
-                            struct trigger* trigger = editor_state->last_selected;
-                            s32 trigger_id          = trigger - editor_state->generic_triggers;
-
-                            string activation_type_string = activation_type_strings[trigger->activation_method];
-                            if(EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(16, draw_cursor_y),
-                                                   string_from_cstring(format_temp("Activation Type: %.*s", activation_type_string.length, activation_type_string.data)))) {
-                                trigger->activation_method += 1;
-                                if (trigger->activation_method >= ACTIVATION_TYPE_COUNT) {
-                                    trigger->activation_method = 0;
-                                }
-                            }
-                        } break;
-                    }
-                } break;
-                case EDITOR_TOOL_ENTITY_PLACEMENT: {
-                    switch (editor_state->entity_placement_type) {
-                        case ENTITY_PLACEMENT_TYPE_ACTOR: {
-                            f32 draw_cursor_y = 70;
-                            const f32 text_scale = 1;
-
-                            struct level_area_entity* entity = editor_state->last_selected;
-
-                            {
-                                string s = string_clone(&scratch_arena, string_from_cstring(format_temp("base_id: %s", entity->base_name)));
-                                if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(10, draw_cursor_y), s)) {
-                                    editor_state->actor_property_menu.picking_entity_base ^= 1;
-                                    editor_state->actor_property_menu.item_list_scroll_y   = 0;
-                                }
-                                draw_cursor_y += 16 * 2 * 1.5 + TILE_UNIT_SIZE*2.3;
-                            }
-
-                            if (editor_state->actor_property_menu.picking_entity_base) {
-                                const s32 SCROLL_AMOUNT = 45;
-
-                                if (is_mouse_wheel_up()) {
-                                    if (editor_state->actor_property_menu.item_list_scroll_y < 0)
-                                        editor_state->actor_property_menu.item_list_scroll_y += SCROLL_AMOUNT;
-                                } else if (is_mouse_wheel_down()) {
-                                    editor_state->actor_property_menu.item_list_scroll_y -= SCROLL_AMOUNT;
+                                char tmp_string[1024] = {};
+                                snprintf(tmp_string, 1024, "Transition Area: \"%s\" <%f, %f> (SET?)", trigger->target_level, trigger->spawn_location.x, trigger->spawn_location.y);
+                                if(EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(16, draw_cursor_y), string_from_cstring(tmp_string))) {
+                                    /* open another file selection menu */
+                                    editor_state->serialize_menu_mode   = 2;
+                                    editor_state->serialize_menu_reason = 1;
+                                    struct ui_pause_menu* menu_state = &state->ui_pause;
+                                    game_state_set_ui_state(game_state, UI_STATE_PAUSE);
+                                    game_state->ui_pause.transition_t    = 0;
+                                    game_state->ui_pause.selection       = 0;
+                                    zero_array(game_state->ui_pause.shift_t);
+                                    menu_state->animation_state = UI_PAUSE_MENU_NO_ANIM;
+                                    editor_state->tab_menu_open = 0;
                                 }
 
-                                if (is_key_pressed(KEY_HOME)) {
-                                    editor_state->actor_property_menu.item_list_scroll_y = 0;
+                                draw_cursor_y += 12 * 1.2 * 2;
+                                if(EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(16, draw_cursor_y), string_concatenate(&scratch_arena, string_literal("Facing Direction: "), facing_direction_strings[trigger->new_facing_direction]))) {
+                                    trigger->new_facing_direction += 1;
+                                    if (trigger->new_facing_direction > 4) trigger->new_facing_direction = 0;
                                 }
+                            } break;
+                            case TRIGGER_PLACEMENT_TYPE_SCRIPTABLE_TRIGGER: {
+                                f32 draw_cursor_y = 30;
+                                struct trigger* trigger = editor_state->last_selected;
+                                s32 trigger_id          = trigger - editor_state->generic_triggers;
 
-                                {
-                                    struct entity_database* entities = &game_state->entity_database;
-
-                                    f32 largest_name_width = 0;
-
-                                    for (s32 index = 0; index < entities->count; ++index) {
-                                        f32 current_width = font_cache_text_width(font, entities->entity_key_strings[index], text_scale);
-
-                                        if (largest_name_width < current_width) {
-                                            largest_name_width = current_width;
-                                        }
-                                    }
-
-                                    s32 ENTRIES_PER_ROW = (500 / largest_name_width);
-                                    s32 row_count     = (tile_table_data_count / ENTRIES_PER_ROW)+1;
-
-                                    for (s32 row_index = 0; row_index < row_count; ++row_index) {
-                                        f32 draw_cursor_x = 0;
-
-                                        for (s32 index = 0; index < ENTRIES_PER_ROW; ++index) {
-                                            s32 entity_data_index = row_index * ENTRIES_PER_ROW + index;
-                                            if (!(entity_data_index < entities->count)) {
-                                                break;
-                                            }
-
-                                            struct entity_base_data* data = entity_database_find_by_index(entities, entity_data_index);
-                                            struct entity_animation* anim = find_animation_by_name(data->model_index, facing_direction_strings_normal[editor_state->actor_property_menu.facing_direction_index_for_animation]);
-
-                                            image_id sprite_to_use = anim->sprites[0];
-
-                                            software_framebuffer_draw_image_ex(framebuffer, graphics_assets_get_image_by_id(&graphics_assets, sprite_to_use),
-                                                                               rectangle_f32(draw_cursor_x, draw_cursor_y-TILE_UNIT_SIZE*2, TILE_UNIT_SIZE, TILE_UNIT_SIZE*2), RECTANGLE_F32_NULL, color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
-
-                                            if (EDITOR_imgui_button(framebuffer, font, highlighted_font, text_scale, v2f32(draw_cursor_x, draw_cursor_y), entities->entity_key_strings[entity_data_index])) {
-                                                editor_state->tab_menu_open    = 0;
-                                                editor_state->actor_property_menu.entity_base_id = entity_data_index;
-
-                                                level_area_entity_set_base_id(entity, entities->entity_key_strings[entity_data_index]);
-                                            }
-
-                                            draw_cursor_x += largest_name_width * 1.1;
-                                        }
-
-                                        draw_cursor_y += TILE_UNIT_SIZE*2 * 1.2 * 2;
+                                string activation_type_string = activation_type_strings[trigger->activation_method];
+                                if(EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(16, draw_cursor_y),
+                                                       string_from_cstring(format_temp("Activation Type: %.*s", activation_type_string.length, activation_type_string.data)))) {
+                                    trigger->activation_method += 1;
+                                    if (trigger->activation_method >= ACTIVATION_TYPE_COUNT) {
+                                        trigger->activation_method = 0;
                                     }
                                 }
-                            } else {
-                                string facing_direction_string = facing_direction_strings[entity->facing_direction];
-                                {
-                                    string s = string_clone(&scratch_arena, string_from_cstring(format_temp("facing direction: %.*s", facing_direction_string.length, facing_direction_string.data)));
-                                    s32 result = EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(10, draw_cursor_y), s);
+                            } break;
+                        }
+                    } break;
+                    case EDITOR_TOOL_ENTITY_PLACEMENT: {
+                        switch (editor_state->entity_placement_type) {
+                            case ENTITY_PLACEMENT_TYPE_ACTOR: {
+                                f32 draw_cursor_y = 70;
+                                const f32 text_scale = 1;
 
-                                    if (result == 1) {
-                                        entity->facing_direction += 1;
-                                        if (entity->facing_direction > 3) entity->facing_direction = 0;
-                                    } else if (result == 2) {
-                                        if (entity->facing_direction == 0) {
-                                            entity->facing_direction = 3;
-                                        } else {
-                                            entity->facing_direction -= 1;
-                                        }
-                                    }
-                                    draw_cursor_y += 16 * 2 * 1.5;
-                                }
+                                struct level_area_entity* entity = editor_state->last_selected;
 
                                 {
-                                    string s = string_clone(&scratch_arena, string_from_cstring(format_temp("hidden: %s", cstr_yesno[(entity->flags & ENTITY_FLAGS_HIDDEN) > 0])));
+                                    string s = string_clone(&scratch_arena, string_from_cstring(format_temp("base_id: %s", entity->base_name)));
                                     if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(10, draw_cursor_y), s)) {
-                                        entity->flags ^= ENTITY_FLAGS_HIDDEN;
+                                        editor_state->actor_property_menu.picking_entity_base ^= 1;
+                                        editor_state->actor_property_menu.item_list_scroll_y   = 0;
                                     }
-                                    draw_cursor_y += 16 * 2 * 1.5;
+                                    draw_cursor_y += 16 * 2 * 1.5 + TILE_UNIT_SIZE*2.3;
                                 }
-                                {
-                                    
-                                    draw_cursor_y += 16 * 2 * 1.5;
-                                }
-                            }
 
-                        } break;
-                        case ENTITY_PLACEMENT_TYPE_CHEST: {
-                            f32 draw_cursor_y = 70;
-                            struct entity_chest* chest = editor_state->last_selected;
-                            software_framebuffer_draw_text(framebuffer, font, 2, v2f32(10, 10), string_literal("Chest Items"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+                                if (editor_state->actor_property_menu.picking_entity_base) {
+                                    const s32 SCROLL_AMOUNT = 45;
 
-                            {
-                                /* sort bar */
-                                f32 draw_cursor_x = 30;
-
-                                for (unsigned index = 0; index < array_count(item_type_strings); ++index) {
-                                    string text = item_type_strings[index];
-
-                                    if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(draw_cursor_x, 35), text)) {
-                                        /* should be mask */
-                                        editor_state->chest_property_menu.item_sort_filter = index;
+                                    if (is_mouse_wheel_up()) {
+                                        if (editor_state->actor_property_menu.item_list_scroll_y < 0)
+                                            editor_state->actor_property_menu.item_list_scroll_y += SCROLL_AMOUNT;
+                                    } else if (is_mouse_wheel_down()) {
+                                        editor_state->actor_property_menu.item_list_scroll_y -= SCROLL_AMOUNT;
                                     }
 
-                                    draw_cursor_x += font_cache_text_width(font, text, 2) * 1.15;
-                                }
-                            }
-
-                            if (editor_state->chest_property_menu.adding_item) {
-                                if (is_key_down(KEY_UP)) {
-                                    editor_state->chest_property_menu.item_list_scroll_y -= 100 * dt;
-                                } else if (is_key_down(KEY_DOWN)) {
-                                    editor_state->chest_property_menu.item_list_scroll_y += 100 * dt;
-                                } else if (is_key_pressed(KEY_HOME)) {
-                                    editor_state->chest_property_menu.item_list_scroll_y = 0;
-                                }
-
-                                /* NOTE: The chest is probably code rotting, since I haven't seen it in a good minute. */
-                                /* probably go back and check these things. */
-                                for (unsigned index = 0; index < item_database_count; ++index) {
-                                    struct item_def* item_base = item_database + index;
-
-                                    if (editor_state->chest_property_menu.item_sort_filter) {
-                                        if (editor_state->chest_property_menu.item_sort_filter != item_base->type)
-                                            continue;
+                                    if (is_key_pressed(KEY_HOME)) {
+                                        editor_state->actor_property_menu.item_list_scroll_y = 0;
                                     }
 
-                                    /* TODO more flags */
-                                    if (item_base->id_name.length > 0) {
-                                        /* TODO make a temporary printing function or something. God. */
-                                        char tmp[255] = {};
-                                        snprintf(tmp, 255, "(%.*s) %.*s", item_base->id_name.length, item_base->id_name.data, item_base->name.length, item_base->name.data);
+                                    {
+                                        struct entity_database* entities = &game_state->entity_database;
 
-                                        if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 1.3, v2f32(16, draw_cursor_y + editor_state->chest_property_menu.item_list_scroll_y), string_from_cstring(tmp))) {
-                                            entity_inventory_add((struct entity_inventory*)&chest->inventory, 16, item_get_id(item_base));
-                                            editor_state->chest_property_menu.adding_item = false;
-                                            break;
+                                        f32 largest_name_width = 0;
+
+                                        for (s32 index = 0; index < entities->count; ++index) {
+                                            f32 current_width = font_cache_text_width(font, entities->entity_key_strings[index], text_scale);
+
+                                            if (largest_name_width < current_width) {
+                                                largest_name_width = current_width;
+                                            }
                                         }
 
-                                        draw_cursor_y += 12 * 1.2 * 1.3;
-                                    }
-                                }
-                            } else {
-                                if (chest->inventory.item_count > 0) {
-                                    char tmp[255] = {};
-                                    for (s32 index = 0; index < chest->inventory.item_count; ++index) {
-                                        struct item_instance* item      = chest->inventory.items + index;
-                                        struct item_def*      item_base = item_database_find_by_id(item->item);
-                                        snprintf(tmp, 255, "(%.*s) %.*s - %d/%d", item_base->id_name.length, item_base->id_name.data, item_base->name.length, item_base->name.data, item->count, item_base->max_stack_value);
-                                        draw_cursor_y += 12 * 1.2 * 1.5;
+                                        s32 ENTRIES_PER_ROW = (500 / largest_name_width);
+                                        s32 row_count     = (tile_table_data_count / ENTRIES_PER_ROW)+1;
 
-                                        s32 button_response = (EDITOR_imgui_button(framebuffer, font, highlighted_font, 1.5, v2f32(16, draw_cursor_y), string_from_cstring(tmp)));
-                                        if(button_response == 1) {
-                                            /* ?clone? Not exactly expected behavior I'd say lol. */
-                                            entity_inventory_add((struct entity_inventory*)&chest->inventory, 16, item->item);
-                                        } else if (button_response == 2) {
-                                            if (is_key_down(KEY_SHIFT)) {
-                                                entity_inventory_remove_item((struct entity_inventory*)&chest->inventory, index, true);
-                                            } else {
-                                                entity_inventory_remove_item((struct entity_inventory*)&chest->inventory, index, false);
+                                        for (s32 row_index = 0; row_index < row_count; ++row_index) {
+                                            f32 draw_cursor_x = 0;
+
+                                            for (s32 index = 0; index < ENTRIES_PER_ROW; ++index) {
+                                                s32 entity_data_index = row_index * ENTRIES_PER_ROW + index;
+                                                if (!(entity_data_index < entities->count)) {
+                                                    break;
+                                                }
+
+                                                struct entity_base_data* data = entity_database_find_by_index(entities, entity_data_index);
+                                                struct entity_animation* anim = find_animation_by_name(data->model_index, facing_direction_strings_normal[editor_state->actor_property_menu.facing_direction_index_for_animation]);
+
+                                                image_id sprite_to_use = anim->sprites[0];
+
+                                                software_framebuffer_draw_image_ex(framebuffer, graphics_assets_get_image_by_id(&graphics_assets, sprite_to_use),
+                                                                                   rectangle_f32(draw_cursor_x, draw_cursor_y-TILE_UNIT_SIZE*2, TILE_UNIT_SIZE, TILE_UNIT_SIZE*2), RECTANGLE_F32_NULL, color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
+
+                                                if (EDITOR_imgui_button(framebuffer, font, highlighted_font, text_scale, v2f32(draw_cursor_x, draw_cursor_y), entities->entity_key_strings[entity_data_index])) {
+                                                    editor_state->tab_menu_open    = 0;
+                                                    editor_state->actor_property_menu.entity_base_id = entity_data_index;
+
+                                                    level_area_entity_set_base_id(entity, entities->entity_key_strings[entity_data_index]);
+                                                }
+
+                                                draw_cursor_x += largest_name_width * 1.1;
                                             }
+
+                                            draw_cursor_y += TILE_UNIT_SIZE*2 * 1.2 * 2;
                                         }
                                     }
                                 } else {
-                                    software_framebuffer_draw_text(framebuffer, font, 2, v2f32(10, draw_cursor_y), string_literal("(no items)"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+                                    string facing_direction_string = facing_direction_strings[entity->facing_direction];
+                                    {
+                                        string s = string_clone(&scratch_arena, string_from_cstring(format_temp("facing direction: %.*s", facing_direction_string.length, facing_direction_string.data)));
+                                        s32 result = EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(10, draw_cursor_y), s);
+
+                                        if (result == 1) {
+                                            entity->facing_direction += 1;
+                                            if (entity->facing_direction > 3) entity->facing_direction = 0;
+                                        } else if (result == 2) {
+                                            if (entity->facing_direction == 0) {
+                                                entity->facing_direction = 3;
+                                            } else {
+                                                entity->facing_direction -= 1;
+                                            }
+                                        }
+                                        draw_cursor_y += 16 * 2 * 1.5;
+                                    }
+
+                                    {
+                                        string s = string_clone(&scratch_arena, string_from_cstring(format_temp("hidden: %s", cstr_yesno[(entity->flags & ENTITY_FLAGS_HIDDEN) > 0])));
+                                        if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(10, draw_cursor_y), s)) {
+                                            entity->flags ^= ENTITY_FLAGS_HIDDEN;
+                                        }
+                                        draw_cursor_y += 16 * 2 * 1.5;
+                                    }
+                                    {
+                                    
+                                        draw_cursor_y += 16 * 2 * 1.5;
+                                    }
                                 }
 
-                                if(EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(150, 10), string_literal("(add item)"))) {
-                                    /* pop up should just replace the menu */
-                                    /* for now just add a test item */
-                                    /* entity_inventory_add(&chest->inventory, 16, item_id_make(string_literal("item_sardine_fish_5"))); */
-                                    editor_state->chest_property_menu.adding_item        = true;
-                                    editor_state->chest_property_menu.item_list_scroll_y = 0;
+                            } break;
+                            case ENTITY_PLACEMENT_TYPE_CHEST: {
+                                f32 draw_cursor_y = 70;
+                                struct entity_chest* chest = editor_state->last_selected;
+                                software_framebuffer_draw_text(framebuffer, font, 2, v2f32(10, 10), string_literal("Chest Items"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+
+                                {
+                                    /* sort bar */
+                                    f32 draw_cursor_x = 30;
+
+                                    for (unsigned index = 0; index < array_count(item_type_strings); ++index) {
+                                        string text = item_type_strings[index];
+
+                                        if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(draw_cursor_x, 35), text)) {
+                                            /* should be mask */
+                                            editor_state->chest_property_menu.item_sort_filter = index;
+                                        }
+
+                                        draw_cursor_x += font_cache_text_width(font, text, 2) * 1.15;
+                                    }
                                 }
-                            }
-                        } break;
-                    }
-                } break;
+
+                                if (editor_state->chest_property_menu.adding_item) {
+                                    if (is_key_down(KEY_UP)) {
+                                        editor_state->chest_property_menu.item_list_scroll_y -= 100 * dt;
+                                    } else if (is_key_down(KEY_DOWN)) {
+                                        editor_state->chest_property_menu.item_list_scroll_y += 100 * dt;
+                                    } else if (is_key_pressed(KEY_HOME)) {
+                                        editor_state->chest_property_menu.item_list_scroll_y = 0;
+                                    }
+
+                                    /* NOTE: The chest is probably code rotting, since I haven't seen it in a good minute. */
+                                    /* probably go back and check these things. */
+                                    for (unsigned index = 0; index < item_database_count; ++index) {
+                                        struct item_def* item_base = item_database + index;
+
+                                        if (editor_state->chest_property_menu.item_sort_filter) {
+                                            if (editor_state->chest_property_menu.item_sort_filter != item_base->type)
+                                                continue;
+                                        }
+
+                                        /* TODO more flags */
+                                        if (item_base->id_name.length > 0) {
+                                            /* TODO make a temporary printing function or something. God. */
+                                            char tmp[255] = {};
+                                            snprintf(tmp, 255, "(%.*s) %.*s", item_base->id_name.length, item_base->id_name.data, item_base->name.length, item_base->name.data);
+
+                                            if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 1.3, v2f32(16, draw_cursor_y + editor_state->chest_property_menu.item_list_scroll_y), string_from_cstring(tmp))) {
+                                                entity_inventory_add((struct entity_inventory*)&chest->inventory, 16, item_get_id(item_base));
+                                                editor_state->chest_property_menu.adding_item = false;
+                                                break;
+                                            }
+
+                                            draw_cursor_y += 12 * 1.2 * 1.3;
+                                        }
+                                    }
+                                } else {
+                                    if (chest->inventory.item_count > 0) {
+                                        char tmp[255] = {};
+                                        for (s32 index = 0; index < chest->inventory.item_count; ++index) {
+                                            struct item_instance* item      = chest->inventory.items + index;
+                                            struct item_def*      item_base = item_database_find_by_id(item->item);
+                                            snprintf(tmp, 255, "(%.*s) %.*s - %d/%d", item_base->id_name.length, item_base->id_name.data, item_base->name.length, item_base->name.data, item->count, item_base->max_stack_value);
+                                            draw_cursor_y += 12 * 1.2 * 1.5;
+
+                                            s32 button_response = (EDITOR_imgui_button(framebuffer, font, highlighted_font, 1.5, v2f32(16, draw_cursor_y), string_from_cstring(tmp)));
+                                            if(button_response == 1) {
+                                                /* ?clone? Not exactly expected behavior I'd say lol. */
+                                                entity_inventory_add((struct entity_inventory*)&chest->inventory, 16, item->item);
+                                            } else if (button_response == 2) {
+                                                if (is_key_down(KEY_SHIFT)) {
+                                                    entity_inventory_remove_item((struct entity_inventory*)&chest->inventory, index, true);
+                                                } else {
+                                                    entity_inventory_remove_item((struct entity_inventory*)&chest->inventory, index, false);
+                                                }
+                                            }
+                                        }
+                                    } else {
+                                        software_framebuffer_draw_text(framebuffer, font, 2, v2f32(10, draw_cursor_y), string_literal("(no items)"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+                                    }
+
+                                    if(EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(150, 10), string_literal("(add item)"))) {
+                                        /* pop up should just replace the menu */
+                                        /* for now just add a test item */
+                                        /* entity_inventory_add(&chest->inventory, 16, item_id_make(string_literal("item_sardine_fish_5"))); */
+                                        editor_state->chest_property_menu.adding_item        = true;
+                                        editor_state->chest_property_menu.item_list_scroll_y = 0;
+                                    }
+                                }
+                            } break;
+                            case ENTITY_PLACEMENT_TYPE_LIGHT: {
+                                f32 draw_cursor_y = 70;
+                                struct light_def* current_light = editor_state->last_selected;
+
+                                EDITOR_imgui_text_edit_f32(framebuffer, font, highlighted_font, 2, v2f32(15, draw_cursor_y), string_literal("Light Power: "), &current_light->power);
+                                draw_cursor_y += 16 * 2.5;
+                                EDITOR_imgui_text_edit_u8(framebuffer, font, highlighted_font, 2, v2f32(15, draw_cursor_y), string_literal("Light R: "), &current_light->color.r);
+                                draw_cursor_y += 16 * 2.5;
+                                EDITOR_imgui_text_edit_u8(framebuffer, font, highlighted_font, 2, v2f32(15, draw_cursor_y), string_literal("Light G: "), &current_light->color.g);
+                                draw_cursor_y += 16 * 2.5;
+                                EDITOR_imgui_text_edit_u8(framebuffer, font, highlighted_font, 2, v2f32(15, draw_cursor_y), string_literal("Light B: "), &current_light->color.b);
+                                draw_cursor_y += 16 * 2.5;
+                                EDITOR_imgui_text_edit_u8(framebuffer, font, highlighted_font, 2, v2f32(15, draw_cursor_y), string_literal("Light A: "), &current_light->color.a);
+                            } break;
+                        }
+                    } break;
+                }
             }
         } else {
             switch (editor_state->tool_mode) {
@@ -1511,7 +1534,7 @@ void update_and_render_editor(struct software_framebuffer* framebuffer, f32 dt) 
                 if (editor_state->last_selected == current_light) {
                     render_commands_push_quad(&commands, rectangle_f32(current_light->position.x * TILE_UNIT_SIZE, current_light->position.y * TILE_UNIT_SIZE,
                                                                        current_light->scale.x * TILE_UNIT_SIZE,    current_light->scale.y * TILE_UNIT_SIZE),
-                                              color32u8(255, 255, 255, normalized_sinf(global_elapsed_time*2) * 0.5*255 + 64), BLEND_MODE_ALPHA);
+                                              color32u8(current_light->color.r, current_light->color.g, current_light->color.b, normalized_sinf(global_elapsed_time*2) * 0.5*255 + 64), BLEND_MODE_ALPHA);
                 } else {
                     render_commands_push_quad(&commands, rectangle_f32(current_light->position.x * TILE_UNIT_SIZE, current_light->position.y * TILE_UNIT_SIZE,
                                                                        current_light->scale.x * TILE_UNIT_SIZE,    current_light->scale.y * TILE_UNIT_SIZE),
