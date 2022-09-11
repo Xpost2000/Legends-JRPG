@@ -1481,7 +1481,7 @@ void update_and_render_editor(struct software_framebuffer* framebuffer, f32 dt) 
                 }
                 s32 trigger_id          = current_trigger - editor_state->generic_triggers;
                 render_commands_push_text(&commands, font, 1, v2f32(current_trigger->bounds.x * TILE_UNIT_SIZE, current_trigger->bounds.y * TILE_UNIT_SIZE),
-                                          string_from_cstring(format_temp("(trigger %d)", trigger_id)), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+                                          copy_cstring_to_scratch(format_temp("(trigger %d)", trigger_id)), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
             }
 
             for (s32 chest_index = 0; chest_index < editor_state->entity_chest_count; ++chest_index) {
@@ -1519,7 +1519,7 @@ void update_and_render_editor(struct software_framebuffer* framebuffer, f32 dt) 
                 }
                 s32 light_id          = current_light - editor_state->lights;
                 render_commands_push_text(&commands, font, 1, v2f32(current_light->position.x * TILE_UNIT_SIZE, current_light->position.y * TILE_UNIT_SIZE),
-                                          string_from_cstring(format_temp("(light %d)", light_id)), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+                                          copy_cstring_to_scratch(format_temp("(light %d)", light_id)), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
             }
         }
         

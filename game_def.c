@@ -242,6 +242,16 @@ void _debug_print_navigation_path(struct navigation_path* path) {
 
 struct navigation_path navigation_path_find(struct memory_arena* arena, struct level_area* area, v2f32 start, v2f32 end);
 
+/* lol */
+string copy_string_to_scratch(string str) {
+    string result = memory_arena_push_string(&scratch_arena, str);
+    return result;
+}
+string copy_cstring_to_scratch(char* cstr) {
+    string result = memory_arena_push_string(&scratch_arena, string_from_cstring(cstr));
+    return result;
+}
+
 #ifdef USE_EDITOR
 #include "editor_def.c"
 #endif

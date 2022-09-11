@@ -128,7 +128,8 @@ void memory_arena_end_temporary_memory(struct temporary_memory* temporary_arena)
 string memory_arena_push_string(struct memory_arena* arena, string to_copy) {
     string result = {};
     result.length = to_copy.length;
-    result.data   = memory_arena_push(arena, to_copy.length);
+    result.data   = memory_arena_push(arena, to_copy.length+1);
     cstring_copy(to_copy.data, result.data, result.length);
+    result.data[to_copy.length] = 0;
     return result;
 }
