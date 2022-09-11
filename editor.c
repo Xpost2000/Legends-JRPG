@@ -111,11 +111,12 @@ void editor_serialize_area(struct binary_serializer* serializer) {
                     Serialize_Fixed_Array(serializer, s32, editor_state->tile_counts[TILE_LAYER_FOREGROUND], editor_state->tile_layers[TILE_LAYER_FOREGROUND]);
                 } break;
                 default: {
-                    
+                    goto didnt_change_level_tile_format_from_current;
                 } break;
             }
         } else {
             /* the current version of the tile layering, we can just load them in order. */
+        didnt_change_level_tile_format_from_current:
             for (s32 index = 0; index < TILE_LAYER_COUNT; ++index) {
                 Serialize_Fixed_Array(serializer, s32, editor_state->tile_counts[index], editor_state->tile_layers[index]);
             }

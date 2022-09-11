@@ -114,8 +114,8 @@ static string ui_pause_editor_menu_strings[] = {
 #define COLOR_GRADING_DARKEST color32u8(42,42,110,255)
 #define COLOR_GRADING_DAWN    color32u8(240,105,26,255)
 
-/* local union color32u8 global_color_grading_filter = COLOR_GRADING_DAY; */
-local union color32u8 global_color_grading_filter = COLOR_GRADING_DARKEST;
+local union color32u8 global_color_grading_filter = COLOR_GRADING_DAY;
+/* local union color32u8 global_color_grading_filter = COLOR_GRADING_DARKEST; */
 
 enum facing_direction {
     DIRECTION_DOWN,

@@ -652,6 +652,7 @@ void serialize_level_area(struct game_state* state, struct binary_serializer* se
         memory_arena_clear_top(state->arena);
         _debugprintf("reading version");
         serialize_u32(serializer, &level->version);
+        _debugprintf("V: %d", level->version);
         _debugprintf("reading default player spawn");
         serialize_f32(serializer, &level->default_player_spawn.x);
         serialize_f32(serializer, &level->default_player_spawn.y);
@@ -668,11 +669,12 @@ void serialize_level_area(struct game_state* state, struct binary_serializer* se
                         Serialize_Fixed_Array_And_Allocate_From_Arena(serializer, state->arena, s32, level->tile_counts[TILE_LAYER_FOREGROUND], level->tile_layers[TILE_LAYER_FOREGROUND]);
                     } break;
                     default: {
-                    
+                        goto didnt_change_level_tile_format_from_current;
                     } break;
                 }
             } else {
                 /* the current version of the tile layering, we can just load them in order. */
+            didnt_change_level_tile_format_from_current:
                 for (s32 index = 0; index < TILE_LAYER_COUNT; ++index) {
                     Serialize_Fixed_Array_And_Allocate_From_Arena(serializer, state->arena, s32, level->tile_counts[index], level->tile_layers[index]);
                 }
@@ -1167,8 +1169,8 @@ void game_initialize_game_world(void) {
     /* load_level_from_file(game_state, string_literal("pf.area")); */
 #endif
     /* load_level_from_file(game_state, string_literal("bt.area")); */
-    /* load_level_from_file(game_state, string_literal("testforest.area")); */
-    load_level_from_file(game_state, string_literal("lighttest.area"));
+    load_level_from_file(game_state, string_literal("testforest.area"));
+    /* load_level_from_file(game_state, string_literal("lighttest.area")); */
     /* load_level_from_file(game_state, string_literal("level.area")); */
     /* load_level_from_file(game_state, string_literal("testisland.area")); */
     /* game_attempt_to_change_area_name(game_state, string_literal("Old Iyeila"), string_literal("Grave of Stars")); */
