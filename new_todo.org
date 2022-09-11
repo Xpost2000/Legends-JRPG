@@ -210,7 +210,7 @@ to do that much.
 It's a decent amount of progress imo.smal
 
 *** TODO Consider thinking about the save menu
-*** TODO Lighting
+*** DONE Lighting
 We're doing a simple sprite per pixel lighting system. It will likely not obey obstructions to start, but that's okay for now.
 Yeah no obstructions, just full screenspace lighting.
 
