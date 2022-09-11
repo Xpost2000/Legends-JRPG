@@ -183,32 +183,6 @@ local void recalculate_targeted_entities_by_ability(struct entity_ability* abili
             if (!(potential_target->flags & ENTITY_FLAGS_ALIVE)) {
                 continue;
             }
-            
-            bool should_add_to_targets_list = false;
-
-            {
-                f32 real_x = ((s32)(user->position.x/TILE_UNIT_SIZE) + global_battle_ui_state.ability_target_x - ENTITY_ABILITY_SELECTION_FIELD_CENTER_X) * TILE_UNIT_SIZE;
-                f32 real_y = ((s32)(user->position.y/TILE_UNIT_SIZE) + global_battle_ui_state.ability_target_y - ENTITY_ABILITY_SELECTION_FIELD_CENTER_Y) * TILE_UNIT_SIZE;
-
-                f32 delta_x = fabs(potential_target->position.x - real_x);
-                f32 delta_y = fabs(potential_target->position.y - real_y);
-
-                if (delta_x <= SMALL_ENOUGH_EPISILON && delta_y <= SMALL_ENOUGH_EPISILON) {
-                    should_add_to_targets_list = true;
-                }
-            }
-
-            if (should_add_to_targets_list) {
-                global_battle_ui_state.selected_entities_for_abilities[global_battle_ui_state.selected_entities_for_abilities_count++] = entity_list_get_id(&area->entities, entity_index);
-            }
-        }
-    } else {
-        for (s32 entity_index = 0; entity_index < area->entities.capacity; ++entity_index) {
-            struct entity* potential_target = area->entities.entities + entity_index;
-
-            if (!(potential_target->flags & ENTITY_FLAGS_ALIVE)) {
-                continue;
-            }
 
             /* grid interesection */
             bool should_add_to_targets_list = false;
@@ -224,11 +198,40 @@ local void recalculate_targeted_entities_by_ability(struct entity_ability* abili
                             f32 delta_x = fabs(potential_target->position.x - real_x);
                             f32 delta_y = fabs(potential_target->position.y - real_y);
 
+                            _debugprintf("(lvl ent %d) %f, %f, delta? (cursor at: %f, %f)(target at: %f, %f)", entity_index, delta_x, delta_y, real_x, real_y, potential_target->position.x, potential_target->position.y);
                             if (delta_x <= SMALL_ENOUGH_EPISILON && delta_y <= SMALL_ENOUGH_EPISILON) {
                                 should_add_to_targets_list = true;
                             }
                         }
                     }
+                }
+            }
+
+            if (should_add_to_targets_list) {
+                global_battle_ui_state.selected_entities_for_abilities[global_battle_ui_state.selected_entities_for_abilities_count++] = entity_list_get_id(&area->entities, entity_index);
+            }
+        }
+    } else {
+        for (s32 entity_index = 0; entity_index < area->entities.capacity; ++entity_index) {
+            struct entity* potential_target = area->entities.entities + entity_index;
+
+            if (!(potential_target->flags & ENTITY_FLAGS_ALIVE)) {
+                continue;
+            }
+            
+            bool should_add_to_targets_list = false;
+
+            {
+                f32 real_x = ((s32)(user->position.x/TILE_UNIT_SIZE) + global_battle_ui_state.ability_target_x - ENTITY_ABILITY_SELECTION_FIELD_CENTER_X) * TILE_UNIT_SIZE;
+                f32 real_y = ((s32)(user->position.y/TILE_UNIT_SIZE) + global_battle_ui_state.ability_target_y - ENTITY_ABILITY_SELECTION_FIELD_CENTER_Y) * TILE_UNIT_SIZE;
+
+                f32 delta_x = fabs(potential_target->position.x - real_x);
+                f32 delta_y = fabs(potential_target->position.y - real_y);
+
+                _debugprintf("(player at %f, %f)", user->position.x, user->position.y);
+                _debugprintf("(lvl ent %d) %f, %f, delta? (cursor at: %f, %f)(target at: %f, %f)", entity_index, delta_x, delta_y, real_x, real_y, potential_target->position.x, potential_target->position.y);
+                if (delta_x <= SMALL_ENOUGH_EPISILON && delta_y <= SMALL_ENOUGH_EPISILON) {
+                    should_add_to_targets_list = true;
                 }
             }
 
