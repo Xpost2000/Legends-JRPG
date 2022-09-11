@@ -99,6 +99,9 @@ struct editor_state {
     s32                              entity_count;
     s32                              entity_capacity;
     struct level_area_entity*        entities;
+    s32                              light_capacity;
+    s32                              light_count;
+    struct light_def*                lights;
     
     struct camera camera;
 

@@ -54,6 +54,7 @@ void editor_clear_all_allocations(struct editor_state* state) {
     state->entity_chest_count             = 0;
     state->generic_trigger_count          = 0;
     state->entity_count                   = 0;
+    state->light_count                    = 0;
 }
 
 void editor_clear_all(struct editor_state* state) {
@@ -66,14 +67,15 @@ void editor_clear_all(struct editor_state* state) {
 }
 
 void editor_initialize(struct editor_state* state) {
-    editor_state->arena                             = &editor_arena;
+    state->arena = &editor_arena;
     for (s32 index = 0; index < TILE_LAYER_COUNT; ++index) {
-        editor_state->tile_capacities[index] = 8192;
+        state->tile_capacities[index] = 8192;
     }
-    editor_state->trigger_level_transition_capacity = 1024;
-    editor_state->entity_chest_capacity             = 1024;
-    editor_state->generic_trigger_capacity          = 1024;
-    editor_state->entity_capacity                   = 512;
+    state->trigger_level_transition_capacity = 1024;
+    state->entity_chest_capacity             = 1024;
+    state->generic_trigger_capacity          = 1024;
+    state->entity_capacity                   = 512;
+    state->light_capacity                    = 256;
 
     for (s32 index = 0; index < TILE_LAYER_COUNT; ++index) {
         state->tile_layers[index] = memory_arena_push(state->arena, state->tile_capacities[index] * sizeof(*state->tile_layers[0]));
@@ -82,6 +84,7 @@ void editor_initialize(struct editor_state* state) {
     state->entity_chests                            = memory_arena_push(state->arena, state->entity_chest_capacity             * sizeof(*state->entity_chests));
     state->generic_triggers                         = memory_arena_push(state->arena, state->generic_trigger_capacity          * sizeof(*state->generic_triggers));
     state->entities                                 = memory_arena_push(state->arena, state->entity_capacity                   * sizeof(*state->entities));
+    state->lights                                   = memory_arena_push(state->arena, state->light_capacity                    * sizeof(*state->lights));
     editor_clear_all(state);
 }
 
@@ -131,11 +134,16 @@ void editor_serialize_area(struct binary_serializer* serializer) {
     if (version_id >= 3) {
         Serialize_Fixed_Array(serializer, s32, editor_state->generic_trigger_count, editor_state->generic_triggers);
     }
-
     if (version_id >= 5) {
         serialize_s32(serializer, &editor_state->entity_count);
         for (s32 entity_index = 0; entity_index < editor_state->entity_count; ++entity_index) {
             Serialize_Structure(serializer, editor_state->entities[entity_index]);
+        }
+    }
+    if (version_id >= 6) {
+        serialize_s32(serializer, &editor_state->light_count);
+        for (s32 light_index = 0; light_index < editor_state->light_count; ++light_index) {
+            Serialize_Structure(serializer, editor_state->lights[light_index]);
         }
     }
 }

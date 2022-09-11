@@ -82,6 +82,46 @@ After most of this we should be in good enough shape to start doing the save sys
 *** TODO Lots of things need to scroll
 now that I think about it the vast majority of stuff needs to be scrollable...
 ** Later But unspecified
+*** TODO Enemy AI/Thinking
+*** TODO Adding action points into the equation?
+*** TODO Think of cutscenes?
+*** TODO Do we have to page assets?
+While we may eventually convert all assets into palette bitmaps (Makes recoloring easier anyways), we have to
+right now use full color pngs, which are moderately expensive to store in memory. Though thankfully these sprites
+are pretty small.
+*** TODO Maybe entity model files?
+To avoid hardcoding all the types, and that way once we have most of the game mechanics, we can kind of just
+mass produce entities pretty fast.
+*** TODO Rewrite the act outlines
+I DIDN'T SYNC....
+*** TODO Fade out cutscene power
+Using for dreamy fade out sequences.
+
+(Screenshot the current framebuffer, then let it fade out into the new scene).
+Not very difficult and is a cheap effect I can do.
+
+- [ ] Screenshot current buffer (of the game world, not with UI)
+- [ ] Allow fade out
+
+*** TODO Sepia filter.
+Might need to figure out how to get this to blend properly with the grayscale filter
+tr = 0.393R + 0.769G + 0.189B
+tg = 0.349R + 0.686G + 0.168B
+tb = 0.272R + 0.534G + 0.131B
+*** TODO Parameter adjustable Postprocessing
+*** TODO Level Up Curve
+*** TODO Sprite Props/Objects (Generally these are custom scripted objects within the engine. Fun.)
+These things don't have to obey tile lock limitations but they can snap to the grid if needed. They are also separated
+into layers. These things will be done later, not necessarily needed.
+This is going to kind of suck. We do have chests as our only special entity type (okay?) Might need to consider
+adding world/doors/obstacles.
+
+I'm probably going to avoid going too ham on the puzzle things and generally design dungeons to be very linear.
+*** TODO Level planning,
+*** TODO More scenario writing
+*** TODO Entities defined from files
+*** TODO initial save record work
+*** TODO Synopsis Diary System?
 *** TODO Cleanup in the future, remove scale field from entities. They are now redundant.
 *** TODO Code cleanup for the API stuff.
 *** TODO Scrollable item inventory related stuff
@@ -161,14 +201,40 @@ we need to basically only assume a few basica archetypes of items.
 *** DONE Fix the shop behavior
 Since it's been broken as of the last build.
 ** Sunday
+This is a pretty massive list, but at least it's a narrowed one so I actually
+know what the fuck I'm trying to do.
+
+I think it's a good idea to do 2-3 things on these lists a day, or at least try
+to do that much.
+
+It's a decent amount of progress imo.smal
+
+*** TODO Consider thinking about the save menu
+*** TODO Lighting
+We're doing a simple sprite per pixel lighting system. It will likely not obey obstructions to start, but that's okay for now.
+Yeah no obstructions, just full screenspace lighting.
+
+Color grading might serve as a minor obstacle as it convolutes the light masking system.
+
+I was planning to do the lighting system wholistically since it is faster to work on the full image. But are we fast enough
+to just work on all the objects directly? (Same way lighting is done with shaders in graphics apis?)
+
+If I do it wholistically it will objectively be faster, however I have to do separate rendering passes on stuff classified as "fullbright"
+not a big deal, but the shader approach is "simpler".
+
+Although it may end up being slower with a lot of lights... All these lights will be dynamic probably, but it's possible I may try to burn in static
+lights on level load. Obviously that's an optimization done after the game is like "doner".
+
+Lighting is pretty easy though, just harder to look good. But doing perpixel effects looks pretty authentic even on low resolutions.
+
+(Probably just going to make an additive light that's going to be clamped...)
 *** TODO Projectiles for ranged weapons!
 *** TODO Game Over State/Screen
 *** TODO Particle System
 *** TODO "Fluid" Obstacles (Liquid Fire/Water/Oil/Acid)
 I need to draw and use autotiling for these, but they should be pretty easy...
 Also thankfully these only happen on one layer.
-*** TODO Enemy AI/Thinking
-*** TODO Adding action points into the equation?
+
 *** TODO My end turn is broken.
 *** TODO Item Use menu in the battle UI.
 *** TODO Combat System changes
@@ -209,53 +275,6 @@ This thing is actually now going to be inspired by Action Sequences from RPG Mak
 *** TODO Entities can drop items at the end of a battle when they die.
 We have to have droppable items in the list, and obviously set percentages for drops. This isn't super difficult
 and can be specified as part of the entity drop system.
-*** TODO Think of cutscenes?
-*** TODO Do we have to page assets?
-While we may eventually convert all assets into palette bitmaps (Makes recoloring easier anyways), we have to
-right now use full color pngs, which are moderately expensive to store in memory. Though thankfully these sprites
-are pretty small.
-*** TODO Consider adding optional sprite mirroring options.
-*** TODO Maybe entity model files?
-To avoid hardcoding all the types, and that way once we have most of the game mechanics, we can kind of just
-mass produce entities pretty fast.
-*** TODO Rewrite the act outlines
-I DIDN'T SYNC....
-*** TODO Fade out cutscene power
-Using for dreamy fade out sequences.
-
-(Screenshot the current framebuffer, then let it fade out into the new scene).
-Not very difficult and is a cheap effect I can do.
-
-- [ ] Screenshot current buffer (of the game world, not with UI)
-- [ ] Allow fade out
-
-*** TODO Sepia filter.
-Might need to figure out how to get this to blend properly with the grayscale filter
-tr = 0.393R + 0.769G + 0.189B
-tg = 0.349R + 0.686G + 0.168B
-tb = 0.272R + 0.534G + 0.131B
-*** TODO Parameter adjustable Postprocessing
-*** TODO Lighting
-We're doing a simple sprite per pixel lighting system. It will likely not obey obstructions to start, but that's okay for now.
-Yeah no obstructions, just full screenspace lighting.
-
-Color grading might serve as a minor obstacle as it convolutes the light masking system.
-
-(Probably just going to make an additive light that's going to be clamped...)
-*** TODO Level Up Curve
-*** TODO Sprite Props/Objects (Generally these are custom scripted objects within the engine. Fun.)
-These things don't have to obey tile lock limitations but they can snap to the grid if needed. They are also separated
-into layers. These things will be done later, not necessarily needed.
-This is going to kind of suck. We do have chests as our only special entity type (okay?) Might need to consider
-adding world/doors/obstacles.
-
-I'm probably going to avoid going too ham on the puzzle things and generally design dungeons to be very linear.
-*** TODO Level planning,
-*** TODO More scenario writing
-*** TODO Entities defined from files
-*** TODO initial save record work
-*** TODO Synopsis Diary System?
-
 * OLD TASK LIST. 
 When I'm ready to work today:
 

@@ -723,6 +723,10 @@ void serialize_level_area(struct game_state* state, struct binary_serializer* se
                 level_area_entity_unpack(&current_packed_entity, current_entity);
             }
         }
+        if (level->version >= 6) {
+            _debugprintf("loading lights");
+            Serialize_Fixed_Array_And_Allocate_From_Arena(serializer, state->arena, s32, level->light_count, level->lights);
+        }
 
         /* until we have new area transititons or whatever. */
         /* TODO dumb to assume only the player... but okay */

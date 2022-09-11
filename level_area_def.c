@@ -9,8 +9,9 @@
    operate on the "object" tile level.
    
    Version 5: Add entities
+   Version 6: Add light entities
 */
-#define CURRENT_LEVEL_AREA_VERSION (5)
+#define CURRENT_LEVEL_AREA_VERSION (6)
 
 enum tile_layers {
     TILE_LAYER_GROUND,            /* render below all. dark color? */
@@ -177,13 +178,11 @@ struct level_area {
     u32          version;
     v2f32        default_player_spawn;
 
-#if 0
-    s32          tile_count;
-    struct tile* tiles;
-#else
     s32          tile_counts[TILE_LAYER_COUNT];
     struct tile* tile_layers[TILE_LAYER_COUNT];
-#endif
+
+    s32               light_count;
+    struct light_def* lights;
 
     s32 trigger_level_transition_count;
     struct trigger_level_transition* trigger_level_transitions;

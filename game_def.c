@@ -207,6 +207,17 @@ struct game_ui_nine_patch game_ui_nine_patch_load_from_directory(struct graphics
 struct entity_list;
 struct level_area;
 
+struct light_def {
+    v2f32 position;
+    f32   power; /* scale if we add a texture id for light casting? */
+                 /* since the renderer doesn't know how to rotate sprites who knows?  */
+    union color32u8 color;
+    u32   flags;
+
+    /* ??? later */
+    u8 reserved_bytes[4];
+};
+
 #include "entity_model_def.c"
 #include "entities_def.c"
 #include "level_area_def.c"
