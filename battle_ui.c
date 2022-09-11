@@ -577,7 +577,7 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
 
             /* would like to do action points but not right now. */
 
-            if (is_key_pressed(KEY_RETURN)) {
+            if (selection_confirm) {
                 /* submit movement */
                 global_battle_ui_state.submode = BATTLE_UI_SUBMODE_NONE;
 
