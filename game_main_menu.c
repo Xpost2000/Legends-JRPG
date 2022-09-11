@@ -106,6 +106,16 @@ local s32 main_menu_do_menu_ui(v2f32 where, struct software_framebuffer* framebu
     bool right             = is_key_down_with_repeat(KEY_RIGHT);
     bool confirm_selection = is_key_pressed(KEY_RETURN);
 
+    struct game_controller* pad0 = get_gamepad(0);
+
+    if (pad0) {
+        up                |= controller_button_pressed(pad0, DPAD_UP);
+        down              |= controller_button_pressed(pad0, DPAD_DOWN);
+        left              |= controller_button_pressed(pad0, DPAD_LEFT);
+        right             |= controller_button_pressed(pad0, DPAD_RIGHT);
+        confirm_selection |= controller_button_pressed(pad0, BUTTON_A);
+    }
+
     if (!allow_input) {
         up = down = left = right = confirm_selection = false;
     }

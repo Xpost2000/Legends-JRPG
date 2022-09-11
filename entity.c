@@ -149,6 +149,15 @@ void entity_handle_player_controlled(struct game_state* state, struct entity* en
     bool move_left  = is_key_down(KEY_LEFT);
     bool move_right = is_key_down(KEY_RIGHT);
 
+    struct game_controller* pad0 = get_gamepad(0);
+
+    if (pad0) {
+        move_up    |= pad0->buttons[DPAD_UP];
+        move_down  |= pad0->buttons[DPAD_DOWN];
+        move_left  |= pad0->buttons[DPAD_LEFT];
+        move_right |= pad0->buttons[DPAD_RIGHT];
+    }
+
     entity->velocity.x = 0;
     entity->velocity.y = 0;
 

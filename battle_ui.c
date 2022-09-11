@@ -265,6 +265,16 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
     bool selection_confirm = is_key_pressed(KEY_RETURN);
     bool selection_cancel  = is_key_pressed(KEY_BACKSPACE);
 
+    struct game_controller* pad0 = get_gamepad(0);
+    if (pad0) {
+        selection_down    |= controller_button_pressed(pad0, DPAD_DOWN);        
+        selection_up      |= controller_button_pressed(pad0, DPAD_UP);
+        selection_left    |= controller_button_pressed(pad0, DPAD_LEFT);
+        selection_right   |= controller_button_pressed(pad0, DPAD_RIGHT);
+        selection_confirm |= controller_button_pressed(pad0, BUTTON_A);
+        selection_cancel  |= controller_button_pressed(pad0, BUTTON_B);
+    }
+
     /* TODO: weirdo */
     if (!allow_input || game_command_console_enabled) {
         selection_down = selection_up = selection_left = selection_right =  selection_confirm = selection_cancel = false;
@@ -513,9 +523,9 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
             bool should_find_new_path = false;
 
             {
-                if (is_key_pressed(KEY_W)) {
+                if (selection_up) {
                     proposed_y--;
-                } else if (is_key_pressed(KEY_S)) {
+                } else if (selection_down) {
                     proposed_y++;
                 }
 
@@ -530,9 +540,9 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
             }
 
             {
-                if (is_key_pressed(KEY_A)) {
+                if (selection_left) {
                     proposed_x--;
-                } else if (is_key_pressed(KEY_D)) {
+                } else if (selection_right) {
                     proposed_x++;
                 }
 

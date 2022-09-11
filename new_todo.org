@@ -40,6 +40,8 @@ Third row is general overview of task types.
 ** Almost before alpha candidate release
 Basically a small bug witch hunt.
 *** TODO Fix UI state bugs, sometimes we suddenly jump state when I'm not supposed to.
+*** TODO Better input handling for gamepad
+I've just been hijacking controller input code cause I fucking lazy.
 ** Post- (alpha candidate) Important tasks.
 *** TODO Add a more involved animation state system.
 While the core animations are dictated by an implicit state animation system, sometimes we need to change things up a bit,
