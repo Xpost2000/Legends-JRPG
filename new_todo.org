@@ -142,10 +142,6 @@ So most of the combat animations will be phased out since I just cannot think of
 flashes (which are still going to be present in the full build, we just don't animate the sprite.))
 
 ** Friday
-*** TODO Projectiles for ranged weapons!
-*** TODO Fix the Entity draw order problem!
-*** DONE Fix the shop behavior
-Since it's been broken as of the last build.
 *** DONE Items from Files
 Our item formats are probably going to be kept very simple. We're
 going to try to constrain what we can and cannot do for the sake
@@ -159,6 +155,13 @@ do more impressive things, we will handle that when the time comes however
 we need to basically only assume a few basica archetypes of items.
 
 *** DONE Tile Data From Files
+** Saturday
+*** DONE Entity ability selection.
+*** DONE Fix the Entity draw order problem!
+*** DONE Fix the shop behavior
+Since it's been broken as of the last build.
+** Sunday
+*** TODO Projectiles for ranged weapons!
 *** TODO Game Over State/Screen
 *** TODO Particle System
 *** TODO "Fluid" Obstacles (Liquid Fire/Water/Oil/Acid)
@@ -167,6 +170,7 @@ Also thankfully these only happen on one layer.
 *** TODO Enemy AI/Thinking
 *** TODO Adding action points into the equation?
 *** TODO My end turn is broken.
+*** TODO Item Use menu in the battle UI.
 *** TODO Combat System changes
 :LOGBOOK:
 CLOCK: [2022-08-27 Sat 15:20]--[2022-08-27 Sat 15:24] =>  0:04
@@ -251,8 +255,6 @@ I'm probably going to avoid going too ham on the puzzle things and generally des
 *** TODO Entities defined from files
 *** TODO initial save record work
 *** TODO Synopsis Diary System?
-** Saturday
-** Sunday
 
 * OLD TASK LIST. 
 When I'm ready to work today:
