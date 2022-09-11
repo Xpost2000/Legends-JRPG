@@ -716,6 +716,18 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                     } else if (selection_left) {
                         global_battle_ui_state.ability_target_x -= 1;
                     }
+
+                    if (global_battle_ui_state.ability_target_x < 0) {
+                        global_battle_ui_state.ability_target_x = 0;
+                    } else if (global_battle_ui_state.ability_target_x >= ENTITY_ABILITY_SELECTION_FIELD_MAX_X) {
+                        global_battle_ui_state.ability_target_x = ENTITY_ABILITY_SELECTION_FIELD_MAX_X-1;
+                    }
+
+                    if (global_battle_ui_state.ability_target_y < 0) {
+                        global_battle_ui_state.ability_target_y = 0;
+                    } else if (global_battle_ui_state.ability_target_y >= ENTITY_ABILITY_SELECTION_FIELD_MAX_Y) {
+                        global_battle_ui_state.ability_target_y = ENTITY_ABILITY_SELECTION_FIELD_MAX_Y-1;
+                    }
                 }
 
                 if (recalculate_selection_field) {
