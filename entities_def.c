@@ -338,6 +338,7 @@ struct entity_iterator entity_iterator_clone(struct entity_iterator* base);
 void                   entity_iterator_push(struct entity_iterator* iterator, struct entity_list* list);
 struct entity*         entity_iterator_begin(struct entity_iterator* iterator);
 bool                   entity_iterator_finished(struct entity_iterator* iterator);
+s32                    entity_iterator_count_all_entities(struct entity_iterator* entities);
 struct entity*         entity_iterator_advance(struct entity_iterator* iterator);
 
 

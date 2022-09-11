@@ -4,6 +4,7 @@
  * and thus arbitrary scales are not needed (entities can just be represented as points with an implied rectangle),
  * I can remove those later.
  */
+bool entity_bad_ref(struct entity* e);
 
 void _debug_print_id(entity_id id) {
     _debugprintf("ent id[g:%d]: %d, %d", id.generation, id.store_type, id.index);
@@ -98,6 +99,16 @@ struct entity* entity_list_dereference_entity(struct entity_list* entities, enti
     }
 
     return target;
+}
+
+s32 entity_iterator_count_all_entities(struct entity_iterator* entities) {
+    s32 result = 0;
+
+    for (s32 entity_list_index = 0; entity_list_index < entities->list_count; ++entity_list_index) {
+        result += entities->entity_lists[entity_list_index]->capacity;
+    }
+
+    return result;
 }
 
 /* requires tilemap world... */
@@ -371,10 +382,29 @@ void entity_think_combat_actions(struct entity* entity, struct game_state* state
     }
 }
 
+/*
+  NOTE: In terms of render commands, I don't seem to actually need to use them for sorting as I know most of the
+  order and the few things that genuinely need to be sorted can just be done... Where they need to be sorted here.
+*/
+
 void render_entities(struct game_state* state, struct graphics_assets* graphics_assets, struct render_commands* commands, f32 dt) {
     struct entity_iterator it = game_entity_iterator(state);
 
+    s32 entity_total_capacities = entity_iterator_count_all_entities(&it);
+    entity_id* sorted_entity_ids = memory_arena_push(&scratch_arena, sizeof(*sorted_entity_ids) * entity_total_capacities);
+    s32        sorted_entity_id_count = 0;
+
     for (struct entity* current_entity = entity_iterator_begin(&it); !entity_iterator_finished(&it); current_entity = entity_iterator_advance(&it)) {
+        if (!(current_entity->flags & ENTITY_FLAGS_ACTIVE)) {
+            continue;
+        }
+
+        sorted_entity_ids[sorted_entity_id_count++] = it.current_id;
+    }
+
+    for (s32 sorted_entity_index = 0; sorted_entity_index < sorted_entity_id_count; ++sorted_entity_index) {
+        struct entity* current_entity = game_dereference_entity(state, sorted_entity_ids[sorted_entity_index]);
+
         s32 facing_direction = current_entity->facing_direction;
         s32 model_index      = current_entity->model_index;
 
@@ -382,7 +412,6 @@ void render_entities(struct game_state* state, struct graphics_assets* graphics_
             continue;
         }
 
-        /* struct entity_model* model = &global_entity_models.models[model_index]; */
         struct entity_animation* anim = find_animation_by_name(model_index, current_entity->animation.name);
 
         if (!anim) {
@@ -428,9 +457,11 @@ void render_entities(struct game_state* state, struct graphics_assets* graphics_
 
         union color32f32 modulation_color = color32f32_WHITE;
 
-        if (is_entity_under_ability_selection(it.current_id)) {
-            /* red for now. We want better effects maybe? */
-            modulation_color.g = modulation_color.b = 0;
+        {
+            if (is_entity_under_ability_selection(it.current_id)) {
+                /* red for now. We want better effects maybe? */
+                modulation_color.g = modulation_color.b = 0;
+            }
         }
 
         render_commands_push_image(commands,
@@ -932,6 +963,9 @@ void entity_iterator_push(struct entity_iterator* iterator, struct entity_list* 
 }
 
 struct entity* entity_iterator_begin(struct entity_iterator* iterator) {
+    iterator->done              = 0;
+    iterator->index             = 0;
+    iterator->entity_list_index = 0;
     struct entity* result = entity_iterator_advance(iterator);
     return result;
 }

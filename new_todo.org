@@ -179,7 +179,7 @@ We don't have really many items right now,
 I have some of the ability UI done which is very nice I guess. Going to level design later... So I can still get some work that isn't
 engine work done.
 
-- [ ] Entity selection with abilities (and highlighting obviously.)
+- [X] Entity selection with abilities (and highlighting obviously.)
 - [ ] Confirmation of ability selection.
 - [ ] Also turn investment! (For now I will do pure turn based (just set action points to 0 after each action.))
 - [ ] Add the usage of abilities
