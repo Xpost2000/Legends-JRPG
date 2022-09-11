@@ -1,8 +1,10 @@
 /*
   This should probably all stop depending on the player as the main target since that's
   not good if we want multiple party members lol.
- */
 
+  Not a super difficult fix, maybe an hour of work. Anyways, TODO: I don't think I ever handle the moving
+  field case. We'll see if there are any abilities with that feature later.
+*/
 
 enum battle_ui_animation_phase {
     BATTLE_UI_FADE_IN_DARK,
@@ -39,7 +41,7 @@ enum battle_ui_submodes {
 };
 
 /* This is a pretty generous number. */
-#define MAX_SELECTED_ENEMIES_FOR_ABILITIES (GAME_MAX_PERMENANT_ENTITIES + 1024)
+#define MAX_SELECTED_ENTITIES_FOR_ABILITIES (GAME_MAX_PERMENANT_ENTITIES + 1024)
 
 struct battle_ui_state {
     f32 timer;
@@ -76,8 +78,8 @@ struct battle_ui_state {
 
     entity_id currently_selected_entity_id;
 
-    entity_id  selected_enemies_for_abilities[MAX_SELECTED_ENEMIES_FOR_ABILITIES];
-    s32        selected_enemies_for_abilities_count;
+    entity_id  selected_entities_for_abilities[MAX_SELECTED_ENTITIES_FOR_ABILITIES];
+    s32        selected_entities_for_abilities_count;
 } global_battle_ui_state;
 
 enum battle_options{
@@ -159,6 +161,81 @@ local void draw_turn_panel(struct game_state* state, struct software_framebuffer
 
         const s32 square_size = 32;
         software_framebuffer_draw_quad(framebuffer, rectangle_f32(x, y + (index - combat_state->active_combatant) * square_size * 1.3, square_size, square_size), color, BLEND_MODE_ALPHA);
+    }
+}
+
+local void recalculate_targeted_entities_by_ability(struct entity_ability* ability, u8* selection_field, struct game_state* state) {
+    /* TODO: This only targets level entities, */
+    /* this isn't a hard fix since we only need ids in the list but just an FYI. */
+    struct level_area* area                  = &state->loaded_area;
+    struct entity*     user                  = game_get_player(state);
+    const f32          SMALL_ENOUGH_EPISILON = 0.03;
+
+    {
+        global_battle_ui_state.selected_entities_for_abilities_count = 0;
+        zero_array(global_battle_ui_state.selected_entities_for_abilities);
+    }
+
+    if (ability->selection_type == ABILITY_SELECTION_TYPE_FIELD && !ability->moving_field) {
+        for (s32 entity_index = 0; entity_index < area->entities.capacity; ++entity_index) {
+            struct entity* potential_target = area->entities.entities + entity_index;
+
+            if (!(potential_target->flags & ENTITY_FLAGS_ALIVE)) {
+                continue;
+            }
+            
+            bool should_add_to_targets_list = false;
+
+            {
+                f32 real_x = ((s32)(user->position.x/TILE_UNIT_SIZE) + global_battle_ui_state.ability_target_x - ENTITY_ABILITY_SELECTION_FIELD_CENTER_X) * TILE_UNIT_SIZE;
+                f32 real_y = ((s32)(user->position.y/TILE_UNIT_SIZE) + global_battle_ui_state.ability_target_y - ENTITY_ABILITY_SELECTION_FIELD_CENTER_Y) * TILE_UNIT_SIZE;
+
+                f32 delta_x = fabs(potential_target->position.x - real_x);
+                f32 delta_y = fabs(potential_target->position.y - real_y);
+
+                if (delta_x <= SMALL_ENOUGH_EPISILON && delta_y <= SMALL_ENOUGH_EPISILON) {
+                    should_add_to_targets_list = true;
+                }
+            }
+
+            if (should_add_to_targets_list) {
+                global_battle_ui_state.selected_entities_for_abilities[global_battle_ui_state.selected_entities_for_abilities_count++] = entity_list_get_id(&area->entities, entity_index);
+            }
+        }
+    } else {
+        for (s32 entity_index = 0; entity_index < area->entities.capacity; ++entity_index) {
+            struct entity* potential_target = area->entities.entities + entity_index;
+
+            if (!(potential_target->flags & ENTITY_FLAGS_ALIVE)) {
+                continue;
+            }
+
+            /* grid interesection */
+            bool should_add_to_targets_list = false;
+
+            {
+                for (s32 selection_grid_y = 0; selection_grid_y < ENTITY_ABILITY_SELECTION_FIELD_MAX_Y && !should_add_to_targets_list; ++selection_grid_y) {
+                    for (s32 selection_grid_x = 0; selection_grid_x < ENTITY_ABILITY_SELECTION_FIELD_MAX_X && !should_add_to_targets_list; ++selection_grid_x) {
+                        if (global_battle_ui_state.selection_field[selection_grid_y][selection_grid_x]) {
+                            f32 real_x = (global_battle_ui_state.ability_target_x + selection_grid_x - ENTITY_ABILITY_SELECTION_FIELD_CENTER_X) * TILE_UNIT_SIZE;
+                            f32 real_y = (global_battle_ui_state.ability_target_y + selection_grid_y - ENTITY_ABILITY_SELECTION_FIELD_CENTER_Y) * TILE_UNIT_SIZE;
+
+                            /* I'm very certain I guarantee that entities should be "grid-locked", so I can just check. */
+                            f32 delta_x = fabs(potential_target->position.x - real_x);
+                            f32 delta_y = fabs(potential_target->position.y - real_y);
+
+                            if (delta_x <= SMALL_ENOUGH_EPISILON && delta_y <= SMALL_ENOUGH_EPISILON) {
+                                should_add_to_targets_list = true;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (should_add_to_targets_list) {
+                global_battle_ui_state.selected_entities_for_abilities[global_battle_ui_state.selected_entities_for_abilities_count++] = entity_list_get_id(&area->entities, entity_index);
+            }
+        }
     }
 }
 
@@ -634,7 +711,7 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                     copy_selection_field_rotated_as(ability, (u8*)global_battle_ui_state.selection_field, facing_direction_to_quadrant(user->facing_direction));
                 }
 
-                recalculate_targetted_enemies_by_ability(ability, global_battle_ui_state.selection_field, state);
+                recalculate_targeted_entities_by_ability(ability, (u8*)global_battle_ui_state.selection_field, state);
             }
         } break;
 
