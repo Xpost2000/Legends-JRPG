@@ -342,7 +342,6 @@ struct entity*         entity_iterator_advance(struct entity_iterator* iterator)
 
 
 struct entity_list entity_list_create(struct memory_arena* arena, s32 capacity, u8 storage_mark);
-/* TODO: Allow a different way to specify allocation direction. since this is annoying */
 struct entity_list entity_list_create_top(struct memory_arena* arena, s32 capacity, u8 storage_mark);
 entity_id          entity_list_create_entity(struct entity_list* entities);
 entity_id          entity_list_get_id(struct entity_list* entities, s32 index);

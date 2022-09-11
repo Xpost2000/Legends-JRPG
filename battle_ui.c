@@ -37,6 +37,10 @@ enum battle_ui_submodes {
     /* the rest are not submodes, and are just registered actions. */
     /* NOTE action point system. There is no cancelling. */
 };
+
+/* This is a pretty generous number. */
+#define MAX_SELECTED_ENEMIES_FOR_ABILITIES (GAME_MAX_PERMENANT_ENTITIES + 1024)
+
 struct battle_ui_state {
     f32 timer;
     u32 phase;
@@ -71,6 +75,9 @@ struct battle_ui_state {
     s32 ability_target_y;
 
     entity_id currently_selected_entity_id;
+
+    entity_id  selected_enemies_for_abilities[MAX_SELECTED_ENEMIES_FOR_ABILITIES];
+    s32        selected_enemies_for_abilities_count;
 } global_battle_ui_state;
 
 enum battle_options{
@@ -626,6 +633,8 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                 if (recalculate_selection_field) {
                     copy_selection_field_rotated_as(ability, (u8*)global_battle_ui_state.selection_field, facing_direction_to_quadrant(user->facing_direction));
                 }
+
+                recalculate_targetted_enemies_by_ability(ability, global_battle_ui_state.selection_field, state);
             }
         } break;
 
