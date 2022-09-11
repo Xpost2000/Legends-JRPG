@@ -950,13 +950,16 @@ union color32f32 lighting_shader(struct software_framebuffer* framebuffer, union
 
     /* render_commands_push_quad(&commands, rectangle_f32(commands.camera.xy.x-500,commands.camera.xy.y-500,9999,9999), global_color_grading_filter, BLEND_MODE_MULTIPLICATIVE); */
 
-    f32 r_accumulation = source_pixel.r;
-    f32 g_accumulation = source_pixel.g;
-    f32 b_accumulation = source_pixel.b;
+    f32 r_accumulation = 0;
+    f32 g_accumulation = 0;
+    f32 b_accumulation = 0;
 
     for (s32 light_index = 0; light_index < loaded_area->light_count; ++light_index) {
         struct light_def* current_light = loaded_area->lights + light_index;
         v2f32 light_screenspace_position = current_light->position;
+        /* recentering lights */
+        light_screenspace_position.x -= 0.5;
+        light_screenspace_position.y -= 0.5;
         {
             light_screenspace_position.x *= TILE_UNIT_SIZE;
             light_screenspace_position.y *= TILE_UNIT_SIZE;
@@ -973,18 +976,17 @@ union color32f32 lighting_shader(struct software_framebuffer* framebuffer, union
             }
 
             f32 distance_squared = v2f32_magnitude_sq(v2f32_sub(pixel_position, light_screenspace_position));
-            if (distance_squared == 0) { distance_squared = 1; }
-            f32 attenuation      = 1/distance_squared;
+            f32 attenuation      = 1/(distance_squared+1 + (sqrtf(distance_squared)/2));
 
-            r_accumulation = attenuation * current_light->power * TILE_UNIT_SIZE;
-            g_accumulation = attenuation * current_light->power * TILE_UNIT_SIZE;
-            b_accumulation = attenuation * current_light->power * TILE_UNIT_SIZE;
+            r_accumulation += attenuation * current_light->power * TILE_UNIT_SIZE * current_light->color.r/255.0f;
+            g_accumulation += attenuation * current_light->power * TILE_UNIT_SIZE * current_light->color.g/255.0f;
+            b_accumulation += attenuation * current_light->power * TILE_UNIT_SIZE * current_light->color.b/255.0f;
         }
     }
 
-    if (r_accumulation > source_pixel.r) { r_accumulation = source_pixel.r; }
-    if (g_accumulation > source_pixel.g) { g_accumulation = source_pixel.g; }
-    if (b_accumulation > source_pixel.b) { b_accumulation = source_pixel.b; }
+    if (r_accumulation > source_pixel.r*1.2) { r_accumulation = source_pixel.r*1.2; }
+    if (g_accumulation > source_pixel.g*1.2) { g_accumulation = source_pixel.g*1.2; }
+    if (b_accumulation > source_pixel.b*1.2) { b_accumulation = source_pixel.b*1.2; }
 
     result.r = r_accumulation + global_color_grading_filter.r/255.0f * source_pixel.r;
     result.g = g_accumulation + global_color_grading_filter.g/255.0f * source_pixel.g;
