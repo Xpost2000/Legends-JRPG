@@ -209,7 +209,8 @@ struct level_area;
 
 struct light_def {
     v2f32 position;
-    f32   power; /* scale if we add a texture id for light casting? */
+    v2f32 scale;  /* Only used for the editor as it expects rectangle_f32s */
+    f32   power; /* scale if we add a texture id for light casting? In tile units */
                  /* since the renderer doesn't know how to rotate sprites who knows?  */
     union color32u8 color;
     u32   flags;

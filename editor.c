@@ -1,20 +1,14 @@
 /*
-  Having dense arrays while nice for cache locality, might be a bit difficult to reference?
-  
-  Oh well. I'll accept that.
-  
-  Having some text field widgets would be a good idea. That's next time.
-*/
-
-/*
-  Need to improve that level loading thing.
-*/
-
-/*
   Level testing behavior may no longer work, as they may now require dependence on a script file,
   which bares their name.
   
   I can modify it slightly I guess...
+  Or I can try to include the script as part of the level which would be a pretty herculean job
+  considering the relative complexity of the tools...
+*/
+
+/*
+  WHOCARES: May crash if touching the last_selected pointer incorrectly?
 */
 
 local bool is_dragging(void) {
@@ -238,6 +232,9 @@ void editor_place_or_drag_level_transition_trigger(v2f32 point_in_tilespace) {
     }
 }
 
+/*
+  NOTE: this is recording level_area_entity entities, which are not like the other entities. These actually have normal coordinate systems.
+ */
 void editor_place_or_drag_actor(v2f32 point_in_tilespace) {
     if (is_dragging()) {
         return; 
@@ -247,6 +244,7 @@ void editor_place_or_drag_actor(v2f32 point_in_tilespace) {
         for (s32 index = 0; index < editor_state->entity_count; ++index) {
             struct level_area_entity* current_entity = editor_state->entities + index;
 
+            /* The size should really depend on the model. Oh well. */
             if (rectangle_f32_intersect(rectangle_f32(current_entity->position.x, current_entity->position.y-1, 1, 2), rectangle_f32(point_in_tilespace.x, point_in_tilespace.y, 0.25, 0.25))) {
                 editor_state->last_selected = current_entity;
                 set_drag_candidate(current_entity, get_mouse_in_tile_space(&editor_state->camera, SCREEN_WIDTH, SCREEN_HEIGHT), current_entity->position);
@@ -274,6 +272,48 @@ void editor_place_or_drag_actor(v2f32 point_in_tilespace) {
             new_entity->scale.y = 2;
         }
         editor_state->last_selected      = new_entity;
+    }
+}
+
+local const f32 LIGHT_GRAB_SQ_SZ = 1 * TILE_UNIT_SIZE;
+void editor_place_or_drag_light(v2f32 point_in_tilespace) {
+    if (is_dragging()) {
+        return;
+    }
+
+    {
+        for (s32 light_index = 0; light_index < editor_state->light_count; ++light_index) {
+            struct light_def* current_light = editor_state->lights + light_index;
+
+            if (rectangle_f32_intersect(rectangle_f32((current_light->position.x), (current_light->position.y), 1, 1),
+                                        rectangle_f32(point_in_tilespace.x, point_in_tilespace.y, 0.25, 0.25))) {
+                editor_state->last_selected = current_light;
+                set_drag_candidate(current_light, get_mouse_in_tile_space(&editor_state->camera, SCREEN_WIDTH, SCREEN_HEIGHT), current_light->position);
+                return;
+            }
+        }
+
+        struct light_def* new_light = &editor_state->lights[editor_state->light_count++];
+        new_light->position         = point_in_tilespace;
+        new_light->power            = 3;
+        new_light->color            = color32u8_WHITE;
+        new_light->flags            = 0;
+        new_light->scale            = v2f32(1, 1); /* for the dragging code which always expects a rectangle. */
+        zero_array(new_light->reserved_bytes);
+
+        editor_state->last_selected = new_light;
+    }
+}
+
+void editor_remove_light_at(v2f32 point_in_tilespace) {
+    for (s32 light_index = 0; light_index < editor_state->light_count; ++light_index) {
+        struct light_def* current_light = editor_state->lights + light_index;
+
+        if (rectangle_f32_intersect(rectangle_f32((current_light->position.x), (current_light->position.y), 1, 1),
+                                    rectangle_f32(point_in_tilespace.x, point_in_tilespace.y, 0.25, 0.25))) {
+            editor_state->lights[light_index] = editor_state->lights[--editor_state->light_count];
+            return;
+        }
     }
 }
 
@@ -502,6 +542,13 @@ local void handle_editor_tool_mode_input(struct software_framebuffer* framebuffe
                         editor_place_or_drag_chest(tile_space_mouse_location);
                     } else if (right_clicked) {
                         editor_remove_chest_at(tile_space_mouse_location);
+                    }
+                } break;
+                case ENTITY_PLACEMENT_TYPE_LIGHT: {
+                    if (left_clicked) {
+                        editor_place_or_drag_light(tile_space_mouse_location);
+                    } else if (right_clicked) {
+                        editor_remove_light_at(tile_space_mouse_location);
                     }
                 } break;
             }
@@ -1456,6 +1503,23 @@ void update_and_render_editor(struct software_framebuffer* framebuffer, f32 dt) 
                                                                        current_chest->scale.y    * TILE_UNIT_SIZE),
                                               color32u8(255, 0, 0, normalized_sinf(global_elapsed_time*2) * 0.5 *255 + 64), BLEND_MODE_ALPHA);
                 }
+            }
+
+            for (s32 light_index = 0; light_index < editor_state->light_count; ++light_index) {
+                struct light_def* current_light = editor_state->lights + light_index;
+                
+                if (editor_state->last_selected == current_light) {
+                    render_commands_push_quad(&commands, rectangle_f32(current_light->position.x * TILE_UNIT_SIZE, current_light->position.y * TILE_UNIT_SIZE,
+                                                                       current_light->scale.x * TILE_UNIT_SIZE,    current_light->scale.y * TILE_UNIT_SIZE),
+                                              color32u8(255, 255, 255, normalized_sinf(global_elapsed_time*2) * 0.5*255 + 64), BLEND_MODE_ALPHA);
+                } else {
+                    render_commands_push_quad(&commands, rectangle_f32(current_light->position.x * TILE_UNIT_SIZE, current_light->position.y * TILE_UNIT_SIZE,
+                                                                       current_light->scale.x * TILE_UNIT_SIZE,    current_light->scale.y * TILE_UNIT_SIZE),
+                                              color32u8(255, 0, 0, normalized_sinf(global_elapsed_time*2) * 0.5*255 + 64), BLEND_MODE_ALPHA);
+                }
+                s32 light_id          = current_light - editor_state->lights;
+                render_commands_push_text(&commands, font, 1, v2f32(current_light->position.x * TILE_UNIT_SIZE, current_light->position.y * TILE_UNIT_SIZE),
+                                          string_from_cstring(format_temp("(light %d)", light_id)), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
             }
         }
         

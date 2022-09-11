@@ -28,11 +28,13 @@ static string trigger_placement_type_strings[] = {
 enum entity_placement_type {
     ENTITY_PLACEMENT_TYPE_ACTOR,
     ENTITY_PLACEMENT_TYPE_CHEST,
+    ENTITY_PLACEMENT_TYPE_LIGHT,
     ENTITY_PLACEMENT_TYPE_COUNT,
 };
 static string entity_placement_type_strings[] = {
     string_literal("Actor"),
     string_literal("Chest"),
+    string_literal("Light"),
     string_literal("(count)"),
 };
 struct entity_chest_placement_property_menu {
