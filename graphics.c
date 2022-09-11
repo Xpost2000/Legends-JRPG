@@ -362,7 +362,7 @@ void software_framebuffer_draw_image_ex_clipped(struct software_framebuffer* fra
                                                         image->pixels[image_sample_y * image_stride * 4 + image_sample_x * 4 + 3] / 255.0f);
 
             if (shader) {
-                sampled_pixel = shader(framebuffer, sampled_pixel, shader_ctx);
+                sampled_pixel = shader(framebuffer, sampled_pixel, shader_ctx, v2f32(x_cursor, y_cursor));
             }
             sampled_pixel.r *= 255.0f;
             sampled_pixel.g *= 255.0f;
@@ -493,10 +493,10 @@ void software_framebuffer_draw_image_ex_clipped(struct software_framebuffer* fra
                 sampled_pixels[3].a /= 255.0f;
             }
             if (shader) {
-                sampled_pixels[0] = shader(framebuffer, sampled_pixels[0], shader_ctx);
-                sampled_pixels[1] = shader(framebuffer, sampled_pixels[1], shader_ctx);
-                sampled_pixels[2] = shader(framebuffer, sampled_pixels[2], shader_ctx);
-                sampled_pixels[3] = shader(framebuffer, sampled_pixels[3], shader_ctx);
+                sampled_pixels[0] = shader(framebuffer, sampled_pixels[0], v2f32(x_cursor+3, y_cursor), shader_ctx);
+                sampled_pixels[1] = shader(framebuffer, sampled_pixels[1], v2f32(x_cursor+2, y_cursor), shader_ctx);
+                sampled_pixels[2] = shader(framebuffer, sampled_pixels[2], v2f32(x_cursor+1, y_cursor), shader_ctx);
+                sampled_pixels[3] = shader(framebuffer, sampled_pixels[3], v2f32(x_cursor, y_cursor), shader_ctx);
             }
             {
                 sampled_pixels[0].r *= 255.0f;
@@ -1194,7 +1194,7 @@ s32 thread_software_framebuffer_run_shader(void* context) {
                 job_details->shared->framebuffer->pixels[y * job_details->shared->framebuffer->width * 4 + x * 4 + 3] / 255.0f
             );
 
-            union color32f32 new_pixel = job_details->shared->shader(job_details->shared->framebuffer, source_pixel, job_details->shared->context);
+            union color32f32 new_pixel = job_details->shared->shader(job_details->shared->framebuffer, source_pixel, v2f32(x, y), job_details->shared->context);
 
             new_pixel.r = clamp_f32(new_pixel.r, 0, 1);
             new_pixel.g = clamp_f32(new_pixel.g, 0, 1);

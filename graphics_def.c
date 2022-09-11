@@ -47,7 +47,7 @@ struct image_buffer {
 
 /* always an RGBA32 bit framebuffer */
 struct software_framebuffer;
-typedef union color32f32 (*shader_fn)(struct software_framebuffer* framebuffer, union color32f32 source_pixel, void* context);
+typedef union color32f32 (*shader_fn)(struct software_framebuffer* framebuffer, union color32f32 source_pixel, v2f32 pixel_position, void* context);
 
 struct software_framebuffer {
     Image_Buffer_Base;

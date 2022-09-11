@@ -934,13 +934,63 @@ void game_postprocess_blur_ingame(struct software_framebuffer* framebuffer, s32 
     software_framebuffer_draw_image_ex(framebuffer, (struct image_buffer*)&blur_buffer, RECTANGLE_F32_NULL, RECTANGLE_F32_NULL, color32f32(1,1,1,1), NO_FLAGS, blend_mode);
 }
 
-union color32f32 grayscale_shader(struct software_framebuffer* framebuffer, union color32f32 source_pixel, void* context) {
+union color32f32 grayscale_shader(struct software_framebuffer* framebuffer, union color32f32 source_pixel, v2f32 pixel_position, void* context) {
     f32 t = 1.0;
     if (context) {
         t = *(float*)context; 
     }
     f32 average = (source_pixel.r + source_pixel.g + source_pixel.b) / 3.0f;
     return color32f32(average, average, average, source_pixel.a);
+}
+
+union color32f32 lighting_shader(struct software_framebuffer* framebuffer, union color32f32 source_pixel, v2f32 pixel_position, void* context) {
+    struct level_area* loaded_area = &game_state->loaded_area;
+
+    union color32f32 result = source_pixel;
+
+    /* render_commands_push_quad(&commands, rectangle_f32(commands.camera.xy.x-500,commands.camera.xy.y-500,9999,9999), global_color_grading_filter, BLEND_MODE_MULTIPLICATIVE); */
+
+    f32 r_accumulation = source_pixel.r;
+    f32 g_accumulation = source_pixel.g;
+    f32 b_accumulation = source_pixel.b;
+
+    for (s32 light_index = 0; light_index < loaded_area->light_count; ++light_index) {
+        struct light_def* current_light = loaded_area->lights + light_index;
+        v2f32 light_screenspace_position = current_light->position;
+        {
+            light_screenspace_position.x *= TILE_UNIT_SIZE;
+            light_screenspace_position.y *= TILE_UNIT_SIZE;
+
+            {
+                light_screenspace_position.x *= game_state->camera.zoom;
+                light_screenspace_position.y *= game_state->camera.zoom;
+
+                light_screenspace_position.x += SCREEN_WIDTH/2;
+                light_screenspace_position.y += SCREEN_HEIGHT/2;
+
+                light_screenspace_position.x -= game_state->camera.xy.x;
+                light_screenspace_position.y -= game_state->camera.xy.y;
+            }
+
+            f32 distance_squared = v2f32_magnitude_sq(v2f32_sub(pixel_position, light_screenspace_position));
+            if (distance_squared == 0) { distance_squared = 1; }
+            f32 attenuation      = 1/distance_squared;
+
+            r_accumulation = attenuation * current_light->power * TILE_UNIT_SIZE;
+            g_accumulation = attenuation * current_light->power * TILE_UNIT_SIZE;
+            b_accumulation = attenuation * current_light->power * TILE_UNIT_SIZE;
+        }
+    }
+
+    if (r_accumulation > source_pixel.r) { r_accumulation = source_pixel.r; }
+    if (g_accumulation > source_pixel.g) { g_accumulation = source_pixel.g; }
+    if (b_accumulation > source_pixel.b) { b_accumulation = source_pixel.b; }
+
+    result.r = r_accumulation + global_color_grading_filter.r/255.0f * source_pixel.r;
+    result.g = g_accumulation + global_color_grading_filter.g/255.0f * source_pixel.g;
+    result.b = b_accumulation + global_color_grading_filter.b/255.0f * source_pixel.b;
+
+    return result;
 }
 
 void game_postprocess_grayscale(struct software_framebuffer* framebuffer, f32 t) {
@@ -1942,9 +1992,12 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                 game_script_execute_awaiting_scripts(&scratch_arena, game_state, dt);
                 game_script_run_all_timers(dt);
 
-                /* color "grading" should just be the lighting solution... TODO: when doing lighting generate a buffer and render into that. Don't worry about obstructions. Those don't matter anymore... */
-                render_commands_push_quad(&commands, rectangle_f32(commands.camera.xy.x-500,commands.camera.xy.y-500,9999,9999), global_color_grading_filter, BLEND_MODE_MULTIPLICATIVE);
+                /* render_commands_push_quad(&commands, rectangle_f32(commands.camera.xy.x-500,commands.camera.xy.y-500,9999,9999), global_color_grading_filter, BLEND_MODE_MULTIPLICATIVE); */
                 software_framebuffer_render_commands(framebuffer, &commands);
+                {
+                    /* NOTE: I'm going to choose to lighting with manually adjusted fixed passes to avoid lighting overdraw. */
+                    software_framebuffer_run_shader(framebuffer, rectangle_f32(0, 0, framebuffer->width, framebuffer->height), lighting_shader, NULL);
+                }
                 game_postprocess_blur_ingame(framebuffer, 2, 0.62, BLEND_MODE_ALPHA);
 
                 {
