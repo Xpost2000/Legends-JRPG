@@ -363,11 +363,11 @@ void software_framebuffer_draw_image_ex_clipped(struct software_framebuffer* fra
 
             if (shader) {
                 sampled_pixel = shader(framebuffer, sampled_pixel, shader_ctx);
-                sampled_pixel.r *= 255.0f;
-                sampled_pixel.g *= 255.0f;
-                sampled_pixel.b *= 255.0f;
-                sampled_pixel.a *= 255.0f;
             }
+            sampled_pixel.r *= 255.0f;
+            sampled_pixel.g *= 255.0f;
+            sampled_pixel.b *= 255.0f;
+            sampled_pixel.a *= 255.0f;
 
             sampled_pixel.r *= modulation.r;
             sampled_pixel.g *= modulation.g;
