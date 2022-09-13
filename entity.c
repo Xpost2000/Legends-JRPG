@@ -951,13 +951,14 @@ struct entity_database entity_database_create(struct memory_arena* arena, s32 am
 }
 
 void level_area_entity_unpack(struct level_area_entity* entity, struct entity* unpack_target) {
-    unpack_target->flags            |= entity->flags;
-    unpack_target->ai.flags         |= entity->ai_flags;
-    unpack_target->facing_direction  = entity->facing_direction;
+    unpack_target->flags               |= entity->flags;
+    unpack_target->ai.flags            |= entity->ai_flags;
+    unpack_target->facing_direction     = entity->facing_direction;
+    unpack_target->loot_table_id_index  = entity->loot_table_id_index;
     _debugprintf("%f, %f", unpack_target->position.x, unpack_target->position.y);
-    unpack_target->position          = v2f32_scale(entity->position, TILE_UNIT_SIZE);
-    unpack_target->scale.x           = TILE_UNIT_SIZE* 0.8;
-    unpack_target->scale.y           = TILE_UNIT_SIZE* 0.8;
+    unpack_target->position             = v2f32_scale(entity->position, TILE_UNIT_SIZE);
+    unpack_target->scale.x              = TILE_UNIT_SIZE* 0.8;
+    unpack_target->scale.y              = TILE_UNIT_SIZE* 0.8;
 
     if (entity->health_override != -1) {unpack_target->health.value = entity->health_override;}
     if (entity->magic_override != -1)  {unpack_target->magic.value  = entity->magic_override;}
@@ -1131,6 +1132,38 @@ struct entity_loot_table* entity_lookup_loot_table(struct entity_database* entit
     }
 
     return entity_database->loot_tables + loot_table_id_index;
+}
+
+void serialize_level_area_entity(struct binary_serializer* serializer, s32 version, struct level_area_entity* entity) {
+    switch (version) {
+        case 5:
+        case 6: {
+            serialize_f32(serializer, &entity->position.x);
+            serialize_f32(serializer, &entity->position.y);
+
+            serialize_f32(serializer, &entity->scale.x);
+            serialize_f32(serializer, &entity->scale.y);
+
+            serialize_bytes(serializer, entity->base_name, 64);
+
+            serialize_s32(serializer, &entity->health_override);
+            serialize_s32(serializer, &entity->magic_override);
+
+            serialize_u8(serializer, &entity->facing_direction);
+            serialize_u32(serializer, &entity->flags);
+            serialize_u32(serializer, &entity->ai_flags);
+            serialize_u32(serializer, &entity->spawn_flags);
+
+            for (int i = 0; i < 16; ++i) serialize_u32(serializer, entity->group_ids);
+            for (int i = 0; i < 128; ++i){u8 unused[128]; serialize_u8(serializer, unused);}
+        } break;
+        case CURRENT_LEVEL_AREA_VERSION: {
+            Serialize_Structure(serializer, *entity);
+        } break;
+        default: {
+            _debugprintf("Either this version doesn't support entities or never existed.");
+        } break;
+    }
 }
 
 #include "entity_ability.c"

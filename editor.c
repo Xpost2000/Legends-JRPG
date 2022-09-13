@@ -137,7 +137,7 @@ void editor_serialize_area(struct binary_serializer* serializer) {
     if (version_id >= 5) {
         serialize_s32(serializer, &editor_state->entity_count);
         for (s32 entity_index = 0; entity_index < editor_state->entity_count; ++entity_index) {
-            Serialize_Structure(serializer, editor_state->entities[entity_index]);
+            serialize_level_area_entity(serializer, version_id, &editor_state->entities[entity_index]);
         }
     }
     if (version_id >= 6) {
@@ -265,7 +265,7 @@ void editor_place_or_drag_actor(v2f32 point_in_tilespace) {
 
         new_entity->position.x = point_in_tilespace.x;
         new_entity->position.y = point_in_tilespace.y;
-        new_entity->health_override = new_entity->magic_override = -1;
+        new_entity->health_override = new_entity->magic_override = new_entity->loot_table_id_index = -1;
         new_entity->flags = new_entity->ai_flags = 0;
         {
             struct entity_actor_placement_property_menu* properties = &editor_state->actor_property_menu;

@@ -717,7 +717,7 @@ void serialize_level_area(struct game_state* state, struct binary_serializer* se
             level->entities = entity_list_create(state->arena, (entity_count+1), ENTITY_LIST_STORAGE_TYPE_PER_LEVEL);
 
             for (s32 entity_index = 0; entity_index < entity_count; ++entity_index) {
-                Serialize_Structure(serializer, current_packed_entity);
+                serialize_level_area_entity(serializer, level->version, &current_packed_entity);
                 struct entity* current_entity = 0;
 
                 entity_id new_ent = entity_list_create_entity(&level->entities);
