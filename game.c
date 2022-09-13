@@ -1053,6 +1053,7 @@ void editor_initialize(struct editor_state* state);
 local void initialize_main_menu(void);
 void game_initialize(void) {
     game_arena   = memory_arena_create_from_heap("Game Memory", Megabyte(32));
+    scratch_arena = memory_arena_create_from_heap("Scratch Buffer", Megabyte(4));
 #ifdef USE_EDITOR
     editor_arena = memory_arena_create_from_heap("Editor Memory", Megabyte(32));
 #endif
@@ -1070,7 +1071,6 @@ void game_initialize(void) {
     game_state->arena = &game_arena;
 
     graphics_assets = graphics_assets_create(&game_arena, 64, 1024);
-    scratch_arena = memory_arena_create_from_heap("Scratch Buffer", Megabyte(4));
 
     combat_square_unselected = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/cmbt/cmbt_grid_sq.png"));
     combat_square_selected   = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/cmbt/cmbt_selected_sq.png"));

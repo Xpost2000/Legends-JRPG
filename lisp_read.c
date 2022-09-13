@@ -450,41 +450,42 @@ bool lisp_form_check_equality(struct lisp_form a, struct lisp_form b) {
 }
 
 static void _debug_print_out_lisp_code_(struct lisp_form* code) {
-    switch (code->type) {
-        case LISP_FORM_LIST: {
-            _debugprintf1("( ");
+    if (code)
+        switch (code->type) {
+            case LISP_FORM_LIST: {
+                _debugprintf1("( ");
 
-            struct lisp_list* list_contents = &code->list;
-            for (unsigned index = 0; index < list_contents->count; ++index) {
-                _debug_print_out_lisp_code_(&list_contents->forms[index]);
-                _debugprintf1(" ");
-            }
+                struct lisp_list* list_contents = &code->list;
+                for (unsigned index = 0; index < list_contents->count; ++index) {
+                    _debug_print_out_lisp_code_(&list_contents->forms[index]);
+                    _debugprintf1(" ");
+                }
 
-            _debugprintf1(" )");
-        } break;
-        case LISP_FORM_NUMBER: {
-            if (code->is_real) {
-                _debugprintf1("(real)%f", code->real);
-            } else {
-                _debugprintf1("(int)%d", code->integer);
-            }
-        } break;
-        case LISP_FORM_STRING: {
-            _debugprintf1("\"%.*s\"", code->string.length, code->string.data);
-        } break;
-        case LISP_FORM_T:
-        case LISP_FORM_NIL:
-        case LISP_FORM_SYMBOL: {
-            char* flavor_text = "";
-            if (code->type == LISP_FORM_SYMBOL) {
-                if (code->quoted) flavor_text = "[quoted]";
-            }
-            _debugprintf1("%.*s(%s)", code->string.length, code->string.data, flavor_text);
-        } break;
-        default: {
-            _debugprintf1("%.*s", lisp_form_type_strings[code->type].length, lisp_form_type_strings[code->type].data);
-        } break;
-    }
+                _debugprintf1(" )");
+            } break;
+            case LISP_FORM_NUMBER: {
+                if (code->is_real) {
+                    _debugprintf1("(real)%f", code->real);
+                } else {
+                    _debugprintf1("(int)%d", code->integer);
+                }
+            } break;
+            case LISP_FORM_STRING: {
+                _debugprintf1("\"%.*s\"", code->string.length, code->string.data);
+            } break;
+            case LISP_FORM_T:
+            case LISP_FORM_NIL:
+            case LISP_FORM_SYMBOL: {
+                char* flavor_text = "";
+                if (code->type == LISP_FORM_SYMBOL) {
+                    if (code->quoted) flavor_text = "[quoted]";
+                }
+                _debugprintf1("%.*s(%s)", code->string.length, code->string.data, flavor_text);
+            } break;
+            default: {
+                _debugprintf1("%.*s", lisp_form_type_strings[code->type].length, lisp_form_type_strings[code->type].data);
+            } break;
+        }
 }
 
 static void _debug_print_out_lisp_code(struct lisp_form* code) {
@@ -729,7 +730,7 @@ struct lisp_form* lisp_list_nth(struct lisp_form* f, s32 index) {
             index = (f->list.count + index);
         }
 
-        if (f->list.count < index) {
+        if (index >= f->list.count) {
             return NULL;
         }
 
