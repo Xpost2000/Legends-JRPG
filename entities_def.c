@@ -51,6 +51,8 @@ bool entity_id_equal(entity_id a, entity_id b) {
     return false;
 }
 
+#include "entity_ability_sequence_def.c"
+
 /* forward decl */
 void battle_notify_killed_entity(entity_id);
 
@@ -302,16 +304,20 @@ struct entity_base_data {
     struct entity_actor_inventory inventory;
 };
 struct entity_database {
-    struct memory_arena*      arena;
-    s32                       entity_capacity;
-    s32                       entity_count;
-    s32                       loot_table_capacity;
-    s32                       loot_table_count;
+    struct memory_arena*            arena;
+    s32                             entity_capacity;
+    s32                             entity_count;
+    s32                             loot_table_capacity;
+    s32                             loot_table_count;
+    s32                             ability_capacity;
+    s32                             ability_count;
     /* I think I really should be hashing a lot of things I do this for. TODO. Can always change */
-    string*                   entity_key_strings;
-    string*                   loot_table_key_strings;
-    struct entity_base_data*  entities;
-    struct entity_loot_table* loot_tables;
+    string*                         entity_key_strings;
+    string*                         loot_table_key_strings;
+    string*                         ability_key_strings;
+    struct entity_ability_sequence* ability_sequences;
+    struct entity_base_data*        entities;
+    struct entity_loot_table*       loot_tables;
 };
 
 struct entity_loot_table* entity_lookup_loot_table(struct entity_database* entity_database, struct entity* entity);

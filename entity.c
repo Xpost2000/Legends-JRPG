@@ -1009,7 +1009,6 @@ local void entity_database_initialize_entities(struct entity_database* database)
     struct file_buffer   data_file_buffer = read_entire_file(memory_arena_allocator(&scratch_arena), string_literal("./res/entities.txt"));
     struct lisp_list     data_file_forms  = lisp_read_string_into_forms(&scratch_arena, file_buffer_as_string(&data_file_buffer));
 
-
     s32 entity_count = data_file_forms.count + 1;
 
     database->entity_capacity    = entity_count;
@@ -1028,7 +1027,7 @@ local void entity_database_initialize_entities(struct entity_database* database)
 
     database->entity_count = entity_count;
 
-    for (s32 entity_form_index = 0; entity_form_index < entity_count; ++entity_form_index) {
+    for (s32 entity_form_index = 0; entity_form_index < data_file_forms.count; ++entity_form_index) {
         struct entity_base_data* current_entity      = (database->entities+1) + entity_form_index;
         struct lisp_form*        current_entity_form = data_file_forms.forms + entity_form_index;
 
@@ -1048,7 +1047,7 @@ local void entity_database_initialize_entities(struct entity_database* database)
             {
                 string key_name = {};
                 lisp_form_get_string(*id_name_form, &key_name);
-                database->entity_key_strings[entity_form_index] = string_clone(arena, key_name);
+                database->entity_key_strings[entity_form_index+1] = string_clone(arena, key_name);
             }
             {
                 string name_str = {};

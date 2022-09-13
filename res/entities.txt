@@ -1,0 +1,31 @@
+# Entity base master file
+# all these fields are mandatory
+
+(
+"bandit_tutorial0"
+"Bandit"
+0 # Models should be referenced through numbers but I can fix that later
+'() # FLAGS
+'() # AI FLAGS
+
+15 # health
+0  # magic
+
+"bandit_loot0"# loot table name, can be nil
+
+'() # equip slots not being used
+'() # inventory avaliable during battle
+
+(
+(level 1)
+(xp 150)
+(vigor 100)
+(strength 100)
+(constitution 100)
+(willpower 100)
+(agility 100)
+(speed 100)
+(intelligence 100)
+(luck 100))
+
+)

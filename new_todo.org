@@ -133,6 +133,26 @@ This happens inconsistently, don't know what the cause of it is right now.
 I suspect as I compress the shop code, it'll fix itself, but it's a little unwieldy.
 ** Monday
 We'll probably just do this at night or something.
+*** DONE Entities defined from files
+*** DONE (DOING)Entities can drop items at the end of a battle when they die.
+We have to have droppable items in the list, and obviously set percentages for drops. This isn't super difficult
+and can be specified as part of the entity drop system.
+*** DONE Scissor buffer
+*** DONE (DOING) Serializing of loot tables (from a file)
+*** DONE Define Ability Sequences structures
+As soon as I know my data, the code instantly becomes very obvious.
+** Tuesday
+
+*** TODO Level Up Curve
+*** TODO Consider thinking about the save menu
+*** TODO Projectiles for ranged weapons!
+*** TODO Game Over State/Screen
+*** TODO (????MAYBE)"Fluid" Obstacles (Liquid Fire/Water/Oil/Acid)
+I need to draw and use autotiling for these, but they should be pretty easy...
+Also thankfully these only happen on one layer.
+
+*** TODO Merge the entity_ability_database with entity_database
+*** TODO Load the abilities database from abilities.txt
 *** TODO (DOING)Particle System
 *** TODO (DOING)My end turn is broken.
 *** TODO (DOING)Item Use menu in the battle UI.
@@ -181,23 +201,8 @@ this point.
 Since that's one of the painful things since it's almost essentially an arbitrary animation sequence,
 which is what kind of concerns me.
 
-*** TODO Entities defined from files
-*** DONE (DOING)Entities can drop items at the end of a battle when they die.
-We have to have droppable items in the list, and obviously set percentages for drops. This isn't super difficult
-and can be specified as part of the entity drop system.
-*** DONE Scissor buffer
-*** DONE (DOING) Serializing of loot tables (from a file)
-*** TODO (DOING)Polish up the battle victory screen
-** Tuesday
-
-*** TODO Level Up Curve
-*** TODO Consider thinking about the save menu
-*** TODO Projectiles for ranged weapons!
-*** TODO Game Over State/Screen
-*** TODO (????MAYBE)"Fluid" Obstacles (Liquid Fire/Water/Oil/Acid)
-I need to draw and use autotiling for these, but they should be pretty easy...
-Also thankfully these only happen on one layer.
-
+*** TODO (DOING)Polish up the battle victory screen & Loot Table needs to reward the winner lol.
+*** TODO (EDITOR?NOT NOW) Better Entity selection
 
 ** Wednesday
 Frankly I'm a bit reluctant to allow myself to do *from file* tasks, as data formats are commonly rewritten

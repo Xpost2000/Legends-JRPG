@@ -1,0 +1,9 @@
+# loot tables master file
+
+(
+"bandit_loot0"
+
+("item_sardine_fish_5" 1 0.754)
+("item_gold" (45 60))
+
+)
