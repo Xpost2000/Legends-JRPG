@@ -856,6 +856,15 @@ for now just do a fixed amount of damage
                 /* TODO FIX */
                 struct entity* attacked_entity = game_dereference_entity(state, target_entity->ai.attack_target_id);
                 entity_do_physical_hurt(attacked_entity, 9999);
+
+                {
+                    if (attacked_entity->health.value <= 0) {
+                        if (target_entity->flags & ENTITY_FLAGS_PLAYER_CONTROLLED) {
+                            /* maybe not a good idea right now, but okay. */
+                            battle_notify_killed_entity(target_entity->ai.attack_target_id);
+                        }
+                    }
+                }
             }
         } break;
     }
@@ -944,22 +953,22 @@ void level_area_entity_unpack(struct level_area_entity* entity, struct entity* u
     entity_validate_death(unpack_target);
 }
 
-void entity_base_data_unpack(struct entity_base_data* data, struct entity* destination) {
+void entity_base_data_unpack(struct entity_database* entity_database, struct entity_base_data* data, struct entity* destination) {
+    s32 base_id_index = (s32)(data - entity_database->entities); 
+
     destination->name        = data->name;
     destination->model_index = data->model_index;
 
     /* don't allow these flags to override. That could be bad. */
-    data->flags &= ~(ENTITY_FLAGS_RUNTIME_RESERVATION);
-
-    /* OR-ed */
-    destination->flags        |= data->flags;
-    destination->ai.flags     |= data->ai_flags;
-    destination->stat_block   = data->stats;
-    destination->health.min   = destination->magic.min = 0;
-    destination->health.value = destination->health.max = data->health;
-    destination->magic.value  = destination->magic.max  = data->magic;
-
-    destination->inventory    = data->inventory;
+    data->flags                &= ~(ENTITY_FLAGS_RUNTIME_RESERVATION);
+    destination->flags         |= data->flags;
+    destination->ai.flags      |= data->ai_flags;
+    destination->stat_block     = data->stats;
+    destination->health.min     = destination->magic.min = 0;
+    destination->health.value   = destination->health.max = data->health;
+    destination->magic.value    = destination->magic.max  = data->magic;
+    destination->inventory      = data->inventory;
+    destination->base_id_index  = base_id_index;
 
     for (s32 index = 0; index < array_count(data->equip_slots); ++index) {
         destination->equip_slots[index] = data->equip_slots[index];
@@ -1033,6 +1042,57 @@ struct entity_iterator entity_iterator_clone(struct entity_iterator* base) {
     iterator.done              = 0;
 
     return iterator;
+}
+
+struct item_instance* entity_loot_table_find_loot(struct memory_arena* arena, struct entity_loot_table* loot_table, s32* out_count) {
+    if (loot_table->loot_count == 0) {
+        _debugprintf("no loot!");
+        *out_count = 0;
+        return 0;
+    }
+
+    struct random_state   rng        = random_state();
+    struct item_instance* loot_list  = memory_arena_push(arena, 0);
+    s32                   loot_count = 0;
+
+    for (s32 loot_index = 0; loot_index < loot_table->loot_count; ++loot_index) {
+        struct entity_loot* current_loot_entry = loot_table->loot_items + loot_index;
+        f32 loot_chance_roll = random_float(&rng);
+
+        if (loot_chance_roll < current_loot_entry->normalized_chance) {
+            s32 drop_amount = random_ranged_integer(&rng, current_loot_entry->count_min, current_loot_entry->count_max);
+
+            {
+                struct item_def* item_base = item_database_find_by_id(current_loot_entry->item);
+
+                if (item_base->max_stack_value != -1) {
+                    if (drop_amount > item_base->max_stack_value) {
+                        drop_amount = item_base->max_stack_value;
+                    }
+                }
+            }
+
+            if (drop_amount == 0) {
+                continue;
+            } else {
+                memory_arena_push(arena, sizeof(*loot_list));
+                struct item_instance* new_loot_item = &loot_list[loot_count++];
+                
+                new_loot_item->item  = current_loot_entry->item;
+                new_loot_item->count = drop_amount;
+            }
+
+        }
+    }
+
+    *out_count = loot_count;
+    return loot_list;
+}
+
+struct entity_loot_table* entity_lookup_loot_table(struct entity_database* entity_database, struct entity* entity) {
+    s32                      base_id          = entity->base_id_index;
+    struct entity_base_data* entity_base_data = entity_database->entities + base_id;
+    return &entity_base_data->loot_table;
 }
 
 #include "entity_ability.c"

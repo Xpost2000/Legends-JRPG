@@ -51,6 +51,9 @@ bool entity_id_equal(entity_id a, entity_id b) {
     return false;
 }
 
+/* forward decl */
+void battle_notify_killed_entity(entity_id);
+
 enum entity_ai_flags {
     ENTITY_AI_FLAGS_NONE                 = 0,
     ENTITY_AI_FLAGS_AGGRESSIVE_TO_PLAYER = BIT(0),
@@ -274,13 +277,17 @@ void entity_set_dialogue_file(struct entity* entity, string str) {
 #define ENTITY_MAX_LOOT_TABLE_ENTRIES (16)
 struct entity_loot {
     item_id   item;
-    s32_range count;            /* count variance here */
+    s32       count_min;
+    s32       count_max;
     f32       normalized_chance; /* 0 - 1 */
 };
 struct entity_loot_table {
     s32                loot_count;
     struct entity_loot loot_items[ENTITY_MAX_LOOT_TABLE_ENTRIES];
 };
+
+/* temporary and copy somewhere. */
+struct item_instance* entity_loot_table_find_loot(struct memory_arena* arena, struct entity_loot_table* table, s32* out_count);
 
 struct entity_base_data {
     string                        name;
@@ -294,8 +301,6 @@ struct entity_base_data {
     struct entity_actor_inventory inventory;
     struct entity_loot_table      loot_table;
 };
-void entity_base_data_unpack(struct entity_base_data* data, struct entity* unpack_destination);
-
 struct entity_database {
     struct memory_arena*     arena;
     s32                      capacity;
@@ -305,8 +310,11 @@ struct entity_database {
     struct entity_base_data* entities;
 };
 
+struct entity_loot_table* entity_lookup_loot_table(struct entity_database* entity_database, struct entity* entity);
 /* for debug reasons, in reality it is always built from a file. */
 void   entity_database_add_entity(struct entity_database* entity_database, struct entity_base_data base_ent, string as_name);
+void   entity_base_data_unpack(struct entity_database* entity_database, struct entity_base_data* data, struct entity* unpack_destination);
+
 struct entity_database   entity_database_create(struct memory_arena* arena, s32 amount);
 struct entity_base_data* entity_database_find_by_index(struct entity_database* entity_database, s32 index);
 struct entity_base_data* entity_database_find_by_name(struct entity_database* entity_database, string name);

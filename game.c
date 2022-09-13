@@ -3,7 +3,6 @@
 /* virtual pixels */
 #define TILE_UNIT_SIZE                      (32) /* measured with a reference of 640x480 */
 #define GAME_COMMAND_CONSOLE_LINE_INPUT_MAX (512)
-
 #include "game_def.c"
 #include "save_data_def.c"
 #include "dialogue_script_parse.c"
@@ -724,8 +723,9 @@ void serialize_level_area(struct game_state* state, struct binary_serializer* se
                 entity_id new_ent = entity_list_create_entity(&level->entities);
                 current_entity    = entity_list_dereference_entity(&level->entities, new_ent);
 
+                /* I should really use IDs more. Oh well. Who knows how many lines of redundant dereferencing code I have in this codebase. */
                 struct entity_base_data* base_data = entity_database_find_by_name(&game_state->entity_database, string_from_cstring(current_packed_entity.base_name));
-                entity_base_data_unpack(base_data, current_entity);
+                entity_base_data_unpack(&game_state->entity_database, base_data, current_entity);
                 level_area_entity_unpack(&current_packed_entity, current_entity);
             }
         }
@@ -1114,7 +1114,7 @@ void game_initialize(void) {
     game_state->permenant_entities = entity_list_create(&game_arena, GAME_MAX_PERMENANT_ENTITIES, ENTITY_LIST_STORAGE_TYPE_PERMENANT_STORE);
     player_id                      = entity_list_create_player(&game_state->permenant_entities, v2f32(70, 70));
     entity_list_create_badguy(&game_state->permenant_entities, v2f32(8 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE));
-    entity_list_create_badguy(&game_state->permenant_entities, v2f32(9 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE));
+    /* entity_list_create_badguy(&game_state->permenant_entities, v2f32(9 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE)); */
 
     {
         struct entity* player = game_get_player(game_state);

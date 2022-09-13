@@ -41,7 +41,9 @@ enum battle_ui_submodes {
 };
 
 /* This is a pretty generous number. */
-#define MAX_SELECTED_ENTITIES_FOR_ABILITIES (GAME_MAX_PERMENANT_ENTITIES + 1024)
+#define MAX_SELECTED_ENTITIES_FOR_ABILITIES (GAME_MAX_PERMENANT_ENTITIES + 256)
+#define MAX_KILLED_ENTITY_TRACKER           (MAX_SELECTED_ENTITIES_FOR_ABILITIES)
+#define MAX_LOOT_ITEMS                      (MAX_SELECTED_ENTITIES_FOR_ABILITIES*16)
 
 struct battle_ui_state {
     f32 timer;
@@ -78,9 +80,56 @@ struct battle_ui_state {
 
     entity_id currently_selected_entity_id;
 
+    /* This should really be a part of the entities themselves  */
     entity_id  selected_entities_for_abilities[MAX_SELECTED_ENTITIES_FOR_ABILITIES];
     s32        selected_entities_for_abilities_count;
+
+    /* read their loot tables when combat finishes, and distribute */
+    /* also I really mean by the player and their friends. */
+    entity_id  killed_entities[MAX_KILLED_ENTITY_TRACKER];
+    s32        killed_entity_count;
+
+    bool                 populated_loot_table;
+    struct item_instance loot_results[MAX_LOOT_ITEMS];
+    s32                  loot_result_count;
 } global_battle_ui_state;
+
+void battle_clear_loot_results(void) {
+    global_battle_ui_state.populated_loot_table = false;
+    zero_array(global_battle_ui_state.loot_results);
+    global_battle_ui_state.loot_result_count = 0;
+}
+void battle_clear_all_killed_entities(void) {
+    zero_array(global_battle_ui_state.killed_entities);
+    global_battle_ui_state.killed_entity_count = 0;
+}
+
+void battle_notify_killed_entity(entity_id killed) {
+    assertion(global_battle_ui_state.killed_entity_count < MAX_KILLED_ENTITY_TRACKER);
+    global_battle_ui_state.killed_entities[global_battle_ui_state.killed_entity_count++] = killed;
+}
+
+local void populate_post_battle_loot_table(void) {
+    if (!global_battle_ui_state.populated_loot_table) {
+        for (s32 killed_entity_index = 0; killed_entity_index < global_battle_ui_state.killed_entity_count; ++killed_entity_index) {
+            struct entity* killed_entity = game_dereference_entity(game_state, global_battle_ui_state.killed_entities[killed_entity_index]);
+
+            s32 loot_table_temporary_count = 0;
+
+            struct entity_loot_table* loot_table = entity_lookup_loot_table(&game_state->entity_database, killed_entity);
+            struct item_instance* loot_table_temporary = entity_loot_table_find_loot(&scratch_arena, loot_table, &loot_table_temporary_count);
+
+            {
+                for (s32 loot_table_temporary_index = 0; loot_table_temporary_index < loot_table_temporary_count; ++loot_table_temporary_index) {
+                    assertion(global_battle_ui_state.loot_result_count <= MAX_LOOT_ITEMS && "Too much loot to store!");
+                    global_battle_ui_state.loot_results[global_battle_ui_state.loot_result_count++] = loot_table_temporary[loot_table_temporary_index];
+                }
+            }
+        }
+
+        global_battle_ui_state.populated_loot_table = true;
+    }
+}
 
 enum battle_options{
     BATTLE_LOOK,
@@ -113,6 +162,8 @@ local string battle_menu_main_option_descriptions[] = {
 local void start_combat_ui(void) {
     global_battle_ui_state.phase = 0;
     global_battle_ui_state.timer = 0;
+    battle_clear_all_killed_entities();
+    battle_clear_loot_results();
 }
 
 /* TODO does not account for per entity objects! */
@@ -801,7 +852,15 @@ local void do_after_action_report_screen(struct game_state* state, struct softwa
     /* TODO */
     draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, ui_box_position, BOX_WIDTH, BOX_HEIGHT, UI_BATTLE_COLOR);
     draw_ui_breathing_text(framebuffer, v2f32(ui_box_position.x+15, ui_box_position.y+15), normal_font, 3, string_literal("Battle Complete!"), 0, modulation_color);
-    draw_ui_breathing_text(framebuffer, v2f32(ui_box_position.x+15, ui_box_position.y+60), normal_font, 3, string_literal("Nothing for now. Just dismiss this."), 0, modulation_color);
+    draw_ui_breathing_text(framebuffer, v2f32(ui_box_position.x+15, ui_box_position.y+60), normal_font, 3, string_literal("Loot Gained: "), 0, modulation_color);
+
+    f32 y_cursor = ui_box_position.y + 80;
+    {
+        for (s32 looted_item_index = 0; looted_item_index < global_battle_ui_state.loot_result_count; ++looted_item_index) {
+            struct item_instance* current_loot_entry = global_battle_ui_state.loot_results + looted_item_index;
+            _debugprintf("item id: (%d) looted (count %d)", current_loot_entry->item.id_hash, current_loot_entry->count);
+        }
+    }
 
     if (selection_confirm) {
         global_battle_ui_state.phase = 0;
@@ -1102,6 +1161,7 @@ local void end_combat_ui(void) {
     if (global_battle_ui_state.phase < BATTLE_UI_FADE_OUT_DETAILS_AFTER_BATTLE_COMPLETION) {
         global_battle_ui_state.timer = 0;
         global_battle_ui_state.phase = BATTLE_UI_FADE_OUT_DETAILS_AFTER_BATTLE_COMPLETION;
+        populate_post_battle_loot_table();
     }
 }
 
