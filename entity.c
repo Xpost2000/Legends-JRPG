@@ -1111,12 +1111,55 @@ local void entity_database_initialize_entities(struct entity_database* database)
     }
 }
 
+void entity_database_initialize_abilities(struct entity_database* database) {
+    struct memory_arena* arena = database->arena;
+
+    s32 ability_count = 2;
+
+    database->ability_capacity    = ability_count;
+    database->abilities           = memory_arena_push(arena, ability_count * sizeof(*database->abilities));
+    database->ability_key_strings = memory_arena_push(arena, ability_count * sizeof(*database->ability_key_strings));
+
+    {
+        struct entity_ability sword_rush = {};
+        sword_rush.name = string_literal("Sword Rush");
+        sword_rush.description = string_literal("Move in a flash, slashing through multiple enemies at once.");
+        sword_rush.selection_type = ABILITY_SELECTION_TYPE_FIELD;
+        sword_rush.moving_field = 0;
+
+        sword_rush.selection_field[ENTITY_ABILITY_SELECTION_FIELD_CENTER_Y][ENTITY_ABILITY_SELECTION_FIELD_CENTER_X] = true;
+        sword_rush.selection_field[ENTITY_ABILITY_SELECTION_FIELD_CENTER_Y-1][ENTITY_ABILITY_SELECTION_FIELD_CENTER_X] = true;
+        sword_rush.selection_field[ENTITY_ABILITY_SELECTION_FIELD_CENTER_Y-2][ENTITY_ABILITY_SELECTION_FIELD_CENTER_X] = true;
+        sword_rush.selection_field[ENTITY_ABILITY_SELECTION_FIELD_CENTER_Y-3][ENTITY_ABILITY_SELECTION_FIELD_CENTER_X] = true;
+
+        database->abilities[0] = sword_rush;
+        database->ability_key_strings[0] = string_literal("ability_sword_rush");
+    }
+    {
+        struct entity_ability shock = {}; 
+        shock.name = string_literal("Shock");
+        shock.description = string_literal("Electrocute your enemies.");
+        shock.selection_type = ABILITY_SELECTION_TYPE_FIELD_SHAPE;
+        shock.moving_field   = 0;
+
+        for (s32 y = 0; y < ENTITY_ABILITY_SELECTION_FIELD_MAX_Y; ++y) {
+            for (s32 x = 0; x < ENTITY_ABILITY_SELECTION_FIELD_MAX_X; ++x) {
+                shock.selection_field[y][x] = true;
+            }
+        }
+
+        database->abilities[1] = shock;
+        database->ability_key_strings[1] = string_literal("ability_shock");
+    }
+}
+
 struct entity_database entity_database_create(struct memory_arena* arena) {
     struct entity_database result = {};
     result.arena = arena;
 
     entity_database_initialize_loot_tables(&result);
     entity_database_initialize_entities(&result);
+    entity_database_initialize_abilities(&result);
 
     return result;
 }
@@ -1191,6 +1234,22 @@ struct entity_loot_table* entity_database_loot_table_find_by_name(struct entity_
     return NULL;
 }
 
+struct entity_ability* entity_database_ability_find_by_index(struct entity_database* entity_database, s32 index) {
+    return entity_database->abilities + index;
+}
+
+struct entity_ability* entity_database_ability_find_by_name(struct entity_database* entity_database, string name) {
+    for (s32 entity_ability_index = 0; entity_ability_index < entity_database->ability_count; ++entity_ability_index) {
+        string ability_name = entity_database->ability_key_strings[entity_ability_index];
+
+        if (string_equal(ability_name, name)) {
+            return entity_database_ability_find_by_index(entity_database, entity_ability_index);
+        }
+    }
+
+    return NULL;
+}
+
 s32 entity_database_find_id_by_name(struct entity_database* entity_database, string name) {
     struct entity_base_data* e = entity_database_find_by_name(entity_database, name);
     if (e) {
@@ -1203,6 +1262,14 @@ s32 entity_database_loot_table_find_id_by_name(struct entity_database* entity_da
     struct entity_loot_table* e = entity_database_loot_table_find_by_name(entity_database, name);
     if (e) {
         return e-entity_database->loot_tables;
+    }
+    return -1;
+}
+
+s32 entity_database_ability_find_id_by_name(struct entity_database* entity_database, string name) {
+    struct entity_ability* e = entity_database_ability_find_by_name(entity_database, name);
+    if (e) {
+        return e-entity_database->abilities;
     }
     return -1;
 }
@@ -1352,6 +1419,13 @@ void serialize_level_area_entity(struct binary_serializer* serializer, s32 versi
         default: {
             _debugprintf("Either this version doesn't support entities or never existed.");
         } break;
+    }
+}
+
+void entity_add_ability_by_name(struct entity* entity, string id) {
+    if (entity->ability_count < ENTITY_MAX_ABILITIES) {
+        struct entity_ability_slot* ability_slot = &entity->abilities[entity->ability_count++];
+        ability_slot->ability = entity_database_ability_find_id_by_name(&game_state->entity_database, id);
     }
 }
 

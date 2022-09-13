@@ -265,12 +265,7 @@ void entity_snap_to_grid_position(struct entity* entity) {
     entity->position = position;
 }
 
-void entity_add_ability_by_name(struct entity* entity, string id) {
-    if (entity->ability_count < ENTITY_MAX_ABILITIES) {
-        struct entity_ability_slot* ability_slot = &entity->abilities[entity->ability_count++];
-        ability_slot->ability = find_ability_by_name(id);
-    }
-}
+void entity_add_ability_by_name(struct entity* entity, string id);
 
 void entity_set_dialogue_file(struct entity* entity, string str) {
     
@@ -315,7 +310,7 @@ struct entity_database {
     string*                         entity_key_strings;
     string*                         loot_table_key_strings;
     string*                         ability_key_strings;
-    struct entity_ability_sequence* ability_sequences;
+    struct entity_ability*          abilities;
     struct entity_base_data*        entities;
     struct entity_loot_table*       loot_tables;
 };
@@ -325,13 +320,16 @@ struct entity_loot_table* entity_lookup_loot_table(struct entity_database* entit
 
 void   entity_base_data_unpack(struct entity_database* entity_database, struct entity_base_data* data, struct entity* unpack_destination);
 
-struct entity_database   entity_database_create(struct memory_arena* arena);
-struct entity_base_data* entity_database_find_by_index(struct entity_database* entity_database, s32 index);
-struct entity_base_data* entity_database_find_by_name(struct entity_database* entity_database, string name);
+struct entity_database    entity_database_create(struct memory_arena* arena);
+struct entity_base_data*  entity_database_find_by_index(struct entity_database* entity_database, s32 index);
+struct entity_base_data*  entity_database_find_by_name(struct entity_database* entity_database, string name);
 struct entity_loot_table* entity_database_loot_table_find_by_index(struct entity_database* entity_database, s32 index);
 struct entity_loot_table* entity_database_loot_table_find_by_name(struct entity_database* entity_database, string name);
-s32 entity_database_find_id_by_name(struct entity_database* entity_database, string name);
-s32 entity_database_loot_table_find_id_by_name(struct entity_database* entity_database, string name);
+struct entity_ability*    entity_database_ability_find_by_index(struct entity_database* entity_database, s32 index);
+struct entity_ability*    entity_database_ability_find_by_name(struct entity_database* entity_database, string name);
+s32                       entity_database_find_id_by_name(struct entity_database* entity_database, string name);
+s32                       entity_database_loot_table_find_id_by_name(struct entity_database* entity_database, string name);
+s32                       entity_database_ability_find_id_by_name(struct entity_database* entity_database, string name);
 
 bool is_entity_aggressive_to_player(struct entity* entity);
 void entity_play_animation(struct entity* entity, string name);

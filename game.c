@@ -1083,11 +1083,6 @@ void game_initialize(void) {
     /* selection_sword_img   = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/selection_sword.png")); */
     global_entity_models = entity_model_database_create(&game_arena, 512);
 
-    initialize_ability_database(&game_arena);
-    {
-        build_ability_database();
-    }
-
     game_script_initialize(&game_arena);
 
     passive_speaking_dialogues = memory_arena_push(&game_arena, MAX_PASSIVE_SPEAKING_DIALOGUES * sizeof(*passive_speaking_dialogues));

@@ -678,7 +678,7 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                     global_battle_ui_state.selecting_ability_target = true;
 
                     struct entity_ability_slot slot = user->abilities[global_battle_ui_state.selection];
-                    struct entity_ability*     ability = dereference_ability(slot.ability);
+                    struct entity_ability*     ability = entity_database_ability_find_by_index(&game_state->entity_database, slot.ability);
 
                     if (ability->selection_type == ABILITY_SELECTION_TYPE_FIELD_SHAPE) {
                         global_battle_ui_state.ability_target_x = ENTITY_ABILITY_SELECTION_FIELD_CENTER_X;
@@ -698,7 +698,7 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                     struct font_cache* painting_font = normal_font;
                     struct entity_ability_slot slot = user->abilities[ability_index];
                     /* should keep track of ability count. */
-                    struct entity_ability*     ability = dereference_ability(slot.ability);
+                    struct entity_ability*     ability = entity_database_ability_find_by_index(&game_state->entity_database, slot.ability);
 
                     if (ability_index == global_battle_ui_state.selection) {
                         painting_font = highlighted_font;
@@ -722,7 +722,7 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                     f32 nearest_perfect_square = (square_size + 2);
 
                     struct entity_ability_slot slot = user->abilities[global_battle_ui_state.selection];
-                    struct entity_ability*     ability = dereference_ability(slot.ability);
+                    struct entity_ability*     ability = entity_database_ability_find_by_index(&game_state->entity_database, slot.ability);
 
                     for (s32 y_index = 0; y_index < ENTITY_ABILITY_SELECTION_FIELD_MAX_Y; ++y_index) {
                         for (s32 x_index = 0; x_index < ENTITY_ABILITY_SELECTION_FIELD_MAX_X; ++x_index) {
@@ -751,7 +751,7 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
             } else {
                 bool recalculate_selection_field = false;
                 struct entity_ability_slot slot = user->abilities[global_battle_ui_state.selection];
-                struct entity_ability*     ability = dereference_ability(slot.ability);
+                struct entity_ability*     ability = entity_database_ability_find_by_index(&game_state->entity_database, slot.ability);
 
                 if (ability->selection_type == ABILITY_SELECTION_TYPE_FIELD && !ability->moving_field) {
                     if (selection_up) {
@@ -958,7 +958,7 @@ local void draw_battle_tooltips(struct game_state* state, struct software_frameb
                                                      state);
         } break;
         case BATTLE_UI_SUBMODE_USING_ABILITY: {
-            struct entity_ability* ability = dereference_ability(game_get_player(state)->abilities[global_battle_ui_state.selection].ability);
+            struct entity_ability* ability = entity_database_ability_find_by_index(&game_state->entity_database, game_get_player(state)->abilities[global_battle_ui_state.selection].ability);
             tip = ability->description;
         } break;
         case BATTLE_UI_SUBMODE_NONE: {
@@ -1120,7 +1120,7 @@ local void render_combat_area_information(struct game_state* state, struct rende
         struct entity* user = game_get_player(state);
 
         if (global_battle_ui_state.selecting_ability_target) {
-            struct entity_ability* ability = dereference_ability(user->abilities[global_battle_ui_state.selection].ability);
+            struct entity_ability* ability = entity_database_ability_find_by_index(&game_state->entity_database, user->abilities[global_battle_ui_state.selection].ability);
 
             s32 grid_x = 0;
             s32 grid_y = 0;

@@ -72,31 +72,10 @@ struct entity_ability {
  */
 void copy_selection_field_rotated_as(struct entity_ability* ability, u8* field_copy, s32 quadrant);
 
-/* TODO:
-   merge this into entity_database,
-   the entity database is just going to be an amalgum of all this
-   so it's in one place, and also cause they're all related information
-*/
-struct entity_ability_database {
-    struct memory_arena* arena;
-    s32                    ability_count;
-    struct entity_ability* abilities;
-};
-
-typedef struct entity_ability_id {
-    s16 index;
-} entity_ability_id;
-
 struct entity_ability_slot {
-    entity_ability_id ability;
+    s32 ability;
     s32 usages;
     u8 ability_level;
 };
-
-void                   initialize_ability_database(struct memory_arena* arena);
-void                   build_ability_database(void);
-entity_ability_id      add_ability_to_database(struct entity_ability ability, string id_name);
-entity_ability_id      find_ability_by_name(string id_name);
-struct entity_ability* dereference_ability(entity_ability_id id);
 
 #endif
