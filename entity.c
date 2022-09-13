@@ -1021,7 +1021,7 @@ struct entity_loot_table* entity_database_loot_table_find_by_name(struct entity_
 }
 
 s32 entity_database_find_id_by_name(struct entity_database* entity_database, string name) {
-    struct entity* e = entity_database_find_by_name(entity_database, name);
+    struct entity_base_data* e = entity_database_find_by_name(entity_database, name);
     if (e) {
         return e-entity_database->entities;
     }
@@ -1096,16 +1096,17 @@ struct item_instance* entity_loot_table_find_loot(struct memory_arena* arena, st
         return 0;
     }
 
-    struct random_state   rng        = random_state();
     struct item_instance* loot_list  = memory_arena_push(arena, 0);
     s32                   loot_count = 0;
 
     for (s32 loot_index = 0; loot_index < loot_table->loot_count; ++loot_index) {
         struct entity_loot* current_loot_entry = loot_table->loot_items + loot_index;
-        f32 loot_chance_roll = random_float(&rng);
+        f32 loot_chance_roll = random_float(&game_state->rng);
+
+        _debugprintf("Chance (%f) vs Roll (%f)", current_loot_entry->normalized_chance, loot_chance_roll);
 
         if (loot_chance_roll < current_loot_entry->normalized_chance) {
-            s32 drop_amount = random_ranged_integer(&rng, current_loot_entry->count_min, current_loot_entry->count_max);
+            s32 drop_amount = random_ranged_integer(&game_state->rng, current_loot_entry->count_min, current_loot_entry->count_max);
 
             {
                 struct item_def* item_base = item_database_find_by_id(current_loot_entry->item);
@@ -1125,6 +1126,7 @@ struct item_instance* entity_loot_table_find_loot(struct memory_arena* arena, st
                 
                 new_loot_item->item  = current_loot_entry->item;
                 new_loot_item->count = drop_amount;
+                _debugprintf("item id: (%u) looted (count %d)", new_loot_item->item.id_hash, new_loot_item->count);
             }
 
         }

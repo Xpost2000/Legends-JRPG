@@ -1114,7 +1114,6 @@ void game_initialize(void) {
      */
     game_state->permenant_entities = entity_list_create(&game_arena, GAME_MAX_PERMENANT_ENTITIES, ENTITY_LIST_STORAGE_TYPE_PERMENANT_STORE);
     player_id                      = entity_list_create_player(&game_state->permenant_entities, v2f32(70, 70));
-    entity_list_create_badguy(&game_state->permenant_entities, v2f32(8 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE));
     /* entity_list_create_badguy(&game_state->permenant_entities, v2f32(9 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE)); */
     {
         struct entity_loot_table loot_table = {};
@@ -1130,11 +1129,13 @@ void game_initialize(void) {
             a->item = item_id_make(string_literal("item_sardine_fish_5"));
             a->count_min = 1;
             a->count_max = 1;
-            a->normalized_chance = 0.5;
+            a->normalized_chance = 0.8;
         }
 
         entity_database_add_loot_table(&game_state->entity_database, loot_table, string_literal("bandit_loot0"));
     }
+
+    entity_list_create_badguy(&game_state->permenant_entities, v2f32(8 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE));
 
     {
         struct entity* player = game_get_player(game_state);

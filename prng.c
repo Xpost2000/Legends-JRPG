@@ -19,6 +19,7 @@ f32 random_float(struct random_state* state) {
 }
 
 s32 random_ranged_integer(struct random_state* state, s32 minimum, s32 maximum) {
+    if (maximum == minimum) return minimum;
     return (random_state_next(state) % (maximum - minimum)) + minimum;
 }
 

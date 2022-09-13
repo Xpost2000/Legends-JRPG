@@ -858,7 +858,6 @@ local void do_after_action_report_screen(struct game_state* state, struct softwa
     {
         for (s32 looted_item_index = 0; looted_item_index < global_battle_ui_state.loot_result_count; ++looted_item_index) {
             struct item_instance* current_loot_entry = global_battle_ui_state.loot_results + looted_item_index;
-            _debugprintf("item id: (%d) looted (count %d)", current_loot_entry->item.id_hash, current_loot_entry->count);
         }
     }
 
