@@ -1012,8 +1012,8 @@ local void entity_database_initialize_entities(struct entity_database* database)
 
     s32 entity_count = data_file_forms.count + 1;
 
-    database->entity_capacity      = entity_count;
-    database->entities             = memory_arena_push(arena, entity_count * sizeof(*database->entities));
+    database->entity_capacity    = entity_count;
+    database->entities           = memory_arena_push(arena, entity_count * sizeof(*database->entities));
     database->entity_key_strings = memory_arena_push(arena, entity_count * sizeof(*database->entity_key_strings));
 
     {
@@ -1027,14 +1027,97 @@ local void entity_database_initialize_entities(struct entity_database* database)
     }
 
     database->entity_count = entity_count;
+
+    for (s32 entity_form_index = 0; entity_form_index < entity_count; ++entity_form_index) {
+        struct entity_base_data* current_entity      = (database->entities+1) + entity_form_index;
+        struct lisp_form*        current_entity_form = data_file_forms.forms + entity_form_index;
+
+        {
+            struct lisp_form* id_name_form          = lisp_list_nth(current_entity_form, 0);
+            struct lisp_form* name_form             = lisp_list_nth(current_entity_form, 1);
+            struct lisp_form* model_id_form         = lisp_list_nth(current_entity_form, 2);
+            struct lisp_form* flags_list_form       = lisp_list_nth(current_entity_form, 3);
+            struct lisp_form* ai_flags_list_form    = lisp_list_nth(current_entity_form, 4);
+            struct lisp_form* health_form           = lisp_list_nth(current_entity_form, 5);
+            struct lisp_form* magic_form            = lisp_list_nth(current_entity_form, 6);
+            struct lisp_form* loot_table_id_form    = lisp_list_nth(current_entity_form, 7);
+            struct lisp_form* equip_slot_list_form  = lisp_list_nth(current_entity_form, 8); unused(equip_slot_list_form);
+            struct lisp_form* entity_inventory_form = lisp_list_nth(current_entity_form, 9); unused(entity_inventory_form);
+            struct lisp_form* stat_block_form       = lisp_list_nth(current_entity_form, 10);
+
+            {
+                string key_name = {};
+                lisp_form_get_string(*id_name_form, &key_name);
+                database->entity_key_strings[entity_form_index] = string_clone(arena, key_name);
+            }
+            {
+                string name_str = {};
+                lisp_form_get_string(*name_form, &name_str);
+                current_entity->name = string_clone(arena, name_str);
+            }
+            {lisp_form_get_s32(*model_id_form, &current_entity->model_index);}
+            { /* flag parsing */
+                _debugprintf("Flag parsing not done yet!");
+            }
+            {
+                lisp_form_get_s32(*health_form, &current_entity->health);
+                lisp_form_get_s32(*magic_form, &current_entity->magic);
+            }
+            {
+                string loot_table_id = {};
+                if (loot_table_id_form->type != LISP_FORM_STRING) {
+                    current_entity->loot_table_id_index = -1;
+                } else {
+                    lisp_form_get_string(*loot_table_id_form, &loot_table_id);
+                    current_entity->loot_table_id_index = entity_database_loot_table_find_id_by_name(database, loot_table_id);
+                }
+            }
+            { /* equip slot and inventory */
+                
+            }
+            { /* stat block parsing */
+                s32 stat_block_form_count = stat_block_form->list.count;
+                for (s32 stat_block_index = 0; stat_block_index < stat_block_form_count; ++stat_block_index) {
+                    struct lisp_form* stat_form = lisp_list_nth(stat_block_form, stat_block_index);
+
+                    {
+                        struct lisp_form* stat_name = lisp_list_nth(stat_form, 0);
+                        struct lisp_form* param     = lisp_list_nth(stat_form, 1);
+
+                        if (lisp_form_symbol_matching(*stat_name, string_literal("level"))) {
+                            lisp_form_get_s32(*param, &current_entity->stats.level);
+                        } else if (lisp_form_symbol_matching(*stat_name, string_literal("xp"))) {
+                            lisp_form_get_s32(*param, &current_entity->stats.xp_value);
+                        } else if (lisp_form_symbol_matching(*stat_name, string_literal("vigor"))) {
+                            lisp_form_get_s32(*param, &current_entity->stats.vigor);
+                        } else if (lisp_form_symbol_matching(*stat_name, string_literal("strength"))) {
+                            lisp_form_get_s32(*param, &current_entity->stats.strength);
+                        } else if (lisp_form_symbol_matching(*stat_name, string_literal("constitution"))) {
+                            lisp_form_get_s32(*param, &current_entity->stats.constitution);
+                        } else if (lisp_form_symbol_matching(*stat_name, string_literal("willpower"))) {
+                            lisp_form_get_s32(*param, &current_entity->stats.willpower);
+                        } else if (lisp_form_symbol_matching(*stat_name, string_literal("agility"))) {
+                            lisp_form_get_s32(*param, &current_entity->stats.agility);
+                        } else if (lisp_form_symbol_matching(*stat_name, string_literal("speed"))) {
+                            lisp_form_get_s32(*param, &current_entity->stats.speed);
+                        } else if (lisp_form_symbol_matching(*stat_name, string_literal("intelligence"))) {
+                            lisp_form_get_s32(*param, &current_entity->stats.intelligence);
+                        } else if (lisp_form_symbol_matching(*stat_name, string_literal("luck"))) {
+                            lisp_form_get_s32(*param, &current_entity->stats.luck);
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 struct entity_database entity_database_create(struct memory_arena* arena) {
     struct entity_database result = {};
     result.arena = arena;
 
-    entity_database_initialize_entities(&result);
     entity_database_initialize_loot_tables(&result);
+    entity_database_initialize_entities(&result);
 
     return result;
 }

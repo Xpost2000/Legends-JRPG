@@ -199,8 +199,6 @@ enum entity_equip_slot_index {
 };
 
 #define ENTITY_MAX_ABILITIES (2048)
-/* 9/12 NOTE: Entity loot tables cannot be editted, they are attached to their entity type. */
-/* this makes my life easier, as I don't need to change any editor code or serialization code. */
 struct entity {
     string name;
 
