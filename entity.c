@@ -968,7 +968,7 @@ local void entity_database_initialize_loot_tables(struct entity_database* databa
                     assertion(item_name_form && "no item name form?");
                     {
                         string id_str = {};
-                        /* assertion(lisp_form_get_string(*item_name_form, &id_str) && "bad name form?"); */
+                        assertion(lisp_form_get_string(*item_name_form, &id_str) && "bad name form?");
                         new_item_id = item_id_make(id_str);
                     }
 
@@ -980,10 +980,10 @@ local void entity_database_initialize_loot_tables(struct entity_database* databa
                                 struct lisp_form* min_form = lisp_list_nth(drop_count_form, 0);
                                 struct lisp_form* max_form = lisp_list_nth(drop_count_form, 1);
 
-                                /* assertion(lisp_form_get_s32(*min_form, &drop_range_min) && "error missing min"); */
-                                /* assertion(lisp_form_get_s32(*max_form, &drop_range_max) && "error missing max"); */
+                                assertion(lisp_form_get_s32(*min_form, &drop_range_min) && "error missing min");
+                                assertion(lisp_form_get_s32(*max_form, &drop_range_max) && "error missing max");
                             } else if (drop_count_form->type == LISP_FORM_NUMBER) {
-                                /* assertion(lisp_form_get_s32(*drop_count_form, &drop_range_min) && "bad form?"); */
+                                assertion(lisp_form_get_s32(*drop_count_form, &drop_range_min) && "bad form?");
                                 drop_range_max = drop_range_min;
                             }
                         } else {
@@ -994,7 +994,7 @@ local void entity_database_initialize_loot_tables(struct entity_database* databa
                     f32 drop_percentage = 0;
                     {
                         if (drop_percentage_form) {
-                            /* assertion(lisp_form_get_f32(*drop_percentage_form, &drop_percentage) && "bad form?"); */
+                            assertion(lisp_form_get_f32(*drop_percentage_form, &drop_percentage) && "bad form?");
                         } else {
                             drop_percentage = 1;
                         }
