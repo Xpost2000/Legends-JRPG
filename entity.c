@@ -1117,6 +1117,7 @@ void entity_database_initialize_abilities(struct entity_database* database) {
     s32 ability_count = 2;
 
     database->ability_capacity    = ability_count;
+    database->ability_count       = ability_count;
     database->abilities           = memory_arena_push(arena, ability_count * sizeof(*database->abilities));
     database->ability_key_strings = memory_arena_push(arena, ability_count * sizeof(*database->ability_key_strings));
 
@@ -1239,8 +1240,10 @@ struct entity_ability* entity_database_ability_find_by_index(struct entity_datab
 }
 
 struct entity_ability* entity_database_ability_find_by_name(struct entity_database* entity_database, string name) {
+    _debugprintf("Count? : %d", entity_database->ability_count);
     for (s32 entity_ability_index = 0; entity_ability_index < entity_database->ability_count; ++entity_ability_index) {
         string ability_name = entity_database->ability_key_strings[entity_ability_index];
+        _debugprintf("%.*s key : vs : %.*s", name.length, name.data, ability_name.length, ability_name.data);
 
         if (string_equal(ability_name, name)) {
             return entity_database_ability_find_by_index(entity_database, entity_ability_index);
