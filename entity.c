@@ -912,16 +912,10 @@ s32 entity_find_effective_stat_value(struct entity* entity, s32 stat_index) {
     return base_value;
 }
 
-/* in the future clone from the top.... */
 void entity_database_add_entity(struct entity_database* entity_database, struct entity_base_data base_ent, string as_name) {
     s32 next_index                                  = entity_database->entity_count++;
     entity_database->entities[next_index]           = base_ent;
     entity_database->entity_key_strings[next_index] = string_clone(entity_database->arena, as_name);
-}
-void entity_database_add_loot_table(struct entity_database* entity_database, struct entity_loot_table loot_table, string as_name) {
-    s32 next_index                                      = entity_database->loot_table_count++;
-    entity_database->loot_tables[next_index]            = loot_table;
-    entity_database->loot_table_key_strings[next_index] = string_clone(entity_database->arena, as_name);
 }
 
 local void entity_database_initialize_loot_tables(struct entity_database* database) {
@@ -1010,24 +1004,37 @@ local void entity_database_initialize_loot_tables(struct entity_database* databa
     }
 }
 
-struct entity_database entity_database_create(struct memory_arena* arena, s32 amount) {
+local void entity_database_initialize_entities(struct entity_database* database) {
+    struct memory_arena* arena            = database->arena;
+    struct file_buffer   data_file_buffer = read_entire_file(memory_arena_allocator(&scratch_arena), string_literal("./res/entities.txt"));
+    struct lisp_list     data_file_forms  = lisp_read_string_into_forms(&scratch_arena, file_buffer_as_string(&data_file_buffer));
+
+
+    s32 entity_count = data_file_forms.count + 1;
+
+    database->entity_capacity      = entity_count;
+    database->entities             = memory_arena_push(arena, entity_count * sizeof(*database->entities));
+    database->entity_key_strings = memory_arena_push(arena, entity_count * sizeof(*database->entity_key_strings));
+
+    {
+        static struct entity_base_data base_data = {
+            .name = string_literal("John Doe"),
+            .health = 10,
+        };
+
+        base_data.stats = entity_stat_block_identity;
+        entity_database_add_entity(database, base_data, string_literal("__default__"));
+    }
+
+    database->entity_count = entity_count;
+}
+
+struct entity_database entity_database_create(struct memory_arena* arena) {
     struct entity_database result = {};
     result.arena = arena;
 
-    result.entity_capacity        = amount;
-    result.entity_count           = 0;
-    result.entity_key_strings     = memory_arena_push(arena, amount * sizeof(string));
-    result.entities               = memory_arena_push(arena, amount * sizeof(*result.entities));
-
+    entity_database_initialize_entities(&result);
     entity_database_initialize_loot_tables(&result);
-
-    static struct entity_base_data base_data = {
-        .name = string_literal("John Doe"),
-        .health = 10,
-    };
-
-    base_data.stats = entity_stat_block_identity;
-    entity_database_add_entity(&result, base_data, string_literal("__default__"));
 
     return result;
 }

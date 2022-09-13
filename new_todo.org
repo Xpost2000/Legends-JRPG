@@ -120,7 +120,6 @@ adding world/doors/obstacles.
 I'm probably going to avoid going too ham on the puzzle things and generally design dungeons to be very linear.
 *** TODO Level planning,
 *** TODO More scenario writing
-*** TODO Entities defined from files
 *** TODO initial save record work
 *** TODO Synopsis Diary System?
 *** TODO Cleanup in the future, remove scale field from entities. They are now redundant.
@@ -173,12 +172,21 @@ This thing is actually now going to be inspired by Action Sequences from RPG Mak
 
   This isn't very difficult to do. It will also be the default animation
   if we lack any other type of animation.
+*** TODO Ability Sequences!
 
+These are the biggest mother fuckers! We should also offer the option to do Disgaea style
+skipping if possible. I'm probably just going to define the structs and call it a day from
+this point.
+
+Since that's one of the painful things since it's almost essentially an arbitrary animation sequence,
+which is what kind of concerns me.
+
+*** TODO Entities defined from files
 *** DONE (DOING)Entities can drop items at the end of a battle when they die.
 We have to have droppable items in the list, and obviously set percentages for drops. This isn't super difficult
 and can be specified as part of the entity drop system.
 *** DONE Scissor buffer
-*** TODO (DOING) Serializing of loot tables (from a file)
+*** DONE (DOING) Serializing of loot tables (from a file)
 *** TODO (DOING)Polish up the battle victory screen
 ** Tuesday
 

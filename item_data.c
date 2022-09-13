@@ -1,12 +1,4 @@
 struct file_buffer item_schema_file = {};
-/*
-  I wish I wrote a metaprogram to do this for me, but it almost feels like a policy that I seem
-  to avoid metaprogramming like the plague.
-
-  Also I'm pretty sure the time it would take me to write a metaprogrammer for this would take longer
-  than actually writing this by hand (since I don't usually do it and I use the lisp format to make for some
-  special allowances due to it's flexible syntax.)
-*/
 local void parse_stat_form(struct item_def* item_definition, struct lisp_form* stat_form, bool modifier_block) {
     struct lisp_form* stat_name  = lisp_list_nth(stat_form, 0);
     struct lisp_form* stat_param = lisp_list_nth(stat_form, 1);

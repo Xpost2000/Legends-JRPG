@@ -1062,7 +1062,7 @@ void game_initialize(void) {
     game_state->variables.variables = memory_arena_push(&game_arena, sizeof(*game_state->variables.variables) * 4096);
     game_state->conversation_arena  = memory_arena_push_sub_arena(&game_arena, Kilobyte(64));
 
-    game_state->entity_database     = entity_database_create(&game_arena, 1024);
+    game_state->entity_database     = entity_database_create(&game_arena);
     
     initialize_save_data();
     initialize_main_menu();
