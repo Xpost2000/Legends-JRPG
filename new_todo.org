@@ -174,9 +174,10 @@ This thing is actually now going to be inspired by Action Sequences from RPG Mak
   This isn't very difficult to do. It will also be the default animation
   if we lack any other type of animation.
 
-*** TODO (DOING)Entities can drop items at the end of a battle when they die.
+*** DONE (DOING)Entities can drop items at the end of a battle when they die.
 We have to have droppable items in the list, and obviously set percentages for drops. This isn't super difficult
 and can be specified as part of the entity drop system.
+*** TODO (DOING) Serializing of loot tables (from a file)
 *** TODO (DOING)Polish up the battle victory screen
 ** Tuesday
 

@@ -318,8 +318,12 @@ struct entity_database {
 
 struct entity_loot_table* entity_lookup_loot_table(struct entity_database* entity_database, struct entity* entity);
 /* for debug reasons, in reality it is always built from a file. */
+
+/* TODO: remove when serializing happens (or rather this should be dynamic in debug, but that's for future stuff) */
 void   entity_database_add_entity(struct entity_database* entity_database, struct entity_base_data base_ent, string as_name);
 void   entity_database_add_loot_table(struct entity_database* entity_database, struct entity_loot_table loot_table, string as_name);
+/* TODO: remove when serializing happens */
+
 void   entity_base_data_unpack(struct entity_database* entity_database, struct entity_base_data* data, struct entity* unpack_destination);
 
 struct entity_database   entity_database_create(struct memory_arena* arena, s32 amount);
@@ -327,6 +331,8 @@ struct entity_base_data* entity_database_find_by_index(struct entity_database* e
 struct entity_base_data* entity_database_find_by_name(struct entity_database* entity_database, string name);
 struct entity_loot_table* entity_database_loot_table_find_by_index(struct entity_database* entity_database, s32 index);
 struct entity_loot_table* entity_database_loot_table_find_by_name(struct entity_database* entity_database, string name);
+s32 entity_database_find_id_by_name(struct entity_database* entity_database, string name);
+s32 entity_database_loot_table_find_id_by_name(struct entity_database* entity_database, string name);
 
 bool is_entity_aggressive_to_player(struct entity* entity);
 void entity_play_animation(struct entity* entity, string name);

@@ -294,15 +294,16 @@ entity_id entity_list_create_badguy(struct entity_list* entities, v2f32 position
     entity_id result = entity_list_create_entity(entities);
     struct entity* e = entity_list_dereference_entity(entities, result);
 
-    e->flags    |= ENTITY_FLAGS_ALIVE;
-    e->position = position;
-    e->scale.x  = TILE_UNIT_SIZE-2;
-    e->scale.y  = TILE_UNIT_SIZE-2;
-    e->health.value = 100;
-    e->health.min = 100;
-    e->health.max = 100;
-    e->ai.flags = ENTITY_AI_FLAGS_AGGRESSIVE_TO_PLAYER;
-    e->name    = string_literal("Ruffian");
+    e->flags               |= ENTITY_FLAGS_ALIVE;
+    e->position             = position;
+    e->scale.x              = TILE_UNIT_SIZE-2;
+    e->scale.y              = TILE_UNIT_SIZE-2;
+    e->health.value         = 100;
+    e->health.min           = 100;
+    e->health.max           = 100;
+    e->ai.flags             = ENTITY_AI_FLAGS_AGGRESSIVE_TO_PLAYER;
+    e->name                 = string_literal("Ruffian");
+    e->loot_table_id_index  = entity_database_loot_table_find_id_by_name(&game_state->entity_database, string_literal("bandit_loot0"));
 
     return result;
 }
@@ -1115,6 +1116,25 @@ void game_initialize(void) {
     player_id                      = entity_list_create_player(&game_state->permenant_entities, v2f32(70, 70));
     entity_list_create_badguy(&game_state->permenant_entities, v2f32(8 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE));
     /* entity_list_create_badguy(&game_state->permenant_entities, v2f32(9 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE)); */
+    {
+        struct entity_loot_table loot_table = {};
+        {
+            struct entity_loot* a = &loot_table.loot_items[loot_table.loot_count++];;
+            a->item = item_id_make(string_literal("item_gold"));
+            a->count_min = 25;
+            a->count_max = 45;
+            a->normalized_chance = 1.0;
+        }
+        {
+            struct entity_loot* a = &loot_table.loot_items[loot_table.loot_count++];;
+            a->item = item_id_make(string_literal("item_sardine_fish_5"));
+            a->count_min = 1;
+            a->count_max = 1;
+            a->normalized_chance = 0.5;
+        }
+
+        entity_database_add_loot_table(&game_state->entity_database, loot_table, string_literal("bandit_loot0"));
+    }
 
     {
         struct entity* player = game_get_player(game_state);

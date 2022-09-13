@@ -1020,6 +1020,22 @@ struct entity_loot_table* entity_database_loot_table_find_by_name(struct entity_
     return NULL;
 }
 
+s32 entity_database_find_id_by_name(struct entity_database* entity_database, string name) {
+    struct entity* e = entity_database_find_by_name(entity_database, name);
+    if (e) {
+        return e-entity_database->entities;
+    }
+    return 0;
+}
+
+s32 entity_database_loot_table_find_id_by_name(struct entity_database* entity_database, string name) {
+    struct entity_loot_table* e = entity_database_loot_table_find_by_name(entity_database, name);
+    if (e) {
+        return e-entity_database->loot_tables;
+    }
+    return -1;
+}
+
 struct entity_iterator entity_iterator_create(void) {
     struct entity_iterator iterator = {};
 
