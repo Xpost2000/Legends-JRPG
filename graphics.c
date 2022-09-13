@@ -130,6 +130,17 @@ void software_framebuffer_finish(struct software_framebuffer* framebuffer) {
     }
 }
 
+void software_framebuffer_clear_scissor(struct software_framebuffer* framebuffer) {
+    framebuffer->scissor_w = framebuffer->scissor_h = framebuffer->scissor_x = framebuffer->scissor_y = 0;
+}
+
+void software_framebuffer_set_scissor(struct software_framebuffer* framebuffer, s32 x, s32 y, s32 w, s32 h) {
+    framebuffer->scissor_x = x;
+    framebuffer->scissor_y = y;
+    framebuffer->scissor_w = w;
+    framebuffer->scissor_h = h;
+}
+
 void software_framebuffer_clear_buffer(struct software_framebuffer* framebuffer, union color32u8 rgba) {
     memory_set32(framebuffer->pixels, framebuffer->width * framebuffer->height * sizeof(u32), rgba.rgba_packed);
 }
@@ -191,6 +202,21 @@ void software_framebuffer_clear_buffer(struct software_framebuffer* framebuffer,
         }                                                               \
     } while(0)
 
+local bool _framebuffer_scissor_cull(struct software_framebuffer* framebuffer, s32 x, s32 y) {
+    if (framebuffer->scissor_w == 0 || framebuffer->scissor_h == 0) {
+        return false;
+    }
+    
+    if (x < framebuffer->scissor_x                        ||
+        y < framebuffer->scissor_y                        ||
+        x > framebuffer->scissor_x+framebuffer->scissor_y ||
+        y > framebuffer->scissor_y+framebuffer->scissor_y) {
+        return true;
+    }
+
+    return false;
+}
+
 /* NOTE: Since I rarely draw standard quads for *legit* reasons, these don't have the ability to be shaded. */
 #ifdef USE_SIMD_OPTIMIZATIONS
 void software_framebuffer_draw_quad_clipped(struct software_framebuffer* framebuffer, struct rectangle_f32 destination, union color32u8 rgba, u8 blend_mode, struct rectangle_f32 clip_rect) {
@@ -221,7 +247,6 @@ void software_framebuffer_draw_quad_clipped(struct software_framebuffer* framebu
     s32 stride = framebuffer->width;
     for (s32 y_cursor = start_y; y_cursor < end_y; ++y_cursor) {
         for (s32 x_cursor = start_x; x_cursor < end_x; x_cursor += 4) {
-
             __m128 red_destination_channels = _mm_set_ps(
                 framebuffer->pixels[y_cursor * stride * 4 + (x_cursor+3) * 4 + 0],
                 framebuffer->pixels[y_cursor * stride * 4 + (x_cursor+2) * 4 + 0],
@@ -273,8 +298,8 @@ void software_framebuffer_draw_quad_clipped(struct software_framebuffer* framebu
 
 
             for (int i = 0; i < 4; ++i) {
-                if ((x_cursor + i >= clip_rect.x+clip_rect.w))
-                    break;
+                if ((x_cursor + i >= clip_rect.x+clip_rect.w)) break;
+                if (_framebuffer_scissor_cull(framebuffer, x_cursor+i, y_cursor)) continue;
 
                 framebuffer->pixels_u32[y_cursor * framebuffer->width + (x_cursor+i)] = packu32(
                     255,
@@ -299,6 +324,7 @@ void software_framebuffer_draw_quad_clipped(struct software_framebuffer* framebu
 
     for (s32 y_cursor = start_y; y_cursor < end_y; ++y_cursor) {
         for (s32 x_cursor = start_x; x_cursor < end_x; ++x_cursor) {
+            if (_framebuffer_scissor_cull(framebuffer, x_cursor, y_cursor)) continue;
             _BlendPixel_Scalar(framebuffer, x_cursor, y_cursor, rgba, blend_mode);
         }
     }
@@ -347,6 +373,7 @@ void software_framebuffer_draw_image_ex_clipped(struct software_framebuffer* fra
 
     for (s32 y_cursor = start_y; y_cursor < end_y; ++y_cursor) {
         for (s32 x_cursor = start_x; x_cursor < end_x; ++x_cursor) {
+            if (_framebuffer_scissor_cull(framebuffer, x_cursor, y_cursor)) continue;
             s32 image_sample_x = (s32)((src.x + src.w) - ((unclamped_end_x - x_cursor) * scale_ratio_w));
             s32 image_sample_y = (s32)((src.y + src.h) - ((unclamped_end_y - y_cursor) * scale_ratio_h));
 
@@ -580,8 +607,8 @@ void software_framebuffer_draw_image_ex_clipped(struct software_framebuffer* fra
             red_destination_channels   = _mm_min_ps(_mm_max_ps(red_destination_channels  , zero), two_fifty_five);
 
             for (int i = 0; i < 4; ++i) {
-                if ((x_cursor + i >= clip_rect.x+clip_rect.w) || (((src.x + src.w) - ((unclamped_end_x - (x_cursor+i)) * scale_ratio_w))) >= src.x+src.w)
-                    break;
+                if (_framebuffer_scissor_cull(framebuffer, x_cursor+i, y_cursor)) continue;
+                if ((x_cursor + i >= clip_rect.x+clip_rect.w) || (((src.x + src.w) - ((unclamped_end_x - (x_cursor+i)) * scale_ratio_w))) >= src.x+src.w) break;
 
                 framebuffer->pixels_u32[y_cursor * framebuffer->width + (x_cursor+i)] = packu32(
                     255,
@@ -606,6 +633,7 @@ void software_framebuffer_draw_line_clipped(struct software_framebuffer* framebu
         }
 
         for (s32 x_cursor = start.x; x_cursor < end.x; x_cursor++) {
+            if (_framebuffer_scissor_cull(framebuffer, x_cursor, start.y)) continue;
             if (x_cursor < clip_rect.w+clip_rect.x && x_cursor >= clip_rect.x &&
                 start.y  < clip_rect.h+clip_rect.y && start.y >= clip_rect.y) {
                 _BlendPixel_Scalar(framebuffer, x_cursor, (s32)floor(start.y), rgba, blend_mode);
@@ -617,6 +645,7 @@ void software_framebuffer_draw_line_clipped(struct software_framebuffer* framebu
         }
         
         for (s32 y_cursor = start.y; y_cursor < end.y; y_cursor++) {
+            if (_framebuffer_scissor_cull(framebuffer, start.x, y_cursor)) continue;
             if (start.x < clip_rect.x+clip_rect.w && start.x    >= clip_rect.x &&
                 y_cursor  < clip_rect.y+clip_rect.h && y_cursor >= clip_rect.y) {
                 _BlendPixel_Scalar(framebuffer, (s32)floor(start.x), y_cursor, rgba, blend_mode);
@@ -643,8 +672,8 @@ void software_framebuffer_draw_line_clipped(struct software_framebuffer* framebu
         float alpha = rgba.a / 255.0f;
 
         for (;;) {
-            if (x1 < clip_rect.x+clip_rect.w   && x1 >= clip_rect.x &&
-                y1  < clip_rect.y+clip_rect.h && y1 >= clip_rect.y) {
+            if (x1 < clip_rect.x+clip_rect.w   && x1 >= clip_rect.x && y1 < clip_rect.y+clip_rect.h && y1 >= clip_rect.y) {
+                if (_framebuffer_scissor_cull(framebuffer, x1, y1)) continue;
                 _BlendPixel_Scalar(framebuffer, x1, y1, rgba, blend_mode);
             }
 

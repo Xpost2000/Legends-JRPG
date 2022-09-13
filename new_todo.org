@@ -177,6 +177,7 @@ This thing is actually now going to be inspired by Action Sequences from RPG Mak
 *** DONE (DOING)Entities can drop items at the end of a battle when they die.
 We have to have droppable items in the list, and obviously set percentages for drops. This isn't super difficult
 and can be specified as part of the entity drop system.
+*** DONE Scissor buffer
 *** TODO (DOING) Serializing of loot tables (from a file)
 *** TODO (DOING)Polish up the battle victory screen
 ** Tuesday

@@ -924,20 +924,102 @@ void entity_database_add_loot_table(struct entity_database* entity_database, str
     entity_database->loot_table_key_strings[next_index] = string_clone(entity_database->arena, as_name);
 }
 
+local void entity_database_initialize_loot_tables(struct entity_database* database) {
+    _debugprintf("loading form");
+    struct memory_arena* arena            = database->arena;
+    struct file_buffer   data_file_buffer = read_entire_file(memory_arena_allocator(&scratch_arena), string_literal("./res/loot_tables.txt"));
+    struct lisp_list     data_file_forms  = lisp_read_string_into_forms(&scratch_arena, file_buffer_as_string(&data_file_buffer));
+
+    s32 loot_table_count = data_file_forms.count;
+
+    database->loot_table_capacity    = loot_table_count;
+    database->loot_table_count       = loot_table_count;
+    database->loot_tables            = memory_arena_push(arena, loot_table_count * sizeof(*database->loot_tables));
+    database->loot_table_key_strings = memory_arena_push(arena, loot_table_count * sizeof(*database->loot_table_key_strings));
+
+    for (s32 loot_table_form_index = 0; loot_table_form_index < loot_table_count; ++loot_table_form_index) {
+        struct entity_loot_table* current_loot_table            = &database->loot_tables[loot_table_form_index];
+        string*                   current_loot_table_key_string = &database->loot_table_key_strings[loot_table_form_index];
+
+        struct lisp_form* form = data_file_forms.forms + loot_table_form_index;
+
+        {
+            struct lisp_form* name_form          = lisp_list_nth(form, 0);
+            struct lisp_form  loot_table_entries = lisp_list_sliced(*form, 1, -1);
+
+            string name_str = {};
+            assertion(lisp_form_get_string(*name_form, &name_str) && "Bad name form for loot table");
+            *current_loot_table_key_string = string_clone(arena, name_str);
+            
+            s32 loot_table_entry_count = loot_table_entries.list.count;
+            current_loot_table->loot_count = loot_table_entry_count;
+
+            assertion(current_loot_table->loot_count < ENTITY_MAX_LOOT_TABLE_ENTRIES && "Too much loot!");
+            for (s32 loot_table_entry_form_index = 0; loot_table_entry_form_index < loot_table_entry_count; ++loot_table_entry_form_index) {
+                struct entity_loot* loot_entry         = current_loot_table->loot_items + loot_table_entry_form_index;
+                struct lisp_form*   current_entry_form = lisp_list_nth(&loot_table_entries, loot_table_entry_form_index);
+
+                {
+                    struct lisp_form* item_name_form       = lisp_list_nth(current_entry_form, 0);
+                    struct lisp_form* drop_count_form      = lisp_list_nth(current_entry_form, 1);
+                    struct lisp_form* drop_percentage_form = lisp_list_nth(current_entry_form, 2);
+
+                    item_id new_item_id = item_id_make(string_literal("\0"));
+                    assertion(item_name_form && "no item name form?");
+                    {
+                        string id_str = {};
+                        assertion(lisp_form_get_string(*item_name_form, &id_str) && "bad name form?");
+                        new_item_id = item_id_make(id_str);
+                    }
+
+                    s32 drop_range_min = 0;
+                    s32 drop_range_max = 0;
+                    {
+                        if (drop_count_form) {
+                            if (drop_count_form->type == LISP_FORM_LIST) {
+                                struct lisp_form* min_form = lisp_list_nth(drop_count_form, 0);
+                                struct lisp_form* max_form = lisp_list_nth(drop_count_form, 1);
+
+                                assertion(lisp_form_get_s32(*min_form, &drop_range_min) && "error missing min");
+                                assertion(lisp_form_get_s32(*max_form, &drop_range_max) && "error missing max");
+                            } else if (drop_count_form->type == LISP_FORM_NUMBER) {
+                                assertion(lisp_form_get_s32(*drop_count_form, &drop_range_min) && "bad form?");
+                                drop_range_max = drop_range_min;
+                            }
+                        } else {
+                            drop_range_min = drop_range_max = 1;
+                        }
+                    }
+
+                    f32 drop_percentage = 0;
+                    {
+                        if (drop_percentage_form) {
+                            assertion(lisp_form_get_f32(*drop_percentage_form, &drop_percentage) && "bad form?");
+                        } else {
+                            drop_percentage = 1;
+                        }
+                    }
+
+                    loot_entry->item              = new_item_id;
+                    loot_entry->count_min         = drop_range_min;
+                    loot_entry->count_max         = drop_range_max;
+                    loot_entry->normalized_chance = drop_percentage;
+                }
+            }
+        }
+    }
+}
 
 struct entity_database entity_database_create(struct memory_arena* arena, s32 amount) {
     struct entity_database result = {};
     result.arena = arena;
 
     result.entity_capacity        = amount;
-    result.loot_table_capacity    = amount;
-    result.loot_table_capacity    = amount;
     result.entity_count           = 0;
-    result.loot_table_count       = 0;
     result.entity_key_strings     = memory_arena_push(arena, amount * sizeof(string));
-    result.loot_table_key_strings = memory_arena_push(arena, amount * sizeof(string));
     result.entities               = memory_arena_push(arena, amount * sizeof(*result.entities));
-    result.loot_tables            = memory_arena_push(arena, amount * sizeof(*result.loot_tables));
+
+    entity_database_initialize_loot_tables(&result);
 
     static struct entity_base_data base_data = {
         .name = string_literal("John Doe"),

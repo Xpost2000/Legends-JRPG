@@ -54,6 +54,11 @@ struct software_framebuffer {
 
     shader_fn active_shader;
     void*     active_shader_context;
+
+    s32 scissor_x;
+    s32 scissor_y;
+    s32 scissor_w;
+    s32 scissor_h;
 };
 
 union color32u8 {
@@ -162,6 +167,8 @@ enum blit_blend_mode {
     BLEND_MODE_COUNT,
 };
 
+void software_framebuffer_clear_scissor(struct software_framebuffer* framebuffer);
+void software_framebuffer_set_scissor(struct software_framebuffer* framebuffer, s32 x, s32 y, s32 w, s32 h);
 void software_framebuffer_clear_buffer(struct software_framebuffer* framebuffer, union color32u8 rgba);
 void software_framebuffer_draw_quad(struct software_framebuffer* framebuffer, struct rectangle_f32 destination, union color32u8 rgba, u8 blend_mode);
 void software_framebuffer_draw_image_ex(struct software_framebuffer* framebuffer, struct image_buffer* image, struct rectangle_f32 destination, struct rectangle_f32 src, union color32f32 modulation, u32 flags, u8 blend_mode);

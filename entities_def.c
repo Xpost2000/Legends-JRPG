@@ -321,7 +321,6 @@ struct entity_loot_table* entity_lookup_loot_table(struct entity_database* entit
 
 /* TODO: remove when serializing happens (or rather this should be dynamic in debug, but that's for future stuff) */
 void   entity_database_add_entity(struct entity_database* entity_database, struct entity_base_data base_ent, string as_name);
-void   entity_database_add_loot_table(struct entity_database* entity_database, struct entity_loot_table loot_table, string as_name);
 /* TODO: remove when serializing happens */
 
 void   entity_base_data_unpack(struct entity_database* entity_database, struct entity_base_data* data, struct entity* unpack_destination);
