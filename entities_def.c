@@ -208,6 +208,8 @@ struct entity {
 
     s32   base_id_index; /* use this to look up some shared information */
                          /* that isn't intended to change. Mostly just for the loot tables. */
+    s32   loot_table_id_index;
+
     s32   model_index;
     u8    facing_direction;
 
@@ -274,7 +276,7 @@ void entity_set_dialogue_file(struct entity* entity, string str) {
     
 }
 
-#define ENTITY_MAX_LOOT_TABLE_ENTRIES (16)
+#define ENTITY_MAX_LOOT_TABLE_ENTRIES (32)
 struct entity_loot {
     item_id   item;
     s32       count_min;
@@ -297,27 +299,34 @@ struct entity_base_data {
     struct entity_stat_block      stats;
     s32                           health;
     s32                           magic;
+    s32                           loot_table_id_index; /* if -1, don't use loot table. Need to have override in level_area_entity */
     item_id                       equip_slots[ENTITY_EQUIP_SLOT_INDEX_COUNT];
     struct entity_actor_inventory inventory;
-    struct entity_loot_table      loot_table;
 };
 struct entity_database {
-    struct memory_arena*     arena;
-    s32                      capacity;
-    s32                      count;
+    struct memory_arena*      arena;
+    s32                       entity_capacity;
+    s32                       entity_count;
+    s32                       loot_table_capacity;
+    s32                       loot_table_count;
     /* I think I really should be hashing a lot of things I do this for. TODO. Can always change */
-    string*                  entity_key_strings;
-    struct entity_base_data* entities;
+    string*                   entity_key_strings;
+    string*                   loot_table_key_strings;
+    struct entity_base_data*  entities;
+    struct entity_loot_table* loot_tables;
 };
 
 struct entity_loot_table* entity_lookup_loot_table(struct entity_database* entity_database, struct entity* entity);
 /* for debug reasons, in reality it is always built from a file. */
 void   entity_database_add_entity(struct entity_database* entity_database, struct entity_base_data base_ent, string as_name);
+void   entity_database_add_loot_table(struct entity_database* entity_database, struct entity_loot_table loot_table, string as_name);
 void   entity_base_data_unpack(struct entity_database* entity_database, struct entity_base_data* data, struct entity* unpack_destination);
 
 struct entity_database   entity_database_create(struct memory_arena* arena, s32 amount);
 struct entity_base_data* entity_database_find_by_index(struct entity_database* entity_database, s32 index);
 struct entity_base_data* entity_database_find_by_name(struct entity_database* entity_database, string name);
+struct entity_loot_table* entity_database_loot_table_find_by_index(struct entity_database* entity_database, s32 index);
+struct entity_loot_table* entity_database_loot_table_find_by_name(struct entity_database* entity_database, string name);
 
 bool is_entity_aggressive_to_player(struct entity* entity);
 void entity_play_animation(struct entity* entity, string name);

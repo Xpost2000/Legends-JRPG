@@ -912,20 +912,32 @@ s32 entity_find_effective_stat_value(struct entity* entity, s32 stat_index) {
     return base_value;
 }
 
+/* in the future clone from the top.... */
 void entity_database_add_entity(struct entity_database* entity_database, struct entity_base_data base_ent, string as_name) {
-    s32 next_index = entity_database->count++;
+    s32 next_index                                  = entity_database->entity_count++;
     entity_database->entities[next_index]           = base_ent;
     entity_database->entity_key_strings[next_index] = string_clone(entity_database->arena, as_name);
 }
+void entity_database_add_loot_table(struct entity_database* entity_database, struct entity_loot_table loot_table, string as_name) {
+    s32 next_index                                      = entity_database->loot_table_count++;
+    entity_database->loot_tables[next_index]            = loot_table;
+    entity_database->loot_table_key_strings[next_index] = string_clone(entity_database->arena, as_name);
+}
+
 
 struct entity_database entity_database_create(struct memory_arena* arena, s32 amount) {
     struct entity_database result = {};
     result.arena = arena;
 
-    result.capacity = amount;
-    result.count    = 0;
-    result.entity_key_strings = memory_arena_push(arena, amount * sizeof(string));
-    result.entities           = memory_arena_push(arena, amount * sizeof(*result.entities));
+    result.entity_capacity        = amount;
+    result.loot_table_capacity    = amount;
+    result.loot_table_capacity    = amount;
+    result.entity_count           = 0;
+    result.loot_table_count       = 0;
+    result.entity_key_strings     = memory_arena_push(arena, amount * sizeof(string));
+    result.loot_table_key_strings = memory_arena_push(arena, amount * sizeof(string));
+    result.entities               = memory_arena_push(arena, amount * sizeof(*result.entities));
+    result.loot_tables            = memory_arena_push(arena, amount * sizeof(*result.loot_tables));
 
     static struct entity_base_data base_data = {
         .name = string_literal("John Doe"),
@@ -960,15 +972,16 @@ void entity_base_data_unpack(struct entity_database* entity_database, struct ent
     destination->model_index = data->model_index;
 
     /* don't allow these flags to override. That could be bad. */
-    data->flags                &= ~(ENTITY_FLAGS_RUNTIME_RESERVATION);
-    destination->flags         |= data->flags;
-    destination->ai.flags      |= data->ai_flags;
-    destination->stat_block     = data->stats;
-    destination->health.min     = destination->magic.min = 0;
-    destination->health.value   = destination->health.max = data->health;
-    destination->magic.value    = destination->magic.max  = data->magic;
-    destination->inventory      = data->inventory;
-    destination->base_id_index  = base_id_index;
+    data->flags                      &= ~(ENTITY_FLAGS_RUNTIME_RESERVATION);
+    destination->flags               |= data->flags;
+    destination->ai.flags            |= data->ai_flags;
+    destination->stat_block           = data->stats;
+    destination->health.min           = destination->magic.min = 0;
+    destination->health.value         = destination->health.max = data->health;
+    destination->magic.value          = destination->magic.max  = data->magic;
+    destination->inventory            = data->inventory;
+    destination->base_id_index        = base_id_index;
+    destination->loot_table_id_index  = data->loot_table_id_index;
 
     for (s32 index = 0; index < array_count(data->equip_slots); ++index) {
         destination->equip_slots[index] = data->equip_slots[index];
@@ -980,7 +993,7 @@ struct entity_base_data* entity_database_find_by_index(struct entity_database* e
 }
 
 struct entity_base_data* entity_database_find_by_name(struct entity_database* entity_database, string name) {
-    for (s32 entity_index = 0; entity_index < entity_database->count; ++entity_index) {
+    for (s32 entity_index = 0; entity_index < entity_database->entity_count; ++entity_index) {
         string entity_name = entity_database->entity_key_strings[entity_index];
 
         if (string_equal(entity_name, name)) {
@@ -989,6 +1002,22 @@ struct entity_base_data* entity_database_find_by_name(struct entity_database* en
     }
 
     return entity_database_find_by_name(entity_database, string_literal("__default__"));
+}
+
+struct entity_loot_table* entity_database_loot_table_find_by_index(struct entity_database* entity_database, s32 index) {
+    return entity_database->loot_tables + index;
+}
+
+struct entity_loot_table* entity_database_loot_table_find_by_name(struct entity_database* entity_database, string name) {
+    for (s32 loot_table_index = 0; loot_table_index < entity_database->loot_table_count; ++loot_table_index) {
+        string loot_table_name = entity_database->loot_table_key_strings[loot_table_index];
+
+        if (string_equal(loot_table_name, name)) {
+            return entity_database_loot_table_find_by_index(entity_database, loot_table_index);
+        }
+    }
+
+    return NULL;
 }
 
 struct entity_iterator entity_iterator_create(void) {
@@ -1045,7 +1074,7 @@ struct entity_iterator entity_iterator_clone(struct entity_iterator* base) {
 }
 
 struct item_instance* entity_loot_table_find_loot(struct memory_arena* arena, struct entity_loot_table* loot_table, s32* out_count) {
-    if (loot_table->loot_count == 0) {
+    if (!loot_table || loot_table->loot_count == 0) {
         _debugprintf("no loot!");
         *out_count = 0;
         return 0;
@@ -1092,7 +1121,17 @@ struct item_instance* entity_loot_table_find_loot(struct memory_arena* arena, st
 struct entity_loot_table* entity_lookup_loot_table(struct entity_database* entity_database, struct entity* entity) {
     s32                      base_id          = entity->base_id_index;
     struct entity_base_data* entity_base_data = entity_database->entities + base_id;
-    return &entity_base_data->loot_table;
+
+    s32 loot_table_id_index = entity->loot_table_id_index;
+    if (loot_table_id_index == -1) {
+        loot_table_id_index = entity_base_data->loot_table_id_index;
+    }
+
+    if (loot_table_id_index == -1) {
+        return NULL;
+    }
+
+    return entity_database->loot_tables + loot_table_id_index;
 }
 
 #include "entity_ability.c"

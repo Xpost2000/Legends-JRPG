@@ -1128,7 +1128,7 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
 
                                         f32 largest_name_width = 0;
 
-                                        for (s32 index = 0; index < entities->count; ++index) {
+                                        for (s32 index = 0; index < entities->entity_count; ++index) {
                                             f32 current_width = font_cache_text_width(font, entities->entity_key_strings[index], text_scale);
 
                                             if (largest_name_width < current_width) {
@@ -1144,7 +1144,7 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
 
                                             for (s32 index = 0; index < ENTRIES_PER_ROW; ++index) {
                                                 s32 entity_data_index = row_index * ENTRIES_PER_ROW + index;
-                                                if (!(entity_data_index < entities->count)) {
+                                                if (!(entity_data_index < entities->entity_count)) {
                                                     break;
                                                 }
 
