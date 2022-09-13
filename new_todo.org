@@ -111,7 +111,6 @@ tr = 0.393R + 0.769G + 0.189B
 tg = 0.349R + 0.686G + 0.168B
 tb = 0.272R + 0.534G + 0.131B
 *** TODO Parameter adjustable Postprocessing
-*** TODO Level Up Curve
 *** TODO Sprite Props/Objects (Generally these are custom scripted objects within the engine. Fun.)
 These things don't have to obey tile lock limitations but they can snap to the grid if needed. They are also separated
 into layers. These things will be done later, not necessarily needed.
@@ -134,12 +133,61 @@ This happens inconsistently, don't know what the cause of it is right now.
 *** DONE Minor shop related bugs.
 I suspect as I compress the shop code, it'll fix itself, but it's a little unwieldy.
 ** Monday
+We'll probably just do this at night or something.
+*** TODO (DOING)Particle System
+*** TODO (DOING)My end turn is broken.
+*** TODO (DOING)Item Use menu in the battle UI.
+*** TODO (DOING) Combat System changes
+:LOGBOOK:
+CLOCK: [2022-08-27 Sat 15:20]--[2022-08-27 Sat 15:24] =>  0:04
+CLOCK: [2022-08-27 Sat 13:27]--[2022-08-27 Sat 15:04] =>  1:37
+:END:
+These are some more adjustments to the combat system core.
+
+We don't have really many items right now,
+
+I have some of the ability UI done which is very nice I guess. Going to level design later... So I can still get some work that isn't
+engine work done.
+
+- [X] Entity selection with abilities (and highlighting obviously.)
+- [ ] Make it more Disgaea like (action is queued up, and we can undo movement and such if they haven't been executed)
+  This is after everything is confirmed to already work.
+- [ ] Confirmation of ability selection.
+- [ ] Also turn investment! (For now I will do pure turn based (just set action points to 0 after each action.))
+- [ ] Add the usage of abilities
+  I haven't quite figured out the uh, animation problem. Since there
+  may be many complexities in the animation. Now anyway this is done
+  I have to encode the animations as commands, and that might override
+  lots of state. We're not doing that right now.
+
+  We're just going to focus on getting the ability infrastructure to
+  work without animations.
+
+  I suspect the animations aren't going to be too difficult to do though.
+*** TODO (DOING) Combat Animations
+This thing is actually now going to be inspired by Action Sequences from RPG Maker
+- [ ] Ability animation structure
+- [ ] Add standard attack animations
+  While this technically requires more art, we can animate a violent bump
+  for now if we lack any animations otherwise (along with a damage flash).
+
+  This isn't very difficult to do. It will also be the default animation
+  if we lack any other type of animation.
+
+*** TODO (DOING)Entities can drop items at the end of a battle when they die.
+We have to have droppable items in the list, and obviously set percentages for drops. This isn't super difficult
+and can be specified as part of the entity drop system.
+*** TODO (DOING)Polish up the battle victory screen
 ** Tuesday
 
-So it seems like a large majority of the tasks right now are finishing up core engine features, and gameplay mechanics.
-While also encouraging a push towards a more data-driven game engine. This is to reduce the strain of producing content, and
-obviously while some mechanics and content still has to sort of be hard-coded, a vast majority of the game assets can be
-loaded from data and should basically be avaliable on demand.
+*** TODO Level Up Curve
+*** TODO Consider thinking about the save menu
+*** TODO Projectiles for ranged weapons!
+*** TODO Game Over State/Screen
+*** TODO (????MAYBE)"Fluid" Obstacles (Liquid Fire/Water/Oil/Acid)
+I need to draw and use autotiling for these, but they should be pretty easy...
+Also thankfully these only happen on one layer.
+
 
 ** Wednesday
 Frankly I'm a bit reluctant to allow myself to do *from file* tasks, as data formats are commonly rewritten
@@ -209,9 +257,8 @@ know what the fuck I'm trying to do.
 I think it's a good idea to do 2-3 things on these lists a day, or at least try
 to do that much.
 
-It's a decent amount of progress imo.smal
+It's a decent amount of progress imo.
 
-*** TODO Consider thinking about the save menu
 *** DONE Lighting
 We're doing a simple sprite per pixel lighting system. It will likely not obey obstructions to start, but that's okay for now.
 Yeah no obstructions, just full screenspace lighting.
@@ -230,55 +277,6 @@ lights on level load. Obviously that's an optimization done after the game is li
 Lighting is pretty easy though, just harder to look good. But doing perpixel effects looks pretty authentic even on low resolutions.
 
 (Probably just going to make an additive light that's going to be clamped...)
-*** TODO Projectiles for ranged weapons!
-*** TODO Game Over State/Screen
-*** TODO Particle System
-*** TODO "Fluid" Obstacles (Liquid Fire/Water/Oil/Acid)
-I need to draw and use autotiling for these, but they should be pretty easy...
-Also thankfully these only happen on one layer.
-
-*** TODO My end turn is broken.
-*** TODO Item Use menu in the battle UI.
-*** TODO Combat System changes
-:LOGBOOK:
-CLOCK: [2022-08-27 Sat 15:20]--[2022-08-27 Sat 15:24] =>  0:04
-CLOCK: [2022-08-27 Sat 13:27]--[2022-08-27 Sat 15:04] =>  1:37
-:END:
-These are some more adjustments to the combat system core.
-
-We don't have really many items right now,
-
-I have some of the ability UI done which is very nice I guess. Going to level design later... So I can still get some work that isn't
-engine work done.
-
-- [X] Entity selection with abilities (and highlighting obviously.)
-- [ ] Make it more Disgaea like (action is queued up, and we can undo movement and such if they haven't been executed)
-  This is after everything is confirmed to already work.
-- [ ] Confirmation of ability selection.
-- [ ] Also turn investment! (For now I will do pure turn based (just set action points to 0 after each action.))
-- [ ] Add the usage of abilities
-  I haven't quite figured out the uh, animation problem. Since there
-  may be many complexities in the animation. Now anyway this is done
-  I have to encode the animations as commands, and that might override
-  lots of state. We're not doing that right now.
-
-  We're just going to focus on getting the ability infrastructure to
-  work without animations.
-
-  I suspect the animations aren't going to be too difficult to do though.
-*** TODO Combat Animations
-This thing is actually now going to be inspired by Action Sequences from RPG Maker
-- [ ] Ability animation structure
-- [ ] Add standard attack animations
-  While this technically requires more art, we can animate a violent bump
-  for now if we lack any animations otherwise (along with a damage flash).
-
-  This isn't very difficult to do. It will also be the default animation
-  if we lack any other type of animation.
-
-*** TODO Entities can drop items at the end of a battle when they die.
-We have to have droppable items in the list, and obviously set percentages for drops. This isn't super difficult
-and can be specified as part of the entity drop system.
 * OLD TASK LIST. 
 When I'm ready to work today:
 

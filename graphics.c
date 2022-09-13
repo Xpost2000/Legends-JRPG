@@ -362,7 +362,7 @@ void software_framebuffer_draw_image_ex_clipped(struct software_framebuffer* fra
                                                         image->pixels[image_sample_y * image_stride * 4 + image_sample_x * 4 + 3] / 255.0f);
 
             if (shader) {
-                sampled_pixel = shader(framebuffer, sampled_pixel, shader_ctx, v2f32(x_cursor, y_cursor));
+                sampled_pixel = shader(framebuffer, sampled_pixel, v2f32(x_cursor, y_cursor), shader_ctx);
             }
             sampled_pixel.r *= 255.0f;
             sampled_pixel.g *= 255.0f;
@@ -1029,7 +1029,7 @@ s32 thread_software_framebuffer_kernel_convolution(void* job) {
 
 void software_framebuffer_kernel_convolution_ex(struct memory_arena* arena, struct software_framebuffer* framebuffer, f32* kernel, s16 kernel_width, s16 kernel_height, f32 divisor, f32 blend_t, s32 passes) {
 #ifndef MULTITHREADED_EXPERIMENTAL
-    struct software_framebuffer unaltered_copy = software_framebuffer_create(arena, framebuffer->width, framebuffer->height);
+    struct software_framebuffer unaltered_copy = software_framebuffer_create_from_arena(arena, framebuffer->width, framebuffer->height);
     software_framebuffer_copy_into(&unaltered_copy, framebuffer);
     software_framebuffer_kernel_convolution_ex_bounded(unaltered_copy, framebuffer, kernel, kernel_width, kernel_height, divisor, blend_t, passes, rectangle_f32(0,0,framebuffer->width,framebuffer->height));
 #else
@@ -1222,7 +1222,7 @@ void software_framebuffer_run_shader(struct software_framebuffer* framebuffer, s
                 framebuffer->pixels[y * framebuffer->width * 4 + x * 4 + 3] / 255.0f
             );
 
-            union color32f32 new_pixel = shader(framebuffer, source_pixel, context);
+            union color32f32 new_pixel = shader(framebuffer, source_pixel, v2f32(x, y), context);
 
             new_pixel.r = clamp_f32(new_pixel.r, 0, 1);
             new_pixel.g = clamp_f32(new_pixel.g, 0, 1);

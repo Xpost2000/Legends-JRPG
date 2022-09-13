@@ -196,11 +196,15 @@ enum entity_equip_slot_index {
 };
 
 #define ENTITY_MAX_ABILITIES (2048)
+/* 9/12 NOTE: Entity loot tables cannot be editted, they are attached to their entity type. */
+/* this makes my life easier, as I don't need to change any editor code or serialization code. */
 struct entity {
     string name;
 
     struct entity_animation_state animation;
 
+    s32   base_id_index; /* use this to look up some shared information */
+                         /* that isn't intended to change. Mostly just for the loot tables. */
     s32   model_index;
     u8    facing_direction;
 
@@ -267,6 +271,17 @@ void entity_set_dialogue_file(struct entity* entity, string str) {
     
 }
 
+#define ENTITY_MAX_LOOT_TABLE_ENTRIES (16)
+struct entity_loot {
+    item_id   item;
+    s32_range count;            /* count variance here */
+    f32       normalized_chance; /* 0 - 1 */
+};
+struct entity_loot_table {
+    s32                loot_count;
+    struct entity_loot loot_items[ENTITY_MAX_LOOT_TABLE_ENTRIES];
+};
+
 struct entity_base_data {
     string                        name;
     s32                           model_index;
@@ -277,6 +292,7 @@ struct entity_base_data {
     s32                           magic;
     item_id                       equip_slots[ENTITY_EQUIP_SLOT_INDEX_COUNT];
     struct entity_actor_inventory inventory;
+    struct entity_loot_table      loot_table;
 };
 void entity_base_data_unpack(struct entity_base_data* data, struct entity* unpack_destination);
 
