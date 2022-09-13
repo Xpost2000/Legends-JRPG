@@ -51,8 +51,6 @@ bool entity_id_equal(entity_id a, entity_id b) {
     return false;
 }
 
-#include "entity_ability_sequence_def.c"
-
 /* forward decl */
 void battle_notify_killed_entity(entity_id);
 

@@ -1,8 +1,8 @@
 #ifndef ENTITY_ABILITY_DEF_C
 #define ENTITY_ABILITY_DEF_C
 
-/* These should all have an animation sequence associated with them. */
-/* should be stored in a table */
+#define ENTITY_ABILITY_SEQUENCE_MAX_PARTICIPANTS (32)
+
 #define ENTITY_ABILITY_SELECTION_FIELD_MAX_X (8+1)
 #define ENTITY_ABILITY_SELECTION_FIELD_MAX_Y (8+1)
 
@@ -29,6 +29,35 @@ enum entity_ability_selection_mask {
                                          ABILITY_SELECTION_MASK_SELF |
                                          ABILITY_SELECTION_MASK_ALLIES)
 };
+
+/*
+  I'm going to just interpret lisp forms.
+
+  It just means I have practically speaking no serialization code and I can entirely
+  focus on the scary part which is just the implementation of all this crap.
+
+  The amount of state I'm going to be keeping track of is a bit intimidating.
+*/
+struct entity_ability_sequence {
+    struct lisp_form* actions;
+    s32 sequence_action_count;
+};
+
+#if 0
+void skip_current_ability_animation(void) {
+    for each anim form; {
+        if (damage causing) {
+            // do all shit
+        }
+
+        if (movement causing) {
+            // do all shit
+        }
+    }
+
+    okay done!
+}
+#endif
 
 struct entity_ability {
     /* valid target selections */
@@ -59,7 +88,7 @@ struct entity_ability {
     /* NOTE: This field is relative to direction */
     /* the default shapes should assume the user is facing *up* */
     u8 selection_field[ENTITY_ABILITY_SELECTION_FIELD_MAX_Y][ENTITY_ABILITY_SELECTION_FIELD_MAX_X];
-    /* TODO add animation sequence to do things */
+    struct entity_ability_sequence sequence;
 };
 
 /*

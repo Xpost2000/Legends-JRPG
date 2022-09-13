@@ -1,3 +1,9 @@
+/*
+  Later we can implement our animation code here probably.
+
+  An attack might count as an ability so who knows.
+*/
+
 s32 facing_direction_to_quadrant(s32 facing_dir) {
     switch (facing_dir) {
         case DIRECTION_LEFT : return 1;

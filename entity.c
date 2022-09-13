@@ -1111,6 +1111,7 @@ local void entity_database_initialize_entities(struct entity_database* database)
     }
 }
 
+/* Obviously this isn't final code. */
 void entity_database_initialize_abilities(struct entity_database* database) {
     struct memory_arena* arena = database->arena;
 
