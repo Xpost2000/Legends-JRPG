@@ -981,7 +981,6 @@ void entity_base_data_unpack(struct entity_database* entity_database, struct ent
     destination->magic.value          = destination->magic.max  = data->magic;
     destination->inventory            = data->inventory;
     destination->base_id_index        = base_id_index;
-    destination->loot_table_id_index  = data->loot_table_id_index;
 
     for (s32 index = 0; index < array_count(data->equip_slots); ++index) {
         destination->equip_slots[index] = data->equip_slots[index];
