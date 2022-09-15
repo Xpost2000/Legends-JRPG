@@ -1,1 +1,42 @@
 # lmao blam
+(
+"ability_shock"
+"Shock"
+"Electrocute your enemies."
+
+# selection_type, moving_field, max_move_units_{x,y}
+(selection 'field-shape nil)
+
+
+# 9x9 selection field
+# or some keywords
+(field 'all-filled)
+
+# list of animation sequences that will be compiled down.
+(anim-sequence
+
+))
+
+(
+"ability_sword_rush"
+"Sword Rush"
+"Move in a flash, slashing your enemies!"
+(selection 'field nil)
+
+(field
+        (
+        (0 0 0 0 0 0 0 0 0)
+        (0 0 0 0 1 0 0 0 0)
+        (0 0 0 0 1 0 0 0 0)
+        (0 0 0 0 1 0 0 0 0)
+        (0 0 0 0 1 0 0 0 0)
+        (0 0 0 0 0 0 0 0 0)
+        (0 0 0 0 0 0 0 0 0)
+        (0 0 0 0 0 0 0 0 0)
+        (0 0 0 0 0 0 0 0 0)
+        )
+)
+
+(anim-sequence
+)
+)

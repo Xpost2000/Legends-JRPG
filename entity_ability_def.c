@@ -59,6 +59,9 @@ void skip_current_ability_animation(void) {
 }
 #endif
 
+/*
+  Add equipment filter restriction?
+ */
 struct entity_ability {
     /* valid target selections */
     string id_name;

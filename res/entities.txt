@@ -5,16 +5,16 @@
 "bandit_tutorial0"
 "Bandit"
 0 # Models should be referenced through numbers but I can fix that later
-'() # FLAGS
-'() # AI FLAGS
+() # FLAGS
+() # AI FLAGS
 
 15 # health
 0  # magic
 
 "bandit_loot0"# loot table name, can be nil
 
-'() # equip slots not being used
-'() # inventory avaliable during battle
+() # equip slots not being used
+() # inventory avaliable during battle
 
 (
 (level 1)
