@@ -1119,6 +1119,8 @@ void entity_database_initialize_abilities(struct entity_database* database) {
     struct file_buffer   ability_data_file = read_entire_file(memory_arena_allocator(&scratch_arena), string_literal("./res/abilities.txt"));
     struct lisp_list     ability_forms     = lisp_read_string_into_forms(&scratch_arena, file_buffer_as_string(&ability_data_file));
 
+    asdasjkdjksda
+
     s32 ability_count = ability_forms.count;
 
     database->ability_capacity    = ability_count;
@@ -1130,6 +1132,7 @@ void entity_database_initialize_abilities(struct entity_database* database) {
         struct entity_ability* current_ability            = &database->abilities[ability_form_index];
         string*                current_ability_key_string = &database->ability_key_strings[ability_form_index];
         struct lisp_form*      current_ability_form       = ability_forms.forms + ability_form_index;
+        _debugprintf("%p", current_ability_form);
 
         { 
             struct lisp_form* id_name_form                 = lisp_list_nth(current_ability_form, 0);

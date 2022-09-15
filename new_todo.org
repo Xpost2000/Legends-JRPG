@@ -185,14 +185,7 @@ This should be trivial, my audio system should have a very sane design.
 I need to draw and use autotiling for these, but they should be pretty easy...
 Also thankfully these only happen on one layer.
 
-*** TODO (*Focus*DOING)Load the abilities database from abilities.txt
-*** TODO Think about how to separate fullbright and not fullbright.
-The issue is they will not respect the depth system, now thankfully particles are always going to be overlapping everything for now,
-IE: we'll simplify the rendering even if there are graphical issues.
-
-This lighting is screenspace which is fast, however it assumes we don't overlap or have fullbright things which may be a problem. I can fix this
-by just using a "fullbright" buffer, which I write into if I need to. However this doesn't work well the threading system, so we might just change it
-to per object again as I don't think I can obtain enough information in one pass, and one pass rendering is the simplest thing to do.
+*** DONE (*Focus*DOING)Load the abilities database from abilities.txt
 *** TODO (DOING)Particle System
 *** TODO (DOING)My end turn is broken.
 *** TODO (DOING)Item Use menu in the battle UI.
