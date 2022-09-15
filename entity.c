@@ -1113,45 +1113,100 @@ local void entity_database_initialize_entities(struct entity_database* database)
 
 /* Obviously this isn't final code. */
 void entity_database_initialize_abilities(struct entity_database* database) {
-    struct memory_arena* arena = database->arena;
+    _debugprintf("loading abilities file");
 
-    s32 ability_count = 2;
+    struct memory_arena* arena             = database->arena;
+    struct file_buffer   ability_data_file = read_entire_file(memory_arena_allocator(&scratch_arena), string_literal("./res/abilities.txt"));
+    struct lisp_list     ability_forms     = lisp_read_string_into_forms(&scratch_arena, file_buffer_as_string(&ability_data_file));
+
+    s32 ability_count = ability_forms.count;
 
     database->ability_capacity    = ability_count;
     database->ability_count       = ability_count;
     database->abilities           = memory_arena_push(arena, ability_count * sizeof(*database->abilities));
     database->ability_key_strings = memory_arena_push(arena, ability_count * sizeof(*database->ability_key_strings));
 
-    {
-        struct entity_ability sword_rush = {};
-        sword_rush.name = string_literal("Sword Rush");
-        sword_rush.description = string_literal("Move in a flash, slashing through multiple enemies at once.");
-        sword_rush.selection_type = ABILITY_SELECTION_TYPE_FIELD;
-        sword_rush.moving_field = 0;
+    for (s32 ability_form_index = 0; ability_form_index < ability_count; ++ability_form_index) {
+        struct entity_ability* current_ability            = &database->abilities[ability_form_index];
+        string*                current_ability_key_string = &database->ability_key_strings[ability_form_index];
+        struct lisp_form*      current_ability_form       = ability_forms.forms + ability_form_index;
 
-        sword_rush.selection_field[ENTITY_ABILITY_SELECTION_FIELD_CENTER_Y][ENTITY_ABILITY_SELECTION_FIELD_CENTER_X] = true;
-        sword_rush.selection_field[ENTITY_ABILITY_SELECTION_FIELD_CENTER_Y-1][ENTITY_ABILITY_SELECTION_FIELD_CENTER_X] = true;
-        sword_rush.selection_field[ENTITY_ABILITY_SELECTION_FIELD_CENTER_Y-2][ENTITY_ABILITY_SELECTION_FIELD_CENTER_X] = true;
-        sword_rush.selection_field[ENTITY_ABILITY_SELECTION_FIELD_CENTER_Y-3][ENTITY_ABILITY_SELECTION_FIELD_CENTER_X] = true;
+        { 
+            struct lisp_form* id_name_form                 = lisp_list_nth(current_ability_form, 0);
+            struct lisp_form* name_form                    = lisp_list_nth(current_ability_form, 1);
+            struct lisp_form* description_form             = lisp_list_nth(current_ability_form, 2);
+            {
+                string id_name_string     = {};
+                string name_string        = {};
+                string description_string = {};
+                lisp_form_get_string(*id_name_form, &id_name_string);
+                lisp_form_get_string(*name_form, &name_string);
+                lisp_form_get_string(*description_form, &description_string);
+                id_name_string     = string_clone(arena, id_name_string);
+                name_string        = string_clone(arena, name_string);
+                description_string = string_clone(arena, description_string);
 
-        database->abilities[0] = sword_rush;
-        database->ability_key_strings[0] = string_literal("ability_sword_rush");
-    }
-    {
-        struct entity_ability shock = {}; 
-        shock.name = string_literal("Shock");
-        shock.description = string_literal("Electrocute your enemies.");
-        shock.selection_type = ABILITY_SELECTION_TYPE_FIELD_SHAPE;
-        shock.moving_field   = 0;
+                current_ability->id_name     = id_name_string;
+                current_ability->name        = name_string;
+                current_ability->description = description_string;
+                *current_ability_key_string      = id_name_string;
+            }
 
-        for (s32 y = 0; y < ENTITY_ABILITY_SELECTION_FIELD_MAX_Y; ++y) {
-            for (s32 x = 0; x < ENTITY_ABILITY_SELECTION_FIELD_MAX_X; ++x) {
-                shock.selection_field[y][x] = true;
+            struct lisp_form* selection_form               = lisp_list_nth(current_ability_form, 3);
+            struct lisp_form* field_form                   = lisp_list_nth(current_ability_form, 4);
+            struct lisp_form* animation_sequence_list_form = lisp_list_nth(current_ability_form, 5);
+
+            {
+                {
+                    struct lisp_form* selection_form_type            = lisp_list_nth(selection_form, 0);
+                    struct lisp_form* selection_form_is_moving_field = lisp_list_nth(selection_form, 1);
+
+                    u8  selection_field_type = ABILITY_SELECTION_TYPE_FIELD;
+                    s32 is_moving            = 0;
+                    lisp_form_get_s32(*selection_form_is_moving_field, &is_moving);
+
+                    if (lisp_form_symbol_matching(*selection_form_type, string_literal("field-shape"))) {
+                        selection_field_type = ABILITY_SELECTION_TYPE_FIELD_SHAPE;
+                    } else if (lisp_form_symbol_matching(*selection_form_type, string_literal("field"))) {
+                        selection_field_type = ABILITY_SELECTION_TYPE_FIELD;
+                    }
+
+                    current_ability->selection_type = selection_field_type;
+                    current_ability->moving_field   = (u8)(is_moving);
+                }
+
+                {
+                    struct lisp_form* field_list = lisp_list_nth(field_form, 0);
+
+                    if (lisp_form_symbol_matching(*field_list, string_literal("all-filled"))) {
+                        _debugprintf("Fill all slots!");
+
+                        for (s32 y_cursor = 0; y_cursor < ENTITY_ABILITY_SELECTION_FIELD_MAX_Y; ++y_cursor) {
+                            for (s32 x_cursor = 0; x_cursor < ENTITY_ABILITY_SELECTION_FIELD_MAX_X; ++x_cursor) {
+                                current_ability->selection_field[y_cursor][x_cursor] = 1;
+                            }
+                        }
+                    } else {
+                        /* specified */
+                        /* assume it's a 9x9 grid */
+                        for (s32 y_cursor = 0; y_cursor < ENTITY_ABILITY_SELECTION_FIELD_MAX_Y; ++y_cursor) {
+                            struct lisp_form* current_row = lisp_list_nth(field_list, y_cursor);
+
+                            for (s32 x_cursor = 0; x_cursor < ENTITY_ABILITY_SELECTION_FIELD_MAX_X; ++x_cursor) {
+                                struct lisp_form* current_column = lisp_list_nth(current_row, x_cursor);
+
+                                s32 current_value = 0;
+                                assertion(current_column);
+                                assertion(lisp_form_get_s32(*current_column, &current_value));
+                                
+                                current_ability->selection_field[y_cursor][x_cursor] = (u8)(current_value);
+                            }
+                        }
+                    }
+                }
+                {entity_ability_compile_animation_sequence(arena, current_ability, animation_sequence_list_form);}
             }
         }
-
-        database->abilities[1] = shock;
-        database->ability_key_strings[1] = string_literal("ability_shock");
     }
 }
 

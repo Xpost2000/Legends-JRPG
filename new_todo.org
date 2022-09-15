@@ -129,6 +129,9 @@ much more with the editor behavior.
 *** TODO Scrollable item inventory related stuff
 None of the inventory code understands how to scroll but we also don't simply have enough stuff for that to happen!
 There's a lot of dirt that needs to be cleaned up at some point.
+*** TODO More data error handling
+There is basically no error handling code for any of our data formats, so even if we crash we don't
+know what went wrong which is pretty bad imo.
 *** DONE Pathfinding stuck bug.
 This happens inconsistently, don't know what the cause of it is right now.
 *** DONE Minor shop related bugs.
@@ -193,6 +196,8 @@ to per object again as I don't think I can obtain enough information in one pass
 *** TODO (DOING)Particle System
 *** TODO (DOING)My end turn is broken.
 *** TODO (DOING)Item Use menu in the battle UI.
+Mostly just for healing items for now.
+*** TODO (?) Ability filtering
 *** TODO (*Focus*DOING) Combat System changes
 :LOGBOOK:
 CLOCK: [2022-08-27 Sat 15:20]--[2022-08-27 Sat 15:24] =>  0:04

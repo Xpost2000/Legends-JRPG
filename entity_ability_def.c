@@ -13,12 +13,14 @@
 #define ENTITY_ABILITY_SELECTION_MAX_TARGETTABLE (ENTITY_ABILITY_SELECTION_FIELD_MAX_X*ENTITY_ABILITY_SELECTION_FIELD_MAX_Y)
 
 enum entity_ability_selection_type {
-    ABILITY_SELECTION_TYPE_ATTACK_RANGE,
+    ABILITY_SELECTION_TYPE_ATTACK_RANGE, /* NOTE: unused */
+
     /* The field *is* the selection. */
     ABILITY_SELECTION_TYPE_FIELD,
     /* allow selecting within the field */
     ABILITY_SELECTION_TYPE_FIELD_SHAPE,
-    ABILITY_SELECTION_TYPE_EVERYTHING,
+
+    ABILITY_SELECTION_TYPE_EVERYTHING, /* NOTE: unused */
 };
 enum entity_ability_selection_mask {
     ABILITY_SELECTION_MASK_ENEMIES    = BIT(0),
@@ -31,15 +33,17 @@ enum entity_ability_selection_mask {
 };
 
 /*
-  I'm going to just interpret lisp forms.
-
-  It just means I have practically speaking no serialization code and I can entirely
-  focus on the scary part which is just the implementation of all this crap.
-
-  The amount of state I'm going to be keeping track of is a bit intimidating.
-*/
+  Not going to interpret this just to use less memory and frankly the interpretation
+  code is going to be more messier than just "compiling" down and just doing work on my
+  raw operations...
+ */
+/* keep track of time or something later. */
+struct entity_ability_sequence_action {
+    s32 type;
+    /* other data */
+};
 struct entity_ability_sequence {
-    struct lisp_form* actions;
+    struct entity_ability_sequence_action* sequence_actions;
     s32 sequence_action_count;
 };
 
@@ -93,6 +97,9 @@ struct entity_ability {
     u8 selection_field[ENTITY_ABILITY_SELECTION_FIELD_MAX_Y][ENTITY_ABILITY_SELECTION_FIELD_MAX_X];
     struct entity_ability_sequence sequence;
 };
+
+/* NOTE: too lazy to rearrange stuff to be correct. animation_sequence_list is a struct lisp_form* */
+void entity_ability_compile_animation_sequence(struct memory_arena* arena, struct entity_ability* ability, void* animation_sequence_list);
 
 /*
   0 - north
