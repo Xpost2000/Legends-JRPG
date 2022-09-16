@@ -55,7 +55,7 @@ void copy_selection_field_rotated_as(struct entity_ability* ability, u8* field_c
 local void decode_sequence_action_target_entity(struct lisp_form* focus_target_form, struct sequence_action_target_entity* entity_target) {
     bool error = false;
     if (lisp_form_symbol_matching(*focus_target_form, string_literal("user"))) {
-        entity_target->entity_target_type = ENTITY_TARGET_ID_PLAYER;
+        entity_target->entity_target_type = ENTITY_TARGET_ID_USER;
     } else if (lisp_form_symbol_matching(*focus_target_form, string_literal("target"))) {
         entity_target->entity_target_type  = ENTITY_TARGET_ID_TARGET;
         entity_target->entity_target_index = 0;

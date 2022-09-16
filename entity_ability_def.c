@@ -32,6 +32,14 @@ enum entity_ability_selection_mask {
                                          ABILITY_SELECTION_MASK_ALLIES)
 };
 
+/*
+  NOTE: the reason I chose to make sequence actions actual data constructs, as opposed
+  to purely interpreted lisp structures, is that this makes them smaller which is what I need
+  to maintain as this is long term data. I think almost all of the scripts are short lived
+  or otherwise temporary allocations.
+
+  This is a permenant allocation and those strings are space that I shouldn't have to waste.
+ */
 enum sequence_action_type {
     SEQUENCE_ACTION_FOCUS_CAMERA,
     SEQUENCE_ACTION_MOVE_TO,
@@ -40,7 +48,7 @@ enum sequence_action_type {
 
 /* does not allow ally targetting */
 enum sequence_action_entity_target_type {
-    ENTITY_TARGET_ID_PLAYER,
+    ENTITY_TARGET_ID_USER,
     ENTITY_TARGET_ID_TARGET,
 };
 struct sequence_action_target_entity {

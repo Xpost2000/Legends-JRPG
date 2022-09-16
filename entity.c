@@ -721,6 +721,12 @@ void entity_combat_submit_ability_action(struct entity* entity, entity_id* targe
 
     zero_memory(&entity->sequence_state, sizeof(entity->sequence_state));
 
+    entity->sequence_state.start_position        = entity->position;
+    entity->sequence_state.start_position.x /= TILE_UNIT_SIZE;
+    entity->sequence_state.start_position.y /= TILE_UNIT_SIZE;
+    entity->sequence_state.start_position.x = floorf(entity->sequence_state.start_position.x);
+    entity->sequence_state.start_position.y = floorf(entity->sequence_state.start_position.y);
+
     for (s32 target_index = 0; target_index < target_count; ++target_index) {
         entity->ai.targeted_entities[target_index] = targets[target_index];
     }
@@ -789,6 +795,29 @@ local s32 find_best_direction_index(v2f32 direction) {
     }
 
     return best_index;
+}
+
+struct entity* decode_sequence_action_target_entity_into_entity(struct game_state* state, struct entity* self, struct sequence_action_target_entity* target) {
+    switch (target->entity_target_type) {
+        case ENTITY_TARGET_ID_USER: {
+            return self;
+        } break;
+        case ENTITY_TARGET_ID_TARGET: {
+            entity_id target_id = self->ai.targeted_entities[target->entity_target_index];
+            struct entity* result = game_dereference_entity(state, target_id);
+
+            return result;
+        } break;
+    }
+
+    return NULL;
+}
+
+local void entity_advance_ability_sequence(struct entity* entity) {
+    struct entity_sequence_state* sequence_state      = &entity->sequence_state;
+    sequence_state->current_sequence_index += 1;
+    sequence_state->time = 0;
+    sequence_state->initialized_state = false;
 }
 
 local void entity_update_and_perform_actions(struct game_state* state, struct entity* entity, struct level_area* area, f32 dt) {
@@ -892,7 +921,42 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
             struct entity_ability_sequence_action* sequence_action     = &ability_sequence->sequence_actions[sequence_state->current_sequence_index];
 
             switch (sequence_action->type) {
+                case SEQUENCE_ACTION_MOVE_TO: {
+                    struct sequence_action_move_to* move_to = &sequence_action->move_to;
+
+                    /* NOTE: This is in pixel positions. Kind of confusing, I know... I'm not very consistent with these honestly... I should rectify this later. */
+                    if (!sequence_state->initialized_state) {
+                        sequence_state->start_position_interpolation = target_entity->position;
+
+                        v2f32 end_position = v2f32(0,0);
+                        {
+                            switch (move_to->move_target_type) {
+                                case MOVE_TARGET_ENTITY: {
+                                    struct entity* move_target_entity = decode_sequence_action_target_entity_into_entity(state, target_entity, &move_to->move_target.entity.target);
+
+                                    v2f32 direction_between_target_and_self = v2f32_sub(move_target_entity->position, target_entity->position);
+                                    direction_between_target_and_self       = v2f32_normalize(direction_between_target_and_self);
+
+                                    v2f32 displacement_offset = v2f32_scale(direction_between_target_and_self, move_to->move_target.entity.move_past);
+                                    end_position = v2f32_add(move_target_entity->position, displacement_offset);
+                                } break;
+                                case MOVE_TARGET_START: {
+                                    end_position = sequence_state->start_position;
+                                } break;
+                            }
+                        }
+
+                        sequence_state->end_position_interpolation   = end_position;
+                    }
+                } break;
+                case SEQUENCE_ACTION_FOCUS_CAMERA: {
+                    /* TODO */ 
+                } break;
+                case SEQUENCE_ACTION_HURT: {
+                    /* TODO */ 
+                } break;
                 default: {
+                    entity_advance_ability_sequence(target_entity);
                     sequence_state->current_sequence_index += 1;
                 } break;
             }

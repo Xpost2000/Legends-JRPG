@@ -217,8 +217,10 @@ enum entity_equip_slot_index {
   Disgaea... Though I really want that...
  */
 struct entity_sequence_state {
-    v2f32 start_position; /* Saved at the start of any animation */
+    /* This should be an array technically for more involved animations but who cares I guess? */
+    v2f32 start_position; /* Saved at the start of any animation, also in TILE UNITS */
 
+    bool initialized_state;
     v2f32 start_position_interpolation;
     v2f32 end_position_interpolation;
 
