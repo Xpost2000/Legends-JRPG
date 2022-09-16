@@ -37,6 +37,11 @@ struct entity_list entity_list_create(struct memory_arena* arena, s32 capacity, 
         .store_type       = store_mark,
     };
 
+    /* for (s32 entity_index = 0; entity_index < capacity; ++entity_index) { */
+    /*     struct entity* current_entity = result.entities + entity_index; */
+    /*     current_entity->flags = 0; */
+    /* } */
+
     zero_memory(result.generation_count, result.capacity * sizeof(*result.generation_count));
     return result;
 }

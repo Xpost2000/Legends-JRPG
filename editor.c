@@ -1473,19 +1473,21 @@ void update_and_render_editor(struct software_framebuffer* framebuffer, f32 dt) 
                     struct entity_base_data* base_def = entity_database_find_by_name(&game_state->entity_database, string_from_cstring(current_entity->base_name));
                     struct entity_animation* anim = find_animation_by_name(base_def->model_index, facing_direction_strings_normal[current_entity->facing_direction]);
 
-                    image_id sprite_to_use = anim->sprites[0];
+                    if (anim) {
+                        image_id sprite_to_use = anim->sprites[0];
 
-                    union color32f32 color = color32f32_WHITE;
+                        union color32f32 color = color32f32_WHITE;
 
-                    if (current_entity->flags & ENTITY_FLAGS_HIDDEN) {
-                        color.r /= 2;
-                        color.g /= 2;
-                        color.b /= 2;
-                        color.a /= 2;
+                        if (current_entity->flags & ENTITY_FLAGS_HIDDEN) {
+                            color.r /= 2;
+                            color.g /= 2;
+                            color.b /= 2;
+                            color.a /= 2;
+                        }
+
+                        render_commands_push_image(&commands, graphics_assets_get_image_by_id(&graphics_assets, sprite_to_use),
+                                                   rectangle_f32_scale(bounds, TILE_UNIT_SIZE), RECTANGLE_F32_NULL, color, NO_FLAGS, BLEND_MODE_ALPHA);
                     }
-
-                    render_commands_push_image(&commands, graphics_assets_get_image_by_id(&graphics_assets, sprite_to_use),
-                                               rectangle_f32_scale(bounds, TILE_UNIT_SIZE), RECTANGLE_F32_NULL, color, NO_FLAGS, BLEND_MODE_ALPHA);
                 }
                 s32 entity_id          = current_entity - editor_state->entities;
                 render_commands_push_text(&commands, font, 1, v2f32(bounds.x * TILE_UNIT_SIZE, bounds.y * TILE_UNIT_SIZE), string_from_cstring(format_temp("(entity %d)", entity_id)), color32f32(1,1,1,1), BLEND_MODE_ALPHA);

@@ -715,7 +715,7 @@ void serialize_level_area(struct game_state* state, struct binary_serializer* se
               NOTE: While this is more explicit since it simply requires an unpacking step,
               it also helps since the entity holder may change formats...
              */
-            level->entities = entity_list_create(state->arena, (entity_count+1), ENTITY_LIST_STORAGE_TYPE_PER_LEVEL);
+            level->entities = entity_list_create(state->arena, (entity_count), ENTITY_LIST_STORAGE_TYPE_PER_LEVEL);
 
             for (s32 entity_index = 0; entity_index < entity_count; ++entity_index) {
                 serialize_level_area_entity(serializer, level->version, &current_packed_entity);
@@ -1111,7 +1111,7 @@ void game_initialize(void) {
     player_id                      = entity_list_create_player(&game_state->permenant_entities, v2f32(70, 70));
     /* entity_list_create_badguy(&game_state->permenant_entities, v2f32(9 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE)); */
 
-    entity_list_create_badguy(&game_state->permenant_entities, v2f32(8 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE));
+    entity_list_create_badguy(&game_state->permenant_entities, v2f32(7 * TILE_UNIT_SIZE, 7 * TILE_UNIT_SIZE));
 
     {
         struct entity* player = game_get_player(game_state);
@@ -1167,8 +1167,8 @@ void game_initialize_game_world(void) {
     /* load_level_from_file(game_state, string_literal("pf.area")); */
 #endif
     /* load_level_from_file(game_state, string_literal("bt.area")); */
-    /* load_level_from_file(game_state, string_literal("testforest.area")); */
-    load_level_from_file(game_state, string_literal("lighttest.area"));
+    load_level_from_file(game_state, string_literal("testforest.area"));
+    /* load_level_from_file(game_state, string_literal("lighttest.area")); */
     /* load_level_from_file(game_state, string_literal("level.area")); */
     /* load_level_from_file(game_state, string_literal("testisland.area")); */
     /* game_attempt_to_change_area_name(game_state, string_literal("Old Iyeila"), string_literal("Grave of Stars")); */
