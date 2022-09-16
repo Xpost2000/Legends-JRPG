@@ -145,6 +145,10 @@ struct entity_ability {
       0 3 3 3 3 0
 
       Like the number represents the minimum ability level required to see the slot as selectable or something.
+
+      Also this field doesn't really determine the gameplay characteristics of anything! (unless we skip
+      animations, in which case we use this as a shortcut for everything... But this is a purely
+      visual construct!)
     */
     /* NOTE: This field is relative to direction */
     /* the default shapes should assume the user is facing *up* */

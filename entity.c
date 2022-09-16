@@ -719,6 +719,8 @@ void entity_combat_submit_ability_action(struct entity* entity, entity_id* targe
     entity->ai.using_ability_index   = user_ability_index;
     entity->ai.targeted_entity_count = target_count;
 
+    zero_memory(&entity->sequence_state, sizeof(entity->sequence_state));
+
     for (s32 target_index = 0; target_index < target_count; ++target_index) {
         entity->ai.targeted_entities[target_index] = targets[target_index];
     }
@@ -803,7 +805,7 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
 
         case ENTITY_ACTION_MOVEMENT: {
             if (target_entity->velocity.x != 0 || target_entity->velocity.y != 0) {
-                if (current_entity->velocity.y < 0) {
+                if (target_entity->velocity.y < 0) {
                     entity_play_animation(target_entity, string_literal("up_walk"));
                 } else if (target_entity->velocity.y > 0) {
                     entity_play_animation(target_entity, string_literal("down_walk"));
@@ -813,7 +815,7 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
                     entity_play_animation(target_entity, string_literal("left_walk"));
                 }
             } else {
-                entity_play_animation(current_entity, facing_direction_strings_normal[current_entity->facing_direction]);
+                entity_play_animation(target_entity, facing_direction_strings_normal[target_entity->facing_direction]);
             }
 
             if (target_entity->ai.current_path_point_index >= target_entity->ai.navigation_path.count) {
@@ -878,7 +880,26 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
         } break;
 
         case ENTITY_ACTION_ABILITY: {
-            
+            /* woah this list is big, lots of dereferences... */
+            struct entity_ai_data*                 ai_data             = &target_entity->ai;
+            struct entity_sequence_state*          sequence_state      = &target_entity->sequence_state;
+            struct entity_animation_state*         animation           = &target_entity->animation;
+            struct entity_ability_slot*            active_ability_slot = &target_entity->abilities[ai_data->using_ability_index];
+            struct entity_ability*                 ability_to_use      = entity_database_ability_find_by_index(&game_state->entity_database, active_ability_slot->ability);
+            s32                                    target_count        = ai_data->targeted_entity_count;
+            entity_id*                             targets             = ai_data->targeted_entities;
+            struct entity_ability_sequence*        ability_sequence    = &ability_to_use->sequence;
+            struct entity_ability_sequence_action* sequence_action     = &ability_sequence->sequence_actions[sequence_state->current_sequence_index];
+
+            switch (sequence_action->type) {
+                default: {
+                    sequence_state->current_sequence_index += 1;
+                } break;
+            }
+
+            if (sequence_state->current_sequence_index >= ability_sequence->sequence_action_count) {
+                target_entity->ai.current_action = 0; 
+            }
         } break;
 
         case ENTITY_ACTION_ATTACK: {
