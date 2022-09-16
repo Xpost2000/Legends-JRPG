@@ -185,6 +185,7 @@ This should be trivial, my audio system should have a very sane design.
 I need to draw and use autotiling for these, but they should be pretty easy...
 Also thankfully these only happen on one layer.
 
+*** TODO Ability score calculation error. Don't know why this is broken right now.
 *** DONE (*Focus*DOING)Load the abilities database from abilities.txt
 *** TODO (DOING)Particle System
 *** TODO (DOING)My end turn is broken.

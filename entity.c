@@ -1203,9 +1203,8 @@ void entity_database_initialize_abilities(struct entity_database* database) {
                         }
                     }
                 }
-#if 0
+
                 {entity_ability_compile_animation_sequence(arena, current_ability, animation_sequence_list_form);}
-#endif
             }
         }
     }

@@ -53,32 +53,42 @@ void copy_selection_field_rotated_as(struct entity_ability* ability, u8* field_c
 }
 
 void entity_ability_compile_animation_sequence(struct memory_arena* arena, struct entity_ability* ability, void* animation_sequence_list) {
-    assertion(((struct lisp_form*)(animation_sequence_list))->type == LISP_FORM_LIST && "This is not a list. This is bad!");
+    struct lisp_form* animation_sequence_list_form = (struct lisp_form*)animation_sequence_list;
 
-    struct entity_ability_sequence* sequence     = &ability->sequence;
-    s32                             action_count = ((struct lisp_form*)(animation_sequence_list))->list.count;
+    if (animation_sequence_list_form->type == LISP_FORM_LIST) {
+        struct entity_ability_sequence* sequence     = &ability->sequence;
+        s32                             action_count = ((struct lisp_form*)(animation_sequence_list))->list.count;
 
-    sequence->sequence_action_count = action_count;
-    sequence->sequence_actions      = memory_arena_push(arena, action_count * sizeof(*sequence->sequence_actions));
+        sequence->sequence_action_count = action_count;
+        sequence->sequence_actions      = memory_arena_push(arena, action_count * sizeof(*sequence->sequence_actions));
 
-    if (action_count == 0) {
-        _debugprintf("No anim sequence... This might be a problem?");
-    }
-
-    for (s32 action_form_index = 0; action_form_index < action_count; ++action_form_index) {
-        struct entity_ability_sequence_action* action_data         = sequence->sequence_actions + action_form_index;
-        struct lisp_form*                      current_action_form = lisp_list_nth(animation_sequence_list, action_form_index);
-
-        {
-            struct lisp_form* action_form_header         = lisp_list_nth(current_action_form, 0); 
-            struct lisp_form  action_form_rest_arguments = lisp_list_sliced(*current_action_form, 1, -1);
-
-            bool successfully_parsed = true;
-
-            successfully_parsed = false;
-
-            _debugprintf("Do not recognize header: \"%.*s\"", action_form_header->string.length, action_form_header->string.data);
-            assertion(successfully_parsed && "Could not parse argument in sequence! Crashing. Please fix!");
+        if (action_count == 0) {
+            _debugprintf("No anim sequence... This might be a problem?");
         }
+
+        for (s32 action_form_index = 0; action_form_index < action_count; ++action_form_index) {
+            struct entity_ability_sequence_action* action_data         = sequence->sequence_actions + action_form_index;
+            struct lisp_form*                      current_action_form = lisp_list_nth(animation_sequence_list, action_form_index);
+
+            {
+                struct lisp_form* action_form_header         = lisp_list_nth(current_action_form, 0); 
+                struct lisp_form  action_form_rest_arguments = lisp_list_sliced(*current_action_form, 1, -1);
+
+                assertion(action_form_header && "This is probably in the wrong form!");
+
+                bool successfully_parsed = true;
+                {
+                    
+                } 
+                successfully_parsed = false;
+
+                _debugprintf("Do not recognize header: \"%.*s\"", action_form_header->string.length, action_form_header->string.data);
+                assertion(successfully_parsed && "Could not parse argument in sequence! Crashing. Please fix!");
+            }
+        }
+    } else {
+        _debugprintf("??? That's weird");
+        _debug_print_out_lisp_code_(animation_sequence_list_form);
+        _debugprintf("end?");
     }
 }
