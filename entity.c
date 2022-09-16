@@ -722,8 +722,6 @@ void entity_do_physical_hurt(struct entity* entity, s32 damage) {
 
 /* NOTE: does not really do turns. */
 /* set the entity->waiting_on_turn flag to 0 to finish their turn in the combat system. Not done right now cause I need all the actions. */
-
-/* TODO: slightly broken. */
 local s32 find_best_direction_index(v2f32 direction) {
     /* truncate direction here to account for lack of 8 directions */
     _debugprintf("original dir: <%f, %f>", direction.x, direction.y);
@@ -850,10 +848,10 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
                   NOTE: Need to handle attack animations? Damn.
                   Lots of hardcoding I forsee.
                   
-for now just do a fixed amount of damage
+                  for now just do a fixed amount of damage
                  */
                   
-                /* TODO FIX */
+                /* TODO add enemy flashing and animation damage tomorrow. */
                 struct entity* attacked_entity = game_dereference_entity(state, target_entity->ai.attack_target_id);
                 entity_do_physical_hurt(attacked_entity, 9999);
 
@@ -1205,7 +1203,9 @@ void entity_database_initialize_abilities(struct entity_database* database) {
                         }
                     }
                 }
+#if 0
                 {entity_ability_compile_animation_sequence(arena, current_ability, animation_sequence_list_form);}
+#endif
             }
         }
     }
