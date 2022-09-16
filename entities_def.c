@@ -199,6 +199,20 @@ enum entity_equip_slot_index {
 };
 
 #define ENTITY_MAX_ABILITIES (2048)
+
+/* time information I guess */
+/* mostly used by animation sequences or whatever we need to animate */
+/* NOTE: comeback later. */
+struct entity_animation_data {
+    v2f32 start_position; /* Saved at the start of any animation */
+
+    v2f32 start_position_interpolation;
+    v2f32 end_position_interpolation;
+
+    /* primarily using for interpolation */
+    f32 time;
+};
+
 struct entity {
     string name;
 
@@ -249,6 +263,8 @@ struct entity {
     /* mostly runtime data. */
     struct entity_ai_data         ai;
     bool                          waiting_on_turn;
+
+    struct entity_animation_data       animation_data;
     /* to avoid double fires */
     /* NOTE: ids are internally (index+1), it's a bit confusing as the editor and engine otherwise have id as 0 indices */
     /* this is just so I can zero out this thing and have expected behavior. */

@@ -1683,23 +1683,24 @@ local void update_game_camera(struct game_state* state, f32 dt) {
         update_game_camera_exploration_mode(state, dt);
     }
 
+    {
+        const f32 lerp_x_speed = 3;
+        const f32 lerp_y_speed = 3;
 
-    const f32 lerp_x_speed = 3;
-    const f32 lerp_y_speed = 3;
+        const f32 lerp_component_speeds[3] = {
+            2.45, 2.8, 1.5
+        };
 
-    const f32 lerp_component_speeds[3] = {
-        2.45, 2.8, 1.5
-    };
-
-    for (unsigned component_index = 0; component_index < 3; ++component_index) {
-        if (camera->try_interpolation[component_index]) {
-            if (camera->interpolation_t[component_index] < 1.0) {
-                camera->components[component_index] = lerp_f32(camera->start_interpolation_values[component_index],
-                                                               camera->tracking_components[component_index],
-                                                               camera->interpolation_t[component_index]);
-                camera->interpolation_t[component_index] += dt * lerp_component_speeds[component_index];
-            } else {
-                camera->try_interpolation[component_index] = false;
+        for (unsigned component_index = 0; component_index < 3; ++component_index) {
+            if (camera->try_interpolation[component_index]) {
+                if (camera->interpolation_t[component_index] < 1.0) {
+                    camera->components[component_index] = lerp_f32(camera->start_interpolation_values[component_index],
+                                                                   camera->tracking_components[component_index],
+                                                                   camera->interpolation_t[component_index]);
+                    camera->interpolation_t[component_index] += dt * lerp_component_speeds[component_index];
+                } else {
+                    camera->try_interpolation[component_index] = false;
+                }
             }
         }
     }

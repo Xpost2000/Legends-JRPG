@@ -32,12 +32,73 @@ enum entity_ability_selection_mask {
                                          ABILITY_SELECTION_MASK_ALLIES)
 };
 
-/*
-  Not going to interpret this just to use less memory and frankly the interpretation
-  code is going to be more messier than just "compiling" down and just doing work on my
-  raw operations...
- */
-/* keep track of time or something later. */
+enum sequence_action_type {
+    SEQUENCE_ACTION_FOCUS_CAMERA,
+    SEQUENCE_ACTION_MOVE_TO,
+    SEQUENCE_ACTION_HURT,
+};
+
+/* does not allow ally targetting */
+enum sequence_action_entity_target_type {
+    ENTITY_TARGET_ID_PLAYER,
+    ENTITY_TARGET_ID_TARGET,
+};
+struct sequence_action_target_entity {
+    s32 entity_target_type;
+    s32 entity_target_index; /* if type != ENTITY_TARGET_ID_PLAYER */
+};
+
+/* force the game camera to do things, lots of state overriding going to scare me. */
+struct sequence_action_focus_camera {
+    struct sequence_action_target_entity target;
+};
+
+enum sequence_interpolation_type {
+    SEQUENCE_LINEAR,
+    SEQUENCE_CUBIC_EASE_IN,
+    SEQUENCE_CUBIC_EASE_OUT,
+    SEQUENCE_CUBIC_EASE_IN_OUT,
+    SEQUENCE_QUADRATIC_EASE_IN,
+    SEQUENCE_QUADRATIC_EASE_OUT,
+    SEQUENCE_QUADRATIC_EASE_IN_OUT,
+    SEQUENCE_BACK_EASE_IN,
+    SEQUENCE_BACK_EASE_OUT,
+    SEQUENCE_BACK_EASE_IN_OUT,
+};
+
+enum move_target_type {
+    MOVE_TARGET_ENTITY,
+    MOVE_TARGET_START,
+    MOVE_TARGET_RELATIVE
+};
+struct sequence_action_move_to {
+    struct sequence_action_target_entity to_move;
+
+    s32 interpolation_type;
+    s32 move_target_type;
+
+    union {
+        struct {
+            s32 x;
+            s32 y;
+        } relative_movement;
+
+        /*
+          move-to user target interp-type
+          or
+          move-to user past target by x interp-type
+         */
+        struct {
+            struct sequence_action_target_entity target;
+            s32    move_past;
+        } entity;
+    } move_target;
+};
+
+struct sequence_action_hurt {
+    struct sequence_action_target_entity target;
+};
+
 struct entity_ability_sequence_action {
     s32 type;
     /* other data */
