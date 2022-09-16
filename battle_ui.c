@@ -1177,14 +1177,8 @@ local void end_combat_ui(void) {
 }
 
 local bool is_entity_under_ability_selection(entity_id who) {
-    _debugprintf("Entities to select: %d", global_battle_ui_state.selected_entities_for_abilities_count);
-    _debugprintf("Checking against!");
-    _debug_print_id(who);
     for (s32 entity_under_ability_selection_index = 0; entity_under_ability_selection_index < global_battle_ui_state.selected_entities_for_abilities_count; ++entity_under_ability_selection_index) {
         entity_id current_id = global_battle_ui_state.selected_entities_for_abilities[entity_under_ability_selection_index];
-        _debugprintf("ASDF");
-        _debug_print_id(current_id);
-
         if (entity_id_equal(current_id, who)) {
             return true;
         }

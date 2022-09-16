@@ -433,7 +433,6 @@ void render_entities(struct game_state* state, struct graphics_assets* graphics_
             }
 
             sorted_entity_ids[sorted_entity_insertion_index] = key_id;
-
         }
     }
 
@@ -493,8 +492,7 @@ void render_entities(struct game_state* state, struct graphics_assets* graphics_
         union color32f32 modulation_color = color32f32_WHITE;
 
         {
-            bool me = is_entity_under_ability_selection(it.current_id);
-            _debugprintf("me? : %d", me);
+            bool me = is_entity_under_ability_selection(sorted_entity_ids[sorted_entity_index]);
             if (me) {
                 /* red for now. We want better effects maybe? */
                 modulation_color.g = modulation_color.b = 0;
