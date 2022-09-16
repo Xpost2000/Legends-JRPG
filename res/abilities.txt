@@ -18,7 +18,7 @@
 (focus-camera user)
 (move-to user (past target by 1) 'in-back)
 (hurt target) # uses damage formula
-(move-to user 'start)
+(move-to user start)
 )
 )
 

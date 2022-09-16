@@ -45,7 +45,7 @@ enum sequence_action_entity_target_type {
 };
 struct sequence_action_target_entity {
     s32 entity_target_type;
-    s32 entity_target_index; /* if type != ENTITY_TARGET_ID_PLAYER */
+    s32 entity_target_index; /* store the target list in the attacker and use this to figure stuff out */
 };
 
 /* force the game camera to do things, lots of state overriding going to scare me. */
@@ -69,7 +69,6 @@ enum sequence_interpolation_type {
 enum move_target_type {
     MOVE_TARGET_ENTITY,
     MOVE_TARGET_START,
-    MOVE_TARGET_RELATIVE
 };
 struct sequence_action_move_to {
     struct sequence_action_target_entity to_move;
@@ -78,16 +77,6 @@ struct sequence_action_move_to {
     s32 move_target_type;
 
     union {
-        struct {
-            s32 x;
-            s32 y;
-        } relative_movement;
-
-        /*
-          move-to user target interp-type
-          or
-          move-to user past target by x interp-type
-         */
         struct {
             struct sequence_action_target_entity target;
             s32    move_past;
@@ -101,7 +90,11 @@ struct sequence_action_hurt {
 
 struct entity_ability_sequence_action {
     s32 type;
-    /* other data */
+    union {
+        struct sequence_action_hurt         hurt;
+        struct sequence_action_move_to      move_to;
+        struct sequence_action_focus_camera focus_camera;
+    };
 };
 struct entity_ability_sequence {
     struct entity_ability_sequence_action* sequence_actions;

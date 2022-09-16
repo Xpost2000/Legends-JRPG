@@ -52,6 +52,33 @@ void copy_selection_field_rotated_as(struct entity_ability* ability, u8* field_c
     }
 }
 
+local void decode_sequence_action_target_entity(struct lisp_form* focus_target_form, struct sequence_action_target_entity* entity_target) {
+    bool error = false;
+    if (lisp_form_symbol_matching(*focus_target_form, string_literal("user"))) {
+        entity_target->entity_target_type = ENTITY_TARGET_ID_PLAYER;
+    } else if (lisp_form_symbol_matching(*focus_target_form, string_literal("target"))) {
+        entity_target->entity_target_type  = ENTITY_TARGET_ID_TARGET;
+        entity_target->entity_target_index = 0;
+    } else if (focus_target_form->type == LISP_FORM_LIST) {
+        struct lisp_form* first_arg = lisp_list_nth(focus_target_form, 0);
+        if (lisp_form_symbol_matching(*first_arg, string_literal("target"))) {
+            struct lisp_form* second_arg = lisp_list_nth(focus_target_form, 1);
+            s32 target_index = 0;
+            assertion(lisp_form_get_s32(*second_arg, &target_index) && "???? bad number??");
+            entity_target->entity_target_index = target_index;
+        }
+    } else {
+        error = true;
+    }
+
+    if (error) {
+        _debugprintf("Hmmm, not sure what the target type is");
+        _debug_print_out_lisp_code_(focus_target_form);
+        _debugprintf("bye");
+        assertion(!"Do not recognize this argument... Check the console");
+    }
+}
+
 void entity_ability_compile_animation_sequence(struct memory_arena* arena, struct entity_ability* ability, void* animation_sequence_list) {
     struct lisp_form* animation_sequence_list_form = (struct lisp_form*)animation_sequence_list;
 
@@ -78,17 +105,62 @@ void entity_ability_compile_animation_sequence(struct memory_arena* arena, struc
 
                 bool successfully_parsed = true;
                 {
-                    
-                } 
-                successfully_parsed = false;
+                    if (lisp_form_symbol_matching(*action_form_header, string_literal("focus-camera"))) {
+                        action_data->type = SEQUENCE_ACTION_FOCUS_CAMERA;
 
-                _debugprintf("Do not recognize header: \"%.*s\"", action_form_header->string.length, action_form_header->string.data);
-                assertion(successfully_parsed && "Could not parse argument in sequence! Crashing. Please fix!");
+                        struct lisp_form* focus_target = lisp_list_nth(&action_form_rest_arguments, 0);
+                        decode_sequence_action_target_entity(focus_target, &action_data->focus_camera.target);
+                    } else if (lisp_form_symbol_matching(*action_form_header, string_literal("move-to"))) {
+                        struct sequence_action_move_to* move_to = &action_data->move_to;
+
+                        action_data->type = SEQUENCE_ACTION_MOVE_TO;
+                        struct lisp_form* to_move_target     = lisp_list_nth(&action_form_rest_arguments, 0);
+                        struct lisp_form* move_target        = lisp_list_nth(&action_form_rest_arguments, 1);
+                        struct lisp_form* interpolation_type = lisp_list_nth(&action_form_rest_arguments, 2);
+
+                        decode_sequence_action_target_entity(to_move_target, &move_to->to_move);
+                        if (move_target->type == LISP_FORM_LIST) {
+                            struct lisp_form* first_arg = lisp_list_nth(move_target, 0);
+                            move_to->move_target_type = MOVE_TARGET_ENTITY;
+                            if (lisp_form_symbol_matching(*first_arg, string_literal("past"))) {
+                                struct lisp_form* actual_move_target  = lisp_list_nth(move_target, 1);
+                                struct lisp_form* by_symbol           = lisp_list_nth(move_target, 2);
+                                struct lisp_form* amount_to_move_past = lisp_list_nth(move_target, 3);
+
+                                decode_sequence_action_target_entity(actual_move_target, &move_to->move_target.entity.target);
+
+                                s32 move_amount = 0;
+                                lisp_form_get_s32(*amount_to_move_past, &move_amount);
+                                move_to->move_target.entity.move_past = move_amount;
+                            } else {
+                                decode_sequence_action_target_entity(move_target, &move_to->move_target.entity.target);
+                            }
+                        } else {
+                            if (lisp_form_symbol_matching(*move_target, string_literal("start"))) {
+                                move_to->move_target_type = MOVE_TARGET_START;
+                            } else {
+                                move_to->move_target_type = MOVE_TARGET_ENTITY;
+                                decode_sequence_action_target_entity(move_target, &move_to->move_target.entity.target);
+                            }
+                        }
+                    } else if (lisp_form_symbol_matching(*action_form_header, string_literal("hurt"))) {
+                        action_data->type = SEQUENCE_ACTION_HURT;
+                        
+                        struct lisp_form* focus_target = lisp_list_nth(&action_form_rest_arguments, 0);
+                        decode_sequence_action_target_entity(focus_target, &action_data->hurt.target);
+                    } else {
+                        successfully_parsed = false;
+                    } 
+                }
+                _debugprintf("successful parse flag: %d", successfully_parsed);
+
+                if (!successfully_parsed) {
+                    _debugprintf("Do not recognize header: \"%.*s\"", action_form_header->string.length, action_form_header->string.data);
+                    assertion(successfully_parsed && "Could not parse argument in sequence! Crashing. Please fix!");
+                }
             }
         }
     } else {
-        _debugprintf("??? That's weird");
-        _debug_print_out_lisp_code_(animation_sequence_list_form);
-        _debugprintf("end?");
+        /* nil form likely */
     }
 }

@@ -3,7 +3,6 @@
 #define ENTITY_DEF_C
 
 #include "entity_stat_block_def.c"
-#include "entity_ability_def.c"
 
 /* This needs to be augmented more... Oh well. Not my issue. */
 /* We only really have one of each list type, so I could store the list
@@ -51,6 +50,7 @@ bool entity_id_equal(entity_id a, entity_id b) {
     return false;
 }
 
+#include "entity_ability_def.c"
 /* forward decl */
 void battle_notify_killed_entity(entity_id);
 
