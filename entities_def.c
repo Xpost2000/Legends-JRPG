@@ -211,7 +211,12 @@ enum entity_equip_slot_index {
 /* time information I guess */
 /* mostly used by animation sequences or whatever we need to animate */
 /* NOTE: comeback later. */
-struct entity_animation_data {
+
+/*
+  Sequences are expected to be linear btw, we don't need overkill animations like
+  Disgaea... Though I really want that...
+ */
+struct entity_sequence_state {
     v2f32 start_position; /* Saved at the start of any animation */
 
     v2f32 start_position_interpolation;
@@ -219,11 +224,14 @@ struct entity_animation_data {
 
     /* primarily using for interpolation */
     f32 time;
+    s32 current_sequence_index;
 };
 
 struct entity {
     string name;
 
+    /* used for abilities primarily. */
+    struct entity_sequence_state  sequence_state;
     struct entity_animation_state animation;
 
     s32   base_id_index; /* use this to look up some shared information */
@@ -272,7 +280,6 @@ struct entity {
     struct entity_ai_data         ai;
     bool                          waiting_on_turn;
 
-    struct entity_animation_data       animation_data;
     /* to avoid double fires */
     /* NOTE: ids are internally (index+1), it's a bit confusing as the editor and engine otherwise have id as 0 indices */
     /* this is just so I can zero out this thing and have expected behavior. */

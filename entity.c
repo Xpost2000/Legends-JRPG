@@ -365,18 +365,21 @@ void update_entities(struct game_state* state, f32 dt, struct level_area* area) 
                 /* I want to add the kneeling animation, and we'll obviously require more intense animation state. Anyways... */    
                 entity_play_animation(current_entity, string_literal("dead"));
             } else {
-                if (current_entity->velocity.x != 0 || current_entity->velocity.y != 0) {
-                    if (current_entity->velocity.y < 0) {
-                        entity_play_animation(current_entity, string_literal("up_walk"));
-                    } else if (current_entity->velocity.y > 0) {
-                        entity_play_animation(current_entity, string_literal("down_walk"));
-                    } else if (current_entity->velocity.x > 0) {
-                        entity_play_animation(current_entity, string_literal("right_walk"));
-                    } else if (current_entity->velocity.x < 0) {
-                        entity_play_animation(current_entity, string_literal("left_walk"));
+                /* animation state will be controlled by the action while it happens */
+                if (!current_entity->ai.current_action) {
+                    if (current_entity->velocity.x != 0 || current_entity->velocity.y != 0) {
+                        if (current_entity->velocity.y < 0) {
+                            entity_play_animation(current_entity, string_literal("up_walk"));
+                        } else if (current_entity->velocity.y > 0) {
+                            entity_play_animation(current_entity, string_literal("down_walk"));
+                        } else if (current_entity->velocity.x > 0) {
+                            entity_play_animation(current_entity, string_literal("right_walk"));
+                        } else if (current_entity->velocity.x < 0) {
+                            entity_play_animation(current_entity, string_literal("left_walk"));
+                        }
+                    } else {
+                        entity_play_animation(current_entity, facing_direction_strings_normal[current_entity->facing_direction]);
                     }
-                } else {
-                    entity_play_animation(current_entity, facing_direction_strings_normal[current_entity->facing_direction]);
                 }
             }
         }
@@ -799,6 +802,19 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
         } break;
 
         case ENTITY_ACTION_MOVEMENT: {
+            if (target_entity->velocity.x != 0 || target_entity->velocity.y != 0) {
+                if (current_entity->velocity.y < 0) {
+                    entity_play_animation(target_entity, string_literal("up_walk"));
+                } else if (target_entity->velocity.y > 0) {
+                    entity_play_animation(target_entity, string_literal("down_walk"));
+                } else if (target_entity->velocity.x > 0) {
+                    entity_play_animation(target_entity, string_literal("right_walk"));
+                } else if (target_entity->velocity.x < 0) {
+                    entity_play_animation(target_entity, string_literal("left_walk"));
+                }
+            } else {
+                entity_play_animation(current_entity, facing_direction_strings_normal[current_entity->facing_direction]);
+            }
 
             if (target_entity->ai.current_path_point_index >= target_entity->ai.navigation_path.count) {
                 target_entity->ai.current_action = 0;
@@ -861,16 +877,16 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
             }
         } break;
 
+        case ENTITY_ACTION_ABILITY: {
+            
+        } break;
+
         case ENTITY_ACTION_ATTACK: {
             target_entity->ai.wait_timer += dt;
 
             if (target_entity->ai.wait_timer >= 1.0) {
                 target_entity->ai.current_action = 0;
                 /*
-                  NOTE: Need to handle attack animations? Damn.
-                  Lots of hardcoding I forsee.
-                  
-                  for now just do a fixed amount of damage
                  */
                   
                 /* TODO add enemy flashing and animation damage tomorrow. */
