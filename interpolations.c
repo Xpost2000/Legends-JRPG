@@ -16,7 +16,7 @@ f32 cubic_ease_out_f32(f32 a, f32 b, f32 normalized_t) {
     return (b - a) * (normalized_t * normalized_t * normalized_t) + a;
 }
 
-f32 cubic_ease_in_out(f32 a, f32 b, f32 normalized_t) {
+f32 cubic_ease_in_out_f32(f32 a, f32 b, f32 normalized_t) {
     if (normalized_t < 0.5) {
         f32 new_t = 4 * normalized_t * normalized_t * normalized_t;
         normalized_t = new_t;

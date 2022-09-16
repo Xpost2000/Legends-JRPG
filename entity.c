@@ -301,9 +301,12 @@ void update_entities(struct game_state* state, f32 dt, struct level_area* area) 
                             stop_horizontal_movement |=
                                 entity_push_out_horizontal_edges(current_entity, rectangle_f32(chest->position.x * TILE_UNIT_SIZE, chest->position.y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE));
                         }
+
+                        if (!current_entity->ai.current_action) {
+                            if (stop_horizontal_movement) current_entity->velocity.x = 0;
+                        }
                     }
 
-                    if (stop_horizontal_movement) current_entity->velocity.x = 0;
 
                     current_entity->position.y += current_entity->velocity.y * dt;
                     {
@@ -336,7 +339,9 @@ void update_entities(struct game_state* state, f32 dt, struct level_area* area) 
                                 entity_push_out_vertical_edges(current_entity, rectangle_f32(chest->position.x * TILE_UNIT_SIZE, chest->position.y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE));
                         }
 
-                        if (stop_vertical_movement) current_entity->velocity.y = 0;
+                        if (!current_entity->ai.current_action) {
+                            if (stop_vertical_movement) current_entity->velocity.y = 0;
+                        }
                     }
                 }
 
@@ -946,18 +951,74 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
                             }
                         }
 
-                        sequence_state->end_position_interpolation   = end_position;
+                        sequence_state->end_position_interpolation = end_position;
+                        sequence_state->initialized_state          = true;
+                    } else {
+                        /* Let's rock! */
+                        switch (move_to->interpolation_type) {
+                            case SEQUENCE_LINEAR: {
+                                target_entity->position.x = lerp_f32(sequence_state->start_position_interpolation.x, sequence_state->end_position_interpolation.x, sequence_state->time);
+                                target_entity->position.y = lerp_f32(sequence_state->start_position_interpolation.y, sequence_state->end_position_interpolation.y, sequence_state->time);
+                            } break;
+                            case SEQUENCE_CUBIC_EASE_IN: {
+                                target_entity->position.x = cubic_ease_in_f32(sequence_state->start_position_interpolation.x, sequence_state->end_position_interpolation.x, sequence_state->time);
+                                target_entity->position.y = cubic_ease_in_f32(sequence_state->start_position_interpolation.y, sequence_state->end_position_interpolation.y, sequence_state->time);
+                            } break;
+                            case SEQUENCE_CUBIC_EASE_OUT: {
+                                target_entity->position.x = cubic_ease_out_f32(sequence_state->start_position_interpolation.x, sequence_state->end_position_interpolation.x, sequence_state->time);
+                                target_entity->position.y = cubic_ease_out_f32(sequence_state->start_position_interpolation.y, sequence_state->end_position_interpolation.y, sequence_state->time);
+                            } break;
+                            case SEQUENCE_CUBIC_EASE_IN_OUT: {
+                                target_entity->position.x = cubic_ease_in_out_f32(sequence_state->start_position_interpolation.x, sequence_state->end_position_interpolation.x, sequence_state->time);
+                                target_entity->position.y = cubic_ease_in_out_f32(sequence_state->start_position_interpolation.y, sequence_state->end_position_interpolation.y, sequence_state->time);
+                            } break;
+                            case SEQUENCE_QUADRATIC_EASE_IN: {
+                                target_entity->position.x = quadratic_ease_in_f32(sequence_state->start_position_interpolation.x, sequence_state->end_position_interpolation.x, sequence_state->time);
+                                target_entity->position.y = quadratic_ease_in_f32(sequence_state->start_position_interpolation.y, sequence_state->end_position_interpolation.y, sequence_state->time);
+                            } break;
+                            case SEQUENCE_QUADRATIC_EASE_OUT: {
+                                target_entity->position.x = quadratic_ease_out_f32(sequence_state->start_position_interpolation.x, sequence_state->end_position_interpolation.x, sequence_state->time);
+                                target_entity->position.y = quadratic_ease_out_f32(sequence_state->start_position_interpolation.y, sequence_state->end_position_interpolation.y, sequence_state->time);
+                            } break;
+                            case SEQUENCE_QUADRATIC_EASE_IN_OUT: {
+                                target_entity->position.x = quadratic_ease_in_out_f32(sequence_state->start_position_interpolation.x, sequence_state->end_position_interpolation.x, sequence_state->time);
+                                target_entity->position.y = quadratic_ease_in_out_f32(sequence_state->start_position_interpolation.y, sequence_state->end_position_interpolation.y, sequence_state->time);
+                            } break;
+                            case SEQUENCE_BACK_EASE_IN: {
+                                target_entity->position.x = ease_in_back_f32(sequence_state->start_position_interpolation.x, sequence_state->end_position_interpolation.x, sequence_state->time);
+                                target_entity->position.y = ease_in_back_f32(sequence_state->start_position_interpolation.y, sequence_state->end_position_interpolation.y, sequence_state->time);
+                            } break;
+                            case SEQUENCE_BACK_EASE_OUT: {
+                                target_entity->position.x = ease_out_back_f32(sequence_state->start_position_interpolation.x, sequence_state->end_position_interpolation.x, sequence_state->time);
+                                target_entity->position.y = ease_out_back_f32(sequence_state->start_position_interpolation.y, sequence_state->end_position_interpolation.y, sequence_state->time);
+                            } break;
+                            case SEQUENCE_BACK_EASE_IN_OUT: {
+                                target_entity->position.x = ease_in_out_back_f32(sequence_state->start_position_interpolation.x, sequence_state->end_position_interpolation.x, sequence_state->time);
+                                target_entity->position.y = ease_in_out_back_f32(sequence_state->start_position_interpolation.y, sequence_state->end_position_interpolation.y, sequence_state->time);
+                            } break;
+                        }
+
+                        if (sequence_state->time >= 1.0) {
+                            entity_advance_ability_sequence(target_entity);
+                        } else {
+                            sequence_state->time += dt;
+                        }
                     }
                 } break;
                 case SEQUENCE_ACTION_FOCUS_CAMERA: {
                     /* TODO */ 
+                    entity_advance_ability_sequence(target_entity);
                 } break;
                 case SEQUENCE_ACTION_HURT: {
                     /* TODO */ 
+                    if (sequence_state->time >= 1.0) {
+                        entity_advance_ability_sequence(target_entity);
+                    } else {
+                        sequence_state->time += dt;
+                    }
                 } break;
                 default: {
                     entity_advance_ability_sequence(target_entity);
-                    sequence_state->current_sequence_index += 1;
                 } break;
             }
 

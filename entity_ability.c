@@ -143,6 +143,30 @@ void entity_ability_compile_animation_sequence(struct memory_arena* arena, struc
                                 decode_sequence_action_target_entity(move_target, &move_to->move_target.entity.target);
                             }
                         }
+
+                        {
+                            if (lisp_form_symbol_matching(*interpolation_type, string_literal("linear-ease"))) {
+                                move_to->interpolation_type = SEQUENCE_LINEAR;
+                            } else if (lisp_form_symbol_matching(*interpolation_type, string_literal("cubic-ease-in"))) {
+                                move_to->interpolation_type = SEQUENCE_CUBIC_EASE_IN;
+                            } else if (lisp_form_symbol_matching(*interpolation_type, string_literal("cubic-ease-out"))) {
+                                move_to->interpolation_type = SEQUENCE_CUBIC_EASE_OUT;
+                            } else if (lisp_form_symbol_matching(*interpolation_type, string_literal("cube-ease-in-out"))) {
+                                move_to->interpolation_type = SEQUENCE_CUBIC_EASE_IN_OUT;
+                            } else if (lisp_form_symbol_matching(*interpolation_type, string_literal("quadratic-ease-in"))) {
+                                move_to->interpolation_type = SEQUENCE_QUADRATIC_EASE_IN;
+                            } else if (lisp_form_symbol_matching(*interpolation_type, string_literal("quadratic-ease-out"))) {
+                                move_to->interpolation_type = SEQUENCE_QUADRATIC_EASE_OUT;
+                            } else if (lisp_form_symbol_matching(*interpolation_type, string_literal("quadratic-ease-in-out"))) {
+                                move_to->interpolation_type = SEQUENCE_QUADRATIC_EASE_IN_OUT;
+                            } else if (lisp_form_symbol_matching(*interpolation_type, string_literal("back-ease-in"))) {
+                                move_to->interpolation_type = SEQUENCE_BACK_EASE_IN;
+                            } else if (lisp_form_symbol_matching(*interpolation_type, string_literal("back-ease-out"))) {
+                                move_to->interpolation_type = SEQUENCE_BACK_EASE_OUT;
+                            } else if (lisp_form_symbol_matching(*interpolation_type, string_literal("back-ease-in-out"))) {
+                                move_to->interpolation_type = SEQUENCE_BACK_EASE_IN_OUT;
+                            }
+                        }
                     } else if (lisp_form_symbol_matching(*action_form_header, string_literal("hurt"))) {
                         action_data->type = SEQUENCE_ACTION_HURT;
                         
