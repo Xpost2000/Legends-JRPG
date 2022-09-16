@@ -2,6 +2,8 @@
 #ifndef ENTITY_DEF_C
 #define ENTITY_DEF_C
 
+#define MAX_SELECTED_ENTITIES_FOR_ABILITIES (GAME_MAX_PERMENANT_ENTITIES + 256)
+
 #include "entity_stat_block_def.c"
 
 /* This needs to be augmented more... Oh well. Not my issue. */
@@ -150,6 +152,7 @@ enum entity_combat_action {
     ENTITY_ACTION_NONE,
     ENTITY_ACTION_MOVEMENT,
     ENTITY_ACTION_ATTACK,
+    ENTITY_ACTION_ABILITY,
     /* ENTITY_ACTION_SKIP_TURN, */
 };
 
@@ -172,6 +175,11 @@ struct entity_ai_data {
     /* TODO, unused! */
     s32                             tracked_attacker_write_cursor;
     struct entity_ai_attack_tracker tracked_attackers[MAXIMUM_REMEMBERED_ATTACKERS];
+
+    /* for abilities */
+    s32                             targeted_entity_count;
+    entity_id                       targeted_entities[MAX_SELECTED_ENTITIES_FOR_ABILITIES];
+    s32                             using_ability_index;
 
     /* used for determining when to aggro. */
     s32                             aggro_tolerance;
@@ -362,6 +370,10 @@ void entity_inventory_set_gold_count(struct entity_inventory* inventory, s32 amo
 
 void entity_combat_submit_movement_action(struct entity* entity, v2f32* path_points, s32 path_count);
 void entity_combat_submit_attack_action(struct entity* entity, entity_id target_id);
+
+/* This only obviously allows you to use abilities that you have. Cannot force them! */
+/* though that'd be an interesting thing to allow. */
+void entity_combat_submit_ability_action(struct entity* entity, entity_id* targets, s32 target_count, s32 user_ability_index);
 #if 0
 void entity_combat_submit_item_use_action(struct entity* entity, s32 item_index, struct entity* target);
 #endif

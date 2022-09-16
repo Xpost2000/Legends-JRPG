@@ -707,6 +707,23 @@ void entity_combat_submit_attack_action(struct entity* entity, entity_id target_
     _debugprintf("attacku");
 }
 
+void entity_combat_submit_ability_action(struct entity* entity, entity_id* targets, s32 target_count, s32 user_ability_index) {
+    if (entity->ai.current_action != ENTITY_ACTION_NONE)
+        return;
+
+    entity->ai.current_action = ENTITY_ACTION_ABILITY;
+
+    entity->ai.using_ability_index   = user_ability_index;
+    entity->ai.targeted_entity_count = target_count;
+
+    for (s32 target_index = 0; target_index < target_count; ++target_index) {
+        entity->ai.targeted_entities[target_index] = targets[target_index];
+    }
+
+    entity->waiting_on_turn = 0;
+    _debugprintf("ability");
+}
+
 bool entity_validate_death(struct entity* entity) {
     if (entity->health.value <= 0) {
         entity->flags &= ~ENTITY_FLAGS_ALIVE;

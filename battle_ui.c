@@ -41,7 +41,6 @@ enum battle_ui_submodes {
 };
 
 /* This is a pretty generous number. */
-#define MAX_SELECTED_ENTITIES_FOR_ABILITIES (GAME_MAX_PERMENANT_ENTITIES + 256)
 #define MAX_KILLED_ENTITY_TRACKER           (MAX_SELECTED_ENTITIES_FOR_ABILITIES)
 #define MAX_LOOT_ITEMS                      (MAX_SELECTED_ENTITIES_FOR_ABILITIES*16)
 
@@ -807,6 +806,12 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
 
                 if (recalculate_targetted_entities) {
                     recalculate_targeted_entities_by_ability(ability, (u8*)global_battle_ui_state.selection_field, state);
+                }
+
+                if (selection_confirm) {
+                    global_battle_ui_state.submode = BATTLE_UI_SUBMODE_NONE;
+                    entity_combat_submit_ability_action(active_combatant_entity, global_battle_ui_state.selected_entities_for_abilities, global_battle_ui_state.selected_entities_for_abilities_count, global_battle_ui_state.selection);
+                    cancel_ability_selections();
                 }
             }
         } break;
