@@ -715,7 +715,7 @@ void serialize_level_area(struct game_state* state, struct binary_serializer* se
               NOTE: While this is more explicit since it simply requires an unpacking step,
               it also helps since the entity holder may change formats...
              */
-            level->entities = entity_list_create(state->arena, (entity_count), ENTITY_LIST_STORAGE_TYPE_PER_LEVEL);
+            level->entities = entity_list_create(state->arena, (entity_count+1), ENTITY_LIST_STORAGE_TYPE_PER_LEVEL);
 
             for (s32 entity_index = 0; entity_index < entity_count; ++entity_index) {
                 serialize_level_area_entity(serializer, level->version, &current_packed_entity);
@@ -1110,7 +1110,6 @@ void game_initialize(void) {
     game_state->permenant_entities = entity_list_create(&game_arena, GAME_MAX_PERMENANT_ENTITIES, ENTITY_LIST_STORAGE_TYPE_PERMENANT_STORE);
     player_id                      = entity_list_create_player(&game_state->permenant_entities, v2f32(70, 70));
     /* entity_list_create_badguy(&game_state->permenant_entities, v2f32(9 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE)); */
-
     entity_list_create_badguy(&game_state->permenant_entities, v2f32(7 * TILE_UNIT_SIZE, 7 * TILE_UNIT_SIZE));
 
     {

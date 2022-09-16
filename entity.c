@@ -493,7 +493,9 @@ void render_entities(struct game_state* state, struct graphics_assets* graphics_
         union color32f32 modulation_color = color32f32_WHITE;
 
         {
-            if (is_entity_under_ability_selection(it.current_id)) {
+            bool me = is_entity_under_ability_selection(it.current_id);
+            _debugprintf("me? : %d", me);
+            if (me) {
                 /* red for now. We want better effects maybe? */
                 modulation_color.g = modulation_color.b = 0;
             }
