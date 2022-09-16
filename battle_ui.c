@@ -217,6 +217,7 @@ local void draw_turn_panel(struct game_state* state, struct software_framebuffer
 
 local void cancel_ability_selections(void) {
     {
+        _debugprintf("%d selected entities", global_battle_ui_state.selected_entities_for_abilities_count);
         global_battle_ui_state.selected_entities_for_abilities_count = 0;
         zero_array(global_battle_ui_state.selected_entities_for_abilities);
     }
@@ -247,6 +248,7 @@ local void recalculate_targeted_entities_by_ability(struct entity_ability* abili
             bool should_add_to_targets_list = false;
 
             {
+                _debugprintf("Okay... Looking at %p", potential_target);
                 for (s32 selection_grid_y = 0; selection_grid_y < ENTITY_ABILITY_SELECTION_FIELD_MAX_Y && !should_add_to_targets_list; ++selection_grid_y) {
                     for (s32 selection_grid_x = 0; selection_grid_x < ENTITY_ABILITY_SELECTION_FIELD_MAX_X && !should_add_to_targets_list; ++selection_grid_x) {
                         if (global_battle_ui_state.selection_field[selection_grid_y][selection_grid_x]) {
@@ -749,7 +751,9 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                     }
                 }
             } else {
-                bool recalculate_selection_field = false;
+                bool recalculate_selection_field   = false;
+                bool recalculate_targetted_entities = false;
+
                 struct entity_ability_slot slot = user->abilities[global_battle_ui_state.selection];
                 struct entity_ability*     ability = entity_database_ability_find_by_index(&game_state->entity_database, slot.ability);
 
@@ -767,15 +771,21 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                         user->facing_direction = DIRECTION_LEFT;
                         recalculate_selection_field = true;
                     }
+
+                    recalculate_targetted_entities = recalculate_selection_field;
                 } else {
                     if (selection_up) {
                         global_battle_ui_state.ability_target_y -= 1;
+                        recalculate_targetted_entities = true;
                     } else if (selection_down) {
                         global_battle_ui_state.ability_target_y += 1;
+                        recalculate_targetted_entities = true;
                     } else if (selection_right) {
                         global_battle_ui_state.ability_target_x += 1;
+                        recalculate_targetted_entities = true;
                     } else if (selection_left) {
                         global_battle_ui_state.ability_target_x -= 1;
+                        recalculate_targetted_entities = true;
                     }
 
                     if (global_battle_ui_state.ability_target_x < 0) {
@@ -795,7 +805,9 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                     copy_selection_field_rotated_as(ability, (u8*)global_battle_ui_state.selection_field, facing_direction_to_quadrant(user->facing_direction));
                 }
 
-                recalculate_targeted_entities_by_ability(ability, (u8*)global_battle_ui_state.selection_field, state);
+                if (recalculate_targetted_entities) {
+                    recalculate_targeted_entities_by_ability(ability, (u8*)global_battle_ui_state.selection_field, state);
+                }
             }
         } break;
 
