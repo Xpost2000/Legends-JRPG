@@ -20,6 +20,7 @@ f32   v2f32_magnitude(v2f32 v);
 f32   v2f32_magnitude_sq(v2f32 v);
 f32   v2f32_distance(v2f32 a, v2f32 b);
 f32   v2f32_distance_sq(v2f32 a, v2f32 b);
+v2f32 v2f32_direction(v2f32 a, v2f32 b);
 v2f32 v2f32_normalize(v2f32 a);
 
 #endif

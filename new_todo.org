@@ -219,16 +219,16 @@ engine work done.
   work without animations.
 
   I suspect the animations aren't going to be too difficult to do though.
-*** TODO (*Focus*DOING) Combat Animations
+*** DONE (*Focus*DOING) Combat Animations
 This thing is actually now going to be inspired by Action Sequences from RPG Maker
-- [ ] Ability animation structure
-- [ ] Add standard attack animations
+- [X] Ability animation structure
+- [X] Add standard attack animations
   While this technically requires more art, we can animate a violent bump
   for now if we lack any animations otherwise (along with a damage flash).
 
   This isn't very difficult to do. It will also be the default animation
   if we lack any other type of animation.
-*** TODO Ability Sequences!
+*** DONE Ability Sequences!
 
 These are the biggest mother fuckers! We should also offer the option to do Disgaea style
 skipping if possible. I'm probably just going to define the structs and call it a day from
@@ -237,6 +237,8 @@ this point.
 Since that's one of the painful things since it's almost essentially an arbitrary animation sequence,
 which is what kind of concerns me.
 
+*** TODO Camera focus commands
+*** TODO Enemy Animation flashing when hit!
 *** TODO (*Focus* DOING)Polish up the battle victory screen & Loot Table needs to reward the winner lol.
 *** TODO (EDITOR?NOT NOW) Better Entity selection
 

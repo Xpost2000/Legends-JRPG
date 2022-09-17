@@ -6,6 +6,8 @@
  */
 bool entity_bad_ref(struct entity* e);
 
+void battle_ui_stalk_entity_with_camera(struct entity*);
+void battle_ui_stop_stalk_entity_with_camera(void);
 void _debug_print_id(entity_id id) {
     _debugprintf("ent id[g:%d]: %d, %d", id.generation, id.store_type, id.index);
 }
@@ -1028,7 +1030,7 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
                             /* TODO: should allow velocity to be specced else where */
                             f32 effective_step = 1;
                             {
-                                const f32 DESIRED_VELOCITY = TILE_UNIT_SIZE; 
+                                const f32 DESIRED_VELOCITY = move_to->desired_velocity_magnitude * TILE_UNIT_SIZE; 
                                 f32 distance_to_position   = v2f32_distance(sequence_state->start_position_interpolation, sequence_state->end_position_interpolation);
                                 effective_step = distance_to_position / DESIRED_VELOCITY;
                             }
@@ -1043,6 +1045,10 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
                 } break;
                 case SEQUENCE_ACTION_FOCUS_CAMERA: {
                     /* TODO */ 
+                    struct sequence_action_focus_camera* focus_camera = &sequence_action->focus_camera;
+                    struct entity* focus_entity = decode_sequence_action_target_entity_into_entity(state, target_entity, &focus_camera->target);
+
+                    battle_ui_stalk_entity_with_camera(focus_entity);
                     entity_advance_ability_sequence(target_entity);
                 } break;
                 case SEQUENCE_ACTION_HURT: {
@@ -1061,6 +1067,7 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
 
             if (sequence_state->current_sequence_index >= ability_sequence->sequence_action_count) {
                 target_entity->ai.current_action = 0; 
+                battle_ui_stop_stalk_entity_with_camera();
             }
         } break;
 

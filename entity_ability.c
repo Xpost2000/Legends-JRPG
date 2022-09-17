@@ -114,9 +114,10 @@ void entity_ability_compile_animation_sequence(struct memory_arena* arena, struc
                         struct sequence_action_move_to* move_to = &action_data->move_to;
 
                         action_data->type = SEQUENCE_ACTION_MOVE_TO;
-                        struct lisp_form* to_move_target     = lisp_list_nth(&action_form_rest_arguments, 0);
-                        struct lisp_form* move_target        = lisp_list_nth(&action_form_rest_arguments, 1);
-                        struct lisp_form* interpolation_type = lisp_list_nth(&action_form_rest_arguments, 2);
+                        struct lisp_form* to_move_target             = lisp_list_nth(&action_form_rest_arguments, 0);
+                        struct lisp_form* move_target                = lisp_list_nth(&action_form_rest_arguments, 1);
+                        struct lisp_form* interpolation_type         = lisp_list_nth(&action_form_rest_arguments, 2);
+                        struct lisp_form* desired_velocity_magnitude = lisp_list_nth(&action_form_rest_arguments, 3);
 
                         decode_sequence_action_target_entity(to_move_target, &move_to->to_move);
                         if (move_target->type == LISP_FORM_LIST) {
@@ -179,6 +180,12 @@ void entity_ability_compile_animation_sequence(struct memory_arena* arena, struc
                             } else if (lisp_form_symbol_matching(*interpolation_type, string_literal("back-ease-in-out"))) {
                                 move_to->interpolation_type = SEQUENCE_BACK_EASE_IN_OUT;
                             }
+                        }
+                        {
+                            f32 desired_velocity = 1; 
+                            lisp_form_get_f32(*desired_velocity_magnitude, &desired_velocity);
+
+                            move_to->desired_velocity_magnitude = desired_velocity;
                         }
                     } else if (lisp_form_symbol_matching(*action_form_header, string_literal("hurt"))) {
                         action_data->type = SEQUENCE_ACTION_HURT;

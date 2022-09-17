@@ -85,6 +85,9 @@ struct sequence_action_move_to {
     s32 interpolation_type;
     s32 move_target_type;
 
+    /*  in TILE_UNIT_SIZES */
+    f32 desired_velocity_magnitude;
+
     union {
         struct {
             struct sequence_action_target_entity target;
@@ -94,6 +97,7 @@ struct sequence_action_move_to {
 };
 
 struct sequence_action_hurt {
+    /* TODO should have multiple targets avaliable to select */
     struct sequence_action_target_entity target;
 };
 

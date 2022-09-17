@@ -55,3 +55,8 @@ v2f32 v2f32_normalize(v2f32 a) {
 
     return v2f32(a.x / magnitude, a.y / magnitude);
 }
+
+v2f32 v2f32_direction(v2f32 a, v2f32 b) {
+    v2f32 delta = v2f32_sub(b, a);
+    return v2f32_normalize(delta);
+}

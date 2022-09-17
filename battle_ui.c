@@ -58,6 +58,10 @@ struct battle_ui_state {
     bool remembered_original_camera_position;
     v2f32 prelooking_mode_camera_position;
 
+    /* for ability's focus camera */
+    bool stalk_entity_with_camera;
+    struct entity* entity_to_stalk; /* pointer is stable */
+
     s32 movement_start_x;
     s32 movement_start_y;
     s32 movement_end_x;
@@ -94,6 +98,21 @@ struct battle_ui_state {
     struct item_instance loot_results[MAX_LOOT_ITEMS];
     s32                  loot_result_count;
 } global_battle_ui_state;
+
+void battle_ui_stalk_entity_with_camera(struct entity* to_stalk) {
+    global_battle_ui_state.stalk_entity_with_camera = true; 
+    global_battle_ui_state.entity_to_stalk          = to_stalk;
+
+    if (!global_battle_ui_state.remembered_original_camera_position) {
+        global_battle_ui_state.remembered_original_camera_position = true;
+        global_battle_ui_state.prelooking_mode_camera_position     = game_state->camera.xy;
+    } 
+}
+void battle_ui_stop_stalk_entity_with_camera(void) {
+    global_battle_ui_state.stalk_entity_with_camera = false;
+    global_battle_ui_state.entity_to_stalk          = NULL;
+    camera_set_point_to_interpolate(&game_state->camera, global_battle_ui_state.prelooking_mode_camera_position);
+}
 
 void battle_clear_loot_results(void) {
     global_battle_ui_state.populated_loot_table = false;
@@ -893,25 +912,50 @@ local void do_after_action_report_screen(struct game_state* state, struct softwa
 }
 
 local void update_game_camera_combat(struct game_state* state, f32 dt) {
-    switch (global_battle_ui_state.submode) {
-        case BATTLE_UI_SUBMODE_LOOKING: {
-            const f32 CAMERA_VELOCITY = 150;
+    const f32 CAMERA_VELOCITY = 260;
 
-            if (is_key_down(KEY_W)) {
-                state->camera.xy.y -= CAMERA_VELOCITY * dt;
-            } else if (is_key_down(KEY_S)) {
-                state->camera.xy.y += CAMERA_VELOCITY * dt;
+    if (global_battle_ui_state.stalk_entity_with_camera) {
+        struct entity* to_stalk = global_battle_ui_state.entity_to_stalk;
+        /* camera_set_point_to_interpolate(&game_state->camera, to_stalk->position); */
+
+        {
+            v2f32 direction_to_entity = v2f32_direction(game_state->camera.xy, to_stalk->position);
+            f32 distance = v2f32_distance(game_state->camera.xy, to_stalk->position);
+
+            /* f32 effective_velocity = CAMERA_VELOCITY / (1 - (distance*distance)); */
+            f32 effective_velocity = distance*distance;
+
+            if (effective_velocity > CAMERA_VELOCITY) {
+                effective_velocity = CAMERA_VELOCITY;
             }
 
-            if (is_key_down(KEY_A)) {
-                state->camera.xy.x -= CAMERA_VELOCITY * dt;
-            } else if (is_key_down(KEY_D)) {
-                state->camera.xy.x += CAMERA_VELOCITY * dt;
+            if (distance < 5) {
+                game_state->camera.xy.x = to_stalk->position.x;
+                game_state->camera.xy.y = to_stalk->position.y;
+            } else {
+                game_state->camera.xy.x += effective_velocity * direction_to_entity.x * dt;
+                game_state->camera.xy.y += effective_velocity * direction_to_entity.y * dt;
             }
-        } break;
-        default: {
+        }
+    } else {
+        switch (global_battle_ui_state.submode) {
+            case BATTLE_UI_SUBMODE_LOOKING: {
+                if (is_key_down(KEY_W)) {
+                    state->camera.xy.y -= CAMERA_VELOCITY * dt;
+                } else if (is_key_down(KEY_S)) {
+                    state->camera.xy.y += CAMERA_VELOCITY * dt;
+                }
+
+                if (is_key_down(KEY_A)) {
+                    state->camera.xy.x -= CAMERA_VELOCITY * dt;
+                } else if (is_key_down(KEY_D)) {
+                    state->camera.xy.x += CAMERA_VELOCITY * dt;
+                }
+            } break;
+            default: {
             
-        } break;
+            } break;
+        }
     }
 }
 
