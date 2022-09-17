@@ -15,6 +15,7 @@
 # list of animation sequences that will be compiled down.
 (
 # this is the simplest case of movement
+(move-to user (past target by 1) back-ease-out 2)
 )
 )
 

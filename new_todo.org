@@ -237,7 +237,8 @@ this point.
 Since that's one of the painful things since it's almost essentially an arbitrary animation sequence,
 which is what kind of concerns me.
 
-*** TODO Camera focus commands
+*** TODO Hurt should actually do stuff
+*** DONE Camera focus commands
 *** TODO Enemy Animation flashing when hit!
 *** TODO (*Focus* DOING)Polish up the battle victory screen & Loot Table needs to reward the winner lol.
 *** TODO (EDITOR?NOT NOW) Better Entity selection

@@ -109,9 +109,11 @@ void battle_ui_stalk_entity_with_camera(struct entity* to_stalk) {
     } 
 }
 void battle_ui_stop_stalk_entity_with_camera(void) {
-    global_battle_ui_state.stalk_entity_with_camera = false;
-    global_battle_ui_state.entity_to_stalk          = NULL;
-    camera_set_point_to_interpolate(&game_state->camera, global_battle_ui_state.prelooking_mode_camera_position);
+    if (global_battle_ui_state.stalk_entity_with_camera) {
+        global_battle_ui_state.stalk_entity_with_camera = false;
+        global_battle_ui_state.entity_to_stalk          = NULL;
+        camera_set_point_to_interpolate(&game_state->camera, global_battle_ui_state.prelooking_mode_camera_position);
+    }
 }
 
 void battle_clear_loot_results(void) {
