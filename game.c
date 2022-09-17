@@ -9,6 +9,36 @@
 #include "game_script_def.c"
 #include "storyboard_presentation_def.c"
 
+/* These are some more specialized types of effects that require lots of perverse insertions */
+#define INVERSION_TIME_BETWEEN_FLASHES (0.15)
+#define INVERSION_FLASH_MAX            (6)
+enum {
+    SPECIAL_EFFECT_NONE,
+    SPECIAL_EFFECT_INVERSION_1,
+};
+struct special_effect_information {
+    s32 type;
+
+    s32 flashes;
+    f32 time;
+} special_full_effects;
+
+bool special_effects_active(void) {
+    if (special_full_effects.type != SPECIAL_EFFECT_NONE) {
+        return true;
+    }
+    return false;
+}
+
+void special_effect_start_inversion(void) {
+    special_full_effects.type    = SPECIAL_EFFECT_INVERSION_1;
+    special_full_effects.flashes = 0;
+    special_full_effects.time    = 0;
+}
+void special_effect_stop_effects(void) {
+    special_full_effects.type = 0;
+}
+
 struct game_state* game_state         = 0;
 local bool         disable_game_input = false;
 
@@ -1998,7 +2028,7 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                 software_framebuffer_render_commands(framebuffer, &commands);
                 {
                     /* NOTE: I'm going to choose to lighting with manually adjusted fixed passes to avoid lighting overdraw. */
-                    software_framebuffer_run_shader(framebuffer, rectangle_f32(0, 0, framebuffer->width, framebuffer->height), lighting_shader, NULL);
+                    /* software_framebuffer_run_shader(framebuffer, rectangle_f32(0, 0, framebuffer->width, framebuffer->height), lighting_shader, NULL); */
                 }
                 game_postprocess_blur_ingame(framebuffer, 2, 0.62, BLEND_MODE_ALPHA);
 
@@ -2006,6 +2036,23 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                     struct render_commands commands = render_commands(&scratch_arena, 1024, game_state->camera);
                     do_ui_passive_speaking_dialogue(&commands, dt);
                     software_framebuffer_render_commands(framebuffer, &commands);
+                }
+
+                { /* run special effects code */
+                    switch (special_full_effects.type) {
+                        case SPECIAL_EFFECT_INVERSION_1: {
+                            if (special_full_effects.time >= INVERSION_TIME_BETWEEN_FLASHES) {
+                                special_full_effects.time = 0;
+                                special_full_effects.flashes += 1;
+                            }
+
+                            if (special_full_effects.flashes >= INVERSION_FLASH_MAX) {
+                                special_effect_stop_effects();
+                            }
+
+                            special_full_effects.time += dt;
+                        } break;
+                    }
                 }
 
                 do_weather(framebuffer, game_state, dt);
