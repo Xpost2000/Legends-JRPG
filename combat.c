@@ -88,10 +88,12 @@ void update_combat(struct game_state* state, f32 dt) {
         if (combatant->waiting_on_turn) {
             entity_think_combat_actions(combatant, state, dt);
         } else {
-            combat_state->active_combatant += 1;
+            if (!combatant->ai.current_action) {
+                combat_state->active_combatant += 1;
 
-            if (combat_state->active_combatant >= combat_state->count) {
-                add_all_combat_participants(state);
+                if (combat_state->active_combatant >= combat_state->count) {
+                    add_all_combat_participants(state);
+                }
             }
         }
     }

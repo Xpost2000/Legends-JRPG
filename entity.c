@@ -972,13 +972,16 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
                     } else {
                         if (sequence_state->time >= 1.0) {
                             _debugprintf("Okay I'm at : %f, %f", target_entity->position.x, target_entity->position.y);
+                            target_entity->position.x = sequence_state->end_position_interpolation.x;
+                            target_entity->position.y = sequence_state->end_position_interpolation.y;
                             entity_advance_ability_sequence(target_entity);
                         } else {
                             /* Let's rock! */
                             f32 effective_t = sequence_state->time;
-                            if (effective_t > 1) {
-                                effective_t = 1;
+                            if (effective_t >= 1) {
+                                effective_t = 1.0f;
                             }
+
                             switch (move_to->interpolation_type) {
                                 case SEQUENCE_LINEAR: {
                                     target_entity->position.x = lerp_f32(sequence_state->start_position_interpolation.x, sequence_state->end_position_interpolation.x, effective_t);
@@ -1022,7 +1025,19 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
                                 } break;
                             }
 
-                            sequence_state->time += dt;
+                            /* TODO: should allow velocity to be specced else where */
+                            f32 effective_step = 1;
+                            {
+                                const f32 DESIRED_VELOCITY = TILE_UNIT_SIZE; 
+                                f32 distance_to_position   = v2f32_distance(sequence_state->start_position_interpolation, sequence_state->end_position_interpolation);
+                                effective_step = distance_to_position / DESIRED_VELOCITY;
+                            }
+
+                            sequence_state->time += effective_step * dt;
+
+                            if (sequence_state->time >= 1.0) {
+                                sequence_state->time = 1;
+                            }
                         }
                     }
                 } break;
