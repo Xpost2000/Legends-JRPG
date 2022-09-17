@@ -275,34 +275,34 @@ void update_entities(struct game_state* state, f32 dt, struct level_area* area) 
                     {
                         current_entity->position.x += current_entity->velocity.x * dt;
 
-                        for (s32 index = 0; index < area->tile_counts[TILE_LAYER_OBJECT] && !stop_horizontal_movement; ++index) {
-                            struct tile* current_tile = area->tile_layers[TILE_LAYER_OBJECT] + index;
-                            struct tile_data_definition* tile_data = tile_table_data + current_tile->id;
-
-                            if (Get_Bit(tile_data->flags, TILE_DATA_FLAGS_SOLID)) {
-                                stop_horizontal_movement |=
-                                    entity_push_out_horizontal_edges(current_entity, rectangle_f32(current_tile->x * TILE_UNIT_SIZE, current_tile->y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE));
-                            }
-                        }
-
-                        for (s32 index = 0; index < area->tile_counts[TILE_LAYER_GROUND] && !stop_horizontal_movement; ++index) {
-                            struct tile* current_tile = area->tile_layers[TILE_LAYER_GROUND] + index;
-                            struct tile_data_definition* tile_data = tile_table_data + current_tile->id;
-
-                            if (Get_Bit(tile_data->flags, TILE_DATA_FLAGS_SOLID)) {
-                                stop_horizontal_movement |=
-                                    entity_push_out_horizontal_edges(current_entity, rectangle_f32(current_tile->x * TILE_UNIT_SIZE, current_tile->y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE));
-                            }
-                        }
-
-                        for (s32 index = 0; index < area->entity_chest_count && !stop_horizontal_movement; ++index) {
-                            struct entity_chest* chest = area->chests + index;
-
-                            stop_horizontal_movement |=
-                                entity_push_out_horizontal_edges(current_entity, rectangle_f32(chest->position.x * TILE_UNIT_SIZE, chest->position.y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE));
-                        }
-
                         if (!current_entity->ai.current_action) {
+                            for (s32 index = 0; index < area->tile_counts[TILE_LAYER_OBJECT] && !stop_horizontal_movement; ++index) {
+                                struct tile* current_tile = area->tile_layers[TILE_LAYER_OBJECT] + index;
+                                struct tile_data_definition* tile_data = tile_table_data + current_tile->id;
+
+                                if (Get_Bit(tile_data->flags, TILE_DATA_FLAGS_SOLID)) {
+                                    stop_horizontal_movement |=
+                                        entity_push_out_horizontal_edges(current_entity, rectangle_f32(current_tile->x * TILE_UNIT_SIZE, current_tile->y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE));
+                                }
+                            }
+
+                            for (s32 index = 0; index < area->tile_counts[TILE_LAYER_GROUND] && !stop_horizontal_movement; ++index) {
+                                struct tile* current_tile = area->tile_layers[TILE_LAYER_GROUND] + index;
+                                struct tile_data_definition* tile_data = tile_table_data + current_tile->id;
+
+                                if (Get_Bit(tile_data->flags, TILE_DATA_FLAGS_SOLID)) {
+                                    stop_horizontal_movement |=
+                                        entity_push_out_horizontal_edges(current_entity, rectangle_f32(current_tile->x * TILE_UNIT_SIZE, current_tile->y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE));
+                                }
+                            }
+
+                            for (s32 index = 0; index < area->entity_chest_count && !stop_horizontal_movement; ++index) {
+                                struct entity_chest* chest = area->chests + index;
+
+                                stop_horizontal_movement |=
+                                    entity_push_out_horizontal_edges(current_entity, rectangle_f32(chest->position.x * TILE_UNIT_SIZE, chest->position.y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE));
+                            }
+
                             if (stop_horizontal_movement) current_entity->velocity.x = 0;
                         }
                     }
@@ -312,34 +312,34 @@ void update_entities(struct game_state* state, f32 dt, struct level_area* area) 
                     {
                         bool stop_vertical_movement = false;
 
-                        for (s32 index = 0; index < area->tile_counts[TILE_LAYER_OBJECT] && !stop_vertical_movement; ++index) {
-                            struct tile* current_tile = area->tile_layers[TILE_LAYER_OBJECT] + index;
-                            struct tile_data_definition* tile_data = tile_table_data + current_tile->id;
-
-                            if (Get_Bit(tile_data->flags, TILE_DATA_FLAGS_SOLID)) {
-                                stop_vertical_movement |=
-                                    entity_push_out_vertical_edges(current_entity, rectangle_f32(current_tile->x * TILE_UNIT_SIZE, current_tile->y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE));
-                            }
-                        }
-
-                        for (s32 index = 0; index < area->tile_counts[TILE_LAYER_GROUND] && !stop_vertical_movement; ++index) {
-                            struct tile* current_tile = area->tile_layers[TILE_LAYER_GROUND] + index;
-                            struct tile_data_definition* tile_data = tile_table_data + current_tile->id;
-
-                            if (Get_Bit(tile_data->flags, TILE_DATA_FLAGS_SOLID)) {
-                                stop_vertical_movement |=
-                                    entity_push_out_vertical_edges(current_entity, rectangle_f32(current_tile->x * TILE_UNIT_SIZE, current_tile->y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE));
-                            }
-                        }
-
-                        for (s32 index = 0; index < area->entity_chest_count && !stop_vertical_movement; ++index) {
-                            struct entity_chest* chest = area->chests + index;
-
-                            stop_vertical_movement |=
-                                entity_push_out_vertical_edges(current_entity, rectangle_f32(chest->position.x * TILE_UNIT_SIZE, chest->position.y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE));
-                        }
-
                         if (!current_entity->ai.current_action) {
+                            for (s32 index = 0; index < area->tile_counts[TILE_LAYER_OBJECT] && !stop_vertical_movement; ++index) {
+                                struct tile* current_tile = area->tile_layers[TILE_LAYER_OBJECT] + index;
+                                struct tile_data_definition* tile_data = tile_table_data + current_tile->id;
+
+                                if (Get_Bit(tile_data->flags, TILE_DATA_FLAGS_SOLID)) {
+                                    stop_vertical_movement |=
+                                        entity_push_out_vertical_edges(current_entity, rectangle_f32(current_tile->x * TILE_UNIT_SIZE, current_tile->y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE));
+                                }
+                            }
+
+                            for (s32 index = 0; index < area->tile_counts[TILE_LAYER_GROUND] && !stop_vertical_movement; ++index) {
+                                struct tile* current_tile = area->tile_layers[TILE_LAYER_GROUND] + index;
+                                struct tile_data_definition* tile_data = tile_table_data + current_tile->id;
+
+                                if (Get_Bit(tile_data->flags, TILE_DATA_FLAGS_SOLID)) {
+                                    stop_vertical_movement |=
+                                        entity_push_out_vertical_edges(current_entity, rectangle_f32(current_tile->x * TILE_UNIT_SIZE, current_tile->y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE));
+                                }
+                            }
+
+                            for (s32 index = 0; index < area->entity_chest_count && !stop_vertical_movement; ++index) {
+                                struct entity_chest* chest = area->chests + index;
+
+                                stop_vertical_movement |=
+                                    entity_push_out_vertical_edges(current_entity, rectangle_f32(chest->position.x * TILE_UNIT_SIZE, chest->position.y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE));
+                            }
+
                             if (stop_vertical_movement) current_entity->velocity.y = 0;
                         }
                     }
@@ -918,12 +918,10 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
             assertion(active_ability_slot && "active slot is null? That can't be true!");
             struct entity_ability*                 ability_to_use      = entity_database_ability_find_by_index(&game_state->entity_database, active_ability_slot->ability);
             assertion(ability_to_use      && "Ability not found??? That can't be true!");
-            _debugprintf("trying to use ability: %.*s", ability_to_use->name.length, ability_to_use->name.data);
             s32                                    target_count        = ai_data->targeted_entity_count;
             entity_id*                             targets             = ai_data->targeted_entities;
             struct entity_ability_sequence*        ability_sequence    = &ability_to_use->sequence;
             assertion(ability_sequence    && "The sequence is bad? That can't be true!");
-            _debugprintf("%p sequence ptr (%d count)", ability_sequence, ability_sequence->sequence_action_count);
             struct entity_ability_sequence_action* sequence_action     = &ability_sequence->sequence_actions[sequence_state->current_sequence_index];
 
             assertion(sequence_action     && "The action is bad?   That can't be true!");
@@ -937,6 +935,7 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
                     /* NOTE: This is in pixel positions. Kind of confusing, I know... I'm not very consistent with these honestly... I should rectify this later. */
                     if (!sequence_state->initialized_state) {
                         sequence_state->start_position_interpolation = target_entity->position;
+                        _debugprintf("Starting interpolation from: %f, %f", sequence_state->start_position_interpolation.x, sequence_state->start_position_interpolation.y);
 
                         v2f32 end_position = v2f32(0,0);
                         {
@@ -946,6 +945,7 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
 
                                     v2f32 direction_between_target_and_self = v2f32_sub(move_target_entity->position, target_entity->position);
                                     direction_between_target_and_self       = v2f32_normalize(direction_between_target_and_self);
+                                    _debugprintf("asdf %f, %f (from %f, %f, vs %f, %f)", direction_between_target_and_self.x, direction_between_target_and_self.y, target_entity->position.x, target_entity->position.y, move_target_entity->position.x, move_target_entity->position.y);
 
                                     v2f32 displacement_offset = v2f32_scale(direction_between_target_and_self, move_to->move_target.entity.move_past * TILE_UNIT_SIZE);
                                     end_position = v2f32_add(target_entity->position, displacement_offset);
@@ -955,6 +955,7 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
 
                                     v2f32 direction_between_target_and_self = v2f32_sub(move_target_entity->position, target_entity->position);
                                     direction_between_target_and_self       = v2f32_normalize(direction_between_target_and_self);
+                                    _debugprintf("easdf %f, %f (from %f, %f, vs %f, %f)", direction_between_target_and_self.x, direction_between_target_and_self.y, target_entity->position.x, target_entity->position.y, move_target_entity->position.x, move_target_entity->position.y);
 
                                     v2f32 displacement_offset = v2f32_scale(direction_between_target_and_self, move_to->move_target.entity.move_past * TILE_UNIT_SIZE);
                                     end_position = v2f32_add(move_target_entity->position, displacement_offset);
@@ -966,52 +967,58 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
                         }
 
                         sequence_state->end_position_interpolation = end_position;
+                        _debugprintf("Ending interpolation at: %f, %f", sequence_state->end_position_interpolation.x, sequence_state->end_position_interpolation.y);
                         sequence_state->initialized_state          = true;
                     } else {
                         if (sequence_state->time >= 1.0) {
+                            _debugprintf("Okay I'm at : %f, %f", target_entity->position.x, target_entity->position.y);
                             entity_advance_ability_sequence(target_entity);
                         } else {
                             /* Let's rock! */
+                            f32 effective_t = sequence_state->time;
+                            if (effective_t > 1) {
+                                effective_t = 1;
+                            }
                             switch (move_to->interpolation_type) {
                                 case SEQUENCE_LINEAR: {
-                                    target_entity->position.x = lerp_f32(sequence_state->start_position_interpolation.x, sequence_state->end_position_interpolation.x, sequence_state->time);
-                                    target_entity->position.y = lerp_f32(sequence_state->start_position_interpolation.y, sequence_state->end_position_interpolation.y, sequence_state->time);
+                                    target_entity->position.x = lerp_f32(sequence_state->start_position_interpolation.x, sequence_state->end_position_interpolation.x, effective_t);
+                                    target_entity->position.y = lerp_f32(sequence_state->start_position_interpolation.y, sequence_state->end_position_interpolation.y, effective_t);
                                 } break;
                                 case SEQUENCE_CUBIC_EASE_IN: {
-                                    target_entity->position.x = cubic_ease_in_f32(sequence_state->start_position_interpolation.x, sequence_state->end_position_interpolation.x, sequence_state->time);
-                                    target_entity->position.y = cubic_ease_in_f32(sequence_state->start_position_interpolation.y, sequence_state->end_position_interpolation.y, sequence_state->time);
+                                    target_entity->position.x = cubic_ease_in_f32(sequence_state->start_position_interpolation.x, sequence_state->end_position_interpolation.x, effective_t);
+                                    target_entity->position.y = cubic_ease_in_f32(sequence_state->start_position_interpolation.y, sequence_state->end_position_interpolation.y, effective_t);
                                 } break;
                                 case SEQUENCE_CUBIC_EASE_OUT: {
-                                    target_entity->position.x = cubic_ease_out_f32(sequence_state->start_position_interpolation.x, sequence_state->end_position_interpolation.x, sequence_state->time);
-                                    target_entity->position.y = cubic_ease_out_f32(sequence_state->start_position_interpolation.y, sequence_state->end_position_interpolation.y, sequence_state->time);
+                                    target_entity->position.x = cubic_ease_out_f32(sequence_state->start_position_interpolation.x, sequence_state->end_position_interpolation.x, effective_t);
+                                    target_entity->position.y = cubic_ease_out_f32(sequence_state->start_position_interpolation.y, sequence_state->end_position_interpolation.y, effective_t);
                                 } break;
                                 case SEQUENCE_CUBIC_EASE_IN_OUT: {
-                                    target_entity->position.x = cubic_ease_in_out_f32(sequence_state->start_position_interpolation.x, sequence_state->end_position_interpolation.x, sequence_state->time);
-                                    target_entity->position.y = cubic_ease_in_out_f32(sequence_state->start_position_interpolation.y, sequence_state->end_position_interpolation.y, sequence_state->time);
+                                    target_entity->position.x = cubic_ease_in_out_f32(sequence_state->start_position_interpolation.x, sequence_state->end_position_interpolation.x, effective_t);
+                                    target_entity->position.y = cubic_ease_in_out_f32(sequence_state->start_position_interpolation.y, sequence_state->end_position_interpolation.y, effective_t);
                                 } break;
                                 case SEQUENCE_QUADRATIC_EASE_IN: {
-                                    target_entity->position.x = quadratic_ease_in_f32(sequence_state->start_position_interpolation.x, sequence_state->end_position_interpolation.x, sequence_state->time);
-                                    target_entity->position.y = quadratic_ease_in_f32(sequence_state->start_position_interpolation.y, sequence_state->end_position_interpolation.y, sequence_state->time);
+                                    target_entity->position.x = quadratic_ease_in_f32(sequence_state->start_position_interpolation.x, sequence_state->end_position_interpolation.x, effective_t);
+                                    target_entity->position.y = quadratic_ease_in_f32(sequence_state->start_position_interpolation.y, sequence_state->end_position_interpolation.y, effective_t);
                                 } break;
                                 case SEQUENCE_QUADRATIC_EASE_OUT: {
-                                    target_entity->position.x = quadratic_ease_out_f32(sequence_state->start_position_interpolation.x, sequence_state->end_position_interpolation.x, sequence_state->time);
-                                    target_entity->position.y = quadratic_ease_out_f32(sequence_state->start_position_interpolation.y, sequence_state->end_position_interpolation.y, sequence_state->time);
+                                    target_entity->position.x = quadratic_ease_out_f32(sequence_state->start_position_interpolation.x, sequence_state->end_position_interpolation.x, effective_t);
+                                    target_entity->position.y = quadratic_ease_out_f32(sequence_state->start_position_interpolation.y, sequence_state->end_position_interpolation.y, effective_t);
                                 } break;
                                 case SEQUENCE_QUADRATIC_EASE_IN_OUT: {
-                                    target_entity->position.x = quadratic_ease_in_out_f32(sequence_state->start_position_interpolation.x, sequence_state->end_position_interpolation.x, sequence_state->time);
-                                    target_entity->position.y = quadratic_ease_in_out_f32(sequence_state->start_position_interpolation.y, sequence_state->end_position_interpolation.y, sequence_state->time);
+                                    target_entity->position.x = quadratic_ease_in_out_f32(sequence_state->start_position_interpolation.x, sequence_state->end_position_interpolation.x, effective_t);
+                                    target_entity->position.y = quadratic_ease_in_out_f32(sequence_state->start_position_interpolation.y, sequence_state->end_position_interpolation.y, effective_t);
                                 } break;
                                 case SEQUENCE_BACK_EASE_IN: {
-                                    target_entity->position.x = ease_in_back_f32(sequence_state->start_position_interpolation.x, sequence_state->end_position_interpolation.x, sequence_state->time);
-                                    target_entity->position.y = ease_in_back_f32(sequence_state->start_position_interpolation.y, sequence_state->end_position_interpolation.y, sequence_state->time);
+                                    target_entity->position.x = ease_in_back_f32(sequence_state->start_position_interpolation.x, sequence_state->end_position_interpolation.x, effective_t);
+                                    target_entity->position.y = ease_in_back_f32(sequence_state->start_position_interpolation.y, sequence_state->end_position_interpolation.y, effective_t);
                                 } break;
                                 case SEQUENCE_BACK_EASE_OUT: {
-                                    target_entity->position.x = ease_out_back_f32(sequence_state->start_position_interpolation.x, sequence_state->end_position_interpolation.x, sequence_state->time);
-                                    target_entity->position.y = ease_out_back_f32(sequence_state->start_position_interpolation.y, sequence_state->end_position_interpolation.y, sequence_state->time);
+                                    target_entity->position.x = ease_out_back_f32(sequence_state->start_position_interpolation.x, sequence_state->end_position_interpolation.x, effective_t);
+                                    target_entity->position.y = ease_out_back_f32(sequence_state->start_position_interpolation.y, sequence_state->end_position_interpolation.y, effective_t);
                                 } break;
                                 case SEQUENCE_BACK_EASE_IN_OUT: {
-                                    target_entity->position.x = ease_in_out_back_f32(sequence_state->start_position_interpolation.x, sequence_state->end_position_interpolation.x, sequence_state->time);
-                                    target_entity->position.y = ease_in_out_back_f32(sequence_state->start_position_interpolation.y, sequence_state->end_position_interpolation.y, sequence_state->time);
+                                    target_entity->position.x = ease_in_out_back_f32(sequence_state->start_position_interpolation.x, sequence_state->end_position_interpolation.x, effective_t);
+                                    target_entity->position.y = ease_in_out_back_f32(sequence_state->start_position_interpolation.y, sequence_state->end_position_interpolation.y, effective_t);
                                 } break;
                             }
 
