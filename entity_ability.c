@@ -59,6 +59,9 @@ local void decode_sequence_action_target_entity(struct lisp_form* focus_target_f
     } else if (lisp_form_symbol_matching(*focus_target_form, string_literal("target"))) {
         entity_target->entity_target_type  = ENTITY_TARGET_ID_TARGET;
         entity_target->entity_target_index = 0;
+    } else if (lisp_form_symbol_matching(*focus_target_form, string_literal("last-target"))) {
+        entity_target->entity_target_type  = ENTITY_TARGET_ID_TARGET;
+        entity_target->entity_target_index = -1;
     } else if (focus_target_form->type == LISP_FORM_LIST) {
         struct lisp_form* first_arg = lisp_list_nth(focus_target_form, 0);
         if (lisp_form_symbol_matching(*first_arg, string_literal("target"))) {

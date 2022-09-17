@@ -808,6 +808,10 @@ struct entity* decode_sequence_action_target_entity_into_entity(struct game_stat
             return self;
         } break;
         case ENTITY_TARGET_ID_TARGET: {
+            if (target->entity_target_index < 0) {
+                target->entity_target_index = self->ai.targeted_entity_count + target->entity_target_index;
+            }
+
             entity_id target_id = self->ai.targeted_entities[target->entity_target_index];
             struct entity* result = game_dereference_entity(state, target_id);
 
