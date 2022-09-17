@@ -692,6 +692,7 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                     }
 
                     {
+                        recalculate_targeted_entities_by_ability(ability, (u8*)global_battle_ui_state.selection_field, state);
                         copy_selection_field_rotated_as(ability, (u8*)global_battle_ui_state.selection_field, facing_direction_to_quadrant(user->facing_direction));
                     }
                 }

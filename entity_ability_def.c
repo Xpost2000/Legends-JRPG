@@ -77,6 +77,7 @@ enum sequence_interpolation_type {
 enum move_target_type {
     MOVE_TARGET_ENTITY,
     MOVE_TARGET_START,
+    MOVE_TARGET_RELATIVE_DIRECTION_TO,
 };
 struct sequence_action_move_to {
     struct sequence_action_target_entity to_move;

@@ -132,6 +132,19 @@ void entity_ability_compile_animation_sequence(struct memory_arena* arena, struc
                                 s32 move_amount = 0;
                                 lisp_form_get_s32(*amount_to_move_past, &move_amount);
                                 move_to->move_target.entity.move_past = move_amount;
+                            } else if (lisp_form_symbol_matching(*first_arg, string_literal("direction-relative-to"))) {
+                                /* a bit weird to call. Need to think of more useful ones. */
+                                move_to->move_target_type = MOVE_TARGET_RELATIVE_DIRECTION_TO;
+
+                                struct lisp_form* actual_move_target  = lisp_list_nth(move_target, 1);
+                                struct lisp_form* by_symbol           = lisp_list_nth(move_target, 2);
+                                struct lisp_form* amount_to_move_past = lisp_list_nth(move_target, 3);
+
+                                decode_sequence_action_target_entity(actual_move_target, &move_to->move_target.entity.target);
+
+                                s32 move_amount = 0;
+                                lisp_form_get_s32(*amount_to_move_past, &move_amount);
+                                move_to->move_target.entity.move_past = move_amount;
                             } else {
                                 decode_sequence_action_target_entity(move_target, &move_to->move_target.entity.target);
                             }
