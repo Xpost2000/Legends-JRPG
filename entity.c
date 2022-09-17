@@ -498,6 +498,7 @@ void render_entities(struct game_state* state, struct graphics_assets* graphics_
                                                  TILE_UNIT_SIZE * roundf(real_dimensions.x/TILE_UNIT_SIZE),
                                                  TILE_UNIT_SIZE * max(roundf(real_dimensions.y/(TILE_UNIT_SIZE*2)), 1)),
                                    RECTANGLE_F32_NULL, color32f32(1,1,1,0.72), NO_FLAGS, BLEND_MODE_ALPHA);
+        render_commands_set_shader(commands, game_background_things_shader, NULL);
 
         union color32f32 modulation_color = color32f32_WHITE;
 
@@ -516,6 +517,7 @@ void render_entities(struct game_state* state, struct graphics_assets* graphics_
                                                  real_dimensions.x,
                                                  real_dimensions.y),
                                    RECTANGLE_F32_NULL, modulation_color, NO_FLAGS, BLEND_MODE_ALPHA);
+        render_commands_set_shader(commands, game_foreground_things_shader, NULL);
 
 #ifndef RELEASE
         struct rectangle_f32 collision_bounds = entity_rectangle_collision_bounds(current_entity);
@@ -1059,6 +1061,27 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
                         sequence_state->time += dt;
                     }
                 } break;
+                case SEQUENCE_ACTION_START_SPECIAL_FX: {
+                    struct sequence_action_special_fx* special_fx = &sequence_action->special_fx;
+                    s32 effect_id = special_fx->effect_id; 
+
+                    switch (effect_id) {
+                        case 0: {
+                            special_effect_start_inversion();
+                        } break;
+                    }
+
+                    entity_advance_ability_sequence(target_entity);
+                } break;
+                case SEQUENCE_ACTION_STOP_SPECIAL_FX: {
+                    special_effect_stop_effects();
+                    entity_advance_ability_sequence(target_entity);
+                } break;
+                case SEQUENCE_ACTION_WAIT_SPECIAL_FX_TO_FINISH: {
+                    if (special_effects_active()) {} else {
+                        entity_advance_ability_sequence(target_entity);
+                    }
+                }
                 default: {
                     entity_advance_ability_sequence(target_entity);
                 } break;

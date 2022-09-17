@@ -42,7 +42,10 @@
 (focus-camera user)
 (move-to user (direction-relative-to target by -1) linear-ease 0.6)
 (move-to user (past target by 1) back-ease-out 2)
+(start-special-effects 0)
+(wait-special-effects)
 (hurt target) # uses damage formula
+(stop-special-effects)
 (move-to user start linear-ease 1)
 )
 )

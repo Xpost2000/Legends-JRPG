@@ -10,8 +10,8 @@
 #include "storyboard_presentation_def.c"
 
 /* These are some more specialized types of effects that require lots of perverse insertions */
-#define INVERSION_TIME_BETWEEN_FLASHES (0.15)
-#define INVERSION_FLASH_MAX            (6)
+#define INVERSION_TIME_BETWEEN_FLASHES (0.07)
+#define INVERSION_FLASH_MAX            (12)
 enum {
     SPECIAL_EFFECT_NONE,
     SPECIAL_EFFECT_INVERSION_1,
@@ -225,6 +225,15 @@ local void render_tile_layer(struct render_commands* commands, struct level_area
                                    rectangle_f32(area->tile_layers[layer][index].x * TILE_UNIT_SIZE, area->tile_layers[layer][index].y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE),
                                    tile_data->sub_rectangle,
                                    color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
+
+        switch (layer) {
+            case TILE_LAYER_GROUND: {
+                render_commands_set_shader(commands, game_background_things_shader, NULL);
+            } break;
+            default: {
+                render_commands_set_shader(commands, game_foreground_things_shader, NULL);
+            } break;
+        }
     }
 }
 
@@ -264,6 +273,7 @@ void render_ground_area(struct game_state* state, struct render_commands* comman
                                                      it->scale.y * TILE_UNIT_SIZE),
                                        RECTANGLE_F32_NULL,
                                        color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
+            render_commands_set_shader(commands, game_foreground_things_shader, NULL);
             render_commands_push_image(commands,
                                        graphics_assets_get_image_by_id(&graphics_assets, chest_open_bottom_img),
                                        rectangle_f32(it->position.x * TILE_UNIT_SIZE,
@@ -272,6 +282,7 @@ void render_ground_area(struct game_state* state, struct render_commands* comman
                                                      it->scale.y * TILE_UNIT_SIZE),
                                        RECTANGLE_F32_NULL,
                                        color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
+            render_commands_set_shader(commands, game_foreground_things_shader, NULL);
         } else {
             render_commands_push_image(commands,
                                        graphics_assets_get_image_by_id(&graphics_assets, chest_closed_img),
@@ -281,6 +292,7 @@ void render_ground_area(struct game_state* state, struct render_commands* comman
                                                      it->scale.y * TILE_UNIT_SIZE),
                                        RECTANGLE_F32_NULL,
                                        color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
+            render_commands_set_shader(commands, game_foreground_things_shader, NULL);
         }
     }
 }
@@ -1027,6 +1039,48 @@ union color32f32 lighting_shader(struct software_framebuffer* framebuffer, union
     result.b = b_accumulation + global_color_grading_filter.b/255.0f * source_pixel.b;
 
     return result;
+}
+
+union color32f32 game_background_things_shader(struct software_framebuffer* framebuffer, union color32f32 source_pixel, v2f32 pixel_position, void* context) {
+    switch (special_full_effects.type) {
+        case SPECIAL_EFFECT_INVERSION_1: {
+            if ((special_full_effects.flashes % 2) == 0) { 
+                if (source_pixel.a > 0.5) {
+                    return color32f32(1, 1, 1, 1);
+                } else {
+                    return color32f32(0, 0, 0, 1);
+                }
+            } else {
+                if (source_pixel.a > 0.5) {
+                    return color32f32(0, 0, 0, 1);
+                } else {
+                    return color32f32(1, 1, 1, 1);
+                }
+            }
+        } break;
+    }
+    return source_pixel;
+}
+
+union color32f32 game_foreground_things_shader(struct software_framebuffer* framebuffer, union color32f32 source_pixel, v2f32 pixel_position, void* context) {
+    switch (special_full_effects.type) {
+        case SPECIAL_EFFECT_INVERSION_1: {
+            if ((special_full_effects.flashes % 2) == 0) { 
+                if (source_pixel.a > 0.5) {
+                    return color32f32(0, 0, 0, 1);
+                } else {
+                    return color32f32(1, 1, 1, 1);
+                }
+            } else {
+                if (source_pixel.a > 0.5) {
+                    return color32f32(1, 1, 1, 1);
+                } else {
+                    return color32f32(0, 0, 0, 1);
+                }
+            }
+        } break;
+    }
+    return source_pixel;
 }
 
 void game_postprocess_grayscale(struct software_framebuffer* framebuffer, f32 t) {
@@ -2051,6 +2105,9 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                             }
 
                             special_full_effects.time += dt;
+                        } break;
+                        default: {
+                            
                         } break;
                     }
                 }

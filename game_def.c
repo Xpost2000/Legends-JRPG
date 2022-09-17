@@ -208,6 +208,10 @@ struct game_ui_nine_patch game_ui_nine_patch_load_from_directory(struct graphics
 struct entity_list;
 struct level_area;
 
+bool special_effects_active(void);
+void special_effect_start_inversion(void);
+void special_effect_stop_effects(void);
+
 struct light_def {
     v2f32 position;
     v2f32 scale;  /* Only used for the editor as it expects rectangle_f32s */
@@ -219,6 +223,11 @@ struct light_def {
     /* ??? later */
     u8 reserved_bytes[4];
 };
+
+/* These are slightly different as they do different things on the "special_effects" behavior  */
+/* also some of these will have code designated for things like entities */
+union color32f32 game_background_things_shader(struct software_framebuffer* framebuffer, union color32f32 source_pixel, v2f32 pixel_position, void* context);
+union color32f32 game_foreground_things_shader(struct software_framebuffer* framebuffer, union color32f32 source_pixel, v2f32 pixel_position, void* context);
 
 #include "entity_model_def.c"
 #include "entities_def.c"

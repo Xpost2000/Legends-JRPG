@@ -44,6 +44,9 @@ enum sequence_action_type {
     SEQUENCE_ACTION_FOCUS_CAMERA,
     SEQUENCE_ACTION_MOVE_TO,
     SEQUENCE_ACTION_HURT,
+    SEQUENCE_ACTION_START_SPECIAL_FX,
+    SEQUENCE_ACTION_STOP_SPECIAL_FX,
+    SEQUENCE_ACTION_WAIT_SPECIAL_FX_TO_FINISH,
 };
 
 /* does not allow ally targetting */
@@ -101,12 +104,17 @@ struct sequence_action_hurt {
     struct sequence_action_target_entity target;
 };
 
+struct sequence_action_special_fx {
+    s32 effect_id;
+};
+
 struct entity_ability_sequence_action {
     s32 type;
     union {
         struct sequence_action_hurt         hurt;
         struct sequence_action_move_to      move_to;
         struct sequence_action_focus_camera focus_camera;
+        struct sequence_action_special_fx   special_fx;
     };
 };
 struct entity_ability_sequence {

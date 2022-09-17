@@ -192,6 +192,14 @@ void entity_ability_compile_animation_sequence(struct memory_arena* arena, struc
                         
                         struct lisp_form* focus_target = lisp_list_nth(&action_form_rest_arguments, 0);
                         decode_sequence_action_target_entity(focus_target, &action_data->hurt.target);
+                    } else if (lisp_form_symbol_matching(*action_form_header, string_literal("start-special-effects"))) {
+                        action_data->type = SEQUENCE_ACTION_START_SPECIAL_FX;
+                        struct lisp_form* effect_id = lisp_list_nth(&action_form_rest_arguments, 0);
+                        lisp_form_get_s32(*effect_id, &action_data->special_fx.effect_id);
+                    } else if (lisp_form_symbol_matching(*action_form_header, string_literal("stop-special-effects"))) {
+                        action_data->type = SEQUENCE_ACTION_STOP_SPECIAL_FX;
+                    } else if (lisp_form_symbol_matching(*action_form_header, string_literal("wait-special-effects"))) {
+                        action_data->type = SEQUENCE_ACTION_WAIT_SPECIAL_FX_TO_FINISH;
                     } else {
                         successfully_parsed = false;
                     } 
