@@ -472,7 +472,7 @@ string file_buffer_as_string(struct file_buffer* buffer) {
     return file_buffer_slice(buffer, 0, buffer->length);
 }
 
-bool   file_exists(string path) {
+bool file_exists(string path) {
     FILE* f = fopen(path.data, "r");
 
     if (f) {
@@ -540,6 +540,7 @@ struct directory_file {
     /* could add more info like timing stuff */
 };
 struct directory_listing {
+    char                   basename[260];
     s32                    count;
     struct directory_file* files;
 };
@@ -549,10 +550,57 @@ struct directory_listing {
 #include <windows.h>
 #endif
 
+bool path_exists(string location) {
+#ifndef __EMSCRIPTEN__
+    if (location.data[location.length-1] == '/' || location.data[location.length-1] == '\\') {
+        location.length-=1;
+    }
+
+    WIN32_FIND_DATA find_data = {};
+    HANDLE handle = FindFirstFile(location.data, &find_data);
+
+
+    if (handle == INVALID_HANDLE_VALUE) {
+        return false;
+    }
+    return true;
+#else
+    return false;
+#endif
+}
+
+bool is_path_directory(string location) {
+#ifndef __EMSCRIPTEN__
+    if (location.data[location.length-1] == '/' || location.data[location.length-1] == '\\') {
+        location.length-=1;
+    }
+
+    WIN32_FIND_DATA find_data = {};
+    HANDLE handle = FindFirstFile(location.data, &find_data);
+
+    if (handle == INVALID_HANDLE_VALUE) {
+        return false;
+    }
+
+    if (find_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+        return true;
+    }
+
+    return false;
+#else
+    return false;
+#endif
+}
+
 struct directory_listing directory_listing_list_all_files_in(struct memory_arena* arena, string location) {
     struct directory_listing result = {};
+    cstring_copy(location.data, result.basename, 260);
 
 #ifndef __EMSCRIPTEN__
+    if (!is_path_directory(location)) {
+        return result;
+    }
+
     WIN32_FIND_DATA find_data = {};
     HANDLE handle = FindFirstFile(string_concatenate(arena, location, string_literal("/*")).data, &find_data);
 
