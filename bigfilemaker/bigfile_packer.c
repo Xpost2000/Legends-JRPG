@@ -36,42 +36,10 @@
 #include "../serializer_def.c"
 #include "../serializer.c"
 
-#define BIGFILE_RECORD_MAX_PATH         (64) /* big enough for me. But pretty wasteful */
-#define BIGFILE_ARCHIVE_CURRENT_VERSION (1)
-
 struct memory_arena archive_arena = {};
 struct memory_arena scratch_arena = {};
 
-enum bigfile_record_type {
-    BIGFILE_RECORD_FILE,
-    BIGFILE_RECORD_DIRECTORY,
-};
-enum bigfile_compression_type {
-    BIGFILE_COMPRESSION_NONE,
-    BIGFILE_COMPRESSION_COUNT,
-};
-
-/*
-  for directories, I'm going to be a bit scared of how to handle nesting structures...
-
-  Pointers upon pointers.
-*/
-struct bigfile_record {
-    char name[BIGFILE_RECORD_MAX_PATH];
-    u8 type;
-    u8 compression_type;
-    s64 size;
-    s64 data_offset; /* offset to start reading file data */
-};
-
-/* code structure, only for the packer. The code API is just pure binary. */
-struct bigfile_archive {
-    s32 version;
-    s32 record_count;
-    s64 file_data_size;
-    struct bigfile_record* records;
-    u8*                    file_data;
-};
+#include "bigfile_def.c"
 
 /* out has enough memory to hold results */
 void produce_normalized_path(string in, char* out) {
@@ -119,10 +87,11 @@ void read_and_add_directory_entries_recursively(struct directory_listing* listin
             produce_normalized_path(fullpath, fixed_path);
             {cstring_copy(fixed_path, record->name, BIGFILE_RECORD_MAX_PATH);}
 
-            record->compression_type = BIGFILE_COMPRESSION_NONE;
-            record->type             = BIGFILE_RECORD_FILE;
-            record->size             = file_entry->filesize;
-            record->data_offset      = -1;
+            record->compression_type  = BIGFILE_COMPRESSION_NONE;
+            record->type              = BIGFILE_RECORD_FILE;
+            record->uncompressed_size = file_entry->filesize;
+            record->compressed_size   = file_entry->filesize;
+            record->data_offset       = -1;
         }
     }
     printf("done reading one recursive subdir\n");
@@ -159,10 +128,11 @@ int main(int argc, char** argv) {
                         produce_normalized_path(argument, fixed_path);
                         {cstring_copy(fixed_path, record->name, BIGFILE_RECORD_MAX_PATH);}
 
-                        record->compression_type = BIGFILE_COMPRESSION_NONE;
-                        record->type             = BIGFILE_RECORD_FILE;
-                        record->size             = file_length(string_from_cstring(fixed_path));
-                        record->data_offset      = -1;
+                        record->compression_type  = BIGFILE_COMPRESSION_NONE;
+                        record->type              = BIGFILE_RECORD_FILE;
+                        record->uncompressed_size = file_length(string_from_cstring(fixed_path));
+                        record->compressed_size   = file_length(string_from_cstring(fixed_path));
+                        record->data_offset       = -1;
 
                         printf("\t\"%.*s\" is a file\n", argument.length, argument.data);
                     }
