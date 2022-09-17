@@ -552,12 +552,16 @@ struct directory_listing {
 
 bool path_exists(string location) {
 #ifndef __EMSCRIPTEN__
+    char tmp_copy[260] = {};
+    for (s32 i = 0; i < location.length; ++i) {
+        tmp_copy[i] = location.data[i];
+    }
     if (location.data[location.length-1] == '/' || location.data[location.length-1] == '\\') {
-        location.length-=1;
+        tmp_copy[location.length-1] = 0;
     }
 
     WIN32_FIND_DATA find_data = {};
-    HANDLE handle = FindFirstFile(location.data, &find_data);
+    HANDLE handle = FindFirstFile(tmp_copy, &find_data);
 
 
     if (handle == INVALID_HANDLE_VALUE) {
@@ -571,12 +575,16 @@ bool path_exists(string location) {
 
 bool is_path_directory(string location) {
 #ifndef __EMSCRIPTEN__
+    char tmp_copy[260] = {};
+    for (s32 i = 0; i < location.length; ++i) {
+        tmp_copy[i] = location.data[i];
+    }
     if (location.data[location.length-1] == '/' || location.data[location.length-1] == '\\') {
-        location.length-=1;
+        tmp_copy[location.length-1] = 0;
     }
 
     WIN32_FIND_DATA find_data = {};
-    HANDLE handle = FindFirstFile(location.data, &find_data);
+    HANDLE handle = FindFirstFile(tmp_copy, &find_data);
 
     if (handle == INVALID_HANDLE_VALUE) {
         return false;
