@@ -15,10 +15,6 @@
 # list of animation sequences that will be compiled down.
 (
 # this is the simplest case of movement
-(focus-camera user)
-(move-to user (past target by 1) 'back-ease-in)
-(hurt target) # uses damage formula
-(move-to user start)
 )
 )
 
@@ -43,5 +39,9 @@
 )
 
 (
+(focus-camera user)
+(move-to user (past target by 2) cubic-ease-in)
+(hurt target) # uses damage formula
+(move-to user start linear-ease)
 )
 )

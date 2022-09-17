@@ -727,10 +727,6 @@ void entity_combat_submit_ability_action(struct entity* entity, entity_id* targe
     zero_memory(&entity->sequence_state, sizeof(entity->sequence_state));
 
     entity->sequence_state.start_position        = entity->position;
-    entity->sequence_state.start_position.x /= TILE_UNIT_SIZE;
-    entity->sequence_state.start_position.y /= TILE_UNIT_SIZE;
-    entity->sequence_state.start_position.x = floorf(entity->sequence_state.start_position.x);
-    entity->sequence_state.start_position.y = floorf(entity->sequence_state.start_position.y);
 
     for (s32 target_index = 0; target_index < target_count; ++target_index) {
         entity->ai.targeted_entities[target_index] = targets[target_index];
@@ -919,12 +915,21 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
             struct entity_sequence_state*          sequence_state      = &target_entity->sequence_state;
             struct entity_animation_state*         animation           = &target_entity->animation;
             struct entity_ability_slot*            active_ability_slot = &target_entity->abilities[ai_data->using_ability_index];
+            assertion(active_ability_slot && "active slot is null? That can't be true!");
             struct entity_ability*                 ability_to_use      = entity_database_ability_find_by_index(&game_state->entity_database, active_ability_slot->ability);
+            assertion(ability_to_use      && "Ability not found??? That can't be true!");
+            _debugprintf("trying to use ability: %.*s", ability_to_use->name.length, ability_to_use->name.data);
             s32                                    target_count        = ai_data->targeted_entity_count;
             entity_id*                             targets             = ai_data->targeted_entities;
             struct entity_ability_sequence*        ability_sequence    = &ability_to_use->sequence;
+            assertion(ability_sequence    && "The sequence is bad? That can't be true!");
+            _debugprintf("%p sequence ptr (%d count)", ability_sequence, ability_sequence->sequence_action_count);
             struct entity_ability_sequence_action* sequence_action     = &ability_sequence->sequence_actions[sequence_state->current_sequence_index];
 
+            assertion(sequence_action     && "The action is bad?   That can't be true!");
+
+
+#if 1
             switch (sequence_action->type) {
                 case SEQUENCE_ACTION_MOVE_TO: {
                     struct sequence_action_move_to* move_to = &sequence_action->move_to;
@@ -942,7 +947,7 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
                                     v2f32 direction_between_target_and_self = v2f32_sub(move_target_entity->position, target_entity->position);
                                     direction_between_target_and_self       = v2f32_normalize(direction_between_target_and_self);
 
-                                    v2f32 displacement_offset = v2f32_scale(direction_between_target_and_self, move_to->move_target.entity.move_past);
+                                    v2f32 displacement_offset = v2f32_scale(direction_between_target_and_self, move_to->move_target.entity.move_past * TILE_UNIT_SIZE);
                                     end_position = v2f32_add(move_target_entity->position, displacement_offset);
                                 } break;
                                 case MOVE_TARGET_START: {
@@ -1021,6 +1026,7 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
                     entity_advance_ability_sequence(target_entity);
                 } break;
             }
+#endif
 
             if (sequence_state->current_sequence_index >= ability_sequence->sequence_action_count) {
                 target_entity->ai.current_action = 0; 

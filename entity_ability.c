@@ -184,6 +184,9 @@ void entity_ability_compile_animation_sequence(struct memory_arena* arena, struc
                 }
             }
         }
+
+        _debugprintf("finished reading for %.*s", ability->name.length, ability->name.data);
+        _debugprintf("ptr: %p, (count %d)", sequence, sequence->sequence_action_count);
     } else {
         /* nil form likely */
     }

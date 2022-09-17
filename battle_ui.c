@@ -4,6 +4,8 @@
 
   Not a super difficult fix, maybe an hour of work. Anyways, TODO: I don't think I ever handle the moving
   field case. We'll see if there are any abilities with that feature later.
+
+  TODO: prevent abilities from selecting if they're obstructed
 */
 
 enum battle_ui_animation_phase {
@@ -811,6 +813,7 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                 if (selection_confirm) {
                     global_battle_ui_state.submode = BATTLE_UI_SUBMODE_NONE;
                     entity_combat_submit_ability_action(active_combatant_entity, global_battle_ui_state.selected_entities_for_abilities, global_battle_ui_state.selected_entities_for_abilities_count, global_battle_ui_state.selection);
+                    global_battle_ui_state.selecting_ability_target = false;
                     cancel_ability_selections();
                 }
             }

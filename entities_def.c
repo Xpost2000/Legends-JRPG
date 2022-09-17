@@ -218,7 +218,7 @@ enum entity_equip_slot_index {
  */
 struct entity_sequence_state {
     /* This should be an array technically for more involved animations but who cares I guess? */
-    v2f32 start_position; /* Saved at the start of any animation, also in TILE UNITS */
+    v2f32 start_position; 
 
     bool initialized_state;
     v2f32 start_position_interpolation;
