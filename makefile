@@ -8,9 +8,15 @@ CLIBS=-Dmain=SDL_main -lmingw32 -L./dependencies/x86-64/lib/ -L./dependencies/x8
 SOURCE_FILE_MODULES= main.c
 EMCC=emcc
 
-.PHONY: all clean gen-asm
-all: game.exe game-debug.exe
+.PHONY: all clean gen-asm gen-asm-debug cloc
+all: packer.exe depack.exe game.exe game-debug.exe
 
+data.bigfile: pack.exe
+	./pack $@ areas dlg res scenes shops
+pack.exe: bigfilemaker/bigfile_packer.c bigfilemaker/bigfile_def.c
+	$(CC) bigfilemaker/bigfile_packer.c -o $@ -O2
+depack.exe: bigfilemaker/depacker.c bigfilemaker/bigfile_unpacker.c bigfilemaker/bigfile_def.c
+	$(cc) bigfilemaker/depacker.c -o $@ -O2
 game.exe: $(wildcard *.c *.h)
 	$(CC) $(SOURCE_FILE_MODULES) -DRELEASE -o $@ $(CFLAGS) $(CLIBS) -O2 -mwindows
 game-debug.exe: $(wildcard *.c *.h)
@@ -27,6 +33,9 @@ gen-asm-debug: $(wildcard *.c *.h)
 gen-asm: $(wildcard *.c *.h)
 	-mkdir asm
 	$(CC) $(SOURCE_FILE_MODULES) $(CFLAGS) $(CLIBS) -S -masm=intel -O2 -fverbose-asm -o asm/release.s
+cloc:
+	cloc *.c bigfilemaker/*.c
 clean:
+	-rm data.bigfile
 	-rm game.exe
 	-rm game-debug.exe
