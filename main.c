@@ -15,6 +15,21 @@ static bool global_game_running = true;
 static f32                         global_elapsed_time          = 0.0f;
 static struct memory_arena         scratch_arena                = {};
 
+string format_temp_s(const char* fmt, ...) {
+    int written = 0;
+    char* where;
+    {
+        va_list args;
+        va_start(args, fmt);
+        where = (char*)(scratch_arena.memory + scratch_arena.used);
+        written = vsnprintf(where, scratch_arena.capacity-(scratch_arena.used+scratch_arena.used_top), fmt, args);
+        scratch_arena.used += written+1;
+        va_end(args);
+    }
+
+    return string_from_cstring_length_counted(where, written);
+}
+
 /* target engine res */
 local u32 SCREEN_WIDTH  = 0;
 local u32 SCREEN_HEIGHT = 0;
@@ -347,7 +362,7 @@ void deinitialize(void) {
 #include "sandbox_tests.c"
 
 f32 last_elapsed_delta_time = (1.0 / 60.0f);
-void engine_main_loop(void* _) {
+void engine_main_loop() {
     char window_name_title_buffer[256] = {};
     u32 start_frame_time = SDL_GetTicks();
 
@@ -416,7 +431,7 @@ int engine_main(int argc, char** argv) {
     emscripten_set_main_loop(engine_main_loop, 0, true);
 #else
     while (global_game_running) {
-        engine_main_loop(NULL);
+        engine_main_loop();
     }
 #endif
 

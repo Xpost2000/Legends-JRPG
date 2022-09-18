@@ -107,13 +107,12 @@ struct game_ui_nine_patch ui_chunky;
 
 struct game_ui_nine_patch game_ui_nine_patch_load_from_directory(struct graphics_assets* graphics_assets, string directory, s32 tile_width, s32 tile_height) {
     struct game_ui_nine_patch ui_skin = {}; 
-
     {
         s32 index = 0;
 
         Array_For_Each(it, string, game_ui_nine_patch_id_strings, array_count(game_ui_nine_patch_id_strings)) {
-            string filepath         = string_from_cstring(format_temp("%.*s/%.*s.png", directory.length, directory.data, it->length, it->data));
-            ui_skin.textures[index] = graphics_assets_load_image(graphics_assets, filepath);
+            string filepath = format_temp_s("%.*s/%.*s.png", directory.length, directory.data, it->length, it->data);
+            ui_skin.textures[index] = DEBUG_CALL(graphics_assets_load_image(graphics_assets, filepath));
             index++;
         }
 
@@ -1156,14 +1155,14 @@ void game_initialize(void) {
 
     graphics_assets = graphics_assets_create(&game_arena, 64, 1024);
 
-    combat_square_unselected = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/cmbt/cmbt_grid_sq.png"));
-    combat_square_selected   = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/cmbt/cmbt_selected_sq.png"));
-    drop_shadow              = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/dropshadow.png"));
+    combat_square_unselected = DEBUG_CALL(graphics_assets_load_image(&graphics_assets, string_literal("./res/img/cmbt/cmbt_grid_sq.png")));
+    combat_square_selected   = DEBUG_CALL(graphics_assets_load_image(&graphics_assets, string_literal("./res/img/cmbt/cmbt_selected_sq.png")));
+    drop_shadow              = DEBUG_CALL(graphics_assets_load_image(&graphics_assets, string_literal("./res/img/dropshadow.png")));
 
-    chest_closed_img      = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/chestclosed.png"));
-    chest_open_bottom_img = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/chestopenbottom.png"));
-    chest_open_top_img    = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/chestopentop.png"));
-    ui_chunky             = game_ui_nine_patch_load_from_directory(&graphics_assets, string_literal("./res/img/ui/chunky/"), 16, 16);
+    chest_closed_img      = DEBUG_CALL(graphics_assets_load_image(&graphics_assets, string_literal("./res/img/chestclosed.png")));
+    chest_open_bottom_img = DEBUG_CALL(graphics_assets_load_image(&graphics_assets, string_literal("./res/img/chestopenbottom.png")));
+    chest_open_top_img    = DEBUG_CALL(graphics_assets_load_image(&graphics_assets, string_literal("./res/img/chestopentop.png")));
+    ui_chunky             = DEBUG_CALL(game_ui_nine_patch_load_from_directory(&graphics_assets, string_literal("./res/img/ui/chunky"), 16, 16));
     /* selection_sword_img   = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/selection_sword.png")); */
     global_entity_models = entity_model_database_create(&game_arena, 512);
 

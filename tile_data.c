@@ -5,7 +5,9 @@ image_id get_tile_image_id(struct tile_data_definition* tile_def) {
       NOTE: Almost everything expects Cstrings and these strings originate from the file data which we
       don't copy. But just have pointers into...
     */
-    string sanitized_string = string_from_cstring(format_temp("%.*s", frame_path.length, frame_path.data));
+    /* UGGHHHHH FUCK EMSCRIPTEN FOR DOING THIS! */
+    /* string sanitized_string = string_from_cstring(format_temp("%.*s", frame_path.length, frame_path.data)); */
+    string sanitized_string = string_clone(&scratch_arena, frame_path);
     return graphics_assets_get_image_by_filepath(&graphics_assets, sanitized_string);
 }
 

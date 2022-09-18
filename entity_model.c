@@ -29,7 +29,7 @@ s32 entity_model_add_animation(s32 entity_model_id, string name, s32 frames, f32
 
     for (s32 index = 0; index < anim->frame_count; ++index) {
         s32 index_plus_one = index + 1;
-        string fullpath = string_from_cstring(format_temp("./res/img/%.*s/%.*s_%d.png", model->name.length, model->name.data, name.length, name.data, index_plus_one));
+        string fullpath = format_temp_s("./res/img/%.*s/%.*s_%d.png", model->name.length, model->name.data, name.length, name.data, index_plus_one);
         anim->sprites[index] = graphics_assets_load_image(&graphics_assets, fullpath);
     }
 

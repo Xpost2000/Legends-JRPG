@@ -7,4 +7,4 @@
 @rem edit this line for emscripten path
 echo This should be done on Windows cmd.exe
 echo F:/emsdk/emsdk activate latest use this first
-emcc main.c -lSDL2 -s USE_SDL=2 -s USE_WEBGL2=1 -D RELEASE -I./dependencies/ -o game.html -s INITIAL_MEMORY=256MB --preload-file res --preload-file scenes --preload-file areas
+emcc main.c -lSDL2_mixer -lSDL2 -s USE_SDL_MIXER=2 -s USE_SDL=2 -s USE_WEBGL2=1 -I./dependencies/ -o game.html -s INITIAL_MEMORY=256MB --preload-file res --preload-file areas

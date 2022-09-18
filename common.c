@@ -39,11 +39,11 @@
 #ifndef RELEASE
 #define _debugprintf(fmt, args...)   fprintf(stderr, "[%s:%d:%s()]: " fmt "\n", __FILE__, __LINE__, __func__, ##args)
 #define _debugprintf1(fmt, args...)  fprintf(stderr,  fmt, ##args)
-/* #define _debugprintf(fmt, args...)   */
-/* #define _debugprintf1(fmt, args...) */
+#define DEBUG_CALL(fn) fn; _debugprintf("calling %s in [%s:%d:%s()]\n", #fn, __FILE__, __LINE__, __func__)
 #else
 #define _debugprintf(fmt, args...)  
 #define _debugprintf1(fmt, args...)
+#define DEBUG_CALL(_) _;
 #endif
 
 #define Array_For_Each(NAME, TYPE, ARR, COUNT) for (TYPE * NAME = ARR; NAME != (ARR + COUNT); NAME += 1)
@@ -424,6 +424,7 @@ f32 get_average_frametime(void) {
 static const char* cstr_yesno[]     = {"no", "yes"};
 static const char* cstr_truefalse[] = {"false", "true"};
 
+
 char* format_temp(const char* fmt, ...) {
     local int current_buffer = 0;
     local char temporary_text_buffer[TEMPORARY_STORAGE_BUFFER_COUNT][TEMPORARY_STORAGE_BUFFER_SIZE] = {};
@@ -636,7 +637,14 @@ struct directory_listing directory_listing_list_all_files_in(struct memory_arena
 }
 
 static u64 read_timestamp_counter(void) {
+#ifndef __EMSCRIPTEN__
     return __rdtsc();
+#else
+    return 0;
+#endif
 }
+
+/* more secure than format_temp, uses scratch buffer as backing memory. */
+string format_temp_s(const char* fmt, ...);
 
 #endif

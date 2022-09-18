@@ -36,6 +36,73 @@ Third row is general overview of task types.
 | NO     | NO      | MAYBE     | MAYBE(AT NIGHT ONLY) | YES    | YES      | YES(less)   |
 | -      | -       | X         | Storyboard Writing   | Coding | Coding   | Coding/Art? |
 
+* Done
+*** DONE Allow the cart to remember which items I'm selecting.
+*** DONE Entity ability selection.
+*** DONE Fix the Entity draw order problem!
+*** DONE Fix the shop behavior
+*** DONE Items from Files
+Our item formats are probably going to be kept very simple. We're
+going to try to constrain what we can and cannot do for the sake
+of avoiding scope-creep.
+
+Chrono Trigger in many ways was both a simple and complicated game. Simple
+in it's mechanics, complicated with it's execution.
+
+Items don't need to be able to do literally everything. If they need to
+do more impressive things, we will handle that when the time comes however
+we need to basically only assume a few basica archetypes of items.
+
+*** DONE Tile Data From Files
+Since it's been broken as of the last build.
+*** DONE (*Focus*DOING)Load the abilities database from abilities.txt
+*** DONE (*Focus*DOING) Combat Animations
+This thing is actually now going to be inspired by Action Sequences from RPG Maker
+- [X] Ability animation structure
+- [X] Add standard attack animations
+  While this technically requires more art, we can animate a violent bump
+  for now if we lack any animations otherwise (along with a damage flash).
+
+  This isn't very difficult to do. It will also be the default animation
+  if we lack any other type of animation.
+*** DONE Ability Sequences!
+
+These are the biggest mother fuckers! We should also offer the option to do Disgaea style
+skipping if possible. I'm probably just going to define the structs and call it a day from
+this point.
+
+Since that's one of the painful things since it's almost essentially an arbitrary animation sequence,
+which is what kind of concerns me.
+
+*** DONE Camera focus commands
+*** DONE Getting the shop to actually work
+We have the UI for the shop system (done last week), but we never actually got it's behavior to work as intended.
+
+Also obviously, I want to animate stuff.
+*** DONE Frozen weather?
+*** DONE Realign all sprites to be at a central reference point.
+All "entity" sprites should be aligned at their feet, and center. Once this code change is made all sprites
+should work without manual alignment, so long as they are made following the guy template guidelines. This makes
+most of the pixel art extremely easy to work with.
+*** DONE Draw Shadows for all entities (NPCs)
+*** DONE SDL2 Mixer Audio Backend.
+This should be trivial, my audio system should have a very sane design.
+
+*** DONE Adding gold!
+*** DONE Merge the entity_ability_database with entity_database
+*** DONE Entities defined from files
+*** DONE (DOING)Entities can drop items at the end of a battle when they die.
+We have to have droppable items in the list, and obviously set percentages for drops. This isn't super difficult
+and can be specified as part of the entity drop system.
+*** DONE Scissor buffer
+*** DONE (DOING) Serializing of loot tables (from a file)
+*** DONE Define Ability Sequences structures
+*** DONE Pathfinding stuck bug.
+This happens inconsistently, don't know what the cause of it is right now.
+*** DONE Minor shop related bugs.
+I suspect as I compress the shop code, it'll fix itself, but it's a little unwieldy.
+As soon as I know my data, the code instantly becomes very obvious.
+*** DONE BIGFILE with uncompressed files
 * Tasks by Days of the Week
 ** Almost before alpha candidate release
 Basically a small bug witch hunt.
@@ -56,7 +123,6 @@ complexity is to bear wrestle it directly instead of trying to pretend it isn't 
 *** TODO Shopping Confirmation
 We need some confirmations to make it better, although for now in the release candidate just to avoid spending time on
 the UI, I'll avoid this...
-*** DONE Allow the cart to remember which items I'm selecting.
 *** TODO Think of doing an art retreat?
 I mean some of the art stuff here is strictly necessary, but after we have that strictly necessary art we can
 try a little harder to do some more stuff.
@@ -132,23 +198,10 @@ There's a lot of dirt that needs to be cleaned up at some point.
 *** TODO More data error handling
 There is basically no error handling code for any of our data formats, so even if we crash we don't
 know what went wrong which is pretty bad imo.
-*** DONE Pathfinding stuck bug.
-This happens inconsistently, don't know what the cause of it is right now.
-*** DONE Minor shop related bugs.
-I suspect as I compress the shop code, it'll fix itself, but it's a little unwieldy.
 ** Monday
 We'll probably just do this at night or something.
-*** DONE Entities defined from files
-*** DONE (DOING)Entities can drop items at the end of a battle when they die.
-We have to have droppable items in the list, and obviously set percentages for drops. This isn't super difficult
-and can be specified as part of the entity drop system.
-*** DONE Scissor buffer
-*** DONE (DOING) Serializing of loot tables (from a file)
-*** DONE Define Ability Sequences structures
-As soon as I know my data, the code instantly becomes very obvious.
 ** Tuesday
 
-*** DONE Merge the entity_ability_database with entity_database
 ** Wednesday
 Frankly I'm a bit reluctant to allow myself to do *from file* tasks, as data formats are commonly rewritten
 really really frequently. However, since some of the data hasn't appeared to change so much it's fine...
@@ -162,21 +215,13 @@ and such don't really do anything to save files since the only place those thing
 IE: Schema-like data formats are okay to serialize pretty early since while their consequences are far reaching, that's its most
 powerful asset.
 
-*** DONE Getting the shop to actually work
-We have the UI for the shop system (done last week), but we never actually got it's behavior to work as intended.
-
-Also obviously, I want to animate stuff.
-*** DONE Frozen weather?
-*** DONE Realign all sprites to be at a central reference point.
-All "entity" sprites should be aligned at their feet, and center. Once this code change is made all sprites
-should work without manual alignment, so long as they are made following the guy template guidelines. This makes
-most of the pixel art extremely easy to work with.
-*** DONE Draw Shadows for all entities (NPCs)
-*** DONE SDL2 Mixer Audio Backend.
-This should be trivial, my audio system should have a very sane design.
-
-*** DONE Adding gold!
 ** Thursday
+** Friday
+** Saturday
+*** TODO Hurt should actually do stuff
+*** TODO Enemy Animation flashing when hit!
+*** TODO (*Focus* DOING)Polish up the battle victory screen & Loot Table needs to reward the winner lol.
+*** TODO (EDITOR?NOT NOW) Better Entity selection
 *** TODO Level Up Curve
 *** TODO Consider thinking about the save menu
 *** TODO Projectiles for ranged weapons!
@@ -186,7 +231,6 @@ I need to draw and use autotiling for these, but they should be pretty easy...
 Also thankfully these only happen on one layer.
 
 *** TODO Ability score calculation error. Don't know why this is broken right now.
-*** DONE (*Focus*DOING)Load the abilities database from abilities.txt
 *** TODO (DOING)Particle System
 *** TODO (DOING)My end turn is broken.
 *** TODO (DOING)Item Use menu in the battle UI.
@@ -219,49 +263,7 @@ engine work done.
   work without animations.
 
   I suspect the animations aren't going to be too difficult to do though.
-*** DONE (*Focus*DOING) Combat Animations
-This thing is actually now going to be inspired by Action Sequences from RPG Maker
-- [X] Ability animation structure
-- [X] Add standard attack animations
-  While this technically requires more art, we can animate a violent bump
-  for now if we lack any animations otherwise (along with a damage flash).
 
-  This isn't very difficult to do. It will also be the default animation
-  if we lack any other type of animation.
-*** DONE Ability Sequences!
-
-These are the biggest mother fuckers! We should also offer the option to do Disgaea style
-skipping if possible. I'm probably just going to define the structs and call it a day from
-this point.
-
-Since that's one of the painful things since it's almost essentially an arbitrary animation sequence,
-which is what kind of concerns me.
-
-*** TODO Hurt should actually do stuff
-*** DONE Camera focus commands
-*** TODO Enemy Animation flashing when hit!
-*** TODO (*Focus* DOING)Polish up the battle victory screen & Loot Table needs to reward the winner lol.
-*** TODO (EDITOR?NOT NOW) Better Entity selection
-
-** Friday
-*** DONE Items from Files
-Our item formats are probably going to be kept very simple. We're
-going to try to constrain what we can and cannot do for the sake
-of avoiding scope-creep.
-
-Chrono Trigger in many ways was both a simple and complicated game. Simple
-in it's mechanics, complicated with it's execution.
-
-Items don't need to be able to do literally everything. If they need to
-do more impressive things, we will handle that when the time comes however
-we need to basically only assume a few basica archetypes of items.
-
-*** DONE Tile Data From Files
-** Saturday
-*** DONE Entity ability selection.
-*** DONE Fix the Entity draw order problem!
-*** DONE Fix the shop behavior
-Since it's been broken as of the last build.
 ** Sunday
 This is a pretty massive list, but at least it's a narrowed one so I actually
 know what the fuck I'm trying to do.
