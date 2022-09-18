@@ -55,6 +55,15 @@ static void initialize_items_database(void) {
 
         struct item_def* current_item_definition = &item_database[item_form_index];
 
+        /* initialize to unit */
+        {
+            current_item_definition->modifiers.health       = 1;
+            current_item_definition->modifiers.spell_points = 1;
+            for (s32 stat_index = 0; stat_index < STAT_COUNT; ++stat_index) {
+                current_item_definition->modifiers.values[stat_index] = 1;
+            }
+        }
+
         assertion(lisp_form_get_string(*id_name_form,     &current_item_definition->id_name)     && "bad id name form!");
         assertion(lisp_form_get_string(*name_form,        &current_item_definition->name)        && "bad name form!");
         assertion(lisp_form_get_string(*description_form, &current_item_definition->description) && "bad description form!");
