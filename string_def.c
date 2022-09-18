@@ -6,11 +6,10 @@ typedef struct {
     IAllocator allocator; /* for growable strings, if I ever need that */
 #endif
 
-    u64   length;
-    u64   capacity; /* capacity = 0, means literal */
+    s32   length;
     char* data;
 } string;
-#define string_literal(x) (string){ .length = sizeof(x)-1, .capacity = 0, .data = x }
+#define string_literal(x) (string){ .length = sizeof(x)-1, .data = x }
 #define string_null       (string){}
 
 bool is_whitespace(char c);

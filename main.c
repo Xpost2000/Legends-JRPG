@@ -1,10 +1,11 @@
 /* #define NO_POSTPROCESSING */
-#define MULTITHREADED_EXPERIMENTAL
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
+#define USE_EDITOR
 #else
 #define USE_SIMD_OPTIMIZATIONS
+#define MULTITHREADED_EXPERIMENTAL
 #endif
 
 #include <SDL2/SDL.h>

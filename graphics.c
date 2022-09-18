@@ -13,12 +13,11 @@ struct image_buffer image_buffer_load_from_file(string filepath) {
     s32 components;
 
     u8* image_buffer = stbi_load(filepath.data, &width, &height, &components, 4);
-    _debugprintf("tried to load: \"%*s\"", filepath.length, filepath.data);
+    _debugprintf("tried to load: \"%.*s\"", filepath.length, filepath.data);
     if (!image_buffer) {
-        /* _debugprintf("Failed to load \"%.*s\"", filepath.length, filepath.data); */
-        _debugprintf("Failed to load \"%s\"", filepath.data);
+        _debugprintf("Failed to load \"%.*s\"", filepath.length, filepath.data);
     }
-    /* assertion(image_buffer && "image load failed!"); */
+    assertion(image_buffer && "image load failed!");
     struct image_buffer result = (struct image_buffer) {
         .pixels = image_buffer,
         .width  = width,
