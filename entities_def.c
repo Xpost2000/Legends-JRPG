@@ -43,7 +43,7 @@ typedef struct entity_id {
 } entity_id;
 bool entity_id_equal(entity_id a, entity_id b) {
     /* same list origin */
-    if (a.full_id == b.full_id) {
+    if (a.store_type == b.store_type && a.index == b.index) {
         if (a.generation == b.generation) {
             return true;
         }
