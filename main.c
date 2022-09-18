@@ -2,7 +2,6 @@
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
-#define USE_EDITOR
 #else
 #define USE_SIMD_OPTIMIZATIONS
 #define MULTITHREADED_EXPERIMENTAL
@@ -352,11 +351,11 @@ void deinitialize(void) {
     close_all_controllers();
 
     SDL_Quit();
-    _debugprintf("Peak allocations at: %d bytes", system_heap_peak_allocated_amount());
+    _debugprintf("Peak allocations at: %llu bytes", system_heap_peak_allocated_amount());
     if (system_heap_memory_leak_check())
         _debugprintf("no leaked memory");
     else
-        _debugprintf("leaked memory somewhere: %d bytes", system_heap_currently_allocated_amount());
+        _debugprintf("leaked memory somewhere: %llu bytes", system_heap_currently_allocated_amount());
     /* assertion(system_heap_memory_leak_check()); */
 }
 

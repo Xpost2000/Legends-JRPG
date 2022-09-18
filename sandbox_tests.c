@@ -32,7 +32,7 @@ static void _thread_testing(void) {
     }
     thread_pool_synchronize_tasks();
     u64 b = SDL_GetPerformanceCounter();
-    _debugprintf("okay finished %d", b - a);
+    _debugprintf("okay finished %llu", b - a);
 
     _debugprintf("single threaded version of the same test");
     a = SDL_GetPerformanceCounter();
@@ -40,7 +40,7 @@ static void _thread_testing(void) {
     for (s64 i = 0; i < array_count(n); ++i)
         test_job_number(&n[i]);
     b = SDL_GetPerformanceCounter();
-    _debugprintf("okay finished %d", b - a);
+    _debugprintf("okay finished %llu", b - a);
 }
 
 static void _sandbox_shop_inventory(void) {

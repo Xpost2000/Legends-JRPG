@@ -2,10 +2,6 @@
 #define STRING_DEF_C
 
 typedef struct {
-#if 0
-    IAllocator allocator; /* for growable strings, if I ever need that */
-#endif
-
     s32   length;
     char* data;
 } string;

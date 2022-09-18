@@ -689,7 +689,7 @@ struct navigation_path navigation_path_find(struct memory_arena* arena, struct l
 void level_area_entity_unpack(struct level_area_entity* entity, struct entity* unpack_target);
 void serialize_level_area(struct game_state* state, struct binary_serializer* serializer, struct level_area* level, bool use_default_spawn) {
     memory_arena_set_allocation_region_top(state->arena); {
-        _debugprintf("%d memory used", state->arena->used + state->arena->used_top);
+        _debugprintf("%llu memory used", state->arena->used + state->arena->used_top);
         memory_arena_clear_top(state->arena);
         _debugprintf("reading version");
         serialize_u32(serializer, &level->version);
@@ -1282,7 +1282,7 @@ local void game_loot_chest(struct game_state* state, struct entity_chest* chest)
             {
                 char tmp[512]= {};
                 struct item_def* item_base = item_database_find_by_id(chest->key_item);
-                snprintf(tmp, 512, "Unlocked using \".*s\"", item_base->name.length, item_base->name.data);
+                snprintf(tmp, 512, "Unlocked using \"%.*s\"", item_base->name.length, item_base->name.data);
                 game_message_queue(string_from_cstring(tmp));
             }
         } else {
@@ -2077,11 +2077,9 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                 game_script_execute_awaiting_scripts(&scratch_arena, game_state, dt);
                 game_script_run_all_timers(dt);
 
-                /* render_commands_push_quad(&commands, rectangle_f32(commands.camera.xy.x-500,commands.camera.xy.y-500,9999,9999), global_color_grading_filter, BLEND_MODE_MULTIPLICATIVE); */
                 software_framebuffer_render_commands(framebuffer, &commands);
                 {
-                    /* NOTE: I'm going to choose to lighting with manually adjusted fixed passes to avoid lighting overdraw. */
-                    /* software_framebuffer_run_shader(framebuffer, rectangle_f32(0, 0, framebuffer->width, framebuffer->height), lighting_shader, NULL); */
+                    software_framebuffer_run_shader(framebuffer, rectangle_f32(0, 0, framebuffer->width, framebuffer->height), lighting_shader, NULL);
                 }
                 game_postprocess_blur_ingame(framebuffer, 2, 0.62, BLEND_MODE_ALPHA);
 

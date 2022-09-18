@@ -71,7 +71,7 @@ static int _thread_job_executor(void* context) {
     struct memory_arena* arena   = (struct memory_arena*)context;
     struct memory_arena  scratch = memory_arena_push_sub_arena(arena, Kilobyte(64));
 #if 1
-    _debugprintf("thread start : \"%d\"", SDL_ThreadID());
+    _debugprintf("thread start : \"%d\"", (s32)SDL_ThreadID());
 #endif
 
     struct thread_job* working_job = 0;
@@ -108,7 +108,7 @@ static int _thread_job_executor(void* context) {
         }
     }
 
-    _debugprintf("Thread (%d) quits", SDL_ThreadID());
+    _debugprintf("Thread (%d) quits", (s32)SDL_ThreadID());
     return 0;
 }
 
