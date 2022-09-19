@@ -1180,7 +1180,7 @@ bool _comparison_predicate(s32 sign, s32 a, s32 b) {
     if (sign == 1) {
         return a < b;
     } else if (sign == -1) {
-        return a > b;
+        return a >= b;
     }
 
     return false;
@@ -1249,11 +1249,13 @@ local void render_combat_area_information(struct game_state* state, struct rende
 
                 case DIRECTION_UP: {
                     Swap(start_y, target_y, s32);
+                    start_y-=1;
                     sign_y = -1;
                 } break;
 
                 case DIRECTION_LEFT: {
                     Swap(start_x, target_x, s32);
+                    start_x-=1;
                     sign_x = -1;
                 } break;
             }
@@ -1287,22 +1289,13 @@ local void render_combat_area_information(struct game_state* state, struct rende
 
                         bool reject = false;
 
-                        if (found_first_collision) {
-                            s32 real_collision_x = first_collision_relative_x + grid_x;
-
-                            /*
-                             * NOTE: This looks like a typo, but it isn't. I don't know why this actually works,
-                             but I'm pretty sure I made a wrong assumption about the coordinates
-                             */
-                            s32 real_collision_y = first_collision_relative_x + grid_y;
-
-
+                        if (found_first_collision && ability->requires_no_obstructions) {
                             switch (user_direction) {
                                 case DIRECTION_DOWN: {
-                                    if (grid_y+y_index <= real_collision_y) {
-                                        if (grid_y+y_index != real_collision_y) {
+                                    if (y_index <= first_collision_relative_y) {
+                                        if (y_index != first_collision_relative_y) {
                                         } else {
-                                            if (ability->selection_type == ABILITY_SELECTION_TYPE_FIELD && ability->requires_no_obstructions) {
+                                            if (ability->selection_type == ABILITY_SELECTION_TYPE_FIELD) {
                                                 color = color32u8(255, 0, 0, 128);
                                             }
                                         }
@@ -1314,7 +1307,7 @@ local void render_combat_area_information(struct game_state* state, struct rende
                                     if (x_index <= first_collision_relative_x) {
                                         if (x_index != first_collision_relative_x) {
                                         } else {
-                                            if (ability->selection_type == ABILITY_SELECTION_TYPE_FIELD && ability->requires_no_obstructions) {
+                                            if (ability->selection_type == ABILITY_SELECTION_TYPE_FIELD) {
                                                 color = color32u8(255, 0, 0, 128);
                                             }
                                         }
@@ -1323,10 +1316,10 @@ local void render_combat_area_information(struct game_state* state, struct rende
                                     }
                                 } break;
                                 case DIRECTION_UP: {
-                                    if (grid_y+y_index >= real_collision_y) {
-                                        if (grid_y+y_index != real_collision_y) {
+                                    if (y_index >= first_collision_relative_y) {
+                                        if (y_index != first_collision_relative_y) {
                                         } else {
-                                            if (ability->selection_type == ABILITY_SELECTION_TYPE_FIELD && ability->requires_no_obstructions) {
+                                            if (ability->selection_type == ABILITY_SELECTION_TYPE_FIELD) {
                                                 color = color32u8(255, 0, 0, 128);
                                             }
                                         }
@@ -1338,7 +1331,7 @@ local void render_combat_area_information(struct game_state* state, struct rende
                                     if (x_index >= first_collision_relative_x) {
                                         if (x_index != first_collision_relative_x) {
                                         } else {
-                                            if (ability->selection_type == ABILITY_SELECTION_TYPE_FIELD && ability->requires_no_obstructions) {
+                                            if (ability->selection_type == ABILITY_SELECTION_TYPE_FIELD) {
                                                 color = color32u8(255, 0, 0, 128);
                                             }
                                         }
