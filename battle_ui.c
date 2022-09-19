@@ -1258,19 +1258,26 @@ local void render_combat_area_information(struct game_state* state, struct rende
                 } break;
             }
 
-            for (s32 y_index = start_y; _comparison_predicate(sign_y, y_index, target_y); y_index += sign_y) {
-                bool any_collision_found = false;
-                bool will_have_collision = false;
+            bool found_first_collision = false;
+            s32 first_collision_relative_x = 0;
+            s32 first_collision_relative_y = 0;
 
-                any_collision_found |= level_area_any_obstructions_at(area, start_x, grid_y+y_index);
-                will_have_collision |= level_area_any_obstructions_at(area, start_x, grid_y+y_index+sign_y);
+            for (s32 y_index = start_y; _comparison_predicate(sign_y, y_index, target_y) && !found_first_collision; y_index += sign_y) {
+                for (s32 x_index = start_x; _comparison_predicate(sign_x, x_index, target_x) && !found_first_collision; x_index += sign_x) {
+                    if (global_battle_ui_state.selection_field[y_index][x_index]) {
+                        if (level_area_any_obstructions_at(area, grid_x+x_index, grid_y+y_index)) {
+                            found_first_collision = true;
+                            first_collision_relative_x = x_index;
+                            first_collision_relative_y = y_index;
+                        }
+                    }
+                }
+            }
 
-                for (s32 x_index = start_x; _comparison_predicate(sign_x, x_index, target_x); x_index += sign_x) {
+            for (s32 y_index = 0; y_index < ENTITY_ABILITY_SELECTION_FIELD_MAX_Y; y_index++) {
+                for (s32 x_index = 0; x_index < ENTITY_ABILITY_SELECTION_FIELD_MAX_X; x_index++) {
                     if (global_battle_ui_state.selection_field[y_index][x_index]) {
                         union color32u8 color = color32u8(0, 0, 255, 128);
-
-                        will_have_collision |= level_area_any_obstructions_at(area, grid_x+x_index+sign_x, grid_y+y_index);
-                        any_collision_found |= level_area_any_obstructions_at(area, grid_x+x_index, grid_y+y_index);
 
                         if (ability->selection_type == ABILITY_SELECTION_TYPE_FIELD_SHAPE) {
                             if (global_battle_ui_state.ability_target_x == x_index && global_battle_ui_state.ability_target_y == y_index) {
@@ -1278,20 +1285,74 @@ local void render_combat_area_information(struct game_state* state, struct rende
                             }
                         }
 
-                        if (ability->selection_type == ABILITY_SELECTION_TYPE_FIELD) {
-                            if (ability->requires_no_obstructions && will_have_collision) {
-                                color = color32u8(0, 255, 0, 128);
+                        bool reject = false;
+
+                        if (found_first_collision) {
+                            s32 real_collision_x = first_collision_relative_x + grid_x;
+
+                            /*
+                             * NOTE: This looks like a typo, but it isn't. I don't know why this actually works,
+                             but I'm pretty sure I made a wrong assumption about the coordinates
+                             */
+                            s32 real_collision_y = first_collision_relative_x + grid_y;
+
+
+                            switch (user_direction) {
+                                case DIRECTION_DOWN: {
+                                    if (grid_y+y_index <= real_collision_y) {
+                                        if (grid_y+y_index != real_collision_y) {
+                                        } else {
+                                            if (ability->selection_type == ABILITY_SELECTION_TYPE_FIELD && ability->requires_no_obstructions) {
+                                                color = color32u8(255, 0, 0, 128);
+                                            }
+                                        }
+                                    } else {
+                                        reject = true;
+                                    }
+                                } break;
+                                case DIRECTION_RIGHT: {
+                                    if (x_index <= first_collision_relative_x) {
+                                        if (x_index != first_collision_relative_x) {
+                                        } else {
+                                            if (ability->selection_type == ABILITY_SELECTION_TYPE_FIELD && ability->requires_no_obstructions) {
+                                                color = color32u8(255, 0, 0, 128);
+                                            }
+                                        }
+                                    } else {
+                                        reject = true;
+                                    }
+                                } break;
+                                case DIRECTION_UP: {
+                                    if (grid_y+y_index >= real_collision_y) {
+                                        if (grid_y+y_index != real_collision_y) {
+                                        } else {
+                                            if (ability->selection_type == ABILITY_SELECTION_TYPE_FIELD && ability->requires_no_obstructions) {
+                                                color = color32u8(255, 0, 0, 128);
+                                            }
+                                        }
+                                    } else {
+                                        reject = true;
+                                    }
+                                } break;
+                                case DIRECTION_LEFT: {
+                                    if (x_index >= first_collision_relative_x) {
+                                        if (x_index != first_collision_relative_x) {
+                                        } else {
+                                            if (ability->selection_type == ABILITY_SELECTION_TYPE_FIELD && ability->requires_no_obstructions) {
+                                                color = color32u8(255, 0, 0, 128);
+                                            }
+                                        }
+                                    } else {
+                                        reject = true;
+                                    }
+                                } break;
                             }
                         }
 
-                        if (ability->requires_no_obstructions) {
-                            if (any_collision_found) {
-                                first_collision = false;
-                                continue;
-                            }
-                        }
-
-                        render_commands_push_quad(commands, rectangle_f32(grid_x * TILE_UNIT_SIZE + x_index * TILE_UNIT_SIZE, grid_y * TILE_UNIT_SIZE + y_index * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE), color, BLEND_MODE_ALPHA);
+                        if (!reject) render_commands_push_quad(commands,
+                                                               rectangle_f32(grid_x * TILE_UNIT_SIZE + x_index * TILE_UNIT_SIZE,
+                                                                             grid_y * TILE_UNIT_SIZE + y_index * TILE_UNIT_SIZE,
+                                                                             TILE_UNIT_SIZE, TILE_UNIT_SIZE), color, BLEND_MODE_ALPHA);
                     }
                 }
             }
