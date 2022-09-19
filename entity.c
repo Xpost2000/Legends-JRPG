@@ -25,7 +25,7 @@ void entity_play_animation(struct entity* entity, string name) {
 struct rectangle_f32 entity_rectangle_collision_bounds(struct entity* entity) {
     f32 model_width_units = entity_model_get_width_units(entity->model_index);
 
-    return rectangle_f32(entity->position.x+2.75, /* collision oddities, this removes sticking */
+    return rectangle_f32(entity->position.x, /* collision oddities, this removes sticking */
                          entity->position.y,
                          entity->scale.x * model_width_units,
                          entity->scale.y-10);
@@ -1179,20 +1179,20 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
                     v2f32     position_delta       = v2f32_sub(attacked_entity->position, target_entity->position);
                     v2f32     direction            = v2f32_direction(attacked_entity->position, target_entity->position);
                     /* TODO: THIS SHOULD VARY */
-                    const f32 TARGET_MOVE_VELOCITY = TILE_UNIT_SIZE*3;
+                    const f32 TARGET_MOVE_VELOCITY = TILE_UNIT_SIZE*3.5;
 
                     if (v2f32_magnitude(position_delta) < TILE_UNIT_SIZE * 0.85) {
                         target_entity->ai.attack_animation_phase = ENTITY_ATTACK_ANIMATION_PHASE_REEL_BACK;
                         target_entity->ai.attack_animation_timer = 0;
                         target_entity->ai.attack_animation_interpolation_start_position = target_entity->position;
-                        target_entity->ai.attack_animation_interpolation_end_position = v2f32_add(target_entity->position, v2f32_scale(direction, TILE_UNIT_SIZE/1));
+                        target_entity->ai.attack_animation_interpolation_end_position = v2f32_add(target_entity->position, v2f32_scale(direction, TILE_UNIT_SIZE/0.8));
                     } else {
                         target_entity->position.x += -TARGET_MOVE_VELOCITY*dt * direction.x;
                         target_entity->position.y += -TARGET_MOVE_VELOCITY*dt * direction.y;
                     }
                 } break;
                 case ENTITY_ATTACK_ANIMATION_PHASE_REEL_BACK: {
-                    f32 MAX_T       = 0.757;
+                    f32 MAX_T       = 0.457;
                     f32 effective_t = target_entity->ai.attack_animation_timer/MAX_T;
 
                     if (effective_t > 1) effective_t = 1;
@@ -1204,7 +1204,7 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
                         v2f32 direction = v2f32_direction(attacked_entity->position, target_entity->position);
 
                         target_entity->ai.attack_animation_interpolation_start_position = target_entity->position;
-                        target_entity->ai.attack_animation_interpolation_end_position = v2f32_sub(target_entity->position, v2f32_scale(direction, TILE_UNIT_SIZE/0.9));
+                        target_entity->ai.attack_animation_interpolation_end_position = v2f32_sub(target_entity->position, v2f32_scale(direction, TILE_UNIT_SIZE/0.6));
                     } else {
                         target_entity->position.x = lerp_f32(target_entity->ai.attack_animation_interpolation_start_position.x, target_entity->ai.attack_animation_interpolation_end_position.x, effective_t);
                         target_entity->position.y = lerp_f32(target_entity->ai.attack_animation_interpolation_start_position.y, target_entity->ai.attack_animation_interpolation_end_position.y, effective_t);
@@ -1213,7 +1213,7 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
                     target_entity->ai.attack_animation_timer += dt;
                 } break;
                 case ENTITY_ATTACK_ANIMATION_PHASE_HIT: {
-                    f32 MAX_T       = 0.125;
+                    f32 MAX_T       = 0.0735;
                     f32 effective_t = target_entity->ai.attack_animation_timer/MAX_T;
 
                     if (effective_t > 1) effective_t = 1;
@@ -1245,8 +1245,8 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
                     target_entity->ai.attack_animation_timer += dt;
                 } break;
                 case ENTITY_ATTACK_ANIMATION_PHASE_RECOVER_FROM_HIT: {
-                    f32 MAX_T       = 0.756;
-                    f32 effective_t = target_entity->ai.attack_animation_timer/MAX_T;
+                    f32 MAX_T       = 0.3843;
+                    f32 effective_t = (target_entity->ai.attack_animation_timer-0.089)/MAX_T;
 
                     if (effective_t > 1) effective_t = 1;
                     if (effective_t < 0) effective_t = 0;
