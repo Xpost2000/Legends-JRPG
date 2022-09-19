@@ -398,11 +398,11 @@ void entity_think_combat_actions(struct entity* entity, struct game_state* state
     if (entity->flags & ENTITY_FLAGS_PLAYER_CONTROLLED) {
         /* let the UI handle this thing */
     } else {
-        entity->ai.wait_timer += dt;
-        if (entity->ai.wait_timer >= 1.0) {
-            /* TODO technically the action should consider the end of waiting on turn. */
+        /* entity->ai.wait_timer += dt; */
+        /* if (entity->ai.wait_timer >= 1.0) { */
+        /*     /\* TODO technically the action should consider the end of waiting on turn. *\/ */
             entity->waiting_on_turn = false;
-        }
+        /* } */
     }
 }
 
@@ -713,9 +713,12 @@ void entity_combat_submit_attack_action(struct entity* entity, entity_id target_
     if (entity->ai.current_action != ENTITY_ACTION_NONE)
         return;
 
-    entity->ai.current_action   = ENTITY_ACTION_ATTACK;
-    entity->ai.attack_target_id = target_id;
-    entity->waiting_on_turn     = 0;
+    entity->ai.current_action                   = ENTITY_ACTION_ATTACK;
+    entity->ai.attack_target_id                 = target_id;
+    entity->waiting_on_turn                     = 0;
+    entity->ai.attack_animation_timer              = 0;
+    entity->ai.attack_animation_phase              = ENTITY_ATTACK_ANIMATION_PHASE_MOVE_TO_TARGET;
+    entity->ai.attack_animation_preattack_position = entity->position;
     _debugprintf("attacku");
 }
 
@@ -1099,6 +1102,7 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
         } break;
 
         case ENTITY_ACTION_ATTACK: {
+#if 0
             target_entity->ai.wait_timer += dt;
 
             if (target_entity->ai.wait_timer >= 1.0) {
@@ -1119,6 +1123,97 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
                     }
                 }
             }
+#else
+            struct entity* attacked_entity = game_dereference_entity(state, target_entity->ai.attack_target_id);
+
+            switch (target_entity->ai.attack_animation_phase) {
+                case ENTITY_ATTACK_ANIMATION_PHASE_MOVE_TO_TARGET: {
+                    v2f32     position_delta       = v2f32_sub(attacked_entity->position, target_entity->position);
+                    v2f32     direction            = v2f32_direction(attacked_entity->position, target_entity->position);
+                    /* TODO: THIS SHOULD VARY */
+                    const f32 TARGET_MOVE_VELOCITY = TILE_UNIT_SIZE*3;
+
+                    if (v2f32_magnitude(position_delta) < TILE_UNIT_SIZE * 0.85) {
+                        target_entity->ai.attack_animation_phase = ENTITY_ATTACK_ANIMATION_PHASE_REEL_BACK;
+                        target_entity->ai.attack_animation_timer = 0;
+                        target_entity->ai.attack_animation_interpolation_start_position = target_entity->position;
+                        target_entity->ai.attack_animation_interpolation_end_position = v2f32_add(target_entity->position, v2f32_scale(direction, TILE_UNIT_SIZE/1));
+                    } else {
+                        target_entity->position.x += -TARGET_MOVE_VELOCITY*dt * direction.x;
+                        target_entity->position.y += -TARGET_MOVE_VELOCITY*dt * direction.y;
+                    }
+                } break;
+                case ENTITY_ATTACK_ANIMATION_PHASE_REEL_BACK: {
+                    f32 MAX_T       = 0.757;
+                    f32 effective_t = target_entity->ai.attack_animation_timer/MAX_T;
+
+                    if (effective_t > 1) effective_t = 1;
+
+                    if (target_entity->ai.attack_animation_timer >= MAX_T) {
+                        target_entity->ai.attack_animation_timer = 0;
+                        target_entity->ai.attack_animation_phase = ENTITY_ATTACK_ANIMATION_PHASE_HIT;
+
+                        v2f32 direction = v2f32_direction(attacked_entity->position, target_entity->position);
+
+                        target_entity->ai.attack_animation_interpolation_start_position = target_entity->position;
+                        target_entity->ai.attack_animation_interpolation_end_position = v2f32_sub(target_entity->position, v2f32_scale(direction, TILE_UNIT_SIZE/0.9));
+                    } else {
+                        target_entity->position.x = lerp_f32(target_entity->ai.attack_animation_interpolation_start_position.x, target_entity->ai.attack_animation_interpolation_end_position.x, effective_t);
+                        target_entity->position.y = lerp_f32(target_entity->ai.attack_animation_interpolation_start_position.y, target_entity->ai.attack_animation_interpolation_end_position.y, effective_t);
+                    }
+
+                    target_entity->ai.attack_animation_timer += dt;
+                } break;
+                case ENTITY_ATTACK_ANIMATION_PHASE_HIT: {
+                    f32 MAX_T       = 0.125;
+                    f32 effective_t = target_entity->ai.attack_animation_timer/MAX_T;
+
+                    if (effective_t > 1) effective_t = 1;
+
+                    target_entity->position.x = lerp_f32(target_entity->ai.attack_animation_interpolation_start_position.x, target_entity->ai.attack_animation_interpolation_end_position.x, effective_t);
+                    target_entity->position.y = lerp_f32(target_entity->ai.attack_animation_interpolation_start_position.y, target_entity->ai.attack_animation_interpolation_end_position.y, effective_t);
+
+                    if (target_entity->ai.attack_animation_timer >= MAX_T) {
+                        target_entity->ai.attack_animation_timer = 0;
+                        target_entity->ai.attack_animation_phase = ENTITY_ATTACK_ANIMATION_PHASE_RECOVER_FROM_HIT;
+
+                        {
+                            entity_do_physical_hurt(attacked_entity, 9999);
+
+                            {
+                                if (attacked_entity->health.value <= 0) {
+                                    if (target_entity->flags & ENTITY_FLAGS_PLAYER_CONTROLLED) {
+                                        /* maybe not a good idea right now, but okay. */
+                                        battle_notify_killed_entity(target_entity->ai.attack_target_id);
+                                    }
+                                }
+                            }
+                        }
+
+                        target_entity->ai.attack_animation_interpolation_start_position = target_entity->position;
+                        target_entity->ai.attack_animation_interpolation_end_position   = target_entity->ai.attack_animation_preattack_position;
+                    }
+
+                    target_entity->ai.attack_animation_timer += dt;
+                } break;
+                case ENTITY_ATTACK_ANIMATION_PHASE_RECOVER_FROM_HIT: {
+                    f32 MAX_T       = 0.756;
+                    f32 effective_t = target_entity->ai.attack_animation_timer/MAX_T;
+
+                    if (effective_t > 1) effective_t = 1;
+                    if (effective_t < 0) effective_t = 0;
+
+                    if (target_entity->ai.attack_animation_timer >= MAX_T) {
+                        target_entity->ai.current_action = 0;
+                    }
+                    
+                    target_entity->position.x = lerp_f32(target_entity->ai.attack_animation_interpolation_start_position.x, target_entity->ai.attack_animation_interpolation_end_position.x, effective_t);
+                    target_entity->position.y = lerp_f32(target_entity->ai.attack_animation_interpolation_start_position.y, target_entity->ai.attack_animation_interpolation_end_position.y, effective_t);
+
+                    target_entity->ai.attack_animation_timer += dt;
+                } break;
+            }
+#endif
         } break;
     }
 }

@@ -156,6 +156,13 @@ enum entity_combat_action {
     /* ENTITY_ACTION_SKIP_TURN, */
 };
 
+enum entity_attack_animation_phase {
+    ENTITY_ATTACK_ANIMATION_PHASE_MOVE_TO_TARGET,
+    ENTITY_ATTACK_ANIMATION_PHASE_REEL_BACK,
+    ENTITY_ATTACK_ANIMATION_PHASE_HIT,
+    ENTITY_ATTACK_ANIMATION_PHASE_RECOVER_FROM_HIT,
+};
+
 struct entity_ai_data {
     /*
       NOTE()
@@ -184,7 +191,13 @@ struct entity_ai_data {
     /* used for determining when to aggro. */
     s32                             aggro_tolerance;
 
-    f32 wait_timer;
+    /* HARDCODED ANIMATION_DATA */
+    /* hardcoded attack bump animation */
+    f32 attack_animation_timer;
+    s32 attack_animation_phase;
+    v2f32 attack_animation_interpolation_start_position;
+    v2f32 attack_animation_interpolation_end_position;
+    v2f32 attack_animation_preattack_position;
 };
 
 struct entity_animation_state {

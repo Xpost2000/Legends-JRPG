@@ -11,7 +11,7 @@ local void add_all_combat_participants(struct game_state* state) {
         if (current_entity->flags & ENTITY_FLAGS_ALIVE) {
             entity_snap_to_grid_position(current_entity);
             current_entity->waiting_on_turn                   = true;
-            current_entity->ai.wait_timer                     = 0;
+            current_entity->ai.attack_animation_timer         = 0;
             combat_state->participants[combat_state->count++] = it.current_id;
         }
     }
