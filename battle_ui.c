@@ -256,6 +256,7 @@ local void recalculate_targeted_entities_by_ability(struct entity_ability* abili
 
     struct entity_iterator entities = game_entity_iterator(state);
 
+    bool encountered_any_collision  = false;
     if (ability->selection_type == ABILITY_SELECTION_TYPE_FIELD && !ability->moving_field) {
         for (struct entity* potential_target = entity_iterator_begin(&entities); !entity_iterator_finished(&entities); potential_target = entity_iterator_advance(&entities)) {
             if (potential_target == user) {
@@ -271,6 +272,7 @@ local void recalculate_targeted_entities_by_ability(struct entity_ability* abili
 
             {
                 _debugprintf("Okay... Looking at %p", potential_target);
+
                 for (s32 selection_grid_y = 0; selection_grid_y < ENTITY_ABILITY_SELECTION_FIELD_MAX_Y && !should_add_to_targets_list; ++selection_grid_y) {
                     for (s32 selection_grid_x = 0; selection_grid_x < ENTITY_ABILITY_SELECTION_FIELD_MAX_X && !should_add_to_targets_list; ++selection_grid_x) {
                         if (global_battle_ui_state.selection_field[selection_grid_y][selection_grid_x]) {
@@ -280,6 +282,10 @@ local void recalculate_targeted_entities_by_ability(struct entity_ability* abili
                             /* I'm very certain I guarantee that entities should be "grid-locked", so I can just check. */
                             f32 delta_x = fabs(potential_target->position.x - real_x);
                             f32 delta_y = fabs(potential_target->position.y - real_y);
+
+                            if (!encountered_any_collision && level_area_any_obstructions_at(area, floorf(real_x/TILE_UNIT_SIZE), floorf(real_y/TILE_UNIT_SIZE))) {
+                                encountered_any_collision = true;
+                            }
 
                             if (delta_x <= SMALL_ENOUGH_EPISILON && delta_y <= SMALL_ENOUGH_EPISILON) {
                                 should_add_to_targets_list = true;
@@ -312,6 +318,10 @@ local void recalculate_targeted_entities_by_ability(struct entity_ability* abili
                 f32 delta_x = fabs(potential_target->position.x - real_x);
                 f32 delta_y = fabs(potential_target->position.y - real_y);
 
+                if (!encountered_any_collision && level_area_any_obstructions_at(area, floorf(real_x/TILE_UNIT_SIZE), floorf(real_y/TILE_UNIT_SIZE))) {
+                    encountered_any_collision = true;
+                }
+
                 if (delta_x <= SMALL_ENOUGH_EPISILON && delta_y <= SMALL_ENOUGH_EPISILON) {
                     should_add_to_targets_list = true;
                 }
@@ -320,6 +330,12 @@ local void recalculate_targeted_entities_by_ability(struct entity_ability* abili
             if (should_add_to_targets_list) {
                 global_battle_ui_state.selected_entities_for_abilities[global_battle_ui_state.selected_entities_for_abilities_count++] = entities.current_id;
             }
+        }
+    }
+
+    if (encountered_any_collision) {
+        if (ability->requires_no_obstructions) {
+            cancel_ability_selections();
         }
     }
 }
@@ -833,10 +849,12 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                 }
 
                 if (selection_confirm) {
-                    global_battle_ui_state.submode = BATTLE_UI_SUBMODE_NONE;
-                    entity_combat_submit_ability_action(active_combatant_entity, global_battle_ui_state.selected_entities_for_abilities, global_battle_ui_state.selected_entities_for_abilities_count, global_battle_ui_state.selection);
-                    global_battle_ui_state.selecting_ability_target = false;
-                    cancel_ability_selections();
+                    if (global_battle_ui_state.selected_entities_for_abilities_count > 0) {
+                        global_battle_ui_state.submode = BATTLE_UI_SUBMODE_NONE;
+                        entity_combat_submit_ability_action(active_combatant_entity, global_battle_ui_state.selected_entities_for_abilities, global_battle_ui_state.selected_entities_for_abilities_count, global_battle_ui_state.selection);
+                        global_battle_ui_state.selecting_ability_target = false;
+                        cancel_ability_selections();
+                    }
                 }
             }
         } break;
@@ -1158,6 +1176,16 @@ local void update_and_render_battle_ui(struct game_state* state, struct software
     }
 }
 
+bool _comparison_predicate(s32 sign, s32 a, s32 b) {
+    if (sign == 1) {
+        return a < b;
+    } else if (sign == -1) {
+        return a > b;
+    }
+
+    return false;
+}
+
 local void render_combat_area_information(struct game_state* state, struct render_commands* commands, struct level_area* area) {
     struct level_area_navigation_map* navigation_map = &area->navigation_data;
     s32                               map_width               = navigation_map->width;
@@ -1185,6 +1213,7 @@ local void render_combat_area_information(struct game_state* state, struct rende
 
     if (global_battle_ui_state.submode == BATTLE_UI_SUBMODE_USING_ABILITY) {
         struct entity* user = game_get_player(state);
+        struct level_area* area = &state->loaded_area;
 
         if (global_battle_ui_state.selecting_ability_target) {
             struct entity_ability* ability = entity_database_ability_find_by_index(&game_state->entity_database, user->abilities[global_battle_ui_state.selection].ability);
@@ -1204,14 +1233,61 @@ local void render_combat_area_information(struct game_state* state, struct rende
             grid_x -= ENTITY_ABILITY_SELECTION_FIELD_CENTER_X;
             grid_y -= ENTITY_ABILITY_SELECTION_FIELD_CENTER_Y;
 
-            for (s32 y_index = 0; y_index < ENTITY_ABILITY_SELECTION_FIELD_MAX_Y; ++y_index) {
-                for (s32 x_index = 0; x_index < ENTITY_ABILITY_SELECTION_FIELD_MAX_X; ++x_index) {
+            bool first_collision = true;
+            s32 user_direction = user->facing_direction;
+
+            s32 start_y  = 0;
+            s32 target_y = ENTITY_ABILITY_SELECTION_FIELD_MAX_Y;
+            s32 start_x  = 0;
+            s32 target_x = ENTITY_ABILITY_SELECTION_FIELD_MAX_X;
+            s32 sign_x   = 1;
+            s32 sign_y   = 1;
+
+            switch (user_direction) {
+                case DIRECTION_DOWN: {} break;
+                case DIRECTION_RIGHT: {} break;
+
+                case DIRECTION_UP: {
+                    Swap(start_y, target_y, s32);
+                    sign_y = -1;
+                } break;
+
+                case DIRECTION_LEFT: {
+                    Swap(start_x, target_x, s32);
+                    sign_x = -1;
+                } break;
+            }
+
+            for (s32 y_index = start_y; _comparison_predicate(sign_y, y_index, target_y); y_index += sign_y) {
+                bool any_collision_found = false;
+                bool will_have_collision = false;
+
+                any_collision_found |= level_area_any_obstructions_at(area, start_x, grid_y+y_index);
+                will_have_collision |= level_area_any_obstructions_at(area, start_x, grid_y+y_index+sign_y);
+
+                for (s32 x_index = start_x; _comparison_predicate(sign_x, x_index, target_x); x_index += sign_x) {
                     if (global_battle_ui_state.selection_field[y_index][x_index]) {
                         union color32u8 color = color32u8(0, 0, 255, 128);
+
+                        will_have_collision |= level_area_any_obstructions_at(area, grid_x+x_index+sign_x, grid_y+y_index);
+                        any_collision_found |= level_area_any_obstructions_at(area, grid_x+x_index, grid_y+y_index);
 
                         if (ability->selection_type == ABILITY_SELECTION_TYPE_FIELD_SHAPE) {
                             if (global_battle_ui_state.ability_target_x == x_index && global_battle_ui_state.ability_target_y == y_index) {
                                 color = color32u8(255, 0, 0, 128);
+                            }
+                        }
+
+                        if (ability->selection_type == ABILITY_SELECTION_TYPE_FIELD) {
+                            if (ability->requires_no_obstructions && will_have_collision) {
+                                color = color32u8(0, 255, 0, 128);
+                            }
+                        }
+
+                        if (ability->requires_no_obstructions) {
+                            if (any_collision_found) {
+                                first_collision = false;
+                                continue;
                             }
                         }
 

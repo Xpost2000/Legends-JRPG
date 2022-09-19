@@ -378,6 +378,31 @@ bool lisp_form_get_s32(struct lisp_form form, s32* value) {
     return false;
 }
 
+bool lisp_form_get_boolean(struct lisp_form form, bool* value) {
+    if (form.type == LISP_FORM_NIL) {
+        *value = false;
+    } else {
+        *value = true;
+
+        if (form.type == LISP_FORM_NUMBER) {
+            s32 integer_value = 0;
+            lisp_form_get_s32(form, &integer_value);
+
+            if (integer_value) {
+                *value = true;
+            } else {
+                *value = false;
+            }
+        } else if (form.type == LISP_FORM_LIST) {
+            if (form.list.count == 0) {
+                *value = false;
+            }
+        }
+    }
+
+    return true;
+}
+
 bool lisp_form_get_v2f32(struct lisp_form form, v2f32* v) {
     if (form.type == LISP_FORM_LIST) {
         if (form.list.count == 2) {

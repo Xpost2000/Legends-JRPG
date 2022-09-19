@@ -1386,16 +1386,23 @@ void entity_database_initialize_abilities(struct entity_database* database) {
         _debugprintf("%p", current_ability_form);
 
         { 
-            struct lisp_form* id_name_form                 = lisp_list_nth(current_ability_form, 0);
-            struct lisp_form* name_form                    = lisp_list_nth(current_ability_form, 1);
-            struct lisp_form* description_form             = lisp_list_nth(current_ability_form, 2);
+            s32 outer_form_index = 0;
+            struct lisp_form* id_name_form                  = lisp_list_nth(current_ability_form, outer_form_index++);
+            struct lisp_form* name_form                     = lisp_list_nth(current_ability_form, outer_form_index++);
+            struct lisp_form* description_form              = lisp_list_nth(current_ability_form, outer_form_index++);
+            struct lisp_form* requires_no_obstructions_form = lisp_list_nth(current_ability_form, outer_form_index++);
             {
                 string id_name_string     = {};
                 string name_string        = {};
                 string description_string = {};
+
                 lisp_form_get_string(*id_name_form, &id_name_string);
                 lisp_form_get_string(*name_form, &name_string);
                 lisp_form_get_string(*description_form, &description_string);
+                lisp_form_get_boolean(*requires_no_obstructions_form, &current_ability->requires_no_obstructions);
+
+                _debugprintf("No obstructions? : %d", current_ability->requires_no_obstructions);
+
                 id_name_string     = string_clone(arena, id_name_string);
                 name_string        = string_clone(arena, name_string);
                 description_string = string_clone(arena, description_string);
@@ -1406,9 +1413,9 @@ void entity_database_initialize_abilities(struct entity_database* database) {
                 *current_ability_key_string      = id_name_string;
             }
 
-            struct lisp_form* selection_form               = lisp_list_nth(current_ability_form, 3);
-            struct lisp_form* field_form                   = lisp_list_nth(current_ability_form, 4);
-            struct lisp_form* animation_sequence_list_form = lisp_list_nth(current_ability_form, 5);
+            struct lisp_form* selection_form               = lisp_list_nth(current_ability_form, outer_form_index++);
+            struct lisp_form* field_form                   = lisp_list_nth(current_ability_form, outer_form_index++);
+            struct lisp_form* animation_sequence_list_form = lisp_list_nth(current_ability_form, outer_form_index++);
 
             {
                 {

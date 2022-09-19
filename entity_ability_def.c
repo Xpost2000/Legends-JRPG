@@ -152,6 +152,8 @@ struct entity_ability {
     u8 max_move_units_x;
     u8 max_move_units_y;
 
+    bool requires_no_obstructions;
+
     /* Should support reflection of 90 degrees for all fields... */
 
     /* weird centerings */

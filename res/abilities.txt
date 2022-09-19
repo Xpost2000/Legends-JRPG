@@ -3,7 +3,7 @@
 "ability_shock"
 "Shock"
 "Electrocute your enemies."
-
+0
 # selection_type, moving_field, max_move_units_{x,y}
 ('field-shape 0)
 
@@ -23,6 +23,7 @@
 "ability_sword_rush"
 "Sword Rush"
 "Move in a flash, slashing your enemies!"
+1
 ('field 0)
 
 (

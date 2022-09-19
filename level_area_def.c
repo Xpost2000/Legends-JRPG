@@ -213,4 +213,49 @@ struct level_area {
     u8*                              combat_movement_visibility_map;
 };
 
+/* grid coordinate searches */
+struct entity_chest* level_area_get_chest_at(struct level_area* area, s32 x, s32 y) {
+    for (s32 chest_index = 0; chest_index < area->entity_chest_count; ++chest_index) {
+        struct entity_chest* current_chest = area->chests + chest_index;
+
+        s32 chest_x = floorf(current_chest->position.x);
+        s32 chest_y = floorf(current_chest->position.y);
+
+        if (chest_x == x && chest_y == y) {
+            return current_chest;
+        }
+    }
+
+    return NULL;
+}
+
+struct tile* level_area_get_tile_at(struct level_area* area, s32 tile_layer, s32 x, s32 y) {
+    s32 tile_count = area->tile_counts[tile_layer];
+
+    for (s32 tile_index = 0; tile_index < tile_count; ++tile_index) {
+        struct tile* current_tile = area->tile_layers[tile_layer] + tile_index;
+
+        s32 tile_x = current_tile->x;
+        s32 tile_y = current_tile->y;
+
+        if (tile_x == x && tile_y == y) {
+            return current_tile;
+        }
+    }
+
+    return NULL;
+}
+
+bool level_area_any_obstructions_at(struct level_area* area, s32 x, s32 y) {
+    if (level_area_get_chest_at(area, x, y)) {
+        return true;
+    }
+
+    if (level_area_get_tile_at(area, TILE_LAYER_OBJECT, x, y)) {
+        return true;
+    }
+
+    return false;
+}
+
 #endif
