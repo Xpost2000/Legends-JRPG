@@ -369,8 +369,21 @@ void update_entities(struct game_state* state, f32 dt, struct level_area* area) 
 
             /* implicit animation state setting for now. */
             if (!(current_entity->flags & ENTITY_FLAGS_ALIVE)) {
-                /* I want to add the kneeling animation, and we'll obviously require more intense animation state. Anyways... */    
-                entity_play_animation(current_entity, string_literal("dead"));
+                if (current_entity->ai.hurt_animation_phase == ENTITY_HURT_ANIMATION_ON) {
+                } else {
+                    switch (current_entity->ai.death_animation_phase) {
+                        case DEATH_ANIMATION_KNEEL: {
+                            entity_play_animation(current_entity, string_literal("kneel_down"));
+                            if (current_entity->animation.iterations > DEATH_ANIMATION_MAX_KNEEL_HUFFS) {
+                                current_entity->ai.death_animation_phase = DEATH_ANIMATION_DIE;
+                            }
+                        } break;
+                            /* can try to grow pool of blood... */
+                        case DEATH_ANIMATION_DIE: {
+                            entity_play_animation(current_entity, string_literal("dead"));
+                        } break;
+                    }
+                }
             } else {
                 /* animation state will be controlled by the action while it happens */
                 if (!current_entity->ai.current_action) {
@@ -389,6 +402,26 @@ void update_entities(struct game_state* state, f32 dt, struct level_area* area) 
                     }
                 }
             }
+
+            /* damage shake + flash */
+            if (current_entity->ai.hurt_animation_phase == ENTITY_HURT_ANIMATION_ON) {
+                current_entity->ai.hurt_animation_timer += dt;
+
+                if (current_entity->ai.hurt_animation_timer >= HURT_ANIMATION_TIME_BETWEEN_SHAKES) {
+                    current_entity->ai.hurt_animation_timer   = 0;
+                    current_entity->ai.hurt_animation_shakes += 1;
+
+                    current_entity->ai.hurt_animation_shake_offset.x = random_ranged_integer(&game_state->rng, -HURT_ANIMATION_MAX_SHAKE_OFFSET, HURT_ANIMATION_MAX_SHAKE_OFFSET);
+                    current_entity->ai.hurt_animation_shake_offset.y = random_ranged_integer(&game_state->rng, -HURT_ANIMATION_MAX_SHAKE_OFFSET/2, HURT_ANIMATION_MAX_SHAKE_OFFSET/2);
+                }
+
+                if (current_entity->ai.hurt_animation_shakes >= HURT_ANIMATION_MAX_SHAKE_COUNT) {
+                    current_entity->ai.hurt_animation_shake_offset.x = 0;
+                    current_entity->ai.hurt_animation_shake_offset.y = 0;
+                    current_entity->ai.hurt_animation_phase = ENTITY_HURT_ANIMATION_OFF;
+                }
+            } else {
+            }
         }
     }
 }
@@ -401,7 +434,7 @@ void entity_think_combat_actions(struct entity* entity, struct game_state* state
         /* entity->ai.wait_timer += dt; */
         /* if (entity->ai.wait_timer >= 1.0) { */
         /*     /\* TODO technically the action should consider the end of waiting on turn. *\/ */
-            entity->waiting_on_turn = false;
+        entity->waiting_on_turn = false;
         /* } */
     }
 }
@@ -491,14 +524,25 @@ void render_entities(struct game_state* state, struct graphics_assets* graphics_
 
         v2f32 alignment_offset = v2f32(0, real_dimensions.y * should_shift_up * 0.8);
 
+        v2f32 other_offsets;
+        other_offsets.x = current_entity->ai.hurt_animation_shake_offset.x;
+        other_offsets.y = current_entity->ai.hurt_animation_shake_offset.y;
+
+
         render_commands_push_image(commands,
                                    graphics_assets_get_image_by_id(graphics_assets, drop_shadow),
-                                   rectangle_f32(current_entity->position.x - alignment_offset.x,
-                                                 current_entity->position.y - TILE_UNIT_SIZE*0.4,
+                                   rectangle_f32(current_entity->position.x - alignment_offset.x + other_offsets.x,
+                                                 current_entity->position.y - TILE_UNIT_SIZE*0.4 + other_offsets.y,
                                                  TILE_UNIT_SIZE * roundf(real_dimensions.x/TILE_UNIT_SIZE),
                                                  TILE_UNIT_SIZE * max(roundf(real_dimensions.y/(TILE_UNIT_SIZE*2)), 1)),
                                    RECTANGLE_F32_NULL, color32f32(1,1,1,0.72), NO_FLAGS, BLEND_MODE_ALPHA);
         render_commands_set_shader(commands, game_background_things_shader, NULL);
+
+        { /*HACKME special alignment case for death animations, this is after shadows since the shadow should not move */
+            if (string_equal(current_entity->animation.name, string_literal("dead"))) {
+                other_offsets.y += TILE_UNIT_SIZE/2;
+            }
+        }
 
         union color32f32 modulation_color = color32f32_WHITE;
 
@@ -512,8 +556,8 @@ void render_entities(struct game_state* state, struct graphics_assets* graphics_
 
         render_commands_push_image(commands,
                                    graphics_assets_get_image_by_id(graphics_assets, sprite_to_use),
-                                   rectangle_f32(current_entity->position.x - alignment_offset.x,
-                                                 current_entity->position.y - alignment_offset.y,
+                                   rectangle_f32(current_entity->position.x - alignment_offset.x + other_offsets.x,
+                                                 current_entity->position.y - alignment_offset.y + other_offsets.y,
                                                  real_dimensions.x,
                                                  real_dimensions.y),
                                    RECTANGLE_F32_NULL, modulation_color, NO_FLAGS, BLEND_MODE_ALPHA);
@@ -756,6 +800,10 @@ bool entity_validate_death(struct entity* entity) {
 void entity_do_physical_hurt(struct entity* entity, s32 damage) {
     /* maybe do a funny animation */
     entity->health.value -= damage;
+
+    entity->ai.hurt_animation_timer              = 0;
+    entity->ai.hurt_animation_shakes             = 0;
+    entity->ai.hurt_animation_phase              = ENTITY_HURT_ANIMATION_ON;
 
     notify_damage(entity->position, damage);
     (entity_validate_death(entity));

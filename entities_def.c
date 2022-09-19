@@ -163,6 +163,22 @@ enum entity_attack_animation_phase {
     ENTITY_ATTACK_ANIMATION_PHASE_RECOVER_FROM_HIT,
 };
 
+enum hurt_animation_phase {
+    ENTITY_HURT_ANIMATION_OFF,
+    ENTITY_HURT_ANIMATION_ON,
+};
+
+/* personally this should depend on the entity... */
+/* we should have different death types (dust fade...) (explosion...) (gore explosion...) */
+enum death_animation_phase {
+    DEATH_ANIMATION_KNEEL,
+    DEATH_ANIMATION_DIE,
+};
+
+#define HURT_ANIMATION_MAX_SHAKE_COUNT (16+1)
+#define HURT_ANIMATION_TIME_BETWEEN_SHAKES (0.013)
+#define HURT_ANIMATION_MAX_SHAKE_OFFSET (2)
+#define DEATH_ANIMATION_MAX_KNEEL_HUFFS (3)
 struct entity_ai_data {
     /*
       NOTE()
@@ -193,11 +209,19 @@ struct entity_ai_data {
 
     /* HARDCODED ANIMATION_DATA */
     /* hardcoded attack bump animation */
-    f32 attack_animation_timer;
-    s32 attack_animation_phase;
+    f32   attack_animation_timer;
+    s32   attack_animation_phase;
     v2f32 attack_animation_interpolation_start_position;
     v2f32 attack_animation_interpolation_end_position;
     v2f32 attack_animation_preattack_position;
+
+    s32   hurt_animation_shakes;
+    f32   hurt_animation_timer;
+    s32   hurt_animation_phase;
+    v2f32 hurt_animation_shake_offset;
+
+    s32 death_animation_phase;
+    f32 death_animation_kneel_linger_timer;
 };
 
 struct entity_animation_state {

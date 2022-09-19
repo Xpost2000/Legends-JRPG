@@ -1218,7 +1218,7 @@ void game_initialize(void) {
             entity_model_add_animation(base_guy, string_literal("left_walk"),  3, WALK_TIMINGS);
             entity_model_add_animation(base_guy, string_literal("right_walk"), 3, WALK_TIMINGS);
 
-            entity_model_add_animation(base_guy, string_literal("kneel_down"), 2, WALK_TIMINGS);
+            entity_model_add_animation(base_guy, string_literal("kneel_down"), 2, 0.4);
             entity_model_add_animation(base_guy, string_literal("dead"),       1, 0);
 
         }
