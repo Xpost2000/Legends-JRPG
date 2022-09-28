@@ -48,20 +48,53 @@ static void _sandbox_shop_inventory(void) {
     _debug_print_out_shop_contents(&s);
 }
 
+static bool _interpolation_testing(void) {
+    f32
+        a = 1,
+        b = 2;
+    const f32
+        dt = 1/100.0f;
+
+    /* These values look odd, need to find correct implementations later, or write a curve editor */
+#define Interpolation_Loop_Test(fn)             \
+    _debugprintf("interpolating " #fn);         \
+    for (f32 t = 0; t < 1; t += dt) {           \
+        f32 v = fn(1, 2, t);                    \
+        _debugprintf("%f", v);                  \
+    }
+
+    Interpolation_Loop_Test(lerp_f32);
+    Interpolation_Loop_Test(cubic_ease_in_f32);
+    Interpolation_Loop_Test(cubic_ease_out_f32);
+    Interpolation_Loop_Test(cubic_ease_in_out_f32);
+    Interpolation_Loop_Test(quadratic_ease_in_f32);
+    Interpolation_Loop_Test(quadratic_ease_out_f32);
+    Interpolation_Loop_Test(quadratic_ease_in_out_f32);
+    Interpolation_Loop_Test(ease_in_back_f32);
+    Interpolation_Loop_Test(ease_out_back_f32);
+    Interpolation_Loop_Test(ease_in_out_back_f32);
+
+    return true;
+}
+
 static bool sandbox_testing(void) {
     _debugprintf("sandbox start");
     /* _thread_testing(); */
     /* _sandbox_shop_inventory(); */
+    assertion(_interpolation_testing());
     _debugprintf("sandbox end");
     return false;
 }
 
 /* I don't remember if the game has been initiated yet LOL */
 int _game_sandbox_testing(void) {
+#if 0
     {
         struct navigation_path path = navigation_path_find(&scratch_arena, &game_state->loaded_area,
                                                         v2f32(7,5), v2f32(7,10));
         _debug_print_navigation_path(&path);
     }
+#else
+#endif
     return true; 
 }

@@ -1,4 +1,5 @@
-/* TODO: Equipment animation! */
+/* TODO: Equipment (frankly not even sure what this means, probably just animating the UI like I do for everything else) */
+/* TODO: Display equipment description */
 /* TODO: better UI state handling, since we don't consume events properly. */
 #define EQUIPMENT_SCREEN_SPIN_TIMER_LENGTH (0.2)
 

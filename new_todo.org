@@ -1,40 +1,12 @@
-*Try to clear this everyday when it's done!*
+*Try to clear this everyday when I'm done with the tasks for the day?*
 
-In theory if I work these days I can get about 20-30 hours a week... Not that much, barely as much as a part time job,
-however if I do some quality work it is possible I can actually push for a late September Act 1 release.
+Also turns out that hackathon really really fucked me up...
 
-Since most of the work is at the early stages (in producing Act1, I would've done a good portion of the content phase), the
-other acts are going to do asset reuse to avoid the time slog. The idea is we seek a *full* release in November or December.
+I need to take a bit of time to correct myself by sleeping early. Now I know midterms are
+coming up so it's highly unlikely I will even have time to work on this project this week since I kind
+of want to study and take it easy until then.
 
-We are probably starting another project concurrently by the Act1 deadline, since I would be bored if this was all I did, also
-I wouldn't be able to learn anything lmao.
-
-(I think for future reference, I should spend much more time on debug infrastructure... Debugging is not just printf and reading some
-text. It means having more interactivity with parts of your game engine. Is it more complicated? Yes. Is it a lot of work? Yes... But does
-it save a lot of headaches... Most definitely yes. More complicated projects need increasingly powerful tools. Thankfully this thing is on
-the complexity level where it's not strictly necessary.)
-
-*NOTE: working on the combat system is an extremely big priority!*
-*So while it's okay to tackle minor stuff, I should focus on the combat system and it's flourish (abilities and such, as well as AI.)*
-
-
-* General Plot Outline
-This was the original brainstorming list of stuff that I wanted to revise the story as, and this
-looks like it's okay.
-
-- Former Ruler makes pact with devil for power, gets tricked and stripped of everything,
-- Given a magical sword that has hidden abilities
-- Ruler fights as a mercenary as the devil slowly destroys his nation
-- Local lords(kind of tyrants) who had been previously conspiring, take opportunities to seize and hold certain areas around the nation
-- Former Ruler has traveled far from his lands as he had been exiled, and now he tries to return for his throne
-* General Working Schedule
-First row is the day of the week
-Second row is whether I'm working
-Third row is general overview of task types.
-    
-| Monday | Tuesday | Wednesday | Thursday             | Friday | Saturday | Sunday      |
-| NO     | NO      | MAYBE     | MAYBE(AT NIGHT ONLY) | YES    | YES      | YES(less)   |
-| -      | -       | X         | Storyboard Writing   | Coding | Coding   | Coding/Art? |
+But I think I genuinely need to force myself to work in at least an hour or something before anything else.
 
 * Done
 *** DONE Allow the cart to remember which items I'm selecting.
@@ -203,34 +175,44 @@ We'll probably just do this at night or something.
 ** Tuesday
 
 ** Wednesday
-Frankly I'm a bit reluctant to allow myself to do *from file* tasks, as data formats are commonly rewritten
-really really frequently. However, since some of the data hasn't appeared to change so much it's fine...
-
-Another large thing is that most of these data formats are "schemas", or otherwise have like one source of truth.
-
-It's not like the entries in a save file, which might be very difficult to retroactively upgrade. Item schema changes
-and such don't really do anything to save files since the only place those things are referenced are by ID or some smaller
-"core essentials" of the data which are basically never updated.
-
-IE: Schema-like data formats are okay to serialize pretty early since while their consequences are far reaching, that's its most
-powerful asset.
-
 ** Thursday
 ** Friday
 ** Saturday
+
+I need some other stuff as well.
+
+Particle systems and lights are going to be very good.
+
+*** TODO (?)Fix DPI scaling
 *** TODO Hurt should actually do stuff
-*** TODO Enemy Animation flashing when hit!
 *** TODO (*Focus* DOING)Polish up the battle victory screen & Loot Table needs to reward the winner lol.
 *** TODO (EDITOR?NOT NOW) Better Entity selection
 *** TODO Level Up Curve
+*** TODO Make game state variables ("dynamic?")
+We may need to anticipate more than some fixed size amount, so we should make sure it has the ability
+to expand. So we'll have to program some way of storing them and increasing them.
 *** TODO Consider thinking about the save menu
+Implement save load style. Save records aren't used yet, but we need to verify the systems' effectiveness. Thankfully some
+records should be pretty simple to implement though we just need to implement some basic record loading such as looted chests
+and killed entities. Those are likely to stay. We just need a way to flag entities as kill count appearances.
 *** TODO Projectiles for ranged weapons!
 *** TODO Game Over State/Screen
+*** TODO Visible weapon sprites!
+Not strictly necessary and requires more drawing. Alls of these are two frames.
 *** TODO (????MAYBE)"Fluid" Obstacles (Liquid Fire/Water/Oil/Acid)
 I need to draw and use autotiling for these, but they should be pretty easy...
 Also thankfully these only happen on one layer.
 
-*** TODO Ability score calculation error. Don't know why this is broken right now.
+*** TODO Burning! Poison/DT effects
+If a charater is burnable we use this to spawn a burning particle effect or poison bubble effect and have them die to it.
+Flames will burn very aggressively and emit light as well.
+
+When dying while burning is active entities will collapse into ashes. (Okay that would be the idea but for now they'll die the normal way or
+they'll play a random shaking animation (left and right), and then do the normal death animation which involves kneeling.)
+
+We have to guarantee the engine will always support enough lights to contain the amount of entities that are present as well as particle emitters.
+IE: This means that the level must always allocate these particle emitters and lights for each possible entity that these effects can appear on so as to
+avoid not crashing... They will be added as a separate linked pool that we can harvest from.
 *** TODO (DOING)Particle System
 *** TODO (DOING)My end turn is broken.
 *** TODO (DOING)Item Use menu in the battle UI.
@@ -272,67 +254,4 @@ I think it's a good idea to do 2-3 things on these lists a day, or at least try
 to do that much.
 
 It's a decent amount of progress imo.
-
-*** DONE Lighting
-We're doing a simple sprite per pixel lighting system. It will likely not obey obstructions to start, but that's okay for now.
-Yeah no obstructions, just full screenspace lighting.
-
-Color grading might serve as a minor obstacle as it convolutes the light masking system.
-
-I was planning to do the lighting system wholistically since it is faster to work on the full image. But are we fast enough
-to just work on all the objects directly? (Same way lighting is done with shaders in graphics apis?)
-
-If I do it wholistically it will objectively be faster, however I have to do separate rendering passes on stuff classified as "fullbright"
-not a big deal, but the shader approach is "simpler".
-
-Although it may end up being slower with a lot of lights... All these lights will be dynamic probably, but it's possible I may try to burn in static
-lights on level load. Obviously that's an optimization done after the game is like "doner".
-
-Lighting is pretty easy though, just harder to look good. But doing perpixel effects looks pretty authentic even on low resolutions.
-
-(Probably just going to make an additive light that's going to be clamped...)
-* OLD TASK LIST. 
-When I'm ready to work today:
-
-Technically this isn't that much, and once this is done, we can get
-to work on the story writing (for a week or so, until I have a passable script,
-and then produce the game. We may have to revamp the pixel art, which is okay...
-Although I want to keep this art for the Act 1 Demo. Possibly for the whole release
-but who knows...)
-
-Anyways I've learned, making game tools is extremely important. Also I need to
-make tools to make the majority of work extremely convenient.
-
-Most of Wednesday expected work
-  
-Extra time or the next avaliable work day.
-- NPCs from Files
-- Allow arbitrary scripts to be associated with a level, to make things easier to test within the editor.
-- Allow single command entering (for faster debugging and level testing...)
-- Create a scenario (writing.)
-
-Do this stuff (some of it)
-
-Art is most likely to be done on the weekend.
-
-- SDL2 Mixer Audio
-
-- Master Tileset from a file. Want to avoid compiling too much.
-
-- Setup the save record system for save states.
-
-- Check the game variable system to see if it works.
-
-- Particle System (later)
-- Lighting (later)
-
-
-- Maybe find a few days to make some pixel art
-
-- for myself, since I kind of need it... Aligning pixel
-  art is going to be a bit of a bitch but, I don't have the tooling
-  to facilitate any of it.
-- Okay, I do need a testing tileset. Need to draw that today
-
-Open for business on Wednesday, Friday, Saturday, maybe sunday
 

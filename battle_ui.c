@@ -1,11 +1,8 @@
 /*
-  This should probably all stop depending on the player as the main target since that's
+  NOTE: This should probably all stop depending on the player as the main target since that's
   not good if we want multiple party members lol.
 
-  Not a super difficult fix, maybe an hour of work. Anyways, TODO: I don't think I ever handle the moving
-  field case. We'll see if there are any abilities with that feature later.
-
-  TODO: prevent abilities from selecting if they're obstructed
+  TODO: Finish new after action report
 */
 
 enum battle_ui_animation_phase {

@@ -1,4 +1,8 @@
 /* mostly from https://easings.net */
+/*
+  INCORRECT FUNCTIONS:
+  
+ */
 s32 lerp_s32(s32 a, s32 b, f32 normalized_t) {
     return a * (1 - normalized_t) + (b * normalized_t);
 }

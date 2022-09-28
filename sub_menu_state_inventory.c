@@ -1,4 +1,5 @@
 /* TODO: Inventory animation! */
+/* TODO: Major revamp needed */
 enum inventory_ui_animation_phase {
     INVENTORY_UI_ANIMATION_PHASE_OPEN,
     INVENTORY_UI_ANIMATION_PHASE_IDLE,

@@ -84,6 +84,21 @@ struct level_area_navigation_map {
        - Added loot table index field.
        - Remove reserved (128 u8) field, fuck it, just handle it manually...
 */
+enum level_area_entity_spawn_flags {
+    LEVEL_AREA_ENTITY_SPAWN_FLAGS_NONE,
+    /*
+      Do not spawn if their death is recorded in the save record.
+     */
+    LEVEL_AREA_ENTITY_SPAWN_FLAGS_KILLONCE = BIT(0),
+    /*
+      Frankly I want this so we can have semi-random-encounters, where entities
+      are allowed to spawn in set locations based on the editor, and we can use that for random
+      combat encounters.
+
+      It's a simple thing to do and would be okay for me to do, but requires more editor support.
+     */
+    /* LEVEL_AREA_ENTITY_SPAWN_FLAGS_RANDOM_SPAWN = BIT(1), */
+};
 struct level_area_entity {
     /*
       This is only a rectangle because it allows me to use it for the drag candidate system in the

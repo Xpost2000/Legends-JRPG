@@ -1,8 +1,12 @@
 #include "entities_def.c"
 /*
- * CLEANUP/TODO: As models are now the source of truth for entity collision sizes,
- * and thus arbitrary scales are not needed (entities can just be represented as points with an implied rectangle),
- * I can remove those later.
+ CLEANUP/TODO: As models are now the source of truth for entity collision sizes,
+ and thus arbitrary scales are not needed (entities can just be represented as points with an implied rectangle),
+ I can remove those later.
+
+ TODO: add usage of the damage formulas.
+ TODO: Add weapon animation types for the base model so that I can start reskinning stuff
+ TODO: Obviously add placeholder weapon types.
  */
 bool entity_bad_ref(struct entity* e);
 
