@@ -76,6 +76,14 @@ union color32f32 {
 #define color32u8(R,G,B,A)  (union color32u8){.r  = R,.g=G,.b=B,.a=A}
 #define color32f32(R,G,B,A) (union color32f32){.r = R,.g=G,.b=B,.a=A}
 
+union color32f32 color32u8_to_color32f32(union color32u8 source) {
+    return color32f32(source.r / 255.0f, source.g / 255.0f, source.b / 255.0f, source.a / 255.0f);
+}
+
+union color32u8 color32f32_to_color32u8(union color32f32 source) {
+    return color32u8(source.r * 255, source.g * 255, source.b * 255, source.a * 255);
+}
+
 #define color32u8_WHITE  color32u8(255,255,255,255)
 #define color32f32_WHITE color32f32(1,1,1,1)
 #define color32f32_BLACK color32f32(0,0,0,1)

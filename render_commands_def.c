@@ -11,23 +11,15 @@ enum render_command_type{
 };
 #define ALWAYS_ON_TOP (INFINITY)
 struct render_command {
-    s16 type;
     /* easier to mix using a floating point value. */
     f32 sort_key;
 
     union {
-        union color32f32 modulation;
         union color32u8  modulation_u8;
     };
 
     struct rectangle_f32 destination;
     struct rectangle_f32 source;
-
-    v2f32 start;
-    v2f32 end;
-
-    v2f32 xy;
-    f32 scale;
 
     union {
         struct {
@@ -37,10 +29,20 @@ struct render_command {
         struct image_buffer* image;
     };
 
+    union {
+        v2f32 start;
+        v2f32 xy;
+    };
+
+    v2f32 end;
+
+    f32 scale;
     u32 flags;
-    u8  blend_mode;
+
     shader_fn shader;
     void*     shader_ctx;
+    s16 type;
+    u8  blend_mode;
 };
 
 struct render_commands {

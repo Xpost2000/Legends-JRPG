@@ -819,11 +819,11 @@ void render_commands_push_quad(struct render_commands* commands, struct rectangl
 
 void render_commands_push_image(struct render_commands* commands, struct image_buffer* image, struct rectangle_f32 destination, struct rectangle_f32 source, union color32f32 rgba, u32 flags, u8 blend_mode){
     struct render_command* command = render_commands_new_command(commands, RENDER_COMMAND_DRAW_IMAGE);
-    command->destination = destination;
-    command->image       = image;
-    command->source      = source;
-    command->flags       = flags;
-    command->modulation  = rgba;
+    command->destination   = destination;
+    command->image         = image;
+    command->source        = source;
+    command->flags         = flags;
+    command->modulation_u8 = color32f32_to_color32u8(rgba);
     command->blend_mode    = blend_mode;
 }
 
@@ -838,12 +838,12 @@ void render_commands_push_line(struct render_commands* commands, v2f32 start, v2
 
 void render_commands_push_text(struct render_commands* commands, struct font_cache* font, f32 scale, v2f32 xy, string text, union color32f32 rgba, u8 blend_mode) {
     struct render_command* command = render_commands_new_command(commands, RENDER_COMMAND_DRAW_TEXT);
-    command->font       = font;
-    command->xy         = xy;
-    command->scale      = scale;
-    command->text       = text;
-    command->modulation = rgba;
-    command->flags      = 0;
+    command->font          = font;
+    command->xy            = xy;
+    command->scale         = scale;
+    command->text          = text;
+    command->modulation_u8 = color32f32_to_color32u8(rgba);
+    command->flags         = 0;
     command->blend_mode    = blend_mode;
 }
 
@@ -892,7 +892,7 @@ void software_framebuffer_render_commands_tiled(struct software_framebuffer* fra
                     command->image,
                     command->destination,
                     command->source,
-                    command->modulation,
+                    color32u8_to_color32f32(command->modulation_u8),
                     command->flags,
                     command->blend_mode,
                     clip_rect,
@@ -907,7 +907,7 @@ void software_framebuffer_render_commands_tiled(struct software_framebuffer* fra
                     command->scale,
                     command->xy,
                     command->text,
-                    command->modulation,
+                    color32u8_to_color32f32(command->modulation_u8),
                     command->blend_mode,
                     clip_rect
                 );

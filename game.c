@@ -1136,7 +1136,7 @@ void editor_initialize(struct editor_state* state);
 local void initialize_main_menu(void);
 void game_initialize(void) {
     game_arena   = memory_arena_create_from_heap("Game Memory", Megabyte(32));
-    scratch_arena = memory_arena_create_from_heap("Scratch Buffer", Megabyte(4));
+    scratch_arena = memory_arena_create_from_heap("Scratch Buffer", Megabyte(8));
 #ifdef USE_EDITOR
     editor_arena = memory_arena_create_from_heap("Editor Memory", Megabyte(32));
 #endif
@@ -2024,7 +2024,15 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                 struct entity* player_entity = game_get_player(game_state);
                 update_game_camera(game_state, dt);
 
-                struct render_commands commands = render_commands(&scratch_arena, 4096, game_state->camera);
+                /*
+                  Frankly the particle systems in this game are the expected killers unless I specific make
+                  a render particles command, which would make this simpler. I want to just stick with
+                  the flat render commands for now though...
+
+                  So this means
+                 */
+                _debugprintf("ASDF %d", (int)sizeof(struct render_command));
+                struct render_commands commands = render_commands(&scratch_arena, 16384, game_state->camera);
 
                 commands.should_clear_buffer = true;
                 commands.clear_buffer_color  = color32u8(0, 0, 0, 255);

@@ -1,6 +1,9 @@
 /*
   TODO: might be using too many globals.
-  TODO: Move the common inventory viewing code elsewhere.
+  TODO:
+  Move the common inventory viewing code elsewhere.
+
+  Probably just going to call inventory viewer.
  */
 enum shopping_ui_animation_phase {
     SHOPPING_UI_ANIMATION_PHASE_FADE_IN,
