@@ -1,4 +1,5 @@
 /* need these to be coresponding to the shopping_ui file since it uses similar code. */
+/* small selection bug error */
 enum inventory_ui_animation_phase {
     UNUSED_INVENTORY_UI_STATE_0,
     UNUSED_INVENTORY_UI_STATE_1,

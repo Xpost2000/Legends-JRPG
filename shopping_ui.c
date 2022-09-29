@@ -365,7 +365,7 @@ local void do_shopping_menu(struct software_framebuffer* framebuffer, f32 x, boo
         } else if (selection_up) {
             shopping_ui.shopping_item_index -= 1;
 
-            if (shopping_ui.shopping_item_index <= 0) {
+            if (shopping_ui.shopping_item_index < 0) {
                 shopping_ui.shopping_item_index = shopping_ui.shop_filtered_array_count - 1;
             }
         }
