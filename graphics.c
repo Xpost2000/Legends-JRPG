@@ -947,8 +947,6 @@ local void transform_command_into_clip_space(v2f32 resolution, struct render_com
         command->destination.y *= camera->zoom;
         command->destination.w *= camera->zoom;
         command->destination.h *= camera->zoom;
-        command->xy.x          *= camera->zoom;
-        command->xy.y          *= camera->zoom;
         command->scale         *= camera->zoom;
     }
 
@@ -959,8 +957,6 @@ local void transform_command_into_clip_space(v2f32 resolution, struct render_com
         command->end.y         += half_screen_height;
         command->destination.x += half_screen_width;
         command->destination.y += half_screen_height;
-        command->xy.x          += half_screen_width;
-        command->xy.y          += half_screen_height;
     }
 
     {
@@ -970,8 +966,6 @@ local void transform_command_into_clip_space(v2f32 resolution, struct render_com
         command->end.y         -= camera->xy.y;
         command->destination.x -= camera->xy.x;
         command->destination.y -= camera->xy.y;
-        command->xy.x          -= camera->xy.x;
-        command->xy.y          -= camera->xy.y;
     }
 }
                                   

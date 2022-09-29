@@ -11,6 +11,18 @@ image_id get_tile_image_id(struct tile_data_definition* tile_def) {
     return graphics_assets_get_image_by_filepath(&graphics_assets, sanitized_string);
 }
 
+s32 get_tile_id_by_name(string name) {
+    for (s32 tile_data_index = 0; tile_data_index < tile_table_data_count; ++tile_data_index) {
+        struct tile_data_definition* tile_def = &tile_table_data[tile_data_index];
+
+        if (string_equal(tile_def->name, name)) {
+            return tile_def - tile_table_data;
+        }
+    }
+
+    return -1;
+}
+
 /* memory is read at start up */
 /* this is kind of expensive since the entire file is kept in memory just to keep the strings. */
 /* I mean it's a small amount of memory relative to the whole thing so it's something to think about. */

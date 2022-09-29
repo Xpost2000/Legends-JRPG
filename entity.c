@@ -512,21 +512,37 @@ void sortable_draw_entities_submit(struct render_commands* commands, struct grap
                     other_offsets.x = current_entity->ai.hurt_animation_shake_offset.x;
                     other_offsets.y = current_entity->ai.hurt_animation_shake_offset.y;
 
+                    f32 SHADOW_SPRITE_WIDTH  = TILE_UNIT_SIZE * roundf(real_dimensions.x/TILE_UNIT_SIZE);
+                    f32 SHADOW_SPRITE_HEIGHT = TILE_UNIT_SIZE * max(roundf(real_dimensions.y/(TILE_UNIT_SIZE*2)), 1);
 
-                    render_commands_push_image(commands,
-                                               graphics_assets_get_image_by_id(graphics_assets, drop_shadow),
-                                               rectangle_f32(current_entity->position.x - alignment_offset.x + other_offsets.x,
-                                                             current_entity->position.y - TILE_UNIT_SIZE*0.4 + other_offsets.y,
-                                                             TILE_UNIT_SIZE * roundf(real_dimensions.x/TILE_UNIT_SIZE),
-                                                             TILE_UNIT_SIZE * max(roundf(real_dimensions.y/(TILE_UNIT_SIZE*2)), 1)),
-                                               RECTANGLE_F32_NULL, color32f32(1,1,1,0.72), NO_FLAGS, BLEND_MODE_ALPHA);
-                    render_commands_set_shader(commands, game_background_things_shader, NULL);
+                    bool water_tile_submergence = false;
 
-                    { /*HACKME special alignment case for death animations, this is after shadows since the shadow should not move */
-                        if (string_equal(current_entity->animation.name, string_literal("dead"))) {
-                            other_offsets.y += TILE_UNIT_SIZE/2;
+                    {
+                        const f32 X_BIAS = 0.123;
+                        const f32 Y_BIAS = 0.123;
+                        struct tile* floor_tile = level_area_get_tile_at(&game_state->loaded_area,
+                                                                         TILE_LAYER_GROUND, ceilf((current_entity->position.x/TILE_UNIT_SIZE)-X_BIAS), ceilf((current_entity->position.y/TILE_UNIT_SIZE)-Y_BIAS));
+
+                        /* NOTE: should be checking by flags or something else but name */
+                        s32 get_tile_id_by_name(string);
+                        if (floor_tile->id == get_tile_id_by_name(string_literal("water [solid]")) ||
+                            floor_tile->id == get_tile_id_by_name(string_literal("water"))) {
+                            water_tile_submergence = true;
                         }
                     }
+
+                    if (!water_tile_submergence) {
+                        render_commands_push_image(commands,
+                                                   graphics_assets_get_image_by_id(graphics_assets, drop_shadow),
+                                                   rectangle_f32(current_entity->position.x - alignment_offset.x + other_offsets.x,
+                                                                 current_entity->position.y - TILE_UNIT_SIZE*0.4 + other_offsets.y,
+                                                                 SHADOW_SPRITE_WIDTH,
+                                                                 SHADOW_SPRITE_HEIGHT),
+                                                   RECTANGLE_F32_NULL,
+                                                   color32f32(1,1,1,0.72), NO_FLAGS, BLEND_MODE_ALPHA);
+                        render_commands_set_shader(commands, game_background_things_shader, NULL);
+                    }
+
 
                     union color32f32 modulation_color = color32f32_WHITE;
 
@@ -538,19 +554,34 @@ void sortable_draw_entities_submit(struct render_commands* commands, struct grap
                         }
                     }
 
+                    f32 height_trim = 0.0787;
+
+
+                    { /*HACKME special alignment case for death animations, this is after shadows since the shadow should not move */
+                        if (string_equal(current_entity->animation.name, string_literal("dead"))) {
+                            other_offsets.y += TILE_UNIT_SIZE/2;
+                            height_trim = 0.32;
+                        }
+                    }
+
+                    if (!water_tile_submergence) {
+                        height_trim = 0;
+                    }
+
                     render_commands_push_image(commands,
                                                graphics_assets_get_image_by_id(graphics_assets, sprite_to_use),
                                                rectangle_f32(current_entity->position.x - alignment_offset.x + other_offsets.x,
                                                              current_entity->position.y - alignment_offset.y + other_offsets.y,
                                                              real_dimensions.x,
-                                                             real_dimensions.y),
-                                               RECTANGLE_F32_NULL, modulation_color, NO_FLAGS, BLEND_MODE_ALPHA);
+                                                             real_dimensions.y*(1 - height_trim)),
+                                               rectangle_f32(0, 0,
+                                                             sprite_dimensions.x, sprite_dimensions.y * (1 - height_trim)), modulation_color, NO_FLAGS, BLEND_MODE_ALPHA);
                     render_commands_set_shader(commands, game_foreground_things_shader, NULL);
 
 #ifndef RELEASE
-                    struct rectangle_f32 collision_bounds = entity_rectangle_collision_bounds(current_entity);
+                    /* struct rectangle_f32 collision_bounds = entity_rectangle_collision_bounds(current_entity); */
         
-                    render_commands_push_quad(commands, collision_bounds, color32u8(255, 0, 0, 64), BLEND_MODE_ALPHA);
+                    /* render_commands_push_quad(commands, collision_bounds, color32u8(255, 0, 0, 64), BLEND_MODE_ALPHA); */
 #endif
                 }
             } break;
