@@ -195,7 +195,16 @@ void entity_ability_compile_animation_sequence(struct memory_arena* arena, struc
                         
                         for (s32 argument_index = 0; argument_index < action_form_rest_arguments.list.count; ++argument_index) {
                             struct lisp_form* focus_target = lisp_list_nth(&action_form_rest_arguments, argument_index);
-                            decode_sequence_action_target_entity(focus_target, &action_data->hurt.targets[action_data->hurt.target_count++]);
+
+                            if (lisp_form_symbol_matching(*focus_target, string_literal("all-selected"))) {
+                                action_data->hurt.hurt_target_flags |= HURT_TARGET_FLAG_ALL_SELECTED;
+                                break;
+                            } else if (lisp_form_symbol_matching(*focus_target, string_literal("all-enemies"))) {
+                                action_data->hurt.hurt_target_flags |= HURT_TARGET_FLAG_EVERY_ENEMY;
+                                break;
+                            } else {
+                                decode_sequence_action_target_entity(focus_target, &action_data->hurt.targets[action_data->hurt.target_count++]);
+                            }
                         }
                     } else if (lisp_form_symbol_matching(*action_form_header, string_literal("start-special-effects"))) {
                         action_data->type = SEQUENCE_ACTION_START_SPECIAL_FX;

@@ -1203,7 +1203,7 @@ void game_initialize(void) {
     game_state->permenant_particle_emitters = entity_particle_emitter_list(&game_arena, GAME_MAX_PERMENANT_PARTICLE_EMITTERS);
     player_id                               = entity_list_create_player(&game_state->permenant_entities, v2f32(70, 70));
     entity_list_create_badguy(&game_state->permenant_entities, v2f32(9 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE));
-    entity_list_create_badguy(&game_state->permenant_entities, v2f32(7 * TILE_UNIT_SIZE, 5 * TILE_UNIT_SIZE));
+    entity_list_create_badguy(&game_state->permenant_entities, v2f32(11 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE));
 
     {
         struct entity* player = game_get_player(game_state);

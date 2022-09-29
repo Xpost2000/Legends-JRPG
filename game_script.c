@@ -250,13 +250,17 @@ GAME_LISP_FUNCTION(FOLLOW_PATH) {
 
 GAME_LISP_FUNCTION(KILL_ALL) {
     /* or any player entity rather, so we'll check for friendly */
+    /*
+      NOTE:
+      need a better way to iterate all combat enemies. Could build specific iterator based off of combat state
+
+      Consider it during cleanup time. Or don't.
+    */
     struct game_state_combat_state* combat_state = &state->combat_state;
 
     struct entity* active_combatant_entity = game_dereference_entity(state, combat_state->participants[combat_state->active_combatant]);
 
     for (s32 index = combat_state->active_combatant; index < combat_state->count; ++index) {
-        union color32u8 color = color32u8(128, 128, 128, 255);
-
         {
             struct entity* entity = game_dereference_entity(state, combat_state->participants[index]);
 

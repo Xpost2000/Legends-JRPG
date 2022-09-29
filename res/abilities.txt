@@ -46,7 +46,7 @@
 (move-to user (past last-target by 1) back-ease-out 2)
 (start-special-effects 0)
 (wait-special-effects)
-(hurt last-target) # uses damage formula
+(hurt all-selected) # uses damage formula
 (stop-special-effects)
 (move-to user start linear-ease 1)
 )

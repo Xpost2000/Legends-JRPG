@@ -101,10 +101,17 @@ struct sequence_action_move_to {
 
 /* HURT should be given some scaling modifiers */
 /* for now it just does 9999 dmg */
+enum hurt_target_flags {
+    HURT_TARGET_FLAG_NONE         = 0,
+    HURT_TARGET_FLAG_ALL_SELECTED = BIT(0),
+    HURT_TARGET_FLAG_EVERY_ENEMY  = BIT(1),
+};
 struct sequence_action_hurt {
-    /* TODO should have multiple targets avaliable to select */
-    u8 target_all; /* NOT USED YET */
+    /* if these flags are toggled, they override targets with special behavior */
+    u8 hurt_target_flags; /* special */
+
     s32 target_count;
+    /* you use this only if you want to do something more cinematic */
     struct sequence_action_target_entity targets[ENTITY_ABILITY_SELECTION_FIELD_MAX_X*ENTITY_ABILITY_SELECTION_FIELD_MAX_Y];
 };
 

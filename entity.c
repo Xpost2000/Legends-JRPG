@@ -1175,9 +1175,46 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
                 } break;
                 case SEQUENCE_ACTION_HURT: {
                     struct sequence_action_hurt* hurt_sequence = &sequence_action->hurt;
-                    for (s32 target_index = 0; target_index < hurt_sequence->target_count; ++target_index) {
-                        struct entity* attacked_entity = decode_sequence_action_target_entity_into_entity(state, target_entity, &hurt_sequence->targets[target_index]);
-                        entity_do_physical_hurt(attacked_entity, 9999);
+
+                    s32 entities_to_hurt = 0;
+                    entity_id* attacking_entity_ids = memory_arena_push(&scratch_arena, 0);
+
+                    if (hurt_sequence->hurt_target_flags) {
+                        if (hurt_sequence->hurt_target_flags & HURT_TARGET_FLAG_ALL_SELECTED) {
+                            for (s32 target_index = 0; target_index < target_entity->ai.targeted_entity_count; ++target_index) {
+                                memory_arena_push(&scratch_arena, sizeof(*attacking_entity_ids));
+                                entity_id targeted_entity_id = target_entity->ai.targeted_entities[target_index];
+                                attacking_entity_ids[entities_to_hurt++] = targeted_entity_id; 
+                            }
+                        } else if (hurt_sequence->hurt_target_flags & HURT_TARGET_FLAG_EVERY_ENEMY) {
+                            struct game_state_combat_state* combat_state = &state->combat_state;
+                            for (s32 index = combat_state->active_combatant; index < combat_state->count; ++index) {
+                                struct entity* entity = game_dereference_entity(state, combat_state->participants[index]);
+
+                                if (entity->flags & ENTITY_FLAGS_PLAYER_CONTROLLED) {
+                                    continue;
+                                } else {
+                                    if (entity->ai.flags & ENTITY_AI_FLAGS_AGGRESSIVE_TO_PLAYER) {
+                                        memory_arena_push(&scratch_arena, sizeof(*attacking_entity_ids));
+                                        attacking_entity_ids[entities_to_hurt++] = combat_state->participants[index];
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        for (s32 target_index = 0; target_index < hurt_sequence->target_count; ++target_index) {
+                            entity_id attacked_target_id = target_entity->ai.targeted_entities[hurt_sequence->targets[target_index].entity_target_index];
+                            memory_arena_push(&scratch_arena, sizeof(*attacking_entity_ids));
+                            attacking_entity_ids[entities_to_hurt++] = attacked_target_id;
+                        }
+                    }
+
+                    for (s32 entity_to_hurt_index = 0; entity_to_hurt_index < entities_to_hurt; ++entity_to_hurt_index) {
+                        entity_id      entity_to_hurt_id = attacking_entity_ids[entity_to_hurt_index];
+                        struct entity* entity_to_hurt    = game_dereference_entity(game_state, entity_to_hurt_id);
+
+                        entity_do_physical_hurt(entity_to_hurt, 9999);
+                        battle_notify_killed_entity(entity_to_hurt_id);
                     }
                     entity_advance_ability_sequence(target_entity);
                 } break;
@@ -1198,10 +1235,12 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
                     entity_advance_ability_sequence(target_entity);
                 } break;
                 case SEQUENCE_ACTION_WAIT_SPECIAL_FX_TO_FINISH: {
-                    if (special_effects_active()) {} else {
+                    if (special_effects_active()) {
+                        /*...*/
+                    } else {
                         entity_advance_ability_sequence(target_entity);
                     }
-                }
+                } break;
                 default: {
                     entity_advance_ability_sequence(target_entity);
                 } break;
