@@ -348,10 +348,12 @@ local void do_shopping_menu(struct software_framebuffer* framebuffer, f32 x, boo
 
         v2f32 ui_box_extents = nine_patch_estimate_extents(ui_chunky, 1, BOX_WIDTH, BOX_HEIGHT);
 
-        if (selection_increment) {
-            shopping_ui_increment_cart(shopping_ui.shop_filtered_array[shopping_ui.shopping_item_index]);
-        } else if (selection_decrement) {
-            shopping_ui_decrement_cart(shopping_ui.shop_filtered_array[shopping_ui.shopping_item_index]);
+        if (shop_mode != SHOPPING_MODE_VIEWING) {
+            if (selection_increment) {
+                shopping_ui_increment_cart(shopping_ui.shop_filtered_array[shopping_ui.shopping_item_index]);
+            } else if (selection_decrement) {
+                shopping_ui_decrement_cart(shopping_ui.shop_filtered_array[shopping_ui.shopping_item_index]);
+            }
         }
 
         if (selection_down) {
@@ -429,11 +431,14 @@ local void do_shopping_menu(struct software_framebuffer* framebuffer, f32 x, boo
                     cart_amount = shopping_ui.cart_entries[cart_item_index].count;
                 }
 
-                /* maybe wrong logic */
-                if (item_max_size == SHOP_ITEM_INFINITE) {
-                    cart_selection_text = string_from_cstring(format_temp("%d (%d)", cart_amount, price * cart_amount));
+                if (shop_mode == SHOPPING_MODE_VIEWING) {
+                    cart_selection_text = string_from_cstring(format_temp("%d", item_stack_size));
                 } else {
-                    cart_selection_text = string_from_cstring(format_temp("%d / %d (%d)", cart_amount, item_stack_size, price * cart_amount));
+                    if (item_max_size == SHOP_ITEM_INFINITE) {
+                        cart_selection_text = string_from_cstring(format_temp("%d (%d)", cart_amount, price * cart_amount));
+                    } else {
+                        cart_selection_text = string_from_cstring(format_temp("%d / %d (%d)", cart_amount, item_stack_size, price * cart_amount));
+                    }
                 }
             }
 
@@ -482,7 +487,14 @@ local void do_shopping_menu(struct software_framebuffer* framebuffer, f32 x, boo
         if (selection_quit) {
             shopping_ui_clear_cart();
             shopping_ui.shopping_item_index = 0;
-            shop_ui_set_phase(SHOPPING_UI_ANIMATION_PHASE_SLIDE_OUT_SHOPPING);
+
+            /* This is a bit nasty, but I'd rather handle it here. */
+            if (shop_mode != SHOPPING_MODE_VIEWING) {
+                shop_ui_set_phase(SHOPPING_UI_ANIMATION_PHASE_SLIDE_OUT_SHOPPING);
+            } else {
+                void close_party_inventory_screen(void);
+                close_party_inventory_screen();
+            }
         }
     }
 }
