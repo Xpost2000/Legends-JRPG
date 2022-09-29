@@ -19,9 +19,13 @@ struct {
   state, which is really just going to be inventory_view_state later.
 */
 
+local void repopulate_inventory_view(void) {
+    shopping_ui_populate_filtered_page(SHOPPING_MODE_VIEWING);
+}
+
 void open_party_inventory_screen(void) {
     shopping_ui.phase = INVENTORY_UI_ANIMATION_PHASE_IDLE;
-    shopping_ui_populate_filtered_page(SHOPPING_MODE_VIEWING);
+    repopulate_inventory_view();
     specific_inventory_ui_state.queued_item_use_index = -1;
     specific_inventory_ui_state.confirmation_popup_selection = 0;
 }
@@ -148,6 +152,7 @@ local void do_inventory_use_item_popup(struct software_framebuffer* framebuffer,
                         entity_inventory_use_item(inventory, index, player);
                     }   
                 }
+                repopulate_inventory_view();
                 specific_inventory_ui_state.queued_item_use_index = -1;
             } break;
             case 1: {
