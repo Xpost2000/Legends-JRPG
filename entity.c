@@ -522,12 +522,12 @@ void sortable_draw_entities_submit(struct render_commands* commands, struct grap
                         const f32 Y_BIAS = 0.123;
                         struct tile* floor_tile = level_area_get_tile_at(&game_state->loaded_area,
                                                                          TILE_LAYER_GROUND, ceilf((current_entity->position.x/TILE_UNIT_SIZE)-X_BIAS), ceilf((current_entity->position.y/TILE_UNIT_SIZE)-Y_BIAS));
-
-                        /* NOTE: should be checking by flags or something else but name */
-                        s32 get_tile_id_by_name(string);
-                        if (floor_tile->id == get_tile_id_by_name(string_literal("water [solid]")) ||
-                            floor_tile->id == get_tile_id_by_name(string_literal("water"))) {
-                            water_tile_submergence = true;
+                        if (floor_tile) {
+                            s32 get_tile_id_by_name(string);
+                            if (floor_tile->id == get_tile_id_by_name(string_literal("water [solid]")) ||
+                                floor_tile->id == get_tile_id_by_name(string_literal("water"))) {
+                                water_tile_submergence = true;
+                            }
                         }
                     }
 

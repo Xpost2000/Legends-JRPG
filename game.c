@@ -807,8 +807,6 @@ local void load_area_script(struct memory_arena* arena, struct level_area* area,
     memory_arena_set_allocation_region_top(arena);
     if (file_exists(script_name)) {
         script_data->present     = true;
-        /* This can technically be loaded into the arena top! */
-        /* TODO: this change can happen now! It just hasn't! One less heap allocation hurray? */
         script_data->buffer      = read_entire_file(heap_allocator(), script_name);
         script_data->code_forms  = memory_arena_push(arena, sizeof(*script_data->code_forms));
         *script_data->code_forms = lisp_read_string_into_forms(arena, file_buffer_as_string(&script_data->buffer));
@@ -950,7 +948,6 @@ bool game_state_set_ui_state(struct game_state* state, u32 new_ui_state) {
 }
 
 #include "entity.c"
-
 
 void game_postprocess_blur(struct software_framebuffer* framebuffer, s32 quality_scale, f32 t, u32 blend_mode) {
 #ifdef NO_POSTPROCESSING
@@ -2041,7 +2038,6 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
 
                   So this means
                  */
-                _debugprintf("ASDF %d", (int)sizeof(struct render_command));
                 struct render_commands        commands      = render_commands(&scratch_arena, 16384, game_state->camera);
                 struct sortable_draw_entities draw_entities = sortable_draw_entities(&scratch_arena, 8192);
 

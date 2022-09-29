@@ -38,4 +38,8 @@ cloc:
 clean:
 	-rm data.bigfile
 	-rm game.exe
+	-rm game.js
+	-rm game.html
+	-rm game.wasm
+	-rm game.data
 	-rm game-debug.exe

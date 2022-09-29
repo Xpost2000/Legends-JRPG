@@ -5,6 +5,9 @@
   TODO: Finish new after action report
 
   Would like the hurt command but that's okay if I can't do it.
+
+  NOTE: last target is incorrect for certain directions, which makes sense. they should be sorted by distance,
+  but chances are I know what order they'll be added so I can just reverse them in select cases.
 */
 
 enum battle_ui_animation_phase {
