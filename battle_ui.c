@@ -911,10 +911,16 @@ local void do_after_action_report_screen(struct game_state* state, struct softwa
     draw_ui_breathing_text(framebuffer, v2f32(ui_box_position.x+15, ui_box_position.y+15), normal_font, 3, string_literal("Battle Complete!"), 0, modulation_color);
     draw_ui_breathing_text(framebuffer, v2f32(ui_box_position.x+15, ui_box_position.y+60), normal_font, 3, string_literal("Loot Gained: "), 0, modulation_color);
 
-    f32 y_cursor = ui_box_position.y + 80;
+    f32 y_cursor = ui_box_position.y + 90;
     {
+        f32 text_height = font_cache_text_height(normal_font) * 2;
         for (s32 looted_item_index = 0; looted_item_index < global_battle_ui_state.loot_result_count; ++looted_item_index) {
             struct item_instance* current_loot_entry = global_battle_ui_state.loot_results + looted_item_index;
+            struct item_def*      item_base          = item_database_find_by_id(current_loot_entry->item);
+
+            string temp_string = format_temp_s("found %.*s (x%d)", item_base->name.length, item_base->name.data, current_loot_entry->count);
+            draw_ui_breathing_text(framebuffer, v2f32(ui_box_position.x+15, y_cursor), normal_font, 2, temp_string, 0, modulation_color);
+            y_cursor += text_height*1.1; 
         }
     }
 
