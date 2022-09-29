@@ -453,35 +453,39 @@ local void do_shopping_menu(struct software_framebuffer* framebuffer, f32 x, boo
                 struct shop_instance* shop       = &game_state->active_shop;
             s32                       gold_count = entity_inventory_count_instances_of(inventory, string_literal("item_gold"));
 
-            for (s32 item_index = 0; item_index < shopping_ui.cart_entry_count; ++item_index) {
-                struct cart_entry* current_cart_entry = shopping_ui.cart_entries + item_index;
+            if (shop_mode == SHOPPING_MODE_VIEWING) {
+                void user_use_inventory_item_at_index(s32 item_index);
+                user_use_inventory_item_at_index(shopping_ui.shop_filtered_array[shopping_ui.shopping_item_index]);
+            } else {
+                for (s32 item_index = 0; item_index < shopping_ui.cart_entry_count; ++item_index) {
+                    struct cart_entry* current_cart_entry = shopping_ui.cart_entries + item_index;
 
-                assertion(current_cart_entry->count > 0 && "This should never happen. Just sanity checking...");
+                    assertion(current_cart_entry->count > 0 && "This should never happen. Just sanity checking...");
 
-                if (shop_mode == SHOPPING_MODE_BUYING) {
-                    /* shouldn't be exposed out here but okay... */
-                    /* TODO: This is slightly bugged but I'm trying to replicate behavior so bug fixing comes after. */
-                    for (s32 purchase_count = 0; purchase_count < current_cart_entry->count; ++purchase_count) {
-                        if (purchase_item_from_shop_and_add_to_inventory(shop, inventory, MAX_PARTY_ITEMS, &gold_count, shop_item_id_standard(current_cart_entry->item_index))) {
-                            _debugprintf("Thanks for shopping");
+                    if (shop_mode == SHOPPING_MODE_BUYING) {
+                        /* shouldn't be exposed out here but okay... */
+                        /* TODO: This is slightly bugged but I'm trying to replicate behavior so bug fixing comes after. */
+                        for (s32 purchase_count = 0; purchase_count < current_cart_entry->count; ++purchase_count) {
+                            if (purchase_item_from_shop_and_add_to_inventory(shop, inventory, MAX_PARTY_ITEMS, &gold_count, shop_item_id_standard(current_cart_entry->item_index))) {
+                                _debugprintf("Thanks for shopping");
+                            }
+                        }
+                    } else if (shop_mode == SHOPPING_MODE_SELLING) {
+                        for (s32 sell_count = 0; sell_count < current_cart_entry->count; ++sell_count) {
+                            if (sell_item_to_shop(shop, inventory, MAX_PARTY_ITEMS, &gold_count, current_cart_entry->item_index)) {
+                                _debugprintf("Thanks for selling");
+                            }
                         }
                     }
-                } else if (shop_mode == SHOPPING_MODE_SELLING) {
-                    for (s32 sell_count = 0; sell_count < current_cart_entry->count; ++sell_count) {
-                        if (sell_item_to_shop(shop, inventory, MAX_PARTY_ITEMS, &gold_count, current_cart_entry->item_index)) {
-                            _debugprintf("Thanks for selling");
-                        }
-                    }
-                } else {
-                    /* use item here */
                 }
+
+                entity_inventory_set_gold_count(inventory, gold_count);
+                shopping_ui_clear_cart();
+                shopping_ui_populate_filtered_page(shop_mode);
+                /* In reality I should keep my cursor on the nearest item to be less confusing. */
+                shopping_ui.shopping_item_index = 0;
             }
 
-            entity_inventory_set_gold_count(inventory, gold_count);
-            shopping_ui_clear_cart();
-            shopping_ui_populate_filtered_page(shop_mode);
-            /* In reality I should keep my cursor on the nearest item to be less confusing. */
-            shopping_ui.shopping_item_index = 0;
         }
 
         if (selection_quit) {
