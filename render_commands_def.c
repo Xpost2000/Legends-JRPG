@@ -33,7 +33,6 @@ struct render_command {
     v2f32 end;
 
     f32 scale;
-    f32 sort_key;
     u32 flags;
     union {
         union color32u8  modulation_u8;

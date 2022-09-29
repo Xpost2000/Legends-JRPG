@@ -3,6 +3,8 @@
   not good if we want multiple party members lol.
 
   TODO: Finish new after action report
+
+  Would like the hurt command but that's okay if I can't do it.
 */
 
 enum battle_ui_animation_phase {

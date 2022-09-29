@@ -448,130 +448,153 @@ void entity_think_combat_actions(struct entity* entity, struct game_state* state
   order and the few things that genuinely need to be sorted can just be done... Where they need to be sorted here.
 */
 
-void render_entities(struct game_state* state, struct graphics_assets* graphics_assets, struct render_commands* commands, f32 dt) {
-    struct entity_iterator it = game_entity_iterator(state);
+void sortable_draw_entities_submit(struct render_commands* commands, struct graphics_assets* graphics_assets, struct sortable_draw_entities* entities, f32 dt) {
+    sortable_draw_entities_sort_keys(entities);
 
-    s32 entity_total_capacities = entity_iterator_count_all_entities(&it);
-    entity_id* sorted_entity_ids = memory_arena_push(&scratch_arena, sizeof(*sorted_entity_ids) * entity_total_capacities);
-    s32        sorted_entity_id_count = 0;
+    for (s32 draw_entity_index = 0; draw_entity_index < entities->count; ++draw_entity_index) {
+        struct sortable_draw_entity* current_draw_entity = entities->entities + draw_entity_index;
 
-    {
-        for (struct entity* current_entity = entity_iterator_begin(&it); !entity_iterator_finished(&it); current_entity = entity_iterator_advance(&it)) {
-            if (!(current_entity->flags & ENTITY_FLAGS_ACTIVE)) {
-                continue;
-            }
+        switch (current_draw_entity->type) {
+            case SORTABLE_DRAW_ENTITY_ENTITY: {
+                struct entity* current_entity = game_dereference_entity(game_state, current_draw_entity->entity_id);
+                {
+                    s32 facing_direction = current_entity->facing_direction;
+                    s32 model_index      = current_entity->model_index;
 
-            sorted_entity_ids[sorted_entity_id_count++] = it.current_id;
-        }
+                    if (!(current_entity->flags & ENTITY_FLAGS_ACTIVE)) {
+                        continue;
+                    }
 
-        for (s32 sorted_entity_index = 1; sorted_entity_index < sorted_entity_id_count; ++sorted_entity_index) {
-            entity_id key_id = sorted_entity_ids[sorted_entity_index];
-            struct entity* key_entity = game_dereference_entity(state, sorted_entity_ids[sorted_entity_index]);
+                    struct entity_animation* anim = find_animation_by_name(model_index, current_entity->animation.name);
 
-            s32 sorted_entity_insertion_index = sorted_entity_index;
-            for (; sorted_entity_insertion_index > 0; --sorted_entity_insertion_index) {
-                struct entity* comparison_entity = game_dereference_entity(state, sorted_entity_ids[sorted_entity_insertion_index-1]);
+                    if (!anim) {
+                        _debugprintf("cannot find anim: %.*s. Falling back to \"down direction\"", current_entity->animation.name.length, current_entity->animation.name.data);
+                        anim = find_animation_by_name(model_index, string_literal("down"));
+                        assertion(anim && "no fallback anim? That is bad!");
+                    }
 
-                if (comparison_entity->position.y < key_entity->position.y) {
-                    break;
-                } else {
-                    sorted_entity_ids[sorted_entity_insertion_index] = sorted_entity_ids[sorted_entity_insertion_index-1];
+                    current_entity->animation.timer += dt;
+                    if (current_entity->animation.timer >= anim->time_until_next_frame) {
+                        current_entity->animation.current_frame_index++;
+                        current_entity->animation.timer = 0;
+
+                        if (current_entity->animation.current_frame_index >= anim->frame_count) {
+                            current_entity->animation.current_frame_index = 0;
+                            current_entity->animation.iterations         += 1;
+                        }
+                    }
+
+                    image_id sprite_to_use  = entity_animation_get_sprite_frame(anim, current_entity->animation.current_frame_index);
+                    v2f32 sprite_dimensions = entity_animation_get_frame_dimensions(anim, current_entity->animation.current_frame_index);
+
+                    /*
+                      Look no one said this was good, I think my brain is a little broken since I can't think of a proper way to scale up everything properly.
+
+                      However all the art is expected to be relative to 16x16 tiles
+                    */
+                    f32 scale_x = 2;
+        
+                    v2f32 real_dimensions  = v2f32(sprite_dimensions.x * scale_x, sprite_dimensions.y * scale_x);
+
+                    bool should_shift_up = (real_dimensions.y / TILE_UNIT_SIZE) >= 1;
+
+                    v2f32 alignment_offset = v2f32(0, real_dimensions.y * should_shift_up * 0.8);
+
+                    v2f32 other_offsets;
+                    other_offsets.x = current_entity->ai.hurt_animation_shake_offset.x;
+                    other_offsets.y = current_entity->ai.hurt_animation_shake_offset.y;
+
+
+                    render_commands_push_image(commands,
+                                               graphics_assets_get_image_by_id(graphics_assets, drop_shadow),
+                                               rectangle_f32(current_entity->position.x - alignment_offset.x + other_offsets.x,
+                                                             current_entity->position.y - TILE_UNIT_SIZE*0.4 + other_offsets.y,
+                                                             TILE_UNIT_SIZE * roundf(real_dimensions.x/TILE_UNIT_SIZE),
+                                                             TILE_UNIT_SIZE * max(roundf(real_dimensions.y/(TILE_UNIT_SIZE*2)), 1)),
+                                               RECTANGLE_F32_NULL, color32f32(1,1,1,0.72), NO_FLAGS, BLEND_MODE_ALPHA);
+                    render_commands_set_shader(commands, game_background_things_shader, NULL);
+
+                    { /*HACKME special alignment case for death animations, this is after shadows since the shadow should not move */
+                        if (string_equal(current_entity->animation.name, string_literal("dead"))) {
+                            other_offsets.y += TILE_UNIT_SIZE/2;
+                        }
+                    }
+
+                    union color32f32 modulation_color = color32f32_WHITE;
+
+                    {
+                        bool me = is_entity_under_ability_selection(current_draw_entity->entity_id);
+                        if (me) {
+                            /* red for now. We want better effects maybe? */
+                            modulation_color.g = modulation_color.b = 0;
+                        }
+                    }
+
+                    render_commands_push_image(commands,
+                                               graphics_assets_get_image_by_id(graphics_assets, sprite_to_use),
+                                               rectangle_f32(current_entity->position.x - alignment_offset.x + other_offsets.x,
+                                                             current_entity->position.y - alignment_offset.y + other_offsets.y,
+                                                             real_dimensions.x,
+                                                             real_dimensions.y),
+                                               RECTANGLE_F32_NULL, modulation_color, NO_FLAGS, BLEND_MODE_ALPHA);
+                    render_commands_set_shader(commands, game_foreground_things_shader, NULL);
+
+#ifndef RELEASE
+                    struct rectangle_f32 collision_bounds = entity_rectangle_collision_bounds(current_entity);
+        
+                    render_commands_push_quad(commands, collision_bounds, color32u8(255, 0, 0, 64), BLEND_MODE_ALPHA);
+#endif
                 }
-            }
+            } break;
+            case SORTABLE_DRAW_ENTITY_CHEST: {
+                struct entity_chest* it = current_draw_entity->pointer;
 
-            sorted_entity_ids[sorted_entity_insertion_index] = key_id;
+                if (it->flags & ENTITY_CHEST_FLAGS_UNLOCKED) {
+                    render_commands_push_image(commands,
+                                               graphics_assets_get_image_by_id(graphics_assets, chest_open_top_img),
+                                               rectangle_f32(it->position.x * TILE_UNIT_SIZE,
+                                                             (it->position.y-0.5) * TILE_UNIT_SIZE,
+                                                             it->scale.x * TILE_UNIT_SIZE,
+                                                             it->scale.y * TILE_UNIT_SIZE),
+                                               RECTANGLE_F32_NULL,
+                                               color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
+                    render_commands_set_shader(commands, game_foreground_things_shader, NULL);
+                    render_commands_push_image(commands,
+                                               graphics_assets_get_image_by_id(graphics_assets, chest_open_bottom_img),
+                                               rectangle_f32(it->position.x * TILE_UNIT_SIZE,
+                                                             it->position.y * TILE_UNIT_SIZE,
+                                                             it->scale.x * TILE_UNIT_SIZE,
+                                                             it->scale.y * TILE_UNIT_SIZE),
+                                               RECTANGLE_F32_NULL,
+                                               color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
+                    render_commands_set_shader(commands, game_foreground_things_shader, NULL);
+                } else {
+                    render_commands_push_image(commands,
+                                               graphics_assets_get_image_by_id(graphics_assets, chest_closed_img),
+                                               rectangle_f32(it->position.x * TILE_UNIT_SIZE,
+                                                             it->position.y * TILE_UNIT_SIZE,
+                                                             it->scale.x * TILE_UNIT_SIZE,
+                                                             it->scale.y * TILE_UNIT_SIZE),
+                                               RECTANGLE_F32_NULL,
+                                               color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
+                    render_commands_set_shader(commands, game_foreground_things_shader, NULL);
+                }
+            } break;
+            case SORTABLE_DRAW_ENTITY_PARTICLE_SYSTEM: {
+                
+            } break;
         }
     }
+}
 
-    for (s32 sorted_entity_index = 0; sorted_entity_index < sorted_entity_id_count; ++sorted_entity_index) {
-        struct entity* current_entity = game_dereference_entity(state, sorted_entity_ids[sorted_entity_index]);
+void render_entities(struct game_state* state, struct sortable_draw_entities* draw_entities) {
+    struct entity_iterator it = game_entity_iterator(state);
 
-        s32 facing_direction = current_entity->facing_direction;
-        s32 model_index      = current_entity->model_index;
-
+    for (struct entity* current_entity = entity_iterator_begin(&it); !entity_iterator_finished(&it); current_entity = entity_iterator_advance(&it)) {
         if (!(current_entity->flags & ENTITY_FLAGS_ACTIVE)) {
             continue;
         }
-
-        struct entity_animation* anim = find_animation_by_name(model_index, current_entity->animation.name);
-
-        if (!anim) {
-            _debugprintf("cannot find anim: %.*s. Falling back to \"down direction\"", current_entity->animation.name.length, current_entity->animation.name.data);
-            anim = find_animation_by_name(model_index, string_literal("down"));
-            assertion(anim && "no fallback anim? That is bad!");
-        }
-
-        current_entity->animation.timer += dt;
-        if (current_entity->animation.timer >= anim->time_until_next_frame) {
-            current_entity->animation.current_frame_index++;
-            current_entity->animation.timer = 0;
-
-            if (current_entity->animation.current_frame_index >= anim->frame_count) {
-                current_entity->animation.current_frame_index = 0;
-                current_entity->animation.iterations         += 1;
-            }
-        }
-
-        image_id sprite_to_use  = entity_animation_get_sprite_frame(anim, current_entity->animation.current_frame_index);
-        v2f32 sprite_dimensions = entity_animation_get_frame_dimensions(anim, current_entity->animation.current_frame_index);
-
-        /*
-          Look no one said this was good, I think my brain is a little broken since I can't think of a proper way to scale up everything properly.
-
-          However all the art is expected to be relative to 16x16 tiles
-        */
-        f32 scale_x = 2;
-        
-        v2f32 real_dimensions  = v2f32(sprite_dimensions.x * scale_x, sprite_dimensions.y * scale_x);
-
-        bool should_shift_up = (real_dimensions.y / TILE_UNIT_SIZE) >= 1;
-
-        v2f32 alignment_offset = v2f32(0, real_dimensions.y * should_shift_up * 0.8);
-
-        v2f32 other_offsets;
-        other_offsets.x = current_entity->ai.hurt_animation_shake_offset.x;
-        other_offsets.y = current_entity->ai.hurt_animation_shake_offset.y;
-
-
-        render_commands_push_image(commands,
-                                   graphics_assets_get_image_by_id(graphics_assets, drop_shadow),
-                                   rectangle_f32(current_entity->position.x - alignment_offset.x + other_offsets.x,
-                                                 current_entity->position.y - TILE_UNIT_SIZE*0.4 + other_offsets.y,
-                                                 TILE_UNIT_SIZE * roundf(real_dimensions.x/TILE_UNIT_SIZE),
-                                                 TILE_UNIT_SIZE * max(roundf(real_dimensions.y/(TILE_UNIT_SIZE*2)), 1)),
-                                   RECTANGLE_F32_NULL, color32f32(1,1,1,0.72), NO_FLAGS, BLEND_MODE_ALPHA);
-        render_commands_set_shader(commands, game_background_things_shader, NULL);
-
-        { /*HACKME special alignment case for death animations, this is after shadows since the shadow should not move */
-            if (string_equal(current_entity->animation.name, string_literal("dead"))) {
-                other_offsets.y += TILE_UNIT_SIZE/2;
-            }
-        }
-
-        union color32f32 modulation_color = color32f32_WHITE;
-
-        {
-            bool me = is_entity_under_ability_selection(sorted_entity_ids[sorted_entity_index]);
-            if (me) {
-                /* red for now. We want better effects maybe? */
-                modulation_color.g = modulation_color.b = 0;
-            }
-        }
-
-        render_commands_push_image(commands,
-                                   graphics_assets_get_image_by_id(graphics_assets, sprite_to_use),
-                                   rectangle_f32(current_entity->position.x - alignment_offset.x + other_offsets.x,
-                                                 current_entity->position.y - alignment_offset.y + other_offsets.y,
-                                                 real_dimensions.x,
-                                                 real_dimensions.y),
-                                   RECTANGLE_F32_NULL, modulation_color, NO_FLAGS, BLEND_MODE_ALPHA);
-        render_commands_set_shader(commands, game_foreground_things_shader, NULL);
-
-#ifndef RELEASE
-        struct rectangle_f32 collision_bounds = entity_rectangle_collision_bounds(current_entity);
-        
-        render_commands_push_quad(commands, collision_bounds, color32u8(255, 0, 0, 64), BLEND_MODE_ALPHA);
-#endif
+        sortable_draw_entities_push_entity(draw_entities, current_entity->position.y, it.current_id);
     }
 }
 

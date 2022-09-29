@@ -189,6 +189,48 @@ void draw_nine_patch_ui(struct graphics_assets* graphics_assets, struct software
 #endif
 }
 
+struct sortable_draw_entities sortable_draw_entities(struct memory_arena* arena, s32 capacity) {
+    struct sortable_draw_entities result;
+    result.count = 0;
+    result.entities = memory_arena_push(arena, sizeof(*result.entities) * capacity);
+    return result;
+}
+
+void sortable_draw_entities_push(struct sortable_draw_entities* entities, u8 type, f32 y_sort_key, void* ptr) {
+    struct sortable_draw_entity* current_draw_entity = &entities->entities[entities->count++];
+    current_draw_entity->type                        = type;
+    current_draw_entity->y_sort_key                  = y_sort_key;
+    current_draw_entity->pointer                     = ptr;
+}
+void sortable_draw_entities_push_entity(struct sortable_draw_entities* entities, f32 y_sort_key, entity_id id) {
+    struct sortable_draw_entity* current_draw_entity = &entities->entities[entities->count++];
+    current_draw_entity->type                        = SORTABLE_DRAW_ENTITY_ENTITY;
+    current_draw_entity->y_sort_key                  = y_sort_key;
+    current_draw_entity->entity_id                   = id;
+}
+
+void sortable_draw_entities_sort_keys(struct sortable_draw_entities* entities) {
+    /* insertion sort */
+    for (s32 draw_entity_index = 1; draw_entity_index < entities->count; ++draw_entity_index) {
+        s32 sorted_insertion_index = draw_entity_index;
+        struct sortable_draw_entity key_entity = entities->entities[draw_entity_index];
+
+        for (; sorted_insertion_index > 0; --sorted_insertion_index) {
+            struct sortable_draw_entity comparison_entity = entities->entities[sorted_insertion_index-1];
+
+            if (comparison_entity.y_sort_key < key_entity.y_sort_key) {
+                /* found insertion spot */
+                break;
+            } else {
+                /* push everything forward */
+                entities->entities[sorted_insertion_index] = entities->entities[sorted_insertion_index-1];
+            }
+        }
+
+        entities->entities[sorted_insertion_index] = key_entity;
+    }
+}
+
 struct tile_data_definition* tile_table_data;
 struct autotile_table*       auto_tile_info;
 
@@ -259,40 +301,6 @@ void render_ground_area(struct game_state* state, struct render_commands* comman
     if (state->combat_state.active_combat) {
         /* eh could be named better */
         render_combat_area_information(state, commands, area);
-    }
-
-    /* _debugprintf("%d chests", area->entity_chest_count); */
-    Array_For_Each(it, struct entity_chest, area->chests, area->entity_chest_count) {
-        if (it->flags & ENTITY_CHEST_FLAGS_UNLOCKED) {
-            render_commands_push_image(commands,
-                                       graphics_assets_get_image_by_id(&graphics_assets, chest_open_top_img),
-                                       rectangle_f32(it->position.x * TILE_UNIT_SIZE,
-                                                     (it->position.y-0.5) * TILE_UNIT_SIZE,
-                                                     it->scale.x * TILE_UNIT_SIZE,
-                                                     it->scale.y * TILE_UNIT_SIZE),
-                                       RECTANGLE_F32_NULL,
-                                       color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
-            render_commands_set_shader(commands, game_foreground_things_shader, NULL);
-            render_commands_push_image(commands,
-                                       graphics_assets_get_image_by_id(&graphics_assets, chest_open_bottom_img),
-                                       rectangle_f32(it->position.x * TILE_UNIT_SIZE,
-                                                     it->position.y * TILE_UNIT_SIZE,
-                                                     it->scale.x * TILE_UNIT_SIZE,
-                                                     it->scale.y * TILE_UNIT_SIZE),
-                                       RECTANGLE_F32_NULL,
-                                       color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
-            render_commands_set_shader(commands, game_foreground_things_shader, NULL);
-        } else {
-            render_commands_push_image(commands,
-                                       graphics_assets_get_image_by_id(&graphics_assets, chest_closed_img),
-                                       rectangle_f32(it->position.x * TILE_UNIT_SIZE,
-                                                     it->position.y * TILE_UNIT_SIZE,
-                                                     it->scale.x * TILE_UNIT_SIZE,
-                                                     it->scale.y * TILE_UNIT_SIZE),
-                                       RECTANGLE_F32_NULL,
-                                       color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
-            render_commands_set_shader(commands, game_foreground_things_shader, NULL);
-        }
     }
 }
 
@@ -2033,7 +2041,9 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                   So this means
                  */
                 _debugprintf("ASDF %d", (int)sizeof(struct render_command));
-                struct render_commands commands = render_commands(&scratch_arena, 16384, game_state->camera);
+                struct render_commands        commands      = render_commands(&scratch_arena, 16384, game_state->camera);
+                struct sortable_draw_entities draw_entities = sortable_draw_entities(&scratch_arena, 8192);
+
 
                 commands.should_clear_buffer = true;
                 commands.clear_buffer_color  = color32u8(0, 0, 0, 255);
@@ -2081,7 +2091,17 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                     game_state->weather.timer += dt;
                 }
 
-                render_entities(game_state, &graphics_assets, &commands, dt);
+                {
+                    struct level_area* area = &game_state->loaded_area;
+                    Array_For_Each(it, struct entity_chest, area->chests, area->entity_chest_count) {
+                        sortable_draw_entities_push(&draw_entities, SORTABLE_DRAW_ENTITY_CHEST, it->position.y*TILE_UNIT_SIZE, it);
+                    }
+                }
+
+                render_entities(game_state, &draw_entities);
+
+                sortable_draw_entities_submit(&commands, &graphics_assets, &draw_entities, dt);
+
                 render_foreground_area(game_state, &commands, &game_state->loaded_area);
 
                 game_script_execute_awaiting_scripts(&scratch_arena, game_state, dt);

@@ -1,4 +1,9 @@
-/* includes tiles and general entity types */
+/*
+  Includes anything that may vaguely be considered an entity like a particle system.
+
+  Not lights apparently. Those don't count for some reason!
+*/
+
 #ifndef ENTITY_DEF_C
 #define ENTITY_DEF_C
 
@@ -462,7 +467,6 @@ void               entity_list_clear(struct entity_list* entities);
 bool               entity_bad_ref(struct entity* e);
 
 void               update_entities(struct game_state* state, f32 dt, struct level_area* area);
-void               render_entities(struct game_state* state, struct graphics_assets* graphics_assets, struct render_commands* commands, f32 dt);
 
 struct rectangle_f32 entity_rectangle_collision_bounds(struct entity* entity);
 
@@ -471,5 +475,39 @@ struct entity_query_list {
     s32        count;
 };
 struct entity_query_list find_entities_within_radius(struct memory_arena* arena, struct game_state* state, v2f32 position, f32 radius);
+
+/*
+  NOTE: I should be using my sort keys API however it's not very useful IMO, since most things know their
+  order, and I find their draw order trivially without sorting.
+
+  It's only these specific entities, that need sorting and they're really just sorted relative to themselves
+  not to the rest of the world
+ */
+enum sortable_draw_entity_type {
+    SORTABLE_DRAW_ENTITY_ENTITY,
+    SORTABLE_DRAW_ENTITY_CHEST,
+    SORTABLE_DRAW_ENTITY_PARTICLE_SYSTEM,
+};
+struct sortable_draw_entity {
+    u8    type;
+    /* must be in pixels */
+    f32   y_sort_key;
+    union {
+        void* pointer; /* the pointers are stable for whatever I need. So I'll just use the pointer */
+        entity_id entity_id; /* of course if necessary... */
+    };
+};
+struct sortable_draw_entities {
+    s32 count;
+    struct sortable_draw_entity* entities;
+};
+struct sortable_draw_entities sortable_draw_entities(struct memory_arena* arena, s32 capacity);
+void sortable_draw_entities_push_entity(struct sortable_draw_entities* entities, f32 y_sort_key, entity_id id);
+void sortable_draw_entities_push(struct sortable_draw_entities* entities, u8 type, f32 y_sort_key, void* ptr);
+/* should not take dt, but just need something to work and there's animation timing code */
+void sortable_draw_entities_submit(struct render_commands* commands, struct graphics_assets* graphics_assets, struct sortable_draw_entities* entities, f32 dt);
+void sortable_draw_entities_sort_keys(struct sortable_draw_entities* entities);
+
+void render_entities(struct game_state* state, struct sortable_draw_entities* draw_entities);
 
 #endif
