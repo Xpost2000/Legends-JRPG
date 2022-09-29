@@ -1897,4 +1897,35 @@ void entity_add_ability_by_name(struct entity* entity, string id) {
     }
 }
 
+/* should have static level up table somewhere... probably here? */
+/* knows? */
+
+s32 get_xp_level_cutoff(s32 current_level) {
+    return 300;
+}
+
+/*
+  Should change stats based off of a table?
+
+  Abilities by level/attribute are technically all predetermined, and
+  would just unlock on their own (preallocating *everything*)
+
+  TODO: UI notification
+*/
+void entity_do_level_up(struct entity* entity) {
+    entity->stat_block.level += 1;
+}
+
+/* TODO: don't have leveling up curves decided yet. Will do later, like next week????? */
+void entity_award_experience(struct entity* entity, s32 xp_amount) {
+    entity->stat_block.experience += xp_amount;
+
+    s32 level_cutoff = get_xp_level_cutoff(entity->stat_block.level);
+    while (entity->stat_block.experience >= level_cutoff) {
+        entity_do_level_up(entity);
+        entity->stat_block.experience -= level_cutoff;
+        level_cutoff = get_xp_level_cutoff(entity->stat_block.level);
+    }
+}
+
 #include "entity_ability.c"

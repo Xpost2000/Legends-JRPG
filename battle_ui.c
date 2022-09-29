@@ -128,6 +128,18 @@ void battle_notify_killed_entity(entity_id killed) {
     global_battle_ui_state.killed_entities[global_battle_ui_state.killed_entity_count++] = killed;
 }
 
+/* calculate modifiers maybe in the future? */
+local s32 total_xp_gained_from_enemies(void) {
+    s32 total = 0;
+
+    for (s32 killed_entity_index = 0; killed_entity_index < global_battle_ui_state.killed_entity_count; ++killed_entity_index) {
+        struct entity* killed_entity = game_dereference_entity(game_state, global_battle_ui_state.killed_entities[killed_entity_index]);
+        total += killed_entity->stat_block.xp_value;
+    }
+
+    return total;
+}
+
 local void populate_post_battle_loot_table(void) {
     if (!global_battle_ui_state.populated_loot_table) {
         for (s32 killed_entity_index = 0; killed_entity_index < global_battle_ui_state.killed_entity_count; ++killed_entity_index) {
@@ -245,8 +257,8 @@ local void cancel_ability_selections(void) {
 local void recalculate_targeted_entities_by_ability(struct entity_ability* ability, u8* selection_field, struct game_state* state) {
     /* TODO: This only targets level entities, */
     /* this isn't a hard fix since we only need ids in the list but just an FYI. */
-    struct level_area* area                  = &state->loaded_area;
-    struct entity*     user                  = game_get_player(state);
+    struct level_area* area = &state->loaded_area;
+    struct entity*     user = game_get_player(state);
     const f32          SMALL_ENOUGH_EPISILON = 0.03;
 
     cancel_ability_selections();
@@ -878,6 +890,7 @@ local void do_after_action_report_screen(struct game_state* state, struct softwa
     if (disable_game_input) allow_input = false;
 
     struct font_cache* normal_font      = game_get_font(MENU_FONT_COLOR_WHITE);
+    struct font_cache* header_font      = game_get_font(MENU_FONT_COLOR_STEEL);
     struct font_cache* highlighted_font = game_get_font(MENU_FONT_COLOR_GOLD);
 
     bool selection_down    = is_key_down_with_repeat(KEY_DOWN);
@@ -899,7 +912,7 @@ local void do_after_action_report_screen(struct game_state* state, struct softwa
     }
 
     s32 BOX_WIDTH  = 20;
-    s32 BOX_HEIGHT = 16;
+    s32 BOX_HEIGHT = 17;
 
     /* DISPLAY XP Gain */ 
     /* and party member stuff */
@@ -908,20 +921,36 @@ local void do_after_action_report_screen(struct game_state* state, struct softwa
 
     /* TODO */
     draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, ui_box_position, BOX_WIDTH, BOX_HEIGHT, UI_BATTLE_COLOR);
-    draw_ui_breathing_text(framebuffer, v2f32(ui_box_position.x+15, ui_box_position.y+15), normal_font, 3, string_literal("Battle Complete!"), 0, modulation_color);
-    draw_ui_breathing_text(framebuffer, v2f32(ui_box_position.x+15, ui_box_position.y+60), normal_font, 3, string_literal("Loot Gained: "), 0, modulation_color);
+    draw_ui_breathing_text(framebuffer, v2f32(ui_box_position.x+15, ui_box_position.y+15), highlighted_font, 3, string_literal("Battle Complete!"), 0, modulation_color);
+    draw_ui_breathing_text(framebuffer, v2f32(ui_box_position.x+15, ui_box_position.y+55), header_font, 3, string_literal("Loot Gained: "), 0, modulation_color);
 
     f32 y_cursor = ui_box_position.y + 90;
+    f32 text_height = font_cache_text_height(normal_font) * 2;
+
     {
-        f32 text_height = font_cache_text_height(normal_font) * 2;
         for (s32 looted_item_index = 0; looted_item_index < global_battle_ui_state.loot_result_count; ++looted_item_index) {
             struct item_instance* current_loot_entry = global_battle_ui_state.loot_results + looted_item_index;
             struct item_def*      item_base          = item_database_find_by_id(current_loot_entry->item);
 
             string temp_string = format_temp_s("found %.*s (x%d)", item_base->name.length, item_base->name.data, current_loot_entry->count);
-            draw_ui_breathing_text(framebuffer, v2f32(ui_box_position.x+15, y_cursor), normal_font, 2, temp_string, 0, modulation_color);
+            software_framebuffer_draw_text(framebuffer, normal_font, 2, v2f32(ui_box_position.x+15, y_cursor), temp_string, modulation_color, BLEND_MODE_ALPHA);
             y_cursor += text_height*1.1; 
         }
+        y_cursor += text_height;
+    }
+
+    draw_ui_breathing_text(framebuffer, v2f32(ui_box_position.x+15, y_cursor), header_font, 3, string_literal("XP Gained"), 0, modulation_color);
+    y_cursor += text_height*1.6;
+
+    {
+        s32 total_xp_count = total_xp_gained_from_enemies();
+        string temp_string = format_temp_s("%d", total_xp_count);
+        /* award amongst party members if we had more than one */
+        {
+            struct entity* user = game_get_player(state);
+            entity_award_experience(user, total_xp_count);
+        }
+        software_framebuffer_draw_text(framebuffer, normal_font, 2, v2f32(ui_box_position.x+15, y_cursor), temp_string, modulation_color, BLEND_MODE_ALPHA);
     }
 
     if (selection_confirm) {

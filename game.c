@@ -342,6 +342,7 @@ entity_id entity_list_create_badguy(struct entity_list* entities, v2f32 position
     e->health.value         = 100;
     e->health.min           = 100;
     e->health.max           = 100;
+    e->stat_block.xp_value  = 30;
     e->ai.flags             = ENTITY_AI_FLAGS_AGGRESSIVE_TO_PLAYER;
     e->name                 = string_literal("Ruffian");
     e->loot_table_id_index  = entity_database_loot_table_find_id_by_name(&game_state->entity_database, string_literal("bandit_loot0"));

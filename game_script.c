@@ -248,6 +248,32 @@ GAME_LISP_FUNCTION(FOLLOW_PATH) {
     return LISP_nil;
 }
 
+GAME_LISP_FUNCTION(KILL_ALL) {
+    /* or any player entity rather, so we'll check for friendly */
+    struct game_state_combat_state* combat_state = &state->combat_state;
+
+    struct entity* active_combatant_entity = game_dereference_entity(state, combat_state->participants[combat_state->active_combatant]);
+
+    for (s32 index = combat_state->active_combatant; index < combat_state->count; ++index) {
+        union color32u8 color = color32u8(128, 128, 128, 255);
+
+        {
+            struct entity* entity = game_dereference_entity(state, combat_state->participants[index]);
+
+            if (entity->flags & ENTITY_FLAGS_PLAYER_CONTROLLED) {
+                continue;
+            } else {
+                if (entity->ai.flags & ENTITY_AI_FLAGS_AGGRESSIVE_TO_PLAYER) {
+                    entity_do_physical_hurt(entity, 99999);
+                    battle_notify_killed_entity(combat_state->participants[index]);
+                }
+            }
+        }
+    }
+
+    return LISP_nil;
+}
+
 GAME_LISP_FUNCTION(OBJ_ACTIVATIONS) {
     /* expect an object handle. Not checking right now */
 
@@ -430,6 +456,7 @@ static struct game_script_function_builtin script_function_table[] = {
     GAME_LISP_FUNCTION(GAME_IS_WEATHER),
     GAME_LISP_FUNCTION(GAME_SET_ENVIRONMENT_COLORS),
     GAME_LISP_FUNCTION(GAME_MESSAGE_QUEUE),
+    GAME_LISP_FUNCTION(KILL_ALL),
     GAME_LISP_FUNCTION(GAME_SET_REGION_NAME),
     GAME_LISP_FUNCTION(OPEN_SHOP),
 };
