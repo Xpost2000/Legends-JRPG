@@ -28,8 +28,13 @@ struct image_buffer image_buffer_load_from_file(string filepath) {
 
 void image_buffer_write_to_disk(struct image_buffer* image, string as) {
     char filename[256] = {};
+#if 0
     snprintf(filename, 256, "%s.bmp", as.data);
     stbi_write_bmp(filename, image->width, image->height, 4, image->pixels);
+#else
+    snprintf(filename, 256, "%s.jpg", as.data);
+    stbi_write_jpg(filename, image->width, image->height, 4, image->pixels, 3);
+#endif
     _debugprintf("screenshot produced.");
 }
 
