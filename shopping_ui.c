@@ -1,5 +1,6 @@
 /*
   TODO: might be using too many globals.
+  TODO: Move the common inventory viewing code elsewhere.
  */
 enum shopping_ui_animation_phase {
     SHOPPING_UI_ANIMATION_PHASE_FADE_IN,
@@ -180,7 +181,7 @@ local void shopping_ui_populate_filtered_page(s32 shop_mode) {
                 shopping_ui.shop_filtered_array[shopping_ui.shop_filtered_array_count++] = shop_item_index;
             }
         }
-    } else if (shopping_ui.shopping_mode == SHOPPING_MODE_SELLING) {
+    } else {
         _debugprintf("Selling!");
         struct entity_inventory* inventory = (struct entity_inventory*)(&game_state->inventory);
 
