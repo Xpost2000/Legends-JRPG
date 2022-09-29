@@ -35,6 +35,14 @@ struct rectangle_f32 entity_rectangle_collision_bounds(struct entity* entity) {
                          entity->scale.y-10);
 }
 
+struct entity_particle_emitter_list entity_particle_emitter_list(struct memory_arena* arena, s32 capacity) {
+    struct entity_particle_emitter_list result = {
+        .emitters = memory_arena_push(arena, capacity),
+        .count    = 0,
+    };
+    return result;
+}
+
 struct entity_list entity_list_create(struct memory_arena* arena, s32 capacity, u8 store_mark) {
     struct entity_list result = {
         .entities         = memory_arena_push(arena, capacity * sizeof(*result.entities)),
@@ -581,20 +589,53 @@ void sortable_draw_entities_submit(struct render_commands* commands, struct grap
                 }
             } break;
             case SORTABLE_DRAW_ENTITY_PARTICLE_SYSTEM: {
-                
+                struct entity_particle_emitter* emitter = current_draw_entity->pointer;
+
+                for (s32 particle_index = 0; particle_index < MAX_PARTICLES_PER_EMITTER; ++particle_index) {
+                    struct entity_particle* current_particle = &emitter->particles[particle_index];
+
+                    if (current_particle->lifetime <= 0.0) {
+                        continue;
+                    }
+
+                    /* living stuff */
+                }
             } break;
         }
     }
 }
 
-void render_entities(struct game_state* state, struct sortable_draw_entities* draw_entities) {
-    struct entity_iterator it = game_entity_iterator(state);
+void entity_particle_emitter_spawn(struct entity_particle_emitter_list* particle_emitter) {
+    /* need to spawn random parameterized particle */ 
+}
 
-    for (struct entity* current_entity = entity_iterator_begin(&it); !entity_iterator_finished(&it); current_entity = entity_iterator_advance(&it)) {
-        if (!(current_entity->flags & ENTITY_FLAGS_ACTIVE)) {
-            continue;
+void entity_particle_emitter_list_update(struct entity_particle_emitter_list* particle_emitters, f32 dt) {
+    
+}
+
+void render_entities(struct game_state* state, struct sortable_draw_entities* draw_entities) {
+    {
+        struct entity_iterator it = game_entity_iterator(state);
+
+        for (struct entity* current_entity = entity_iterator_begin(&it); !entity_iterator_finished(&it); current_entity = entity_iterator_advance(&it)) {
+            if (!(current_entity->flags & ENTITY_FLAGS_ACTIVE)) {
+                continue;
+            }
+            sortable_draw_entities_push_entity(draw_entities, current_entity->position.y, it.current_id);
         }
-        sortable_draw_entities_push_entity(draw_entities, current_entity->position.y, it.current_id);
+    }
+
+    {
+        struct level_area* area = &state->loaded_area;
+        Array_For_Each(it, struct entity_chest, area->chests, area->entity_chest_count) {
+            sortable_draw_entities_push(draw_entities, SORTABLE_DRAW_ENTITY_CHEST, it->position.y*TILE_UNIT_SIZE, it);
+        }
+    }
+
+    {
+        Array_For_Each(it, struct entity_particle_emitter, state->permenant_particle_emitters.emitters, state->permenant_particle_emitters.count) {
+            sortable_draw_entities_push(draw_entities, SORTABLE_DRAW_ENTITY_PARTICLE_SYSTEM, it->position.y, it);
+        }
     }
 }
 

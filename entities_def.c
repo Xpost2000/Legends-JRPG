@@ -10,6 +10,7 @@
 #define MAX_SELECTED_ENTITIES_FOR_ABILITIES (GAME_MAX_PERMENANT_ENTITIES + 256)
 
 #include "entity_stat_block_def.c"
+#define MAX_ENTITY_LIST_COUNT (8)
 
 /* This needs to be augmented more... Oh well. Not my issue. */
 /* We only really have one of each list type, so I could store the list
@@ -135,6 +136,47 @@ struct entity_chest {
     struct entity_chest_inventory inventory;
     item_id                       key_item;
 };
+
+/* might need to obey the simulated rules of a system but who cares? */
+/* reserved for in engine dynamic things, so burning and such. */
+/* levels will still have their own particle emitters if they would like. */
+#define GAME_MAX_PERMENANT_PARTICLE_EMITTERS (256) 
+#define MAX_PARTICLES_PER_EMITTER (128)
+
+/* NOTE(): these are point particle emitters to start with */
+struct entity_particle {
+    /* flat lazy particles */
+    v2f32 position;
+    v2f32 scale;
+    f32   lifetime;
+};
+struct entity_particle_emitter {
+    v2f32 position;
+    s32   spawned;
+    f32   time;
+    f32   spawn_delay;
+
+    f32 time_until_death;
+    s32 max_spawn;
+
+    /* get schema listing data elsewhere, for now hard code */
+    /* this will determine general spawning traits */
+    s32 particle_type;
+    
+    /* frankly these shouldn't belong with their emitter usually. */
+    /* or they shouldn't be related like this but whatever. */
+    struct entity_particle particles[MAX_PARTICLES_PER_EMITTER];
+};
+struct entity_particle_emitter_list {
+    s32 count;
+    struct entity_particle_emitter* emitters;
+};
+struct entity_particle_emitter_list entity_particle_emitter_list(struct memory_arena* arena, s32 capacity);
+void  entity_particle_emitter_list_update(struct entity_particle_emitter_list* particle_emitters, f32 dt);
+
+/* needs more parameters */
+void entity_particle_emitter_spawn(struct entity_particle_emitter_list* particle_emitter);
+
 struct entity_navigation_path {
     /* NOTE I am trying to design the game so that this is not needed... Implement this later if needed. */
 #if 0
@@ -439,7 +481,6 @@ struct entity_list {
     s32            capacity;
 };
 
-#define MAX_ENTITY_LIST_COUNT (32)
 struct entity_iterator {
     u8  done;
     s32 list_count;
@@ -501,6 +542,7 @@ struct sortable_draw_entities {
     s32 count;
     struct sortable_draw_entity* entities;
 };
+
 struct sortable_draw_entities sortable_draw_entities(struct memory_arena* arena, s32 capacity);
 void sortable_draw_entities_push_entity(struct sortable_draw_entities* entities, f32 y_sort_key, entity_id id);
 void sortable_draw_entities_push(struct sortable_draw_entities* entities, u8 type, f32 y_sort_key, void* ptr);

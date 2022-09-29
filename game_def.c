@@ -485,7 +485,8 @@ struct game_state {
     struct entity_database entity_database;
 
     /* player and their companions, or familiars or something like that. */
-    struct entity_list  permenant_entities;
+    struct entity_list                  permenant_entities;
+    struct entity_particle_emitter_list permenant_particle_emitters;
 
     struct weather      weather;
 

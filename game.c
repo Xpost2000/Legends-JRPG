@@ -1199,8 +1199,9 @@ void game_initialize(void) {
       Save Record        (Saves some delta about entities and map state),
       Game Base Files    (Use if there is no existing save record on that level...)
      */
-    game_state->permenant_entities = entity_list_create(&game_arena, GAME_MAX_PERMENANT_ENTITIES, ENTITY_LIST_STORAGE_TYPE_PERMENANT_STORE);
-    player_id                      = entity_list_create_player(&game_state->permenant_entities, v2f32(70, 70));
+    game_state->permenant_entities          = entity_list_create(&game_arena, GAME_MAX_PERMENANT_ENTITIES, ENTITY_LIST_STORAGE_TYPE_PERMENANT_STORE);
+    game_state->permenant_particle_emitters = entity_particle_emitter_list(&game_arena, GAME_MAX_PERMENANT_PARTICLE_EMITTERS);
+    player_id                               = entity_list_create_player(&game_state->permenant_entities, v2f32(70, 70));
     entity_list_create_badguy(&game_state->permenant_entities, v2f32(9 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE));
     entity_list_create_badguy(&game_state->permenant_entities, v2f32(7 * TILE_UNIT_SIZE, 5 * TILE_UNIT_SIZE));
 
@@ -2080,6 +2081,7 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                 if (game_state->ui_state != UI_STATE_PAUSE) {
                     if (!storyboard_active) {
                         update_entities(game_state, dt, &game_state->loaded_area);
+                        entity_particle_emitter_list_update(&game_state->permenant_particle_emitters, dt);
 
                         if (!game_state->combat_state.active_combat) {
                             determine_if_combat_should_begin(game_state);
@@ -2091,12 +2093,6 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                     game_state->weather.timer += dt;
                 }
 
-                {
-                    struct level_area* area = &game_state->loaded_area;
-                    Array_For_Each(it, struct entity_chest, area->chests, area->entity_chest_count) {
-                        sortable_draw_entities_push(&draw_entities, SORTABLE_DRAW_ENTITY_CHEST, it->position.y*TILE_UNIT_SIZE, it);
-                    }
-                }
 
                 render_entities(game_state, &draw_entities);
 
