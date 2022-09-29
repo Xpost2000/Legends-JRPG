@@ -99,9 +99,13 @@ struct sequence_action_move_to {
     } move_target;
 };
 
+/* HURT should be given some scaling modifiers */
+/* for now it just does 9999 dmg */
 struct sequence_action_hurt {
     /* TODO should have multiple targets avaliable to select */
-    struct sequence_action_target_entity target;
+    u8 target_all; /* NOT USED YET */
+    s32 target_count;
+    struct sequence_action_target_entity targets[ENTITY_ABILITY_SELECTION_FIELD_MAX_X*ENTITY_ABILITY_SELECTION_FIELD_MAX_Y];
 };
 
 struct sequence_action_special_fx {

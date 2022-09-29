@@ -1053,8 +1053,6 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
 
             assertion(sequence_action     && "The action is bad?   That can't be true!");
 
-
-#if 1
             switch (sequence_action->type) {
                 case SEQUENCE_ACTION_MOVE_TO: {
                     struct sequence_action_move_to* move_to = &sequence_action->move_to;
@@ -1169,7 +1167,6 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
                     }
                 } break;
                 case SEQUENCE_ACTION_FOCUS_CAMERA: {
-                    /* TODO */ 
                     struct sequence_action_focus_camera* focus_camera = &sequence_action->focus_camera;
                     struct entity* focus_entity = decode_sequence_action_target_entity_into_entity(state, target_entity, &focus_camera->target);
 
@@ -1177,12 +1174,12 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
                     entity_advance_ability_sequence(target_entity);
                 } break;
                 case SEQUENCE_ACTION_HURT: {
-                    /* TODO */ 
-                    if (sequence_state->time >= 1.0) {
-                        entity_advance_ability_sequence(target_entity);
-                    } else {
-                        sequence_state->time += dt;
+                    struct sequence_action_hurt* hurt_sequence = &sequence_action->hurt;
+                    for (s32 target_index = 0; target_index < hurt_sequence->target_count; ++target_index) {
+                        struct entity* attacked_entity = decode_sequence_action_target_entity_into_entity(state, target_entity, &hurt_sequence->targets[target_index]);
+                        entity_do_physical_hurt(attacked_entity, 9999);
                     }
+                    entity_advance_ability_sequence(target_entity);
                 } break;
                 case SEQUENCE_ACTION_START_SPECIAL_FX: {
                     struct sequence_action_special_fx* special_fx = &sequence_action->special_fx;
@@ -1209,7 +1206,6 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
                     entity_advance_ability_sequence(target_entity);
                 } break;
             }
-#endif
 
             if (sequence_state->current_sequence_index >= ability_sequence->sequence_action_count) {
                 target_entity->ai.current_action = 0; 
