@@ -1218,28 +1218,6 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
         } break;
 
         case ENTITY_ACTION_ATTACK: {
-#if 0
-            target_entity->ai.wait_timer += dt;
-
-            if (target_entity->ai.wait_timer >= 1.0) {
-                target_entity->ai.current_action = 0;
-                /*
-                 */
-                  
-                /* TODO add enemy flashing and animation damage tomorrow. */
-                struct entity* attacked_entity = game_dereference_entity(state, target_entity->ai.attack_target_id);
-                entity_do_physical_hurt(attacked_entity, 9999);
-
-                {
-                    if (attacked_entity->health.value <= 0) {
-                        if (target_entity->flags & ENTITY_FLAGS_PLAYER_CONTROLLED) {
-                            /* maybe not a good idea right now, but okay. */
-                            battle_notify_killed_entity(target_entity->ai.attack_target_id);
-                        }
-                    }
-                }
-            }
-#else
             struct entity* attacked_entity = game_dereference_entity(state, target_entity->ai.attack_target_id);
 
             switch (target_entity->ai.attack_animation_phase) {
@@ -1329,7 +1307,6 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
                     target_entity->ai.attack_animation_timer += dt;
                 } break;
             }
-#endif
         } break;
     }
 }
