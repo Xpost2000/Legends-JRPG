@@ -33,6 +33,7 @@ void inventory_remove_queued_item_usage(void) {
 void user_use_inventory_item_at_index(s32 item_index) {
     if (specific_inventory_ui_state.queued_item_use_index == -1) {
         specific_inventory_ui_state.queued_item_use_index = item_index;
+        _debugprintf("item index: %d", item_index);
     }
 }
 
@@ -65,7 +66,7 @@ local void do_inventory_use_item_popup(struct software_framebuffer* framebuffer,
     struct font_cache* highlighted_font = game_get_font(MENU_FONT_COLOR_GOLD);
 
     struct entity_inventory* inventory             = (struct entity_inventory*)(&game_state->inventory);
-    struct item_instance*   current_inventory_item = inventory->items + specific_inventory_ui_state.confirmation_popup_selection;
+    struct item_instance*   current_inventory_item = inventory->items + specific_inventory_ui_state.queued_item_use_index;
     struct item_def*  item_base             = item_database_find_by_id(current_inventory_item->item);
 
     string confirmation_string = format_temp_s("Use \"%.*s\"?", item_base->name.length, item_base->name.data);
