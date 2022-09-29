@@ -1,11 +1,6 @@
 /*
-  TODO: This should become the new basis for the inventory system UI.
-  TODO: Needs a confirm menu. (can be done much later.)
-
-  We need to pagify some things pretty soon.
-
-  TODO: Accurate seeking
-*/
+  TODO: might be using too many globals.
+ */
 enum shopping_ui_animation_phase {
     SHOPPING_UI_ANIMATION_PHASE_FADE_IN,
     SHOPPING_UI_ANIMATION_PHASE_SELECT_SHOPPING_MODE,
@@ -15,17 +10,16 @@ enum shopping_ui_animation_phase {
     SHOPPING_UI_ANIMATION_PHASE_PHASE_FADE_OUT,
 };
 
+
 /* Fixed arrays are kind of dumb but it's okay, this is alot */
 #define MAX_CART_ENTRIES (1024)
-
 enum shopping_page_filter {
-    SHOPPING_PAGE_ALL,
-    SHOPPING_PAGE_CONSUMABLES,
-    SHOPPING_PAGE_WEAPONS,
-    SHOPPING_PAGE_EQUIPMENT,
-    SHOPPING_PAGE_MISC,
-    SHOPPING_PAGE_COUNT,
-    SHOPPING_PAGE_BUYBACK,
+    PAGE_ALL,
+    PAGE_CONSUMABLES,
+    PAGE_WEAPONS,
+    PAGE_EQUIPMENT,
+    PAGE_MISC,
+    PAGE_COUNT,
 };
 
 local string shopping_page_filter_strings[] = {
@@ -41,6 +35,10 @@ local string shopping_page_filter_strings[] = {
 enum shopping_mode_type {
     SHOPPING_MODE_BUYING,
     SHOPPING_MODE_SELLING,
+    /* used for inventory mode */
+    /* inventory mode is reusing most of this code and I should move this somewhere */
+    /* just not sure right now so we're going to hack this in, and reuse this with a different behavior setting */
+    SHOPPING_MODE_VIEWING,
 };
 
 local string shopping_mode_type_strings[] = {
@@ -152,12 +150,12 @@ void shopping_ui_decrement_cart(s32 item_index) {
     }
 }
 
-local s32 find_shop_filter(void) {
+local s32 find_page_filter(void) {
     switch (shopping_ui.current_shopping_page_filter) {
-        case SHOPPING_PAGE_CONSUMABLES: return ITEM_TYPE_CONSUMABLE_ITEM;break;
-        case SHOPPING_PAGE_WEAPONS:     return ITEM_TYPE_WEAPON;         break;
-        case SHOPPING_PAGE_EQUIPMENT:   return ITEM_TYPE_EQUIPMENT;      break;
-        case SHOPPING_PAGE_MISC:        return ITEM_TYPE_MISC;           break;
+        case PAGE_CONSUMABLES: return ITEM_TYPE_CONSUMABLE_ITEM;break;
+        case PAGE_WEAPONS:     return ITEM_TYPE_WEAPON;         break;
+        case PAGE_EQUIPMENT:   return ITEM_TYPE_EQUIPMENT;      break;
+        case PAGE_MISC:        return ITEM_TYPE_MISC;           break;
         default: break;
     }
 
@@ -165,12 +163,12 @@ local s32 find_shop_filter(void) {
 }
 
 /* I should probably consider dictionary like constructs in the future? */
-local void shopping_ui_populate_filtered_page(void) {
-    s32 item_filter = find_shop_filter();
+local void shopping_ui_populate_filtered_page(s32 shop_mode) {
+    s32 item_filter = find_page_filter();
 
     shopping_ui.shop_filtered_array_count = 0;
 
-    if (shopping_ui.shopping_mode == SHOPPING_MODE_BUYING) {
+    if (shop_mode == SHOPPING_MODE_BUYING) {
         _debugprintf("Buying!");
         struct shop_instance* shop = &game_state->active_shop;
 
@@ -178,7 +176,7 @@ local void shopping_ui_populate_filtered_page(void) {
             struct shop_item* current_shop_item = shop->items + shop_item_index;
             struct item_def*  item_definition   = item_database_find_by_id(current_shop_item->item);
 
-            if (item_definition->type == item_filter || shopping_ui.current_shopping_page_filter == SHOPPING_PAGE_ALL) {
+            if (item_definition->type == item_filter || shopping_ui.current_shopping_page_filter == PAGE_ALL) {
                 shopping_ui.shop_filtered_array[shopping_ui.shop_filtered_array_count++] = shop_item_index;
             }
         }
@@ -197,7 +195,7 @@ local void shopping_ui_populate_filtered_page(void) {
                 allow_item = false;
             }
 
-            if (shopping_ui.current_shopping_page_filter != SHOPPING_PAGE_ALL) {
+            if (shopping_ui.current_shopping_page_filter != PAGE_ALL) {
                 if (item_definition->type != item_filter) {
                     allow_item = false;
                 }
@@ -242,7 +240,7 @@ local void do_gold_counter(struct software_framebuffer* framebuffer, f32 dt) {
 
     s32 current_cart_value = 0;
     {
-        s32 current_shop_filter = find_shop_filter();
+        s32 current_shop_filter = find_page_filter();
 
         for (s32 cart_item_index = 0; cart_item_index < shopping_ui.cart_entry_count; ++cart_item_index) {
             struct cart_entry* current_cart_entry = &shopping_ui.cart_entries[cart_item_index];
@@ -281,7 +279,7 @@ local void do_gold_counter(struct software_framebuffer* framebuffer, f32 dt) {
 }
 
 /* There is duplicated code. Beware, and maybe try and shrink this. */
-local void do_shopping_menu(struct software_framebuffer* framebuffer, f32 x, bool allow_input) {
+local void do_shopping_menu(struct software_framebuffer* framebuffer, f32 x, bool allow_input, s32 shop_mode) {
     struct font_cache* normal_font      = game_get_font(MENU_FONT_COLOR_WHITE);
     struct font_cache* highlighted_font = game_get_font(MENU_FONT_COLOR_GOLD);
 
@@ -315,7 +313,7 @@ local void do_shopping_menu(struct software_framebuffer* framebuffer, f32 x, boo
         f32 x_cursor = x;
         f32 largest_text_width = 0;
 
-        for (s32 filter_index = 0; filter_index < SHOPPING_PAGE_COUNT; ++filter_index) {
+        for (s32 filter_index = 0; filter_index < PAGE_COUNT; ++filter_index) {
             f32 measured_text_width = font_cache_text_width(normal_font, shopping_page_filter_strings[filter_index], text_scale);
             if (measured_text_width > largest_text_width) {
                 largest_text_width = measured_text_width;
@@ -323,7 +321,7 @@ local void do_shopping_menu(struct software_framebuffer* framebuffer, f32 x, boo
         }
 
         /* Okay this UI could take advantage of having icons but that's a bit later. This'll pass in the act 1 demo I suppose. */
-        for (s32 filter_index = 0; filter_index < SHOPPING_PAGE_COUNT; ++filter_index) {
+        for (s32 filter_index = 0; filter_index < PAGE_COUNT; ++filter_index) {
             f32 page_tab_selector_offset_y = 16*2;
 
             struct font_cache* painting_text = normal_font;
@@ -374,17 +372,17 @@ local void do_shopping_menu(struct software_framebuffer* framebuffer, f32 x, boo
                 shopping_ui.current_shopping_page_filter -= 1;
 
                 if (shopping_ui.current_shopping_page_filter < 0) {
-                    shopping_ui.current_shopping_page_filter = SHOPPING_PAGE_COUNT - 1;
+                    shopping_ui.current_shopping_page_filter = PAGE_COUNT - 1;
                 }
             } else {
                 shopping_ui.current_shopping_page_filter += 1;
 
-                if (shopping_ui.current_shopping_page_filter >= SHOPPING_PAGE_COUNT) {
+                if (shopping_ui.current_shopping_page_filter >= PAGE_COUNT) {
                     shopping_ui.current_shopping_page_filter = 0;
                 }
             }
 
-            shopping_ui_populate_filtered_page();
+            shopping_ui_populate_filtered_page(shop_mode);
         }
 
         y_cursor += 10;
@@ -403,7 +401,7 @@ local void do_shopping_menu(struct software_framebuffer* framebuffer, f32 x, boo
             s32              item_stack_size = 0;
             s32              item_max_size   = 0;
             
-            if (shopping_ui.shopping_mode == SHOPPING_MODE_BUYING) {
+            if (shop_mode == SHOPPING_MODE_BUYING) {
                 struct shop_item* current_shop_item = shop->items + lookup_index;
                 item_base                           = item_database_find_by_id(current_shop_item->item);
                 price                               = shop_item_get_effective_price(shop, shop_item_id_standard(item_index));
@@ -454,7 +452,7 @@ local void do_shopping_menu(struct software_framebuffer* framebuffer, f32 x, boo
 
                 assertion(current_cart_entry->count > 0 && "This should never happen. Just sanity checking...");
 
-                if (shopping_ui.shopping_mode == SHOPPING_MODE_BUYING) {
+                if (shop_mode == SHOPPING_MODE_BUYING) {
                     /* shouldn't be exposed out here but okay... */
                     /* TODO: This is slightly bugged but I'm trying to replicate behavior so bug fixing comes after. */
                     for (s32 purchase_count = 0; purchase_count < current_cart_entry->count; ++purchase_count) {
@@ -462,18 +460,20 @@ local void do_shopping_menu(struct software_framebuffer* framebuffer, f32 x, boo
                             _debugprintf("Thanks for shopping");
                         }
                     }
-                } else {
+                } else if (shop_mode == SHOPPING_MODE_SELLING) {
                     for (s32 sell_count = 0; sell_count < current_cart_entry->count; ++sell_count) {
                         if (sell_item_to_shop(shop, inventory, MAX_PARTY_ITEMS, &gold_count, current_cart_entry->item_index)) {
                             _debugprintf("Thanks for selling");
                         }
                     }
+                } else {
+                    /* use item here */
                 }
             }
 
             entity_inventory_set_gold_count(inventory, gold_count);
             shopping_ui_clear_cart();
-            shopping_ui_populate_filtered_page();
+            shopping_ui_populate_filtered_page(shop_mode);
             /* In reality I should keep my cursor on the nearest item to be less confusing. */
             shopping_ui.shopping_item_index = 0;
         }
@@ -581,7 +581,7 @@ local void game_display_and_update_shop_ui(struct software_framebuffer* framebuf
                                 shopping_ui.shopping_mode = SHOPPING_MODE_SELLING;
                             }
 
-                            shopping_ui_populate_filtered_page();
+                            shopping_ui_populate_filtered_page(shopping_ui.shopping_mode);
                             shopping_ui.shopping_item_index = 0;
                             shop_ui_set_phase(SHOPPING_UI_ANIMATION_PHASE_SLIDE_IN_SHOPPING);
                         }
@@ -606,7 +606,7 @@ local void game_display_and_update_shop_ui(struct software_framebuffer* framebuf
                 shop_ui_set_phase(SHOPPING_UI_ANIMATION_PHASE_IDLE);
             }
 
-            do_shopping_menu(framebuffer, lerp_f32(-999, FINAL_SHOPPING_MENU_X, t), false);
+            do_shopping_menu(framebuffer, lerp_f32(-999, FINAL_SHOPPING_MENU_X, t), false, shopping_ui.shopping_mode);
             software_framebuffer_draw_text(framebuffer, normal_font, 4, v2f32(10, 10), shopping_mode_type_strings[shopping_ui.shopping_mode], color32f32(1,1,1,t2), BLEND_MODE_ALPHA);
         } break;
 
@@ -615,7 +615,7 @@ local void game_display_and_update_shop_ui(struct software_framebuffer* framebuf
             game_postprocess_grayscale(framebuffer, max_grayscale);
             
             do_gold_counter(framebuffer, dt);
-            do_shopping_menu(framebuffer, FINAL_SHOPPING_MENU_X, true);
+            do_shopping_menu(framebuffer, FINAL_SHOPPING_MENU_X, true, shopping_ui.shopping_mode);
             software_framebuffer_draw_text(framebuffer, normal_font, 4, v2f32(10, 10), shopping_mode_type_strings[shopping_ui.shopping_mode], color32f32_WHITE, BLEND_MODE_ALPHA);
         } break;
 
@@ -635,7 +635,7 @@ local void game_display_and_update_shop_ui(struct software_framebuffer* framebuf
                 shop_ui_set_phase(SHOPPING_UI_ANIMATION_PHASE_SELECT_SHOPPING_MODE);
             }
 
-            do_shopping_menu(framebuffer, lerp_f32(-999, FINAL_SHOPPING_MENU_X, (1.0 - t)), false);
+            do_shopping_menu(framebuffer, lerp_f32(-999, FINAL_SHOPPING_MENU_X, (1.0 - t)), false, shopping_ui.shopping_mode);
             software_framebuffer_draw_text(framebuffer, normal_font, 4, v2f32(10, 10), shopping_mode_type_strings[shopping_ui.shopping_mode], color32f32(1,1,1,(1.0 - t2)), BLEND_MODE_ALPHA);
         } break;
 
