@@ -4,6 +4,7 @@
   NOTE: there is a major disadvantage and that is the fact most of the UI code is not reusable right now,
   (IE: the options menu isn't usable in the main game pause menu yet. That can change soon though.)
 */
+#define GAME_MAX_SAVE_SLOTS (8)
 
 enum main_menu_animation_phase {
     MAIN_MENU_LIGHTNING_FLASHES,
@@ -15,9 +16,31 @@ enum main_menu_animation_phase {
     MAIN_MENU_SHOW_OPTIONS_PAGE_MOVE_IN_OPTIONS,
     MAIN_MENU_OPTIONS_PAGE_MOVE_OUT,
     MAIN_MENU_OPTIONS_PAGE_IDLE,
+
+    MAIN_MENU_SAVE_MENU_DROP_DOWN,
+    MAIN_MENU_SAVE_MENU_IDLE,
 };
 
 /* All option menu code is also placed here. Along with the special *IMGUI* code lol */
+#define SAVE_SLOT_WIDGET_SAVE_NAME_LENGTH  (32)
+#define SAVE_SLOT_WIDGET_DESCRIPTOR_LENGTH (64)
+struct save_slot_widget {
+    /* should have some save info */
+    /* maybe a bitmap? */
+    char name[SAVE_SLOT_WIDGET_SAVE_NAME_LENGTH];
+    /*
+      mostly Act description probably, this is manually encoded when you make the save game,
+      determined elsewhere.
+    */
+    char descriptor[SAVE_SLOT_WIDGET_DESCRIPTOR_LENGTH];
+    /* game timestamp??? */
+#if 0
+    u64 unix_timestamp;
+#endif
+
+    /* same system used for the other stuff */
+    f32 lean_in_t;
+};
 struct {
     s32 phase;
 
@@ -29,7 +52,29 @@ struct {
     struct random_state rnd;
 
     s32 currently_selected_option_choice;
+    struct save_slot_widget save_slot_widgets[GAME_MAX_SAVE_SLOTS];
 } main_menu;
+
+local void fill_all_save_slots(void) {
+    /* should be loading from save files, right now don't have that tho */
+    /* the save header should be filled with this information so we can just quickly read and copy the display information */
+    /* without having to hold on to it in memory. */
+
+    for (s32 save_slot_index = 0; save_slot_index < array_count(main_menu.save_slot_widgets); ++save_slot_index) {
+        string filename_path = format_temp_s("./saves/sav%d.sav", save_slot_index);
+
+        struct save_slot_widget* current_save_slot = &main_menu.save_slot_widgets[save_slot_index];
+        if (file_exists(filename_path)) {
+            cstring_copy("NEED TO LOAD", current_save_slot->name, array_count(current_save_slot->name));
+            cstring_copy("-------", current_save_slot->descriptor, array_count(current_save_slot->descriptor));
+        } else {
+            cstring_copy("NO SAVE", current_save_slot->name, array_count(current_save_slot->name));
+            cstring_copy("-------", current_save_slot->descriptor, array_count(current_save_slot->descriptor));
+        }
+
+        current_save_slot->lean_in_t = 0;
+    }
+}
 
 enum {
     MAIN_MENU_OPTION_CHOICE,
@@ -166,13 +211,11 @@ local s32 main_menu_do_menu_ui(v2f32 where, struct software_framebuffer* framebu
 
     if (up) {
         (*option_ptr) -= 1;
-        _debugprintf("hi up");
         play_sound(ui_blip);
     }
 
     if (down) {
         (*option_ptr) += 1;
-        _debugprintf("hi down");
         play_sound(ui_blip);
     }
 
@@ -184,6 +227,72 @@ local s32 main_menu_do_menu_ui(v2f32 where, struct software_framebuffer* framebu
 
     if (confirm_selection) {
         return *option_ptr;
+    }
+
+    return -1;
+}
+
+local s32 do_save_menu(struct software_framebuffer* framebuffer, f32 y_offset, f32 dt, bool allow_input) {
+    union color32f32 ui_color = UI_DEFAULT_COLOR;
+    f32 alpha = 1;
+
+    if (!allow_input) alpha = 0.5;
+    ui_color.a              = alpha;
+
+    bool selection_move_up   = is_key_down_with_repeat(KEY_UP);
+    bool selection_move_down = is_key_down_with_repeat(KEY_DOWN);
+    bool selection_cancel    = is_key_pressed(KEY_ESCAPE);
+    bool selection_confirm   = is_key_pressed(KEY_RETURN);
+
+    if (!allow_input) {
+        selection_confirm = selection_cancel = selection_move_down = selection_move_up = false;
+    }
+
+    f32 y_cursor = y_offset+25;
+    /* I
+       DEALLY we don't have to scroll for any save slots, they should all fit on one screen, but I might as well
+       allow scrolling so we'll have lots of saveslots just so I know how to do it for the inventory since that
+       doesn't happen yet if you can believe it.
+    */
+    const f32 MAX_T_FOR_SLOT_LEAN = 0.25;
+
+    for (s32 save_slot_index = 0; save_slot_index < array_count(main_menu.save_slot_widgets); ++save_slot_index) {
+        struct save_slot_widget* current_slot = main_menu.save_slot_widgets + save_slot_index;
+
+        f32 effective_slot_t = current_slot->lean_in_t / MAX_T_FOR_SLOT_LEAN;
+
+        if (effective_slot_t > 1) effective_slot_t      = 1;
+        else if (effective_slot_t < 0) effective_slot_t = 0;
+
+        if (main_menu.currently_selected_option_choice == save_slot_index) {
+            current_slot->lean_in_t += dt;
+            if (current_slot->lean_in_t > MAX_T_FOR_SLOT_LEAN) current_slot->lean_in_t = MAX_T_FOR_SLOT_LEAN;
+        } else {
+            current_slot->lean_in_t -= dt;
+            if (current_slot->lean_in_t < 0) current_slot->lean_in_t = 0;
+        }
+
+        f32 x_cursor = 50 + lerp_f32(0, 50, effective_slot_t);
+
+        s32 BOX_WIDTH  = 13;
+        s32 BOX_HEIGHT = 5;
+
+        draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, v2f32(x_cursor, y_cursor), BOX_WIDTH, BOX_HEIGHT, ui_color);
+        v2f32 nine_patch_extents = nine_patch_estimate_extents(ui_chunky, 1, BOX_WIDTH, BOX_HEIGHT);
+        y_cursor += nine_patch_extents.y * 1.5;
+    }
+
+    if (selection_move_down) {
+        main_menu.currently_selected_option_choice += 1;
+        if (main_menu.currently_selected_option_choice >= array_count(main_menu.save_slot_widgets)) {
+            main_menu.currently_selected_option_choice = 0;
+        }
+    }
+    if (selection_move_up) {
+        main_menu.currently_selected_option_choice -= 1;
+        if (main_menu.currently_selected_option_choice < 0) {
+            main_menu.currently_selected_option_choice = array_count(main_menu.save_slot_widgets) - 1;
+        }
     }
 
     return -1;
@@ -274,7 +383,12 @@ local void update_and_render_main_menu(struct game_state* state, struct software
                 switch (choice) {
                     case 1: {
                         screen_mode = GAME_SCREEN_INGAME;
-
+                        game_initialize_game_world();
+                    } break;
+                    case 2: {
+                        main_menu.phase = MAIN_MENU_SAVE_MENU_DROP_DOWN;
+                        main_menu.timer = 0;
+                        fill_all_save_slots();
                     } break;
                     case 3: {
                         main_menu.timer = 0;
@@ -363,6 +477,31 @@ local void update_and_render_main_menu(struct game_state* state, struct software
                         main_menu.timer = 0;
                     } break;
                 }
+            }
+        } break;
+
+        case MAIN_MENU_SAVE_MENU_DROP_DOWN: {
+            const f32 MAX_T = 3.f;
+            f32 effective_t = main_menu.timer/MAX_T;
+
+            if (effective_t > 1)      effective_t = 1;
+            else if (effective_t < 0) effective_t = 0;
+
+            f32 y_offset = lerp_f32(-999, 0, effective_t);
+            do_save_menu(framebuffer, y_offset, dt, false);
+
+            if (main_menu.timer >= MAX_T) {
+                main_menu.phase = MAIN_MENU_SAVE_MENU_IDLE;
+            }
+
+            main_menu.timer += dt;
+        } break;
+
+        case MAIN_MENU_SAVE_MENU_IDLE: {
+            s32 selected_slot = do_save_menu(framebuffer, 0, dt, true);
+
+            if (selected_slot != -1) {
+                /* load slot and start the game */
             }
         } break;
     } 

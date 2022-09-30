@@ -9,6 +9,8 @@
 #include "game_script_def.c"
 #include "storyboard_presentation_def.c"
 
+void game_initialize_game_world(void);
+
 /* These are some more specialized types of effects that require lots of perverse insertions */
 #define INVERSION_TIME_BETWEEN_FLASHES (0.07)
 #define INVERSION_FLASH_MAX            (12)
@@ -1241,11 +1243,11 @@ void game_initialize(void) {
     initialize_items_database();
 
     assertion(verify_no_item_id_name_hash_collisions());
-    void game_initialize_game_world(void);
-    game_initialize_game_world();
 }
 
 void game_initialize_game_world(void) {
+    zero_memory(&game_state->inventory, sizeof(game_state->inventory));
+
     for (s32 i = 0; i < 450; ++i) entity_inventory_add((struct entity_inventory*)&game_state->inventory, MAX_PARTY_ITEMS, item_id_make(string_literal("item_gold")));
     entity_inventory_add((struct entity_inventory*)&game_state->inventory, MAX_PARTY_ITEMS, item_id_make(string_literal("item_armor_rags")));
     entity_inventory_add((struct entity_inventory*)&game_state->inventory, MAX_PARTY_ITEMS, item_id_make(string_literal("item_armor_loincloth")));

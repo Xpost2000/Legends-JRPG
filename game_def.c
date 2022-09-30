@@ -435,7 +435,7 @@ s32 screen_mode = GAME_SCREEN_MAIN_MENU;
 /* sized fixed chunks, but still dynamic */
 /* this isn't a hashmap FYI, just linear lookups. That's okay too. Since lookup is not frequent. */
 /* I can change this to a chunked hashmap I guess, not a big deal... */
-#define MAX_GAME_VARIABLES_PER_CHUNK (256)
+#define MAX_GAME_VARIABLES_PER_CHUNK (32)
 #define MAX_GAME_VARIABLE_NAME_LENGTH (16)
 struct game_variable {
     // big names ****************
