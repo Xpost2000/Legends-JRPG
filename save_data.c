@@ -7,8 +7,16 @@
 
 /* delta based saving */
 enum save_record_type {
+    SAVE_RECORD_TYPE_NIL,
     SAVE_RECORD_TYPE_ENTITY_ENTITY,
     SAVE_RECORD_TYPE_ENTITY_CHEST,
+    SAVE_RECORD_TYPE_COUNT
+};
+
+local string save_record_type_strings[] = {
+    [SAVE_RECORD_TYPE_NIL]           = string_literal("RECORD_NIL"),
+    [SAVE_RECORD_TYPE_ENTITY_ENTITY] = string_literal("RECORD_ENTITY"),
+    [SAVE_RECORD_TYPE_ENTITY_CHEST]  = string_literal("RECORD_CHEST"),
 };
 
 struct save_record_entity_chest {
@@ -94,6 +102,43 @@ void game_serialize_save(struct binary_serializer* serializer) {
     
 }
 
+void try_to_apply_record_entry(struct save_record* record, struct game_state* state);
 void apply_save_data(struct game_state* state) {
-    
+    /* would be nice to write an iterator structure but it's not needed for this. */    
+    u32 hashed_area_name = hash_bytes_fnv1a((u8*)state->loaded_area_name, cstring_length(state->loaded_area_name));
+    bool found_matching_region = false;
+
+    struct save_area_record_entry* area_entry = global_save_data.first;
+    {
+        while (area_entry && !found_matching_region) {
+            if (area_entry->map_hash_id == hashed_area_name) {
+                found_matching_region = true;
+            } else {
+                area_entry = area_entry->next;
+            }
+        }
+    }
+
+    if (found_matching_region) {
+        struct save_area_record_chunk* chunk_entries = area_entry->first;
+
+        /* figure out how to apply everything */
+        while (chunk_entries) {
+            for (s32 entry_index = 0; entry_index < chunk_entries->written_entries; ++entry_index) {
+                struct save_record* current_record = chunk_entries->records + entry_index;
+                try_to_apply_record_entry(current_record, state);
+            }
+
+            chunk_entries = chunk_entries->next;
+        }
+    }
+}
+
+void try_to_apply_record_entry(struct save_record* record, struct game_state* state) {
+    _debugprintf("RECORD TYPE: %.*s", save_record_type_strings[record->type].length, save_record_type_strings[record->type].data);
+    switch (record->type) {
+        default: {
+    _debugprintf("UNHANDLED RECORD TYPE: %.*s", save_record_type_strings[record->type].length, save_record_type_strings[record->type].data);
+        } break;
+    }
 }
