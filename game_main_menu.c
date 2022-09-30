@@ -40,6 +40,8 @@ struct save_slot_widget {
 
     /* same system used for the other stuff */
     f32 lean_in_t;
+
+    /* smoothly seek over to the current save slot to view */
 };
 struct {
     s32 phase;
@@ -53,6 +55,7 @@ struct {
 
     s32 currently_selected_option_choice;
     struct save_slot_widget save_slot_widgets[GAME_MAX_SAVE_SLOTS];
+    f32 scroll_seek_y;
 } main_menu;
 
 local void fill_all_save_slots(void) {
@@ -244,17 +247,23 @@ local s32 do_save_menu(struct software_framebuffer* framebuffer, f32 y_offset, f
     bool selection_cancel    = is_key_pressed(KEY_ESCAPE);
     bool selection_confirm   = is_key_pressed(KEY_RETURN);
 
+    f32 y_cursor = y_offset+25;
+
     if (!allow_input) {
         selection_confirm = selection_cancel = selection_move_down = selection_move_up = false;
     }
 
-    f32 y_cursor = y_offset+25;
     /* I
        DEALLY we don't have to scroll for any save slots, they should all fit on one screen, but I might as well
        allow scrolling so we'll have lots of saveslots just so I know how to do it for the inventory since that
        doesn't happen yet if you can believe it.
     */
     const f32 MAX_T_FOR_SLOT_LEAN = 0.25;
+
+    struct font_cache* title_font = game_get_font(MENU_FONT_COLOR_STEEL);
+    struct font_cache* body_font  = game_get_font(MENU_FONT_COLOR_WHITE);
+
+    f32 start_y_cursor = y_cursor;
 
     for (s32 save_slot_index = 0; save_slot_index < array_count(main_menu.save_slot_widgets); ++save_slot_index) {
         struct save_slot_widget* current_slot = main_menu.save_slot_widgets + save_slot_index;
@@ -267,17 +276,35 @@ local s32 do_save_menu(struct software_framebuffer* framebuffer, f32 y_offset, f
         if (main_menu.currently_selected_option_choice == save_slot_index) {
             current_slot->lean_in_t += dt;
             if (current_slot->lean_in_t > MAX_T_FOR_SLOT_LEAN) current_slot->lean_in_t = MAX_T_FOR_SLOT_LEAN;
+
+            { /* seek smoothly */
+                if (main_menu.scroll_seek_y != y_cursor) {
+                    f32 sign_direction = 0;
+                    if (main_menu.scroll_seek_y < y_cursor) sign_direction = 1;
+                    else sign_direction                                    = -1;
+
+                    f32 displacement = y_cursor - main_menu.scroll_seek_y;
+                    f32 attenuation  = 1 - (1 / (1+(displacement*displacement)));
+
+                    main_menu.scroll_seek_y += dt * attenuation*12;
+                }
+            }
         } else {
             current_slot->lean_in_t -= dt;
             if (current_slot->lean_in_t < 0) current_slot->lean_in_t = 0;
         }
+
 
         f32 x_cursor = 50 + lerp_f32(0, 50, effective_slot_t);
 
         s32 BOX_WIDTH  = 13;
         s32 BOX_HEIGHT = 5;
 
-        draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, v2f32(x_cursor, y_cursor), BOX_WIDTH, BOX_HEIGHT, ui_color);
+        f32 adjusted_scroll_offset = main_menu.scroll_seek_y - start_y_cursor;
+        draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, v2f32(x_cursor, y_cursor + adjusted_scroll_offset), BOX_WIDTH, BOX_HEIGHT, ui_color);
+        draw_ui_breathing_text(framebuffer, v2f32(x_cursor + 15, y_cursor + 15 + adjusted_scroll_offset), title_font, 2, string_from_cstring(current_slot->name), save_slot_index*22, color32f32(1, 1, 1, alpha));
+        software_framebuffer_draw_text(framebuffer, body_font, 1, v2f32(x_cursor + 20, y_cursor + 15+32 + adjusted_scroll_offset), string_from_cstring(current_slot->descriptor), color32f32(1, 1, 1, alpha), BLEND_MODE_ALPHA);
+
         v2f32 nine_patch_extents = nine_patch_estimate_extents(ui_chunky, 1, BOX_WIDTH, BOX_HEIGHT);
         y_cursor += nine_patch_extents.y * 1.5;
     }
@@ -386,8 +413,9 @@ local void update_and_render_main_menu(struct game_state* state, struct software
                         game_initialize_game_world();
                     } break;
                     case 2: {
-                        main_menu.phase = MAIN_MENU_SAVE_MENU_DROP_DOWN;
-                        main_menu.timer = 0;
+                        main_menu.phase         = MAIN_MENU_SAVE_MENU_DROP_DOWN;
+                        main_menu.timer         = 0;
+                        main_menu.scroll_seek_y = 0;
                         fill_all_save_slots();
                     } break;
                     case 3: {
