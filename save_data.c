@@ -127,8 +127,6 @@ void game_load_from_save_slot(s32 save_slot_id) {
     }
 
     struct binary_serializer read_serializer = open_read_file_serializer(filename_from_saveslot_id(save_slot_id));
-    load_level_from_file(game_state, string_from_cstring(game_state->loaded_area_name));
-
     game_serialize_save(&read_serializer);
     apply_save_data(game_state);
     serializer_finish(&read_serializer);
@@ -227,6 +225,10 @@ void game_serialize_save(struct binary_serializer* serializer) {
     serialize_bytes(serializer, area_name_DUMMY, SAVE_SLOT_WIDGET_SAVE_NAME_LENGTH);
     serialize_bytes(serializer, area_desc_DUMMY, SAVE_SLOT_WIDGET_DESCRIPTOR_LENGTH);
     serialize_bytes(serializer, game_state->loaded_area_name, sizeof(game_state->loaded_area_name));
+
+    if (serializer->mode == BINARY_SERIALIZER_READ) {
+        load_level_from_file(game_state, string_from_cstring(game_state->loaded_area_name));
+    }
 
     serialize_s32(serializer, &game_state->inventory.item_count);
     serialize_bytes(serializer, game_state->inventory.items, sizeof(*game_state->inventory.items) * game_state->inventory.item_count);
