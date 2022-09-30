@@ -2225,6 +2225,18 @@ s32 game_variable_get(string name) {
     return to_set->value;
 }
 
+/*
+  prune a lot from the game state to figure out a sensible thing... Might be based on the level?
+  Who knows?
+ */
+void game_write_save_slot(s32 save_slot_id) {
+    assertion(save_slot_id >= 0 && save_slot_id < GAME_MAX_SAVE_SLOTS);
+}
+
+void game_load_from_save_slot(s32 save_slot_id) {
+    assertion(save_slot_id >= 0 && save_slot_id < GAME_MAX_SAVE_SLOTS);
+}
+
 #include "game_script.c"
 #include "item_data.c"
 #include "save_data.c"

@@ -4,7 +4,7 @@
   NOTE: there is a major disadvantage and that is the fact most of the UI code is not reusable right now,
   (IE: the options menu isn't usable in the main game pause menu yet. That can change soon though.)
 */
-#define GAME_MAX_SAVE_SLOTS (8)
+#define GAME_MAX_SAVE_SLOTS (16)
 
 enum main_menu_animation_phase {
     MAIN_MENU_LIGHTNING_FLASHES,
@@ -18,6 +18,7 @@ enum main_menu_animation_phase {
     MAIN_MENU_OPTIONS_PAGE_IDLE,
 
     MAIN_MENU_SAVE_MENU_DROP_DOWN,
+    MAIN_MENU_SAVE_MENU_CANCEL,
     MAIN_MENU_SAVE_MENU_IDLE,
 };
 
@@ -258,12 +259,17 @@ local s32 do_save_menu(struct software_framebuffer* framebuffer, f32 y_offset, f
        allow scrolling so we'll have lots of saveslots just so I know how to do it for the inventory since that
        doesn't happen yet if you can believe it.
     */
-    const f32 MAX_T_FOR_SLOT_LEAN = 0.25;
+    const f32 MAX_T_FOR_SLOT_LEAN = 0.10;
 
     struct font_cache* title_font = game_get_font(MENU_FONT_COLOR_STEEL);
     struct font_cache* body_font  = game_get_font(MENU_FONT_COLOR_WHITE);
 
     f32 start_y_cursor = y_cursor;
+
+    s32 BOX_WIDTH  = 20;
+    s32 BOX_HEIGHT = 8;
+
+    v2f32 nine_patch_extents = nine_patch_estimate_extents(ui_chunky, 1, BOX_WIDTH, BOX_HEIGHT);
 
     for (s32 save_slot_index = 0; save_slot_index < array_count(main_menu.save_slot_widgets); ++save_slot_index) {
         struct save_slot_widget* current_slot = main_menu.save_slot_widgets + save_slot_index;
@@ -273,23 +279,38 @@ local s32 do_save_menu(struct software_framebuffer* framebuffer, f32 y_offset, f
         if (effective_slot_t > 1) effective_slot_t      = 1;
         else if (effective_slot_t < 0) effective_slot_t = 0;
 
+        if (selection_confirm) {
+            return save_slot_index;
+        }
+
         if (main_menu.currently_selected_option_choice == save_slot_index) {
-            current_slot->lean_in_t += dt;
-            if (current_slot->lean_in_t > MAX_T_FOR_SLOT_LEAN) current_slot->lean_in_t = MAX_T_FOR_SLOT_LEAN;
+            if (allow_input) {
+                current_slot->lean_in_t += dt;
+                if (current_slot->lean_in_t > MAX_T_FOR_SLOT_LEAN) current_slot->lean_in_t = MAX_T_FOR_SLOT_LEAN;
+            }
 
             { /* seek smoothly */
-                f32 relative_target = (start_y_cursor - y_cursor);
-                f32 relative_distance = fabs(main_menu.scroll_seek_y - relative_target);
-                _debugprintf("%f (%f v %f)", relative_distance, main_menu.scroll_seek_y, relative_target);
-                if (relative_distance > 1.3) {
-                    f32 sign_direction = 0;
-                    if (main_menu.scroll_seek_y < relative_target) sign_direction = 1;
-                    else                                           sign_direction = -1;
+                f32 relative_target = (start_y_cursor - y_cursor) + (SCREEN_HEIGHT/2-nine_patch_extents.y);
+                f32 relative_distance = fabs(main_menu.scroll_seek_y - (relative_target));
 
-                    f32 displacement = (relative_target - main_menu.scroll_seek_y) * 45;
-                    f32 attenuation  = 1 - (1 / (1+(displacement*displacement)));
+                if (relative_distance > 1.512838f) {
 
-                    main_menu.scroll_seek_y += dt * attenuation*150 * sign_direction;
+                    /* smoothen out */
+                    const s32 STEPS = 10;
+                    for (s32 iters = 0; iters < STEPS; ++iters) {
+                        f32 sign_direction = 0;
+                        if (main_menu.scroll_seek_y < relative_target) sign_direction = 1;
+                        else                                           sign_direction = -1;
+
+                        f32 displacement = (relative_target - main_menu.scroll_seek_y) * 45;
+                        f32 attenuation  = 1 - (1 / (1+(displacement*displacement)));
+
+                        if (relative_distance > 1.512838f) {
+                            main_menu.scroll_seek_y += dt * attenuation*50 * sign_direction;
+                        } else {
+                            break;
+                        }
+                    }
                 }
             }
         } else {
@@ -300,16 +321,13 @@ local s32 do_save_menu(struct software_framebuffer* framebuffer, f32 y_offset, f
 
         f32 x_cursor = 50 + lerp_f32(0, 50, effective_slot_t);
 
-        s32 BOX_WIDTH  = 13;
-        s32 BOX_HEIGHT = 5;
 
         f32 adjusted_scroll_offset = main_menu.scroll_seek_y;
 
         draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, v2f32(x_cursor, y_cursor + adjusted_scroll_offset), BOX_WIDTH, BOX_HEIGHT, ui_color);
-        draw_ui_breathing_text(framebuffer, v2f32(x_cursor + 15, y_cursor + 15 + adjusted_scroll_offset), title_font, 2, string_from_cstring(current_slot->name), save_slot_index*22, color32f32(1, 1, 1, alpha));
+        draw_ui_breathing_text(framebuffer, v2f32(x_cursor + 15, y_cursor + 15 + adjusted_scroll_offset), title_font, 2, format_temp_s("%s (%02d)", current_slot->name, save_slot_index), save_slot_index*22, color32f32(1, 1, 1, alpha));
         software_framebuffer_draw_text(framebuffer, body_font, 1, v2f32(x_cursor + 20, y_cursor + 15+32 + adjusted_scroll_offset), string_from_cstring(current_slot->descriptor), color32f32(1, 1, 1, alpha), BLEND_MODE_ALPHA);
 
-        v2f32 nine_patch_extents = nine_patch_estimate_extents(ui_chunky, 1, BOX_WIDTH, BOX_HEIGHT);
         y_cursor += nine_patch_extents.y * 1.5;
     }
 
@@ -324,6 +342,11 @@ local s32 do_save_menu(struct software_framebuffer* framebuffer, f32 y_offset, f
         if (main_menu.currently_selected_option_choice < 0) {
             main_menu.currently_selected_option_choice = array_count(main_menu.save_slot_widgets) - 1;
         }
+    }
+
+    if (selection_cancel) {
+        main_menu.phase = MAIN_MENU_SAVE_MENU_CANCEL;
+        main_menu.timer = 0;
     }
 
     return -1;
@@ -535,6 +558,23 @@ local void update_and_render_main_menu(struct game_state* state, struct software
             if (selected_slot != -1) {
                 /* load slot and start the game */
             }
+        } break;
+        case MAIN_MENU_SAVE_MENU_CANCEL: {
+            const f32 MAX_T = 3.f;
+            f32 effective_t = main_menu.timer/MAX_T;
+
+            if (effective_t > 1)      effective_t = 1;
+            else if (effective_t < 0) effective_t = 0;
+
+            f32 y_offset = lerp_f32(0, -999, effective_t);
+            do_save_menu(framebuffer, y_offset, dt, false);
+
+            if (main_menu.timer >= MAX_T) {
+                main_menu.phase = MAIN_MENU_TITLE_APPEAR;
+                main_menu.timer = 0;
+            }
+
+            main_menu.timer += dt;
         } break;
     } 
 
