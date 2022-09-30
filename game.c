@@ -1148,7 +1148,7 @@ void game_initialize(void) {
 #endif
 
     game_state                      = memory_arena_push(&game_arena, sizeof(*game_state));
-    game_state->variables.variables = memory_arena_push(&game_arena, sizeof(*game_state->variables.variables) * 4096);
+    game_state->variables           = game_variables(&game_arena);
     game_state->conversation_arena  = memory_arena_push_sub_arena(&game_arena, Kilobyte(64));
 
     game_state->entity_database     = entity_database_create(&game_arena);
@@ -1173,6 +1173,8 @@ void game_initialize(void) {
     global_entity_models = entity_model_database_create(&game_arena, 512);
 
     game_script_initialize(&game_arena);
+
+    game_variable_set(string_literal("gvarrain"), 1);
 
     passive_speaking_dialogues = memory_arena_push(&game_arena, MAX_PASSIVE_SPEAKING_DIALOGUES * sizeof(*passive_speaking_dialogues));
 
@@ -2147,6 +2149,78 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
         software_framebuffer_draw_quad(framebuffer, game_state->camera.travel_bounds, color32u8(0,0,255,100), BLEND_MODE_ALPHA);
     }
 #endif
+}
+
+struct game_variables game_variables(struct memory_arena* arena) {
+    struct game_variables result = {};
+    result.first       = result.last = NULL;
+    result.arena       = arena;
+    return result;
+}
+
+struct game_variable* game_variables_allocate_next(void) {
+    struct game_variables* variables = &game_state->variables;
+    struct game_variable* result = NULL;
+
+    /* first doesn't exist? */
+    if (!variables->last) {
+        struct game_variable_chunk* initial_chunk = memory_arena_push(variables->arena, sizeof(*variables->first));
+        initial_chunk->variable_count = 0;
+        initial_chunk->next           = NULL;
+        variables->first = variables->last = initial_chunk;
+    }
+
+    /* overflowing current count? */
+    if (variables->last->variable_count >= MAX_GAME_VARIABLES_PER_CHUNK) {
+        struct game_variable_chunk* next_chunk = memory_arena_push(variables->arena, sizeof(*variables->first));
+        next_chunk->next                       = NULL;
+        next_chunk->variable_count             = 0;
+        variables->last->next                  = next_chunk;
+        variables->last                        = next_chunk;
+    }
+
+    struct game_variable_chunk* current_chunk = variables->last;
+    result                                    = &current_chunk->variables[current_chunk->variable_count++];
+
+    return result;
+}
+
+struct game_variable* lookup_game_variable(string name, bool create_when_not_found) {
+    struct game_variables* variables = &game_state->variables;
+
+    {
+        struct game_variable_chunk* cursor = variables->first;
+
+        while (cursor) {
+            for (s32 variable_index = 0; variable_index < cursor->variable_count; ++variable_index) {
+                struct game_variable* variable = cursor->variables + variable_index;
+
+                if (string_equal(name, string_from_cstring(variable->name))) {
+                    return variable;
+                }
+            }
+
+            cursor = cursor->next;
+        }
+    }
+
+    if (create_when_not_found) {
+        struct game_variable* new_variable = game_variables_allocate_next();;
+        cstring_copy(name.data, new_variable->name, array_count(new_variable->name));
+        new_variable->value = 0;
+        return new_variable;
+    }
+    return NULL;
+}
+
+void game_variable_set(string name, s32 value) {
+    struct game_variable* to_set = lookup_game_variable(name, true);
+    to_set->value = value;
+}
+
+s32 game_variable_get(string name) {
+    struct game_variable* to_set = lookup_game_variable(name, true);
+    return to_set->value;
 }
 
 #include "game_script.c"

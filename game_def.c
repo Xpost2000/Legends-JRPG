@@ -432,18 +432,30 @@ enum game_screen_mode {
 /* s32 screen_mode = GAME_SCREEN_PREVIEW_DEMO_ALERT; */
 s32 screen_mode = GAME_SCREEN_MAIN_MENU;
 
+/* sized fixed chunks, but still dynamic */
+/* this isn't a hashmap FYI, just linear lookups. That's okay too. Since lookup is not frequent. */
+/* I can change this to a chunked hashmap I guess, not a big deal... */
+#define MAX_GAME_VARIABLES_PER_CHUNK (256)
+#define MAX_GAME_VARIABLE_NAME_LENGTH (16)
 struct game_variable {
     // big names ****************
-    char name[16];
-    u8   is_float;
-
-    s32  integer_value;
-    f32  float_value;
+    char name[MAX_GAME_VARIABLE_NAME_LENGTH];
+    s32  value;
+};
+struct game_variable_chunk {
+    s32                         variable_count;
+    struct game_variable        variables[MAX_GAME_VARIABLES_PER_CHUNK];
+    struct game_variable_chunk* next;
 };
 struct game_variables {
-    struct game_variable* variables;
-    s32                   count;
+    struct memory_arena* arena;
+    struct game_variable_chunk* first;
+    struct game_variable_chunk* last;
 };
+struct game_variables game_variables(struct memory_arena* arena);
+struct game_variable* lookup_game_variable(string name, bool create_when_not_found);
+void game_variable_set(string name, s32 value);
+s32  game_variable_get(string name);
 
 #include "shop_def.c"
 

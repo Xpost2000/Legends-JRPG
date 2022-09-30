@@ -478,38 +478,11 @@ local game_script_function lookup_script_function(string name) {
 }
 #undef GAME_LISP_FUNCTION
 
-struct game_variable* lookup_game_variable(string name, bool create_when_not_found) {
-    struct game_variables* variables = &game_state->variables;
-
-    for (s32 index = 0; index < variables->count; ++index) {
-        struct game_variable* variable = variables->variables + index;
-
-        if (string_equal(name, string_from_cstring(variable->name))) {
-            return variable;
-        }
-    }
-
-    if (create_when_not_found) {
-        struct game_variable* new_variable = &variables->variables[variables->count++];
-
-        cstring_copy(name.data, new_variable->name, array_count(new_variable->name));
-        new_variable->float_value   = 0;
-        new_variable->integer_value = 0;
-
-        return new_variable;
-    }
-    return NULL;
-}
-
 struct lisp_form game_script_look_up_dictionary_value(struct lisp_form name) {
     struct game_variable* variable = lookup_game_variable(name.string, false);
 
     if (variable) {
-        if (variable->is_float) {
-            return lisp_form_real(variable->float_value);
-        } else {
-            return lisp_form_integer(variable->integer_value);
-        }
+        return lisp_form_integer(variable->value);
     }
 
     return LISP_nil;
@@ -521,22 +494,9 @@ struct lisp_form game_script_set_dictionary_value(struct lisp_form name, struct 
 
     if (!variable) {
         variable = lookup_game_variable(name.string, true);
-
-        /* there is a weird type system. Consider if I just want all integers? Probably. but who knows */
-        if (value.type == LISP_FORM_NUMBER) {
-            if (value.is_real) {
-                variable->is_float = true;
-            } else {
-                variable->is_float = false;
-            }
-        }
     }
 
-    if (variable->is_float) {
-        lisp_form_get_f32(value, &variable->float_value);
-    } else {
-        lisp_form_get_s32(value, &variable->integer_value);
-    }
+    lisp_form_get_s32(value, &variable->value);
 
     return value;
 }
