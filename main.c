@@ -1,4 +1,7 @@
 /* #define NO_POSTPROCESSING */
+#ifndef RELEASE
+#define NO_FANCY_FADEIN_INTRO
+#endif
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
@@ -70,6 +73,9 @@ static SDL_Haptic*                 global_haptic_devices[4]     = {};
 static struct software_framebuffer global_default_framebuffer   = {};
 static struct graphics_assets      graphics_assets              = {};
 
+local void set_window_transparency(f32 transparency) {
+    SDL_SetWindowOpacity(global_game_window, transparency);
+}
 
 local void close_all_controllers(void) {
     for (unsigned controller_index = 0; controller_index < array_count(global_controller_devices); ++controller_index) {
@@ -178,10 +184,6 @@ void controller_rumble(struct game_controller* controller, f32 x_magnitude, f32 
     x_magnitude = clamp_f32(x_magnitude, 0, 1);
     y_magnitude = clamp_f32(y_magnitude, 0, 1);
     SDL_GameControllerRumble(sdl_controller, (0xFFFF * x_magnitude), (0xFFFF * y_magnitude), ms);
-}
-
-local void set_window_transparency(f32 transparency) {
-    SDL_SetWindowOpacity(global_game_window, transparency);
 }
 
 void swap_framebuffers_onto_screen(void) {
@@ -333,11 +335,18 @@ local void initialize(void) {
 
     audio_initialize();
 
-    /* global_game_window          = SDL_CreateWindow("RPG", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN); */
-    global_game_window          = SDL_CreateWindow("RPG", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, REAL_SCREEN_WIDTH, REAL_SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
+    global_game_window          = SDL_CreateWindow("RPG",
+                                                   SDL_WINDOWPOS_CENTERED,
+                                                   SDL_WINDOWPOS_CENTERED,
+                                                   REAL_SCREEN_WIDTH,
+                                                   REAL_SCREEN_HEIGHT,
+                                                   SDL_WINDOW_HIDDEN);
     global_game_sdl_renderer    = SDL_CreateRenderer(global_game_window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 
     initialize_thread_pool();
+
+    set_window_transparency(0);
+    SDL_ShowWindow(global_game_window);
 
     game_initialize();
     initialize_framebuffer();
@@ -363,6 +372,8 @@ void deinitialize(void) {
 #include "sandbox_tests.c"
 
 f32 last_elapsed_delta_time = (1.0 / 60.0f);
+
+
 void engine_main_loop() {
     char window_name_title_buffer[256] = {};
     u32 start_frame_time = SDL_GetTicks();
@@ -371,7 +382,29 @@ void engine_main_loop() {
     {
         handle_sdl_events();
         update_all_controller_inputs();
-        update_and_render_game(&global_default_framebuffer, last_elapsed_delta_time);
+
+        local bool _did_window_intro_fade_in   = false;
+        local f32  _window_intro_fade_in_timer = 0;
+
+#ifdef NO_FANCY_FADEIN_INTRO
+        _did_window_intro_fade_in = true;
+#endif
+
+        if (!_did_window_intro_fade_in) {
+            const f32 MAX_INTRO_FADE_IN_TIMER = 0.2756;
+            _window_intro_fade_in_timer += last_elapsed_delta_time;
+
+            f32 alpha = _window_intro_fade_in_timer / MAX_INTRO_FADE_IN_TIMER;
+            if (alpha > 1) alpha = 1;
+
+            set_window_transparency(alpha);
+
+            if (_window_intro_fade_in_timer >= MAX_INTRO_FADE_IN_TIMER) {
+                _did_window_intro_fade_in = true;
+            }
+        } else {
+            update_and_render_game(&global_default_framebuffer, last_elapsed_delta_time);
+        }
     }
     end_input_frame();
 
@@ -431,9 +464,31 @@ int engine_main(int argc, char** argv) {
 #ifdef __EMSCRIPTEN__
     emscripten_set_main_loop(engine_main_loop, 0, true);
 #else
-    while (global_game_running) {
+    bool finished_fade_out_intro = false;
+    f32 fade_out_intro_timer     = 0;
+
+#ifdef NO_FANCY_FADEIN_INTRO
+    finished_fade_out_intro = true;
+#endif
+
+    while (global_game_running || !finished_fade_out_intro) {
         engine_main_loop();
+
+        if (!global_game_running) {
+            const f32 MAX_INTRO_FADE_OUT_TIMER = 0.2756;
+            fade_out_intro_timer += last_elapsed_delta_time;
+
+            f32 alpha = 1 - (fade_out_intro_timer/MAX_INTRO_FADE_OUT_TIMER);
+            if (alpha < 0) alpha = 0;
+
+            set_window_transparency(alpha);
+
+            if (fade_out_intro_timer >= MAX_INTRO_FADE_OUT_TIMER) {
+                finished_fade_out_intro = true;
+            }
+        }
     }
+
 #endif
 
     deinitialize();
