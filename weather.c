@@ -54,7 +54,7 @@ void weather_render_rain(struct game_state* state, struct software_framebuffer* 
 void weather_render_snow(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
     for (s32 index = 0; index < MAX_WEATHER_PARTICLES; ++index) {
         /* this looks hella fake */
-        v2f32 current_position = v2f32_add(state->weather.snow_positions[index], v2f32(sinf(global_elapsed_time*5 + index*3.141592654) * 8, 0));
+        v2f32 current_position = v2f32_add(state->weather.snow_positions[index], v2f32(sinf(global_elapsed_game_time*5 + index*3.141592654) * 8, 0));
         software_framebuffer_draw_line(framebuffer, current_position, v2f32_add(current_position, v2f32(0, 2)), color32u8(255, 255, 255, 255), BLEND_MODE_ALPHA);
     }
 }

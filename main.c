@@ -13,6 +13,7 @@
 
 static bool global_game_running = true;
 static f32                         global_elapsed_time          = 0.0f;
+static f32                         global_elapsed_game_time     = 0.0f;
 static struct memory_arena         scratch_arena                = {};
 
 string format_temp_s(const char* fmt, ...) {

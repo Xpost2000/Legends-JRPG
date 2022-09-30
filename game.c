@@ -2086,6 +2086,7 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                         }
                     }
 
+                    global_elapsed_game_time += dt;
                     game_state->weather.timer += dt;
                 }
 
