@@ -1,13 +1,14 @@
 #include "save_data_def.c"
 
-/* delta based saving */
+#define SAVE_RECORDS_PER_SAVE_AREA_RECORD_CHUNK (64)
 
-/*
-  This is just a bunch of dynamic arrays
- */
-/* all of these are implied to have been prefixed with a type discriminator. */
-struct save_area_record_header {
-    u32 type;
+/* this linked list is fine since we only need to write */
+/* and read incredibly sparingly... */
+
+/* delta based saving */
+enum save_record_type {
+    SAVE_RECORD_TYPE_ENTITY_ENTITY,
+    SAVE_RECORD_TYPE_ENTITY_CHEST,
 };
 
 struct save_record_entity_chest {
@@ -15,28 +16,47 @@ struct save_record_entity_chest {
     u32 target_entity;
     u32 flags;
 };
-struct save_area_record_entry {
-    u32 map_hash;
-    u32 used;
+
+struct save_record {
+    u32 type;
+
+    union {
+        
+    };
 };
 
-struct {
+struct save_area_record_chunk {
+    s16 written_entries;
+    struct save_record records[SAVE_RECORDS_PER_SAVE_AREA_RECORD_CHUNK];
+    struct save_area_record_chunk* next;
+};
+
+struct save_area_record_entry {
+    u32 map_hash_id; /* pray I don't change hashing algorithms or everything breaks! */
+    u32 used;
+
+    struct save_area_record_chunk* first;
+    struct save_area_record_chunk* last;
+
+    struct save_area_record_entry* next;
+};
+
+struct master_save_record {
+    /* common things, such as all game variables */
+    /*
+      this isn't stored here, we're just writing it to the top of the file header,
+      and reading it from there. Just pretend it's here though.
+    */
+
+    /* generic entries */
     u32 used_entries;
-    struct save_area_record_entry* entries[1024];
-} global_save_data = {};
+    struct save_area_record_entry* first;
+    struct save_area_record_entry* last;
+};
 
-static struct memory_arena save_arena = {};
+struct master_save_record global_save_data = {};
 
-void begin_save_entry(u32 area_hash) {
-}
-
-void end_save_entry(u32 area_hash) {
-    
-}
-
-void apply_save_data(struct game_state* state) {
-    
-}
+local struct memory_arena save_arena = {};
 
 void initialize_save_data(void) {
     save_arena = memory_arena_create_from_heap("Save Data Memory", Megabyte(16));
@@ -71,5 +91,9 @@ void game_load_from_save_slot(s32 save_slot_id) {
 
 /* binary friendly format to runtime friendly format. Oh boy... let the games begin. */
 void game_serialize_save(struct binary_serializer* serializer) {
+    
+}
+
+void apply_save_data(struct game_state* state) {
     
 }
