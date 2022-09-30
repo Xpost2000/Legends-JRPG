@@ -18,7 +18,6 @@ struct save_record_entity_chest {
 struct save_area_record_entry {
     u32 map_hash;
     u32 used;
-    u8 memory[Kilobyte(512)]; /* these are humungous note! */
 };
 
 struct {
@@ -40,9 +39,37 @@ void apply_save_data(struct game_state* state) {
 }
 
 void initialize_save_data(void) {
-    save_arena = memory_arena_create_from_heap("Save Data Memory", Megabyte(8));
+    save_arena = memory_arena_create_from_heap("Save Data Memory", Megabyte(16));
 }
 
 void finish_save_data(void) {
     memory_arena_finish(&save_arena);
+}
+
+/*
+  prune a lot from the game state to figure out a sensible thing... Might be based on the level?
+  Who knows?
+ */
+
+local string filename_from_saveslot_id(s32 id) {
+    return format_temp_s("./saves/sav%02d.sav", id);
+}
+
+void game_serialize_save(struct binary_serializer* serializer);
+
+void game_write_save_slot(s32 save_slot_id) {
+    assertion(save_slot_id >= 0 && save_slot_id < GAME_MAX_SAVE_SLOTS);
+    struct binary_serializer write_serializer = open_read_file_serializer(filename_from_saveslot_id(save_slot_id));
+    game_serialize_save(&write_serializer);
+}
+
+void game_load_from_save_slot(s32 save_slot_id) {
+    assertion(save_slot_id >= 0 && save_slot_id < GAME_MAX_SAVE_SLOTS);
+    struct binary_serializer read_serializer = open_read_file_serializer(filename_from_saveslot_id(save_slot_id));
+    game_serialize_save(&read_serializer);
+}
+
+/* binary friendly format to runtime friendly format. Oh boy... let the games begin. */
+void game_serialize_save(struct binary_serializer* serializer) {
+    
 }
