@@ -20,16 +20,17 @@ local string save_record_type_strings[] = {
 };
 
 struct save_record_entity_chest {
-    /* chests will never move. Only write flags */
+    /*
+      conceivably chests... should really only be looted or not...
+     */
     u32 target_entity;
-    u32 flags;
 };
 
 struct save_record {
     u32 type;
 
     union {
-        
+        struct save_record_entity_chest chest_record;
     };
 };
 
@@ -110,14 +111,23 @@ void game_serialize_save(struct binary_serializer* serializer);
 
 void game_write_save_slot(s32 save_slot_id) {
     assertion(save_slot_id >= 0 && save_slot_id < GAME_MAX_SAVE_SLOTS);
-    struct binary_serializer write_serializer = open_read_file_serializer(filename_from_saveslot_id(save_slot_id));
+    struct binary_serializer write_serializer = open_write_file_serializer(filename_from_saveslot_id(save_slot_id));
     game_serialize_save(&write_serializer);
+    serializer_finish(&write_serializer);
 }
 
 void game_load_from_save_slot(s32 save_slot_id) {
     assertion(save_slot_id >= 0 && save_slot_id < GAME_MAX_SAVE_SLOTS);
+
+    /* clear both arenas and start from zero. */
+    memory_arena_clear_top(&save_arena);
+    memory_arena_clear_bottom(&save_arena);
+
     struct binary_serializer read_serializer = open_read_file_serializer(filename_from_saveslot_id(save_slot_id));
     game_serialize_save(&read_serializer);
+    load_level_from_file(game_state, string_from_cstring(game_state->loaded_area_name));
+    apply_save_data(game_state);
+    serializer_finish(&read_serializer);
 }
 
 struct save_area_record_entry* save_record_allocate_area_entry_chunk(void) {
@@ -130,6 +140,7 @@ struct save_area_record_entry* save_record_allocate_area_entry_chunk(void) {
         global_save_data.last       = new_entry;
     }
 
+    zero_memory(new_entry, sizeof(*new_entry));
     return new_entry;
 }
 
@@ -143,7 +154,41 @@ struct save_area_record_chunk* save_area_record_chunk_allocate_entry_chunk(struc
         area_entry->last       = new_record_chunk;
     }
 
+    zero_memory(new_record_chunk, sizeof(*new_record_chunk));
     return new_record_chunk;
+}
+
+struct save_record* save_area_record_entry_allocate_record(struct save_area_record_entry* area_entry) {
+    if (!area_entry->last) {
+        save_area_record_chunk_allocate_entry_chunk(area_entry);
+    }
+
+    if (area_entry->last->written_entries >= SAVE_RECORDS_PER_SAVE_AREA_RECORD_CHUNK) {
+        save_area_record_chunk_allocate_entry_chunk(area_entry);
+    }
+
+    struct save_record* new_record = &area_entry->last->records[area_entry->last->written_entries++];
+    return new_record;
+}
+
+struct save_area_record_entry* save_record_area_entry_find_or_allocate(string entryname) {
+    u32 hashed_name = hash_bytes_fnv1a((u8*)entryname.data, entryname.length);
+    {
+        struct save_area_record_entry* cursor = global_save_data.first;
+
+        while (cursor) {
+            if (cursor->map_hash_id == hashed_name) {
+                _debugprintf("found match for \"%.*s\"", entryname.length, entryname.data);
+                return cursor;
+            }
+        }
+    }
+
+    _debugprintf("no matching area record... creating for \"%.*s\"", entryname.length, entryname.data);
+
+    struct save_area_record_entry* new_entry = save_record_allocate_area_entry_chunk();
+    new_entry->map_hash_id = hashed_name;
+    return new_entry;
 }
 
 /* binary friendly format to runtime friendly format. Oh boy... let the games begin. */
@@ -218,6 +263,7 @@ void game_serialize_save(struct binary_serializer* serializer) {
 
         for (s32 area_entry_index = 0; area_entry_index < area_entry_count; ++area_entry_index) {
             s32 record_entries = save_area_record_entry_record_count(current_area_entry);
+            _debugprintf("Current area entry has %d entries to write", record_entries);
 
             serialize_u32(serializer, &current_area_entry->map_hash_id);
             serialize_s32(serializer, &record_entries);
@@ -228,9 +274,12 @@ void game_serialize_save(struct binary_serializer* serializer) {
                 s32 written = 0;
                 while (entry_chunk) {
                     serialize_bytes(serializer, entry_chunk->records, sizeof(*entry_chunk->records) * entry_chunk->written_entries);
+                    written += entry_chunk->written_entries;
                     entry_chunk = entry_chunk->next;
+                    _debugprintf("Current entry chunk wrote: %d entries (%d total)", entry_chunk->written_entries, written);
                 }
 
+                _debugprintf("Done writing area entry, advancing...");
                 assertion(written == record_entries && "Hmm, this doesn't smell so good to me.");
             }
 
@@ -279,6 +328,7 @@ void apply_save_data(struct game_state* state) {
         while (area_entry && !found_matching_region) {
             if (area_entry->map_hash_id == hashed_area_name) {
                 found_matching_region = true;
+                _debugprintf("Found matching region!");
             } else {
                 area_entry = area_entry->next;
             }
@@ -290,6 +340,7 @@ void apply_save_data(struct game_state* state) {
 
         /* figure out how to apply everything */
         while (chunk_entries) {
+            _debugprintf("Iteration of chunk entries (%d entries in chunk)", chunk_entries->written_entries);
             for (s32 entry_index = 0; entry_index < chunk_entries->written_entries; ++entry_index) {
                 struct save_record* current_record = chunk_entries->records + entry_index;
                 try_to_apply_record_entry(current_record, state);
@@ -297,14 +348,33 @@ void apply_save_data(struct game_state* state) {
 
             chunk_entries = chunk_entries->next;
         }
+    } else {
+        _debugprintf("Hmm? Not in the correct region I guess");
     }
 }
 
 void try_to_apply_record_entry(struct save_record* record, struct game_state* state) {
     _debugprintf("RECORD TYPE: %.*s", save_record_type_strings[record->type].length, save_record_type_strings[record->type].data);
     switch (record->type) {
+        case SAVE_RECORD_TYPE_ENTITY_CHEST: {
+            struct save_record_entity_chest* chest_record = &record->chest_record;
+            _debugprintf("opening chest: %d\n", chest_record->target_entity);
+        } break;
         default: {
-    _debugprintf("UNHANDLED RECORD TYPE: %.*s", save_record_type_strings[record->type].length, save_record_type_strings[record->type].data);
+            _debugprintf("UNHANDLED RECORD TYPE: %.*s", save_record_type_strings[record->type].length, save_record_type_strings[record->type].data);
         } break;
     }
+}
+
+/* SAVE DATA REGISTER ENTRY CODE */
+local struct save_area_record_entry* current_area_save_entry(void) {
+    struct save_area_record_entry* area_entry = save_record_area_entry_find_or_allocate(string_from_cstring(game_state->loaded_area_name));
+    return area_entry;
+}
+
+void save_data_register_chest_looted(u32 chest_id) {
+    struct save_area_record_entry* area       = current_area_save_entry();
+    struct save_record*            new_record = save_area_record_entry_allocate_record(area);
+    new_record->type                          = SAVE_RECORD_TYPE_ENTITY_CHEST;
+    new_record->chest_record.target_entity    = chest_id;
 }

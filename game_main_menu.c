@@ -557,6 +557,9 @@ local void update_and_render_main_menu(struct game_state* state, struct software
 
             if (selected_slot != -1) {
                 /* load slot and start the game */
+                screen_mode = GAME_SCREEN_INGAME;
+                game_initialize_game_world();
+                game_load_from_save_slot(selected_slot);
             }
         } break;
         case MAIN_MENU_SAVE_MENU_CANCEL: {

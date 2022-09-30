@@ -1203,8 +1203,8 @@ void game_initialize(void) {
     game_state->permenant_entities          = entity_list_create(&game_arena, GAME_MAX_PERMENANT_ENTITIES, ENTITY_LIST_STORAGE_TYPE_PERMENANT_STORE);
     game_state->permenant_particle_emitters = entity_particle_emitter_list(&game_arena, GAME_MAX_PERMENANT_PARTICLE_EMITTERS);
     player_id                               = entity_list_create_player(&game_state->permenant_entities, v2f32(70, 70));
-    entity_list_create_badguy(&game_state->permenant_entities, v2f32(9 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE));
-    entity_list_create_badguy(&game_state->permenant_entities, v2f32(11 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE));
+    /* entity_list_create_badguy(&game_state->permenant_entities, v2f32(9 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE)); */
+    /* entity_list_create_badguy(&game_state->permenant_entities, v2f32(11 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE)); */
 
     {
         struct entity* player = game_get_player(game_state);
@@ -1315,8 +1315,8 @@ local void game_loot_chest(struct game_state* state, struct entity_chest* chest)
         }
 
         chest->flags |= ENTITY_CHEST_FLAGS_UNLOCKED;
-        /* write to save data here */
-        /* save_data_write_for(hash_bytes_fnv1a); */
+        u32 chest_index = (u32)(chest - state->loaded_area.chests);
+        save_data_register_chest_looted(chest_index);
     }
 }
 
@@ -2052,7 +2052,8 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                 execute_current_area_scripts(game_state, dt);
 
                 if (is_key_pressed(KEY_Y)) {
-                    game_begin_shopping(string_literal("basic"));
+                    /* game_begin_shopping(string_literal("basic")); */
+                    game_write_save_slot(0);
 #if 0
                     passive_speaking_dialogue_push(player_id, string_literal("Hello world!"), MENU_FONT_COLOR_LIME);
 #endif
