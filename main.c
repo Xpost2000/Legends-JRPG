@@ -345,7 +345,9 @@ local void initialize(void) {
 
     initialize_thread_pool();
 
+#ifndef NO_FANCY_FADEIN_INTRO
     set_window_transparency(0);
+#endif
     SDL_ShowWindow(global_game_window);
 
     game_initialize();
