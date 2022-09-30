@@ -120,12 +120,16 @@ void game_load_from_save_slot(s32 save_slot_id) {
     assertion(save_slot_id >= 0 && save_slot_id < GAME_MAX_SAVE_SLOTS);
 
     /* clear both arenas and start from zero. */
-    memory_arena_clear_top(&save_arena);
-    memory_arena_clear_bottom(&save_arena);
+    {
+        zero_memory(&global_save_data, sizeof(global_save_data));
+        memory_arena_clear_top(&save_arena);
+        memory_arena_clear_bottom(&save_arena);
+    }
 
     struct binary_serializer read_serializer = open_read_file_serializer(filename_from_saveslot_id(save_slot_id));
-    game_serialize_save(&read_serializer);
     load_level_from_file(game_state, string_from_cstring(game_state->loaded_area_name));
+
+    game_serialize_save(&read_serializer);
     apply_save_data(game_state);
     serializer_finish(&read_serializer);
 }
@@ -233,6 +237,8 @@ void game_serialize_save(struct binary_serializer* serializer) {
         serialize_f32(serializer, &player->position.x);
         serialize_f32(serializer, &player->position.y);
 
+        _debugprintf("PLAYER AT <%f, %f>", player->position.x, player->position.y);
+
         serialize_bytes(serializer, player->equip_slots, sizeof(player->equip_slots));
         serialize_s32(serializer, &player->health.value);
         serialize_s32(serializer, &player->magic.value);
@@ -275,8 +281,9 @@ void game_serialize_save(struct binary_serializer* serializer) {
                 while (entry_chunk) {
                     serialize_bytes(serializer, entry_chunk->records, sizeof(*entry_chunk->records) * entry_chunk->written_entries);
                     written += entry_chunk->written_entries;
-                    entry_chunk = entry_chunk->next;
                     _debugprintf("Current entry chunk wrote: %d entries (%d total)", entry_chunk->written_entries, written);
+
+                    entry_chunk = entry_chunk->next;
                 }
 
                 _debugprintf("Done writing area entry, advancing...");
@@ -297,7 +304,9 @@ void game_serialize_save(struct binary_serializer* serializer) {
                 s32 expected_chunks_to_write = record_entries / SAVE_RECORDS_PER_SAVE_AREA_RECORD_CHUNK + 1;
                 s32 consumed_chunks = 0;
 
-                _debugprintf("Read mode of save file, have to write %d chunks", expected_chunks_to_write);
+                _debugprintf("Read mode of save file, have to write %d chunks (%d total entries)", expected_chunks_to_write, record_entries);
+
+                s32 original_record_entries = record_entries;
                 for (s32 chunk_to_write = 0; chunk_to_write < expected_chunks_to_write; ++chunk_to_write) {
                     struct save_area_record_chunk* entry_chunk = save_area_record_chunk_allocate_entry_chunk(current_area_entry);
 
@@ -307,11 +316,12 @@ void game_serialize_save(struct binary_serializer* serializer) {
                     }
 
                     serialize_bytes(serializer, entry_chunk->records, sizeof(*entry_chunk->records) * amount_to_consume);
+                    entry_chunk->written_entries = amount_to_consume;
                     record_entries -= amount_to_consume;
                     consumed_chunks += 1;
                 }
 
-                assertion(save_area_record_entry_record_count(current_area_entry) == record_entries && "Okay, that's bad...");
+                assertion(save_area_record_entry_record_count(current_area_entry) == original_record_entries && "Okay, that's bad...");
             }
         }
     }
@@ -355,9 +365,12 @@ void apply_save_data(struct game_state* state) {
 
 void try_to_apply_record_entry(struct save_record* record, struct game_state* state) {
     _debugprintf("RECORD TYPE: %.*s", save_record_type_strings[record->type].length, save_record_type_strings[record->type].data);
+    struct level_area* area = &state->loaded_area;
+
     switch (record->type) {
         case SAVE_RECORD_TYPE_ENTITY_CHEST: {
             struct save_record_entity_chest* chest_record = &record->chest_record;
+            area->chests[chest_record->target_entity].flags |= ENTITY_CHEST_FLAGS_UNLOCKED;
             _debugprintf("opening chest: %d\n", chest_record->target_entity);
         } break;
         default: {
