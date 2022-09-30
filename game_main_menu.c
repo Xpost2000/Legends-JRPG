@@ -278,15 +278,18 @@ local s32 do_save_menu(struct software_framebuffer* framebuffer, f32 y_offset, f
             if (current_slot->lean_in_t > MAX_T_FOR_SLOT_LEAN) current_slot->lean_in_t = MAX_T_FOR_SLOT_LEAN;
 
             { /* seek smoothly */
-                if (main_menu.scroll_seek_y != y_cursor) {
+                f32 relative_target = (start_y_cursor - y_cursor);
+                f32 relative_distance = fabs(main_menu.scroll_seek_y - relative_target);
+                _debugprintf("%f (%f v %f)", relative_distance, main_menu.scroll_seek_y, relative_target);
+                if (relative_distance > 1.3) {
                     f32 sign_direction = 0;
-                    if (main_menu.scroll_seek_y < y_cursor) sign_direction = 1;
-                    else sign_direction                                    = -1;
+                    if (main_menu.scroll_seek_y < relative_target) sign_direction = 1;
+                    else                                           sign_direction = -1;
 
-                    f32 displacement = y_cursor - main_menu.scroll_seek_y;
+                    f32 displacement = (relative_target - main_menu.scroll_seek_y) * 45;
                     f32 attenuation  = 1 - (1 / (1+(displacement*displacement)));
 
-                    main_menu.scroll_seek_y += dt * attenuation*12;
+                    main_menu.scroll_seek_y += dt * attenuation*150 * sign_direction;
                 }
             }
         } else {
@@ -300,7 +303,8 @@ local s32 do_save_menu(struct software_framebuffer* framebuffer, f32 y_offset, f
         s32 BOX_WIDTH  = 13;
         s32 BOX_HEIGHT = 5;
 
-        f32 adjusted_scroll_offset = main_menu.scroll_seek_y - start_y_cursor;
+        f32 adjusted_scroll_offset = main_menu.scroll_seek_y;
+
         draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, v2f32(x_cursor, y_cursor + adjusted_scroll_offset), BOX_WIDTH, BOX_HEIGHT, ui_color);
         draw_ui_breathing_text(framebuffer, v2f32(x_cursor + 15, y_cursor + 15 + adjusted_scroll_offset), title_font, 2, string_from_cstring(current_slot->name), save_slot_index*22, color32f32(1, 1, 1, alpha));
         software_framebuffer_draw_text(framebuffer, body_font, 1, v2f32(x_cursor + 20, y_cursor + 15+32 + adjusted_scroll_offset), string_from_cstring(current_slot->descriptor), color32f32(1, 1, 1, alpha), BLEND_MODE_ALPHA);
