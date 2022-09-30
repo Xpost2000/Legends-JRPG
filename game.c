@@ -912,12 +912,7 @@ struct lisp_form level_area_find_listener_for_object(struct game_state* state, s
 local void level_area_clean_up(struct level_area* area) {
     if (area->script.present) {
         file_buffer_free(&area->script.buffer);
-        area->script.present = false;
-
-        area->script.code_forms = 0;
-        area->script.on_enter = 0;
-        area->script.on_frame = 0;
-        area->script.on_exit = 0;
+        zero_memory(area, sizeof(*area));
     }
 }
 
