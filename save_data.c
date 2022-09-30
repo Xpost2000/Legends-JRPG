@@ -1,5 +1,5 @@
 #include "save_data_def.c"
-
+#define CURRENT_SAVE_RECORD_VERSION (1)
 #define SAVE_RECORDS_PER_SAVE_AREA_RECORD_CHUNK (64)
 
 /* this linked list is fine since we only need to write */
@@ -98,8 +98,52 @@ void game_load_from_save_slot(s32 save_slot_id) {
 }
 
 /* binary friendly format to runtime friendly format. Oh boy... let the games begin. */
+/*
+  FORMAT basically
+  --------------
+  version: s32
+  area_name: string[32]
+  area_desc: string[64]
+  inventory: entity_actor_inventory[0..item_count]
+  player: xy, statblock, equipped items
+
+  other_permenant_entities?
+
+  save_record_data_begins
+  save_record_data_ends
+
+  weather? Should be set on load frankly... (on-enter scripts are evoked)
+  disallow saving during combat, no combat state
+  --------------
+*/
+
+/* I don't really care about versioning right now since I'm using this for experimental purposes to make any progress on the save system. */
 void game_serialize_save(struct binary_serializer* serializer) {
-    
+    u32 save_version = CURRENT_SAVE_RECORD_VERSION;
+    serialize_u32(serializer, &save_version);
+
+    /* need to write this from the game itself, TODO: need to think of where to store names or just don't? */
+    char area_name_DUMMY[SAVE_SLOT_WIDGET_SAVE_NAME_LENGTH]  = "BLACKROOT FOREST";
+    char area_desc_DUMMY[SAVE_SLOT_WIDGET_DESCRIPTOR_LENGTH] = "ACT1: A job to finish.";
+
+    serialize_bytes(serializer, area_name_DUMMY, SAVE_SLOT_WIDGET_SAVE_NAME_LENGTH);
+    serialize_bytes(serializer, area_desc_DUMMY, SAVE_SLOT_WIDGET_DESCRIPTOR_LENGTH);
+
+    serialize_s32(serializer, &game_state->inventory.item_count);
+    serialize_bytes(serializer, game_state->inventory.items, sizeof(*game_state->inventory.items) * game_state->inventory.item_count);
+
+    {
+        struct entity* player = game_get_player(game_state);
+
+        serialize_f32(serializer, &player->position.x);
+        serialize_f32(serializer, &player->position.y);
+
+        serialize_bytes(serializer, player->equip_slots, sizeof(player->equip_slots));
+        serialize_s32(serializer, &player->health.value);
+        serialize_s32(serializer, &player->magic.value);
+        Serialize_Structure(serializer, player->stat_block);
+        /* May need to serialize abilities later??? */
+    }
 }
 
 void try_to_apply_record_entry(struct save_record* record, struct game_state* state);
