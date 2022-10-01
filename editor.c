@@ -942,36 +942,29 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
 
         f32 last_zoom = editor_state->camera.zoom;
         if (is_mouse_wheel_up()) {
-            editor_state->camera.zoom += 1;
+            editor_state->camera.zoom += 0.25;
             if (editor_state->camera.zoom >= 4) {
                 editor_state->camera.zoom = 4;
             }
         } else if (is_mouse_wheel_down()) {
-            editor_state->camera.zoom -= 1;
-            if (editor_state->camera.zoom <= 0) {
-                editor_state->camera.zoom = 1;
+            editor_state->camera.zoom -= 0.25;
+            if (editor_state->camera.zoom <= 0.25) {
+                editor_state->camera.zoom = 0.25;
             }
         }
 
         if (last_zoom != editor_state->camera.zoom) {
-            /* v2f32 world_space_mouse_location = v2f32(-137, -80); */
-            v2f32 focused_pixel_a = world_space_mouse_location; /* last zoom level */
-            v2f32 focused_pixel_b = world_space_mouse_location; /* new zoom level */
-            /* pixel in last zoom level */
-            focused_pixel_a.x *= last_zoom;
-            focused_pixel_a.y *= last_zoom;
-            focused_pixel_b.x *= editor_state->camera.zoom;
-            focused_pixel_b.y *= editor_state->camera.zoom;
+            v2f32 world_space_in_zoomed_space_last = world_space_mouse_location;
+            v2f32 world_space_in_zoomed_space_current = world_space_mouse_location;
 
-            /* NOTE: will figure out proper math later, only works for one level of zoom lol, I'm bad at these transforms */
+            world_space_in_zoomed_space_last.x *= last_zoom;
+            world_space_in_zoomed_space_last.y *= last_zoom;
+            world_space_in_zoomed_space_current.x *= editor_state->camera.zoom;
+            world_space_in_zoomed_space_current.y *= editor_state->camera.zoom;
 
             f32 delta_zoom = editor_state->camera.zoom - last_zoom;
-            f32 delta_x = focused_pixel_a.x - focused_pixel_b.x;
-            f32 delta_y = focused_pixel_a.y - focused_pixel_b.y;
-
-
-            _debugprintf("delta: %f(%f, %f), %f(%f, %f)", delta_x, focused_pixel_b.x, focused_pixel_a.x,
-                         delta_y, focused_pixel_b.y, focused_pixel_a.y);
+            f32 delta_x    = world_space_in_zoomed_space_last.x - world_space_in_zoomed_space_current.x;
+            f32 delta_y    = world_space_in_zoomed_space_last.y - world_space_in_zoomed_space_current.y;
 
             editor_state->camera.xy.x -= delta_x;
             editor_state->camera.xy.y -= delta_y;
@@ -1614,12 +1607,6 @@ void update_and_render_editor(struct software_framebuffer* framebuffer, f32 dt) 
                     render_commands_push_quad(&commands, rectangle_f32(tile_space_mouse_location.x * TILE_UNIT_SIZE, tile_space_mouse_location.y * TILE_UNIT_SIZE,
                                                                        TILE_UNIT_SIZE, TILE_UNIT_SIZE),
                                               color32u8(0, 0, 255, normalized_sinf(global_elapsed_time*4) * 0.5*255 + 64), BLEND_MODE_ALPHA);
-
-#if 1
-                    render_commands_push_quad(&commands, rectangle_f32(-137, -80,
-                                                                       TILE_UNIT_SIZE, TILE_UNIT_SIZE),
-                                              color32u8(255, 0, 255, 255), BLEND_MODE_ALPHA);
-#endif
                 }
             } break;
         }
