@@ -21,8 +21,9 @@ string input_action_strings[] = {
     string_literal("cancel"),
 };
 
+#define MAX_SIMULATANEOUS_INPUT_BINDINGS (2)
 struct input_binding {
-    s32 key;
+    s32 key[MAX_SIMULATANEOUS_INPUT_BINDINGS];
     s32 gamepad_button;
     /* not sure how to factor this into the existing api */
     /* s32 gamepad_axis; */
@@ -32,8 +33,10 @@ struct input_mapper_state {
     struct input_binding bindings[INPUT_ACTION_COUNT];
 };
 
+void initialize_input_mapper_with_bindings(void);
+
 void set_action_binding_gamepad(s32 action, s32 gamepad_button);
-void set_action_binding_key(s32 action, s32 key);
+void set_action_binding_key(s32 action, s32 key, s32 slot);
 
 bool is_action_down(s32 action);
 bool is_action_down_with_repeat(s32 action);

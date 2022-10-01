@@ -1240,6 +1240,7 @@ void game_initialize(void) {
 #endif
     initialize_static_table_data();
     initialize_items_database();
+    initialize_input_mapper_with_bindings();
 
     assertion(verify_no_item_id_name_hash_collisions());
 }
