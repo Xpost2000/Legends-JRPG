@@ -67,15 +67,16 @@ v2f32 camera_project(struct camera* camera, v2f32 point, s32 screen_width, s32 s
     point.x -= camera->xy.x;
     point.y -= camera->xy.y;
 #else
-    point.x += camera->xy.x * camera->zoom;
-    point.y += camera->xy.y * camera->zoom;
+    point.x += camera->xy.x;
+    point.y += camera->xy.y;
 
     if (camera->centered) {
-        point.x -= screen_width / 2;
-        point.y -= screen_height / 2;
-        point.x /= camera->zoom;
-        point.y /= camera->zoom;
+        point.x -= (screen_width / 2);
+        point.y -= (screen_height / 2);
     }
+
+    point.x /= camera->zoom;
+    point.y /= camera->zoom;
 #endif
     return point;
 }

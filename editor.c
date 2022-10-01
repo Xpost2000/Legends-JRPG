@@ -62,7 +62,7 @@ void editor_clear_all(struct editor_state* state) {
     state->camera.xy       = v2f32(0,0);
     state->camera.zoom     = 1;
     /* not centered to simplify code */
-    /* state->camera.centered = 1; */
+    state->camera.centered = 1;
 }
 
 void editor_initialize(struct editor_state* state) {
@@ -935,6 +935,51 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
         }
     }
 
+    if (is_key_down(KEY_SHIFT)) {
+        if (is_key_pressed(KEY_Z)) {
+            editor_state->camera.zoom = 1;
+        }
+
+        f32 last_zoom = editor_state->camera.zoom;
+        if (is_mouse_wheel_up()) {
+            editor_state->camera.zoom += 1;
+            if (editor_state->camera.zoom >= 3) {
+                editor_state->camera.zoom = 3;
+            }
+        } else if (is_mouse_wheel_down()) {
+            editor_state->camera.zoom -= 1;
+            if (editor_state->camera.zoom <= 0) {
+                editor_state->camera.zoom = 1;
+            }
+        }
+
+        if (last_zoom != editor_state->camera.zoom) {
+#if 1
+            v2f32 focused_pixel_a = world_space_mouse_location;
+            v2f32 focused_pixel_b = world_space_mouse_location;
+            /* pixel in last zoom level */
+            focused_pixel_a.x /= last_zoom;
+            focused_pixel_a.y /= last_zoom;
+            /* pixel in current zoom level */
+            focused_pixel_b.x /= editor_state->camera.zoom;
+            focused_pixel_b.y /= editor_state->camera.zoom;
+
+            f32 delta_x = focused_pixel_b.x - focused_pixel_a.x;
+            f32 delta_y = focused_pixel_b.y - focused_pixel_a.y;
+
+            _debugprintf("delta: %f(%f, %f), %f(%f, %f)", delta_x, focused_pixel_b.x, focused_pixel_a.x,
+                         delta_y, focused_pixel_b.y, focused_pixel_a.y);
+
+            /* editor_state->camera.xy.x -= delta_x; */
+            /* editor_state->camera.xy.y -= delta_y; */
+#else
+            /* let's just solve the simpler problem of zoomin the center */
+            /* editor_state->camera.xy.x += (SCREEN_WIDTH/2)*editor_state->camera.zoom; */
+            /* editor_state->camera.xy.y += (SCREEN_HEIGHT/2)*editor_state->camera.zoom; */
+#endif
+        }
+    }
+
     if (is_key_down(KEY_W)) {
         editor_state->camera.xy.y -= 160 * dt;
     } else if (is_key_down(KEY_S)) {
@@ -988,15 +1033,18 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
                 y_cursor += 12;
 
                 if (!editor_state->tab_menu_open) {
-                    if (is_mouse_wheel_up()) {
-                        editor_state->current_tile_layer -= 1;
-                        if (editor_state->current_tile_layer < 0) {
-                            editor_state->current_tile_layer = TILE_LAYER_COUNT-1;
-                        }
-                    } else if (is_mouse_wheel_down()) {
-                        editor_state->current_tile_layer += 1;
-                        if (editor_state->current_tile_layer >= TILE_LAYER_COUNT) {
-                            editor_state->current_tile_layer = 0;
+                    if (is_key_down(KEY_SHIFT)) {
+                    } else {
+                        if (is_mouse_wheel_up()) {
+                            editor_state->current_tile_layer -= 1;
+                            if (editor_state->current_tile_layer < 0) {
+                                editor_state->current_tile_layer = TILE_LAYER_COUNT-1;
+                            }
+                        } else if (is_mouse_wheel_down()) {
+                            editor_state->current_tile_layer += 1;
+                            if (editor_state->current_tile_layer >= TILE_LAYER_COUNT) {
+                                editor_state->current_tile_layer = 0;
+                            }
                         }
                     }
                 }
