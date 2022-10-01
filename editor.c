@@ -943,8 +943,8 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
         f32 last_zoom = editor_state->camera.zoom;
         if (is_mouse_wheel_up()) {
             editor_state->camera.zoom += 1;
-            if (editor_state->camera.zoom >= 3) {
-                editor_state->camera.zoom = 3;
+            if (editor_state->camera.zoom >= 2) {
+                editor_state->camera.zoom = 2;
             }
         } else if (is_mouse_wheel_down()) {
             editor_state->camera.zoom -= 1;
@@ -954,15 +954,24 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
         }
 
         if (last_zoom != editor_state->camera.zoom) {
-#if 1
             v2f32 focused_pixel_a = world_space_mouse_location;
             v2f32 focused_pixel_b = world_space_mouse_location;
             /* pixel in last zoom level */
-            focused_pixel_a.x /= last_zoom;
-            focused_pixel_a.y /= last_zoom;
-            /* pixel in current zoom level */
-            focused_pixel_b.x /= editor_state->camera.zoom;
-            focused_pixel_b.y /= editor_state->camera.zoom;
+
+            /* NOTE: will figure out proper math later, only works for one level of zoom lol, I'm bad at these transforms */
+            if (last_zoom > editor_state->camera.zoom) {
+                focused_pixel_b.x /= editor_state->camera.zoom;
+                focused_pixel_b.y /= editor_state->camera.zoom;
+                /* same pixel in current zoom level */
+                focused_pixel_b.x *= last_zoom;
+                focused_pixel_b.y *= last_zoom;
+            } else {
+                focused_pixel_a.x /= last_zoom;
+                focused_pixel_a.y /= last_zoom;
+                /* same pixel in current zoom level */
+                focused_pixel_a.x *= editor_state->camera.zoom;
+                focused_pixel_a.y *= editor_state->camera.zoom;
+            }
 
             f32 delta_x = focused_pixel_b.x - focused_pixel_a.x;
             f32 delta_y = focused_pixel_b.y - focused_pixel_a.y;
@@ -970,13 +979,8 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
             _debugprintf("delta: %f(%f, %f), %f(%f, %f)", delta_x, focused_pixel_b.x, focused_pixel_a.x,
                          delta_y, focused_pixel_b.y, focused_pixel_a.y);
 
-            /* editor_state->camera.xy.x -= delta_x; */
-            /* editor_state->camera.xy.y -= delta_y; */
-#else
-            /* let's just solve the simpler problem of zoomin the center */
-            /* editor_state->camera.xy.x += (SCREEN_WIDTH/2)*editor_state->camera.zoom; */
-            /* editor_state->camera.xy.y += (SCREEN_HEIGHT/2)*editor_state->camera.zoom; */
-#endif
+            editor_state->camera.xy.x -= delta_x;
+            editor_state->camera.xy.y -= delta_y;
         }
     }
 
