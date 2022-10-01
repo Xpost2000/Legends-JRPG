@@ -56,7 +56,7 @@ local void update_and_render_conversation_ui(struct game_state* state, struct so
     if (current_conversation_node->choice_count == 0) {
         draw_ui_breathing_text(framebuffer, v2f32(dialogue_box_start_position.x + 30, dialogue_box_start_position.y + dialogue_box_extents.y - 10), font2, 2, string_literal("(proceed)"), 0451, color32f32(1,1,1,1));
 
-        if (is_key_pressed(KEY_RETURN)) {
+        if (is_action_pressed(INPUT_ACTION_CONFIRMATION)) {
             if (dialogue_ui.visible_characters < current_conversation_node->text.length) {
                 dialogue_ui.visible_characters = current_conversation_node->text.length;
             } else {
@@ -68,7 +68,7 @@ local void update_and_render_conversation_ui(struct game_state* state, struct so
         draw_ui_breathing_text(framebuffer, v2f32(dialogue_box_start_position.x + 30, dialogue_box_start_position.y + dialogue_box_extents.y - 10), font2, 2, string_literal("(proceed)"), 0451, color32f32(1,1,1,1));
 
         if (state->viewing_dialogue_choices) {
-            if (is_key_pressed(KEY_ESCAPE)) {
+            if (is_action_pressed(INPUT_ACTION_CANCEL)) {
                 state->viewing_dialogue_choices = false;
             }
 
@@ -103,13 +103,13 @@ local void update_and_render_conversation_ui(struct game_state* state, struct so
             /* software_framebuffer_draw_quad(framebuffer, rectangle_f32(100, 100, 640-150, 300), color32u8(90, 30, 200, 255), BLEND_MODE_ALPHA); */
 
 
-            if (is_key_pressed(KEY_RETURN)) {
+            if (is_action_pressed(INPUT_ACTION_CONFIRMATION)) {
                 state->viewing_dialogue_choices = false;
                 u32 target = current_conversation_node->choices[state->currently_selected_dialogue_choice].target;
                 dialogue_ui_set_target_node(target);
             }
         } else {
-            if (is_key_pressed(KEY_RETURN)) {
+            if (is_action_pressed(INPUT_ACTION_CONFIRMATION)) {
                 if (dialogue_ui.visible_characters < current_conversation_node->text.length) {
                     dialogue_ui.visible_characters = current_conversation_node->text.length;
                 } else {

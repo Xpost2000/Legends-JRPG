@@ -1354,7 +1354,7 @@ bool game_display_and_update_messages(struct software_framebuffer* framebuffer, 
         }
 
         /* dismiss current message */
-        if (is_key_pressed(KEY_RETURN)) {
+        if (is_action_pressed(INPUT_ACTION_CONFIRMATION) || is_action_pressed(INPUT_ACTION_CANCEL)) {
             global_popup_state.message_count -= 1;
         }
 
@@ -1468,7 +1468,7 @@ local void update_and_render_ingame_game_menu_ui(struct game_state* state, struc
                 software_framebuffer_draw_text_bounds_centered(framebuffer, font, 4, rectangle_f32(0, 400, framebuffer->width, framebuffer->height - 400),
                                                                string_literal("open chest"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
 
-                if (is_key_pressed(KEY_RETURN)) {
+                if (is_action_pressed(INPUT_ACTION_CONFIRMATION)) {
                     game_loot_chest(state, chest);
                 }
             } break;
@@ -1488,7 +1488,7 @@ local void update_and_render_ingame_game_menu_ui(struct game_state* state, struc
 
     /* TODO Region zone change does not prevent pausing right now! */
     {
-        if (is_key_pressed(KEY_ESCAPE)) {
+        if (is_action_pressed(INPUT_ACTION_PAUSE)) {
             game_state_set_ui_state(state, UI_STATE_PAUSE);
             /* ready pause menu */
             {
@@ -1590,14 +1590,24 @@ local void update_and_render_pause_game_menu_ui(struct game_state* state, struct
                     menu_state->shift_t[index] = clamp_f32(menu_state->shift_t[index], 0, 1);
                 }
 
-                if (is_key_pressed(KEY_ESCAPE)) {
+                if (is_action_pressed(INPUT_ACTION_PAUSE)) {
                     menu_state->animation_state = UI_PAUSE_MENU_TRANSITION_CLOSING;
                     menu_state->transition_t = 0;
                 }        
 
-                wrap_around_key_selection(KEY_UP, KEY_DOWN, &menu_state->selection, 0, array_count(item_positions));
+                if (is_action_down_with_repeat(INPUT_ACTION_MOVE_UP)) {
+                    menu_state->selection -= 1;
+                    if (menu_state->selection < 0) {
+                        menu_state->selection = array_count(item_positions)-1;
+                    }
+                } else if (is_action_down_with_repeat(INPUT_ACTION_MOVE_DOWN)) {
+                    menu_state->selection += 1;
+                    if (menu_state->selection >= array_count(item_positions)) {
+                        menu_state->selection = 0;
+                    }
+                }
 
-                if (is_key_pressed(KEY_RETURN)) {
+                if (is_action_pressed(INPUT_ACTION_CONFIRMATION)) {
                     switch (menu_state->selection) {
                         case 0: {
                             menu_state->animation_state = UI_PAUSE_MENU_TRANSITION_CLOSING;
@@ -2052,8 +2062,8 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                 execute_current_area_scripts(game_state, dt);
 
                 if (is_key_pressed(KEY_Y)) {
-                    /* game_begin_shopping(string_literal("basic")); */
-                    game_write_save_slot(0);
+                    game_begin_shopping(string_literal("basic"));
+                    /* game_write_save_slot(0); */
 #if 0
                     passive_speaking_dialogue_push(player_id, string_literal("Hello world!"), MENU_FONT_COLOR_LIME);
 #endif

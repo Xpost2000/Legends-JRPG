@@ -148,22 +148,11 @@ local void initialize_main_menu(void) {
 local s32 main_menu_do_menu_ui(v2f32 where, struct software_framebuffer* framebuffer, struct main_menu_option* options, s32 count, s32* option_ptr, bool allow_input) {
     const f32 TITLE_FONT_SCALE  = 6.0;
     const f32 NORMAL_FONT_SCALE = 4.0;
-    /* TODO gamepad */
-    bool up                = is_key_down_with_repeat(KEY_UP)  ;
-    bool down              = is_key_down_with_repeat(KEY_DOWN);
-    bool left              = is_key_down_with_repeat(KEY_LEFT);
-    bool right             = is_key_down_with_repeat(KEY_RIGHT);
-    bool confirm_selection = is_key_pressed(KEY_RETURN);
-
-    struct game_controller* pad0 = get_gamepad(0);
-
-    if (pad0) {
-        up                |= controller_button_pressed(pad0, DPAD_UP);
-        down              |= controller_button_pressed(pad0, DPAD_DOWN);
-        left              |= controller_button_pressed(pad0, DPAD_LEFT);
-        right             |= controller_button_pressed(pad0, DPAD_RIGHT);
-        confirm_selection |= controller_button_pressed(pad0, BUTTON_A);
-    }
+    bool up                = is_action_down_with_repeat(INPUT_ACTION_MOVE_UP);
+    bool down              = is_action_down_with_repeat(INPUT_ACTION_MOVE_DOWN);
+    bool left              = is_action_down_with_repeat(INPUT_ACTION_MOVE_LEFT);
+    bool right             = is_action_down_with_repeat(INPUT_ACTION_MOVE_RIGHT);
+    bool confirm_selection = is_action_pressed(INPUT_ACTION_CONFIRMATION);
 
     if (!allow_input) {
         up = down = left = right = confirm_selection = false;
@@ -243,10 +232,10 @@ local s32 do_save_menu(struct software_framebuffer* framebuffer, f32 y_offset, f
     if (!allow_input) alpha = 0.5;
     ui_color.a              = alpha;
 
-    bool selection_move_up   = is_key_down_with_repeat(KEY_UP);
-    bool selection_move_down = is_key_down_with_repeat(KEY_DOWN);
-    bool selection_cancel    = is_key_pressed(KEY_ESCAPE);
-    bool selection_confirm   = is_key_pressed(KEY_RETURN);
+    bool selection_move_up   = is_action_down_with_repeat(INPUT_ACTION_MOVE_UP);
+    bool selection_move_down = is_action_down_with_repeat(INPUT_ACTION_MOVE_DOWN);
+    bool selection_cancel    = is_action_pressed(INPUT_ACTION_CANCEL);
+    bool selection_confirm   = is_action_pressed(INPUT_ACTION_CONFIRMATION);
 
     f32 y_cursor = y_offset+25;
 

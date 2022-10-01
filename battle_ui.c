@@ -363,22 +363,12 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
 
     if (disable_game_input) allow_input = false;
 
-    bool selection_down    = is_key_down_with_repeat(KEY_DOWN);
-    bool selection_up      = is_key_down_with_repeat(KEY_UP);
-    bool selection_left    = is_key_down_with_repeat(KEY_LEFT);
-    bool selection_right   = is_key_down_with_repeat(KEY_RIGHT);
-    bool selection_confirm = is_key_pressed(KEY_RETURN);
-    bool selection_cancel  = is_key_pressed(KEY_BACKSPACE);
-
-    struct game_controller* pad0 = get_gamepad(0);
-    if (pad0) {
-        selection_down    |= controller_button_pressed(pad0, DPAD_DOWN);        
-        selection_up      |= controller_button_pressed(pad0, DPAD_UP);
-        selection_left    |= controller_button_pressed(pad0, DPAD_LEFT);
-        selection_right   |= controller_button_pressed(pad0, DPAD_RIGHT);
-        selection_confirm |= controller_button_pressed(pad0, BUTTON_A);
-        selection_cancel  |= controller_button_pressed(pad0, BUTTON_B);
-    }
+    bool selection_down    = is_action_down_with_repeat(INPUT_ACTION_MOVE_DOWN);
+    bool selection_up      = is_action_down_with_repeat(INPUT_ACTION_MOVE_UP);
+    bool selection_left    = is_action_down_with_repeat(INPUT_ACTION_MOVE_LEFT);
+    bool selection_right   = is_action_down_with_repeat(INPUT_ACTION_MOVE_RIGHT);
+    bool selection_confirm = is_action_pressed(INPUT_ACTION_CONFIRMATION);
+    bool selection_cancel  = is_action_pressed(INPUT_ACTION_CANCEL);
 
     /* TODO: weirdo */
     if (!allow_input || game_command_console_enabled) {
@@ -898,10 +888,10 @@ local void do_after_action_report_screen(struct game_state* state, struct softwa
     struct font_cache* header_font      = game_get_font(MENU_FONT_COLOR_STEEL);
     struct font_cache* highlighted_font = game_get_font(MENU_FONT_COLOR_GOLD);
 
-    bool selection_down    = is_key_down_with_repeat(KEY_DOWN);
-    bool selection_up      = is_key_down_with_repeat(KEY_UP);
-    bool selection_confirm = is_key_pressed(KEY_RETURN);
-    bool selection_cancel  = is_key_pressed(KEY_BACKSPACE);
+    bool selection_down    = is_action_down_with_repeat(INPUT_ACTION_MOVE_DOWN);
+    bool selection_up      = is_action_down_with_repeat(INPUT_ACTION_MOVE_UP);
+    bool selection_confirm = is_action_pressed(INPUT_ACTION_CONFIRMATION);
+    bool selection_cancel  = is_action_pressed(INPUT_ACTION_CANCEL);
 
     /* TODO: weirdo */
     if (!allow_input || game_command_console_enabled) {
@@ -997,15 +987,15 @@ local void update_game_camera_combat(struct game_state* state, f32 dt) {
     } else {
         switch (global_battle_ui_state.submode) {
             case BATTLE_UI_SUBMODE_LOOKING: {
-                if (is_key_down(KEY_W)) {
+                if (is_action_down(INPUT_ACTION_MOVE_UP)) {
                     state->camera.xy.y -= CAMERA_VELOCITY * dt;
-                } else if (is_key_down(KEY_S)) {
+                } else if (is_action_down(INPUT_ACTION_MOVE_DOWN)) {
                     state->camera.xy.y += CAMERA_VELOCITY * dt;
                 }
 
-                if (is_key_down(KEY_A)) {
+                if (is_action_down(INPUT_ACTION_MOVE_LEFT)) {
                     state->camera.xy.x -= CAMERA_VELOCITY * dt;
-                } else if (is_key_down(KEY_D)) {
+                } else if (is_action_down(INPUT_ACTION_MOVE_RIGHT)) {
                     state->camera.xy.x += CAMERA_VELOCITY * dt;
                 }
             } break;

@@ -290,19 +290,19 @@ local void do_shopping_menu(struct software_framebuffer* framebuffer, f32 x, boo
     union color32f32 modulation_color = color32f32_WHITE;
     union color32f32 ui_color         = UI_DEFAULT_COLOR;
 
-    bool selection_down                = is_key_down_with_repeat(KEY_DOWN);
-    bool selection_up                  = is_key_down_with_repeat(KEY_UP);
-    bool selection_increment           = is_key_down_with_repeat(KEY_RIGHT);
-    bool selection_decrement           = is_key_down_with_repeat(KEY_LEFT);
-    bool selection_confirmation        = is_key_pressed(KEY_RETURN);
-    bool selection_switch_tab_modifier = is_key_down(KEY_SHIFT);
-    bool selection_switch_tab          = is_key_down_with_repeat(KEY_TAB);
-    bool selection_quit                = is_key_pressed(KEY_ESCAPE);
+    bool selection_down                = is_action_down_with_repeat(INPUT_ACTION_MOVE_DOWN);
+    bool selection_up                  = is_action_down_with_repeat(INPUT_ACTION_MOVE_UP);
+    bool selection_increment           = is_action_down_with_repeat(INPUT_ACTION_MOVE_RIGHT);
+    bool selection_decrement           = is_action_down_with_repeat(INPUT_ACTION_MOVE_LEFT);
+    bool selection_confirmation        = is_action_pressed(INPUT_ACTION_CONFIRMATION);
+    bool selection_switch_tab_reverse  = is_action_pressed(INPUT_ACTION_SWITCH_CATEGORY_BACKWARDS);
+    bool selection_switch_tab          = is_action_pressed(INPUT_ACTION_SWITCH_CATEGORY_FORWARDS);
+    bool selection_quit                = is_action_pressed(INPUT_ACTION_CANCEL);
 
     f32 text_scale = 2;
 
     if (!allow_input) {
-        selection_down = selection_up = selection_confirmation = selection_increment = selection_decrement = selection_switch_tab_modifier = selection_switch_tab = selection_quit = false;
+        selection_down = selection_up = selection_confirmation = selection_increment = selection_decrement = selection_switch_tab_reverse = selection_switch_tab = selection_quit = false;
         modulation_color.a = ui_color.a = 0.5;
     }
 
@@ -373,19 +373,19 @@ local void do_shopping_menu(struct software_framebuffer* framebuffer, f32 x, boo
             }
         }
 
-        if (selection_switch_tab) {
-            if (selection_switch_tab_modifier) {
-                shopping_ui.current_shopping_page_filter -= 1;
+        if (selection_switch_tab_reverse) {
+            shopping_ui.current_shopping_page_filter -= 1;
 
-                if (shopping_ui.current_shopping_page_filter < 0) {
-                    shopping_ui.current_shopping_page_filter = PAGE_COUNT - 1;
-                }
-            } else {
-                shopping_ui.current_shopping_page_filter += 1;
+            if (shopping_ui.current_shopping_page_filter < 0) {
+                shopping_ui.current_shopping_page_filter = PAGE_COUNT - 1;
+            }
 
-                if (shopping_ui.current_shopping_page_filter >= PAGE_COUNT) {
-                    shopping_ui.current_shopping_page_filter = 0;
-                }
+            shopping_ui_populate_filtered_page(shop_mode);
+        } else if (selection_switch_tab) {
+            shopping_ui.current_shopping_page_filter += 1;
+
+            if (shopping_ui.current_shopping_page_filter >= PAGE_COUNT) {
+                shopping_ui.current_shopping_page_filter = 0;
             }
 
             shopping_ui_populate_filtered_page(shop_mode);
