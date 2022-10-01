@@ -266,14 +266,14 @@ local void do_entity_equipment_panel(struct software_framebuffer* framebuffer, f
     }
 
     if (!equipment_screen_state.inventory_pick_mode) {
-        if (is_key_down_with_repeat(KEY_DOWN)) {
+        if (is_action_down_with_repeat(INPUT_ACTION_MOVE_DOWN)) {
             equipment_screen_state.equip_slot_selection += 1;
             if (equipment_screen_state.equip_slot_selection >= array_count(info_labels)) {
                 equipment_screen_state.equip_slot_selection = 0;
             }
 
             equipment_screen_build_new_filtered_item_list(filter_mask_slot_table_map[equipment_screen_state.equip_slot_selection]);
-        } else if (is_key_down_with_repeat(KEY_UP)) {
+        } else if (is_action_down_with_repeat(INPUT_ACTION_MOVE_UP)) {
             equipment_screen_state.equip_slot_selection -= 1;
             if (equipment_screen_state.equip_slot_selection < 0) {
                 equipment_screen_state.equip_slot_selection = array_count(info_labels)-1;
@@ -282,19 +282,24 @@ local void do_entity_equipment_panel(struct software_framebuffer* framebuffer, f
             equipment_screen_build_new_filtered_item_list(filter_mask_slot_table_map[equipment_screen_state.equip_slot_selection]);
         }
 
+        bool allow_cancel_input_to_leave_equipment = true;
+
         if (equipment_screen_state.confirm_pressed) {
             if (equipment_screen_state.inventory_filtered_size > 0) {
                 equipment_screen_state.inventory_pick_mode = true;    
                 equipment_screen_state.confirm_pressed = false;
             }
         } else if (equipment_screen_state.cancel_pressed) {
-            entity_inventory_unequip_item((struct entity_inventory*)&game_state->inventory, MAX_PARTY_ITEMS, equipment_screen_state.equip_slot_selection, entity);
-            equipment_screen_state.cancel_pressed = false;
+            if (entity_any_equipped_item(entity, equipment_screen_state.equip_slot_selection)) {
+                entity_inventory_unequip_item((struct entity_inventory*)&game_state->inventory, MAX_PARTY_ITEMS, equipment_screen_state.equip_slot_selection, entity);
+                equipment_screen_state.cancel_pressed = false;
 
-            equipment_screen_build_new_filtered_item_list(filter_mask_slot_table_map[equipment_screen_state.equip_slot_selection]);
+                equipment_screen_build_new_filtered_item_list(filter_mask_slot_table_map[equipment_screen_state.equip_slot_selection]);
+                allow_cancel_input_to_leave_equipment = false;
+            }
         }
 
-        if (is_key_pressed(KEY_ESCAPE)) {
+        if (is_action_pressed(INPUT_ACTION_PAUSE) || (is_action_pressed(INPUT_ACTION_CANCEL) && allow_cancel_input_to_leave_equipment)) {
             struct ui_pause_menu* menu_state = &game_state->ui_pause;
             menu_state->animation_state     = UI_PAUSE_MENU_TRANSITION_IN;
             menu_state->last_sub_menu_state = menu_state->sub_menu_state;
@@ -349,13 +354,13 @@ local void do_entity_select_equipment_panel(struct software_framebuffer* framebu
     }
 
     if (equipment_screen_state.inventory_pick_mode) {
-        if (is_key_down_with_repeat(KEY_DOWN)) {
+        if (is_action_down_with_repeat(INPUT_ACTION_MOVE_DOWN)) {
             equipment_screen_state.inventory_slot_selection += 1;
 
             if (equipment_screen_state.inventory_slot_selection >= equipment_screen_state.inventory_filtered_size) {
                 equipment_screen_state.inventory_slot_selection = 0;
             }
-        } else if (is_key_down_with_repeat(KEY_UP)) {
+        } else if (is_action_down_with_repeat(INPUT_ACTION_MOVE_UP)) {
             equipment_screen_state.inventory_slot_selection -= 1;
 
             if (equipment_screen_state.inventory_slot_selection < 0) {
@@ -391,8 +396,8 @@ local void update_and_render_character_equipment_screen(struct game_state* state
                                            color32f32_WHITE, NO_FLAGS, BLEND_MODE_ALPHA);
     }
 
-    equipment_screen_state.cancel_pressed  = is_key_pressed(KEY_BACKSPACE);
-    equipment_screen_state.confirm_pressed = is_key_pressed(KEY_RETURN);
+    equipment_screen_state.cancel_pressed  = is_action_pressed(INPUT_ACTION_CANCEL);
+    equipment_screen_state.confirm_pressed = is_action_pressed(INPUT_ACTION_CONFIRMATION);
 
     do_entity_stat_information_panel(framebuffer, framebuffer->width - TILE_UNIT_SIZE*13, 30, target_entity);
     do_entity_select_equipment_panel(framebuffer, framebuffer->width-TILE_UNIT_SIZE*6, framebuffer->height-TILE_UNIT_SIZE*6, target_entity);

@@ -55,10 +55,10 @@ local void do_inventory_use_item_popup(struct software_framebuffer* framebuffer,
     if (viewing_inventory)
         return;
 
-    bool selection_move_right   = is_key_down_with_repeat(KEY_DOWN) || is_key_down_with_repeat(KEY_RIGHT);
-    bool selection_move_left    = is_key_down_with_repeat(KEY_UP) || is_key_down_with_repeat(KEY_LEFT);
-    bool selection_cancel       = is_key_down_with_repeat(KEY_ESCAPE);
-    bool selection_confirmation = is_key_pressed(KEY_RETURN);
+    bool selection_move_right   = is_action_down_with_repeat(INPUT_ACTION_MOVE_DOWN) || is_action_down_with_repeat(INPUT_ACTION_MOVE_RIGHT);
+    bool selection_move_left    = is_action_down_with_repeat(INPUT_ACTION_MOVE_UP)   || is_action_down_with_repeat(INPUT_ACTION_MOVE_LEFT);
+    bool selection_cancel       = is_action_down_with_repeat(INPUT_ACTION_PAUSE);
+    bool selection_confirmation = is_action_pressed(INPUT_ACTION_CONFIRMATION);
 
     if (selection_cancel) {
         inventory_remove_queued_item_usage();

@@ -1,6 +1,6 @@
 /* #define NO_POSTPROCESSING */
 #ifndef RELEASE
-#define NO_FANCY_FADEIN_INTRO
+/* #define NO_FANCY_FADEIN_INTRO */
 #endif
 
 #ifdef __EMSCRIPTEN__
@@ -417,8 +417,12 @@ void engine_main_loop() {
 #endif
 
         if (!_did_window_intro_fade_in) {
-            const f32 MAX_INTRO_FADE_IN_TIMER = 0.2756;
-            _window_intro_fade_in_timer += last_elapsed_delta_time;
+            const f32 MAX_INTRO_FADE_IN_TIMER = 0.4;
+            f32 effective_frametime = last_elapsed_delta_time;
+            if (effective_frametime >= 1.0/45.0f) {
+                effective_frametime = 1.0/45.0f;
+            }
+            _window_intro_fade_in_timer += effective_frametime;
 
             f32 alpha = _window_intro_fade_in_timer / MAX_INTRO_FADE_IN_TIMER;
             if (alpha > 1) alpha = 1;

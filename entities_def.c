@@ -458,6 +458,7 @@ s32 entity_find_effective_stat_value(struct entity* entity, s32 stat_index);
 /* NOTE: The inventory does not know it's own limits, since I use type-punning to allow these to work on different fixed sized instances. */
 void entity_inventory_equip_item(struct entity_inventory* inventory, s32 limits, s32 item_index, s32 equipment_index, struct entity* target);
 void entity_inventory_unequip_item(struct entity_inventory* inventory, s32 limits, s32 equipment_index, struct entity* target);
+bool entity_any_equipped_item(struct entity* target, s32 slot);
 void entity_inventory_use_item(struct entity_inventory* inventory, s32 item_index, struct entity* target);
 
 s32  entity_inventory_count_instances_of(struct entity_inventory* inventory, string item_name);

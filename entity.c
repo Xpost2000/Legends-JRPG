@@ -807,6 +807,14 @@ void entity_inventory_unequip_item(struct entity_inventory* inventory, s32 limit
     }
 }
 
+bool entity_any_equipped_item(struct entity* target, s32 equipment_index) {
+    if (target->equip_slots[equipment_index].id_hash != 0) {
+        return true;
+    }
+
+    return false;
+}
+
 void entity_inventory_use_item(struct entity_inventory* inventory, s32 item_index, struct entity* target) {
     struct item_instance* current_item = &inventory->items[item_index];
     struct item_def* item_base         = item_database_find_by_id(current_item->item);

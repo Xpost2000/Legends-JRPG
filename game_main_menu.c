@@ -350,7 +350,7 @@ local void update_and_render_main_menu(struct game_state* state, struct software
 
     software_framebuffer_clear_buffer(framebuffer, color32u8(0,0,0,255));
 
-    if (any_key_down()) {
+    if (any_key_down() || controller_any_button_down(get_gamepad(0))) {
         if (main_menu.phase < MAIN_MENU_IDLE) {
             main_menu.phase = MAIN_MENU_IDLE;
         }

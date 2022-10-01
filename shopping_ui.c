@@ -573,9 +573,9 @@ local void game_display_and_update_shop_ui(struct software_framebuffer* framebuf
 
                 /* Am I getting punished for not writing a proper UI library? Maybe. */
                 {
-                    bool selection_confirmation = is_key_pressed(KEY_RETURN);
-                    bool selection_down         = is_key_down_with_repeat(KEY_DOWN);
-                    bool selection_up           = is_key_down_with_repeat(KEY_UP);
+                    bool selection_confirmation = is_action_pressed(INPUT_ACTION_CONFIRMATION);
+                    bool selection_down         = is_action_down_with_repeat(INPUT_ACTION_MOVE_DOWN);
+                    bool selection_up           = is_action_down_with_repeat(INPUT_ACTION_MOVE_UP);
 
                     if (selection_up) {
                         shopping_ui.shopping_item_index -= 1;
