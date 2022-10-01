@@ -104,6 +104,19 @@ local void poll_and_register_controllers(void) {
     }
 }
 
+void register_controller_down(s32 which, s32 button) {
+    SDL_GameController* controller = global_controller_devices[which];
+
+    if (controller) {
+        for (s32 controller_index = 0; controller_index < 4; ++controller_index) {
+            if (global_controllers[controller_index]._internal_controller_handle == controller) {
+                global_controllers[controller_index].buttons_that_received_events[button] = true;
+                return;
+            }
+        }
+    }
+}
+
 local void update_all_controller_inputs(void) {
     for (unsigned controller_index = 0; controller_index < array_count(global_controller_devices); ++controller_index) {
         SDL_GameController* controller = global_controller_devices[controller_index];
@@ -317,6 +330,17 @@ void handle_sdl_events(void) {
                     poll_and_register_controllers();
                 } break;
 
+                case SDL_CONTROLLERBUTTONUP:
+                case SDL_CONTROLLERBUTTONDOWN: {
+                    s32 controller_id  = current_event.cbutton.which;
+                    u8  button_pressed = current_event.cbutton.button;
+                    u8  button_state   = current_event.cbutton.state;
+
+                    if (button_state == SDL_PRESSED) {
+                        register_controller_down(controller_id, button_pressed);
+                    }
+                } break;
+
                 case SDL_TEXTINPUT: {
                     char* input_text = current_event.text.text;
                     size_t input_length = strlen(input_text);
@@ -408,6 +432,7 @@ void engine_main_loop() {
             update_and_render_game(&global_default_framebuffer, last_elapsed_delta_time);
         }
     }
+
     end_input_frame();
 
     swap_framebuffers_onto_screen();

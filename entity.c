@@ -163,19 +163,10 @@ void entity_handle_player_controlled(struct game_state* state, struct entity* en
         }
     }
 
-    bool move_up    = is_key_down(KEY_UP);
-    bool move_down  = is_key_down(KEY_DOWN);
-    bool move_left  = is_key_down(KEY_LEFT);
-    bool move_right = is_key_down(KEY_RIGHT);
-
-    struct game_controller* pad0 = get_gamepad(0);
-
-    if (pad0) {
-        move_up    |= pad0->buttons[DPAD_UP];
-        move_down  |= pad0->buttons[DPAD_DOWN];
-        move_left  |= pad0->buttons[DPAD_LEFT];
-        move_right |= pad0->buttons[DPAD_RIGHT];
-    }
+    bool move_up    = is_action_down(INPUT_ACTION_MOVE_UP);
+    bool move_down  = is_action_down(INPUT_ACTION_MOVE_DOWN);
+    bool move_left  = is_action_down(INPUT_ACTION_MOVE_LEFT);
+    bool move_right = is_action_down(INPUT_ACTION_MOVE_RIGHT);
 
     entity->velocity.x = 0;
     entity->velocity.y = 0;
@@ -518,10 +509,10 @@ void sortable_draw_entities_submit(struct render_commands* commands, struct grap
                     bool water_tile_submergence = false;
 
                     {
-                        const f32 X_BIAS = 0.123;
+                        const f32 X_BIAS = 0;
                         const f32 Y_BIAS = 0.123;
                         struct tile* floor_tile = level_area_get_tile_at(&game_state->loaded_area,
-                                                                         TILE_LAYER_GROUND, ceilf((current_entity->position.x/TILE_UNIT_SIZE)-X_BIAS), ceilf((current_entity->position.y/TILE_UNIT_SIZE)-Y_BIAS));
+                                                                         TILE_LAYER_GROUND, roundf((current_entity->position.x/TILE_UNIT_SIZE)-X_BIAS), roundf((current_entity->position.y/TILE_UNIT_SIZE)-Y_BIAS));
                         if (floor_tile) {
                             s32 get_tile_id_by_name(string);
                             if (floor_tile->id == get_tile_id_by_name(string_literal("water [solid]")) ||

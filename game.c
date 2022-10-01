@@ -1032,9 +1032,13 @@ union color32f32 lighting_shader(struct software_framebuffer* framebuffer, union
         }
     }
 
-    if (r_accumulation > source_pixel.r*1.2) { r_accumulation = source_pixel.r*1.2; }
-    if (g_accumulation > source_pixel.g*1.2) { g_accumulation = source_pixel.g*1.2; }
-    if (b_accumulation > source_pixel.b*1.2) { b_accumulation = source_pixel.b*1.2; }
+    f32 overbright_r = source_pixel.r * 2.0;
+    f32 overbright_g = source_pixel.g * 2.0;
+    f32 overbright_b = source_pixel.b * 2.0;
+
+    if (r_accumulation > overbright_r) { r_accumulation = overbright_r; }
+    if (g_accumulation > overbright_g) { g_accumulation = overbright_g; }
+    if (b_accumulation > overbright_b) { b_accumulation = overbright_b; }
 
     result.r = r_accumulation + global_color_grading_filter.r/255.0f * source_pixel.r;
     result.g = g_accumulation + global_color_grading_filter.g/255.0f * source_pixel.g;

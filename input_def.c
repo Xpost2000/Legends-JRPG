@@ -4,10 +4,17 @@
 #include "common.c"
 
 enum mouse_button {
-    MOUSE_BUTTON_LEFT,
+    MOUSE_BUTTON_LEFT=1,
     MOUSE_BUTTON_MIDDLE,
     MOUSE_BUTTON_RIGHT,
     MOUSE_BUTTON_COUNT,
+};
+
+enum gamepad_axis {
+    GAMEPAD_AXIS_POSITIVE_X=1,
+    GAMEPAD_AXIS_NEGATIVE_X,
+    GAMEPAD_AXIS_POSITIVE_Y,
+    GAMEPAD_AXIS_NEGATIVE_Y,
 };
 
 enum keyboard_button {
@@ -50,6 +57,7 @@ enum keyboard_button {
 };
 
 enum controller_button {
+    BUTTON_UNKNOWN,
     BUTTON_A, BUTTON_B, BUTTON_X, BUTTON_Y,
     BUTTON_RS, BUTTON_LS,
     BUTTON_RB, BUTTON_LB,
@@ -76,11 +84,14 @@ struct game_controller {
     struct game_controller_joystick last_left_stick;
     struct game_controller_joystick last_right_stick;
 
+    u8                              buttons_that_received_events[BUTTON_COUNT];
     void* _internal_controller_handle;
 };
 
 /* 1.0 - 0.0 */
 void controller_rumble(struct game_controller* controller, f32 x_magnitude, f32 y_magnitude, u32 ms);
+bool controller_button_down(struct game_controller* controller, u8 button_id);
+bool controller_button_down_with_repeat(struct game_controller* controller, u8 button_id);
 bool controller_button_pressed(struct game_controller* controller, u8 button_id);
 
 /* KEYPAD keys are left out because I have not mapped them yet. */
@@ -214,6 +225,9 @@ local float angle_formed_by_joystick(struct game_controller* controller, s32 whi
 void register_key_down(s32 keyid);
 void register_key_up(s32 keyid);
 
+/* NOTE: oddly enough a platform layer responsibility. */
+void register_controller_down(s32 which, s32 button);
+
 void register_mouse_position(s32 x, s32 y);
 void register_mouse_wheel(s32 x, s32 y);
 void register_mouse_button(s32 button_id, bool state);
@@ -248,5 +262,7 @@ void end_text_edit(char* target, size_t amount); /*copies all text input s32o ta
 void send_text_input(char* text, size_t text_length);
 bool is_editing_text(void);
 char* current_text_buffer(void);
+
+#include "input_mapper_def.c"
 
 #endif

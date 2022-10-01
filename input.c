@@ -6,6 +6,9 @@ struct {
 
     bool keys_receiving_events[KEY_COUNT];
 } global_input = {};
+
+struct input_mapper_state global_input_mapper = {};
+
 local struct game_controller global_controllers[4];
 
 void register_key_down(s32 keyid) {
@@ -77,14 +80,34 @@ bool is_key_pressed(s32 keyid) {
     return false;
 }
 
-bool controller_button_pressed(struct game_controller* controller, u8 button_id) {
-    bool last    = controller->last_buttons[button_id];
-    bool current = controller->buttons[button_id];
+bool controller_button_down_with_repeat(struct game_controller* controller, u8 button_id) {
+    if (controller) {
+        bool current = controller->buttons_that_received_events[button_id];
+        return current;
+    }
 
-    if (last == current) {
-        return false;
-    } else if (current == true && last == false) {
-        return true;
+    return false;
+}
+
+bool controller_button_down(struct game_controller* controller, u8 button_id) {
+    if (controller) {
+        bool current = controller->buttons[button_id];
+        return current;
+    }
+
+    return false;
+}
+
+bool controller_button_pressed(struct game_controller* controller, u8 button_id) {
+    if (controller) {
+        bool last    = controller->last_buttons[button_id];
+        bool current = controller->buttons[button_id];
+
+        if (last == current) {
+            return false;
+        } else if (current == true && last == false) {
+            return true;
+        }
     }
 
     return false;
@@ -117,6 +140,9 @@ void end_input_frame(void) {
     global_input.current_state.mouse_wheel_relative_y = 0;
 
     zero_array(global_input.keys_receiving_events);
+    for (s32 controller_index = 0; controller_index < array_count(global_controllers); ++controller_index) {
+        zero_array(global_controllers[controller_index].buttons_that_received_events);
+    }
 }
 
 void start_text_edit(char* target, size_t length) {
@@ -209,3 +235,5 @@ bool is_mouse_wheel_down(void) {
 
     return false;
 }
+
+#include "input_mapper.c"
