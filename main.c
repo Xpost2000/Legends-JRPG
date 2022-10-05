@@ -48,6 +48,7 @@ local u32 REAL_SCREEN_HEIGHT = 480*2;
 
 #include "thread_pool.c"
 #include "serializer.c"
+#include "lisp_read.c"
 #include "input.c"
 #include "sdl_scancode_table.c"
 #include "graphics.c"

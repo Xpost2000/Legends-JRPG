@@ -1,4 +1,3 @@
-#include "lisp_read.c"
 /*
  * TODO error checking
  * I guess most dialogue should be pretty linear so we can do a lot of tricks to change things

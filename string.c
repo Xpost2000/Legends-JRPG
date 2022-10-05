@@ -213,3 +213,29 @@ f32 string_to_f32(string s) {
     char* temporary = format_temp("%.*s", s.length, s.data);
     return atof(temporary);
 }
+
+struct string_array string_split(struct memory_arena* arena, string input_string, char separator) {
+    struct string_array result = {};
+
+    result.count = 0;
+    result.strings = memory_arena_push(arena, 0);
+
+    s32 character_index = 0;
+    while (character_index < input_string.length) {
+        s32 start_of_substring = character_index;
+        s32 end_of_substring   = start_of_substring;
+
+        while ((character_index < input_string.length) && input_string.data[character_index] != '+') {
+            character_index++;
+        }
+        end_of_substring = character_index;
+        character_index += 1;
+
+        string substr = string_slice(input_string, start_of_substring, end_of_substring);
+
+        memory_arena_push(arena, sizeof(string));
+        result.strings[result.count++] = substr;
+    }
+
+    return result;
+}

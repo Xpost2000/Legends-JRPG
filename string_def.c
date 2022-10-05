@@ -41,4 +41,10 @@ void cstring_copy(cstring source, cstring destination, u64 destination_length);
 string string_concatenate(struct memory_arena* arena, string a, string b);
 string string_clone(struct memory_arena* arena, string a);
 
+struct string_array {
+    s32 count;
+    string* strings;
+};
+struct string_array string_split(struct memory_arena* arena, string string, char separator);
+
 #endif
