@@ -300,6 +300,11 @@ bool input_mapper_read_controls_from(string filename) {
                             }
                         }
                     }
+
+                    if (lexer_peek_token(&lexer_state).type == TOKEN_TYPE_NONE) {
+                        _debugprintf("Next token is EOF?!");
+                        lexer_next_token(&lexer_state);
+                    }
                 }
             }
         }
