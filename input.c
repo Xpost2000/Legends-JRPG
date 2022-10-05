@@ -237,16 +237,21 @@ bool is_mouse_wheel_down(void) {
 }
 
 string keycode_to_string(s32 keyid) {
+    if (keyid == 0) {
+        return string_literal("KEY_NONE");
+    }
+
     char* result = keyboard_key_strings[keyid];
     assertion(result && "A string does not exist for this key yet...");
     return string_from_cstring(result);
 }
 
-s32 string_to_keyid(string string) {
+s32 string_to_keyid(string keystring) {
     for (s32 string_index = 0; string_index < array_count(keyboard_key_strings); ++string_index) {
         if (keyboard_key_strings[string_index]) {
             string str = string_from_cstring(keyboard_key_strings[string_index]);
-            if (string_equal(string)) {
+
+            if (string_equal(keystring, str)) {
                 return string_index;
             }
         }
@@ -256,12 +261,15 @@ s32 string_to_keyid(string string) {
 }
 
 string controller_button_to_string(s32 buttonid) {
+    if (buttonid == 0) {
+        return string_literal("GAMEPAD_NONE");
+    }
     return controller_button_strings[buttonid];
 }
 
 s32 string_to_controller_button(string buttonstring) {
     for (s32 string_index = 0; string_index < array_count(controller_button_strings); ++string_index) {
-        if (string_match(buttonstring, controller_button_strings[string_index])) {
+        if (string_equal(buttonstring, controller_button_strings[string_index])) {
             return string_index;
         }
     }

@@ -3,6 +3,7 @@
 
 /* NOTE copied and pasted exactly from previous project */
 
+/* Thankfully when I do the archive related stuff, it's going to be SERIALIZER_MEMORY types... */
 enum binary_serializer_type {
     BINARY_SERIALIZER_FILE,
     BINARY_SERIALIZER_MEMORY,
@@ -48,6 +49,7 @@ void serializer_finish(struct binary_serializer* serializer);
 void* serializer_flatten_memory(struct binary_serializer* serializer, size_t* size);
 void serializer_push_memory_node(struct binary_serializer* serializer, void* bytes, size_t size);
 void serialize_bytes(struct binary_serializer* serializer, void* bytes, size_t size);
+void serialize_format(struct binary_serializer* serializer, char* format_string, ...);
 
 #define Define_Serializer_Function(Typename, Type) void serialize_##Typename(struct binary_serializer* serializer, Type* obj);
 Define_Serializer_Function(u64, u64);

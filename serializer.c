@@ -138,6 +138,28 @@ void serialize_bytes(struct binary_serializer* serializer, void* bytes, size_t s
     }
 }
 
+void serialize_format(struct binary_serializer* serializer, char* format_string, ...) {
+    va_list variadic_arguments;
+    va_start(variadic_arguments, format_string);
+    {
+        switch (serializer->type) {
+            case BINARY_SERIALIZER_FILE: {
+                FILE* file_handle = serializer->file_handle;
+
+                if (serializer->mode == BINARY_SERIALIZER_READ) {
+                    vfscanf(file_handle, format_string, variadic_arguments);
+                } else {
+                    vfprintf(file_handle, format_string, variadic_arguments);
+                }
+            } break;
+            case BINARY_SERIALIZER_MEMORY: {
+                assertion(!"TODO: Has not given good consideration to how this should be implemented.");
+            } break;
+        }
+    }
+    va_end(variadic_arguments);
+}
+
 #define Serialize_Object_Into_File(type)                                \
     case BINARY_SERIALIZER_FILE: {                                      \
         assert(serializer->file_handle && "File handle not opened on file serializer?"); \

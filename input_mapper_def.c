@@ -34,6 +34,11 @@ enum required_modifiers_flags {
     KEY_MODIFIER_ALT   = BIT(1),
     KEY_MODIFIER_CTRL  = BIT(2),
 };
+string modifier_strings[3] = {
+    string_literal("Shift"),
+    string_literal("Alt"),
+    string_literal("Ctrl"),
+};
 
 #define MAX_SIMULATANEOUS_INPUT_BINDINGS (2)
 struct key_binding {
@@ -61,6 +66,6 @@ bool is_action_down_with_repeat(s32 action);
 bool is_action_pressed(s32 action);
 
 void input_mapper_write_out_controls_to(string filename);
-void input_mapper_read_controls_from(string filename);
+bool input_mapper_read_controls_from(string filename);
 
 #endif

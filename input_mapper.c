@@ -111,29 +111,119 @@ local bool any_bindings_avaliable(struct input_binding* binding) {
              binding->gamepad_button);
 }
 
+local s32 binding_modifier_count(struct key_binding* binding) {
+    s32 modifier_count = 0;
+
+    if (binding->modifier_flags & KEY_MODIFIER_SHIFT) modifier_count++;
+    if (binding->modifier_flags & KEY_MODIFIER_ALT) modifier_count++;
+    if (binding->modifier_flags & KEY_MODIFIER_CTRL) modifier_count++;
+
+    return modifier_count;
+}
+
 void input_mapper_write_out_controls_to(string filename) {
     /* Okay so my API hasn't generically come up with anything useful for this part of the API... */
     /* Which is actually a surprisingly big oversight, but 90% of my data is pure binary. */
-    FILE* output_file = fopen(filename.data, "wb");
+    struct binary_serializer serializer = open_write_file_serializer(filename);
+
+    serialize_format(&serializer, "# INPUT_ACTION GAMEPAD_BUTTON KEY0 KEY1 \n");
+
+    /* nice column tabulation */
+    /* since I like it. */
+    s32 longest_gamepad_string_length = length_of_longest_string(controller_button_strings, array_count(controller_button_strings));
+    s32 longest_action_string_length  = length_of_longest_string(input_action_strings, array_count(input_action_strings));
+    s32 longest_key_string_length     = length_of_longest_cstring(keyboard_key_strings, array_count(keyboard_key_strings)) + 5;
 
     for (s32 action_binding_index = 0; action_binding_index < INPUT_ACTION_COUNT; ++action_binding_index) {
         struct input_binding* current_binding = global_input_mapper.bindings + action_binding_index;
 
         if (any_bindings_avaliable(current_binding)) {
-            string controller_string = {};
-            string key_strings[2]    = {};
+            char controller_string[64] = {};
+            char key_strings[2][64]    = {};
+
+            {
+                string controller_string_s = controller_button_to_string(current_binding->gamepad_button);
+                string key_string_s[2]     = {
+                    keycode_to_string(current_binding->keys[0].key),
+                    keycode_to_string(current_binding->keys[1].key),
+                };
+
+                snprintf(controller_string, 64, "%.*s", controller_string_s.length, controller_string_s.data);
+                {
+                    s32 cursor[2] = {};
+                    /* key 1 */
+                    {
+                        s32 modifier_count = binding_modifier_count(&current_binding->keys[0]);
+                        s32 written = snprintf(key_strings[0]+cursor[0], 64-cursor[0], "%.*s", key_string_s[0].length, key_string_s[0].data);
+                        cursor[0] += written;
+
+                        if (modifier_count > 0) {
+                            written = snprintf(key_strings[0]+cursor[0], 64-cursor[0], "+");
+                            cursor[0] += written;
+                            for (s32 modifier_index = 0; modifier_index < modifier_count; ++modifier_index) {
+                                if (current_binding->keys[0].modifier_flags & BIT(modifier_index)) {
+                                    written = snprintf(key_strings[0]+cursor[0], 64-cursor[0], "%.*s", modifier_strings[modifier_index].length, modifier_strings[modifier_index].data);
+                                    cursor[0] += written;
+                                    if (!(modifier_index+1 >= modifier_count)) {
+                                        written = snprintf(key_strings[0]+cursor[0], 64-cursor[0], "+");
+                                        cursor[0] += written;
+                                    } else {
+                                        written = snprintf(key_strings[0]+cursor[0], 64-cursor[0], " ");
+                                        cursor[0] += written;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    /* key 2 */
+                    {
+                        s32 modifier_count = binding_modifier_count(&current_binding->keys[1]);
+                        s32 written = snprintf(key_strings[1]+cursor[1], 64-cursor[1], "%.*s", key_string_s[1].length, key_string_s[1].data);
+                        cursor[1] += written;
+
+                        if (modifier_count > 0) {
+                            written = snprintf(key_strings[1]+cursor[1], 64-cursor[1], "+");
+                            cursor[1] += written;
+                            for (s32 modifier_index = 0; modifier_index < modifier_count; ++modifier_index) {
+                                if (current_binding->keys[1].modifier_flags & BIT(modifier_index)) {
+                                    written = snprintf(key_strings[1]+cursor[1], 64-cursor[1], "%.*s", modifier_strings[modifier_index].length, modifier_strings[modifier_index].data);
+                                    cursor[1] += written;
+                                    if (!(modifier_index+1 >= modifier_count)) {
+                                        written = snprintf(key_strings[1]+cursor[1], 64-cursor[1], "+");
+                                        cursor[1] += written;
+                                    } else {
+                                        written = snprintf(key_strings[1]+cursor[1], 64-cursor[1], " ");
+                                        cursor[1] += written;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            serialize_format(&serializer, "%s", input_action_strings[action_binding_index].data);
+            /* for(s32 space_to_insert = 0; space_to_insert < longest_action_string_length; ++space_to_insert) {serialize_format(&serializer, " ");} */
+            /* serialize_format(&serializer, "%s", controller_string); */
+            /* for(s32 space_to_insert = 0; space_to_insert < longest_gamepad_string_length; ++space_to_insert) {serialize_format(&serializer, " ");} */
+            /* serialize_format(&serializer, "%s", key_strings[0]); */
+            /* for(s32 space_to_insert = 0; space_to_insert < longest_key_string_length; ++space_to_insert) {serialize_format(&serializer, " ");} */
+            /* serialize_format(&serializer, "%s", key_strings[1]); */
+            /* serialize_format(&serializer, "\n"); */
         }
     }
 
-    fclose(output_file);
+    serializer_finish(&serializer);
 }
 
-void input_mapper_read_controls_from(string filename) {
-    
+bool input_mapper_read_controls_from(string filename) {
+    return false;
 }
 
 void initialize_input_mapper_with_bindings(void) {
-    if (!file_exists(string_literal("controls.txt"))) {
+    bool successful_read = input_mapper_read_controls_from(string_literal("controls.txt"));
+
+    if (!successful_read) {
         {
             set_action_binding_key(INPUT_ACTION_MOVE_UP,                      KEY_UP,        KEY_MODIFIER_NONE,  0);
             set_action_binding_key(INPUT_ACTION_MOVE_DOWN,                    KEY_DOWN,      KEY_MODIFIER_NONE,  0);
@@ -147,8 +237,8 @@ void initialize_input_mapper_with_bindings(void) {
             set_action_binding_key(INPUT_ACTION_CONFIRMATION,                 KEY_RETURN,    KEY_MODIFIER_NONE,  0);
             set_action_binding_key(INPUT_ACTION_CANCEL,                       KEY_ESCAPE,    KEY_MODIFIER_NONE,  0);
             set_action_binding_key(INPUT_ACTION_CANCEL,                       KEY_BACKSPACE, KEY_MODIFIER_NONE,  1);
-            set_action_binding_key(INPUT_ACTION_SWITCH_CATEGORY_FORWARDS,     KEY_TAB,       KEY_MODIFIER_NONE,  1);
-            set_action_binding_key(INPUT_ACTION_SWITCH_CATEGORY_BACKWARDS,    KEY_TAB,       KEY_MODIFIER_SHIFT, 1);
+            set_action_binding_key(INPUT_ACTION_SWITCH_CATEGORY_FORWARDS,     KEY_TAB,       KEY_MODIFIER_NONE,  0);
+            set_action_binding_key(INPUT_ACTION_SWITCH_CATEGORY_BACKWARDS,    KEY_TAB,       KEY_MODIFIER_SHIFT, 0);
         }
         {
             set_action_binding_gamepad(INPUT_ACTION_MOVE_UP,                          DPAD_UP);
@@ -165,5 +255,4 @@ void initialize_input_mapper_with_bindings(void) {
         input_mapper_write_out_controls_to(string_literal("controls.txt"));
     }
 
-    input_mapper_read_controls_from(string_literal("controls.txt"))
 }
