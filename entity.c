@@ -434,11 +434,12 @@ void entity_think_combat_actions(struct entity* entity, struct game_state* state
     if (entity->flags & ENTITY_FLAGS_PLAYER_CONTROLLED) {
         /* let the UI handle this thing */
     } else {
-        /* entity->ai.wait_timer += dt; */
-        /* if (entity->ai.wait_timer >= 1.0) { */
+        entity->ai.wait_timer += dt;
+        if (entity->ai.wait_timer >= 1.0) {
         /*     /\* TODO technically the action should consider the end of waiting on turn. *\/ */
-        entity->waiting_on_turn = false;
-        /* } */
+            entity->waiting_on_turn = false;
+            entity->ai.wait_timer = 0;
+        }
     }
 }
 

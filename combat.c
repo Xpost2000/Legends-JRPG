@@ -66,7 +66,6 @@ void update_combat(struct game_state* state, f32 dt) {
         struct entity* player = game_get_player(state);
         for (s32 index = 0; index < combat_state->count; ++index) {
             struct entity* potential_combatant = entity_list_dereference_entity(&state->permenant_entities, combat_state->participants[index]);
-
             if (player != potential_combatant) {
                 bool aggressive = is_entity_aggressive_to_player(potential_combatant);
 
