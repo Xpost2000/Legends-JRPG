@@ -203,13 +203,13 @@ void input_mapper_write_out_controls_to(string filename) {
             }
 
             serialize_format(&serializer, "%s", input_action_strings[action_binding_index].data);
-            /* for(s32 space_to_insert = 0; space_to_insert < longest_action_string_length; ++space_to_insert) {serialize_format(&serializer, " ");} */
-            /* serialize_format(&serializer, "%s", controller_string); */
-            /* for(s32 space_to_insert = 0; space_to_insert < longest_gamepad_string_length; ++space_to_insert) {serialize_format(&serializer, " ");} */
-            /* serialize_format(&serializer, "%s", key_strings[0]); */
-            /* for(s32 space_to_insert = 0; space_to_insert < longest_key_string_length; ++space_to_insert) {serialize_format(&serializer, " ");} */
-            /* serialize_format(&serializer, "%s", key_strings[1]); */
-            /* serialize_format(&serializer, "\n"); */
+            for(s32 space_to_insert = 0; space_to_insert < (longest_action_string_length - input_action_strings[action_binding_index].length)+1; ++space_to_insert) {serialize_format(&serializer, " ");}
+            serialize_format(&serializer, "%s", controller_string);
+            for(s32 space_to_insert = 0; space_to_insert < (longest_gamepad_string_length - cstring_length(controller_string))+1; ++space_to_insert) {serialize_format(&serializer, " ");}
+            serialize_format(&serializer, "%s", key_strings[0]);
+            for(s32 space_to_insert = 0; space_to_insert < (longest_key_string_length - cstring_length(key_strings[0]))+1; ++space_to_insert) {serialize_format(&serializer, " ");}
+            serialize_format(&serializer, "%s", key_strings[1]);
+            serialize_format(&serializer, "\n");
         }
     }
 

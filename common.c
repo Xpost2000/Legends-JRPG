@@ -649,9 +649,11 @@ s32 length_of_longest_string(string* strings, s32 count) {
 s32 length_of_longest_cstring(char** strings, s32 count) {
     s32 length_of_longest = 0;
     for (s32 string_index = 0; string_index < count; ++string_index) {
-        string s = string_from_cstring(strings[string_index]);
-        if (s.length > length_of_longest) {
-            length_of_longest = s.length;
+        if (strings[string_index]) {
+            string s = string_from_cstring(strings[string_index]);
+            if (s.length > length_of_longest) {
+                length_of_longest = s.length;
+            }
         }
     }
     return length_of_longest;
