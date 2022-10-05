@@ -250,6 +250,8 @@ bool input_mapper_read_controls_from(string filename) {
                     _debug_print_token(action_keybinding[1]);
                     successful = false;
                 } else {
+                    _debug_print_token(action_keybinding[0]);
+                    _debug_print_token(action_keybinding[1]);
                     /* okay all tokens are good, probably*/
                     s32 action_binding_slot       = string_to_input_action(action_id.str);
                     s32 action_controller_binding_id = string_to_controller_button(action_controller_binding.str);
@@ -283,7 +285,7 @@ bool input_mapper_read_controls_from(string filename) {
                         struct string_array strings = string_split(&scratch_arena, action_keybinding[1].str, '+');
                         /* core string */
                         {
-                            binding->keys[1].key = string_to_keyid(strings.strings[1]);
+                            binding->keys[1].key = string_to_keyid(strings.strings[0]);
                         }
 
                         for (s32 modifier_index = 1; modifier_index < strings.count; ++modifier_index) {
