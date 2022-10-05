@@ -16,7 +16,7 @@ enum input_action {
 };
 
 string input_action_strings[] = {
-    [INPUT_ACTION_NULL]                      = string_literal("INPUT_ACTION_NULL"),
+    [INPUT_ACTION_NULL]                      = string_literal("ACTION_NULL"),
     [INPUT_ACTION_MOVE_UP]                   = string_literal("ACTION_MOVE_UP"),
     [INPUT_ACTION_MOVE_DOWN]                 = string_literal("ACTION_MOVE_DOWN"),
     [INPUT_ACTION_MOVE_LEFT]                 = string_literal("ACTION_MOVE_LEFT"),

@@ -257,7 +257,7 @@ s32 string_to_keyid(string keystring) {
         }
     }
 
-    return -1;
+    return KEY_UNKNOWN;
 }
 
 string controller_button_to_string(s32 buttonid) {
@@ -274,7 +274,7 @@ s32 string_to_controller_button(string buttonstring) {
         }
     }
 
-    return -1;
+    return BUTTON_UNKNOWN;
 }
 
 #include "input_mapper.c"

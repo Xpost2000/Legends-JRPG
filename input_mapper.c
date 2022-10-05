@@ -95,14 +95,14 @@ s32 string_to_input_action(string input_string) {
         }
     }
 
-    return -1;
+    return INPUT_ACTION_NULL;
 };
 
 string input_action_to_string(s32 action) {
     if (action >= 0 && action < array_count(input_action_strings))
         return input_action_strings[action];
 
-    return string_literal("INPUT_ACTION_NULL");
+    return string_literal("ACTION_NULL");
 }
 
 local bool any_bindings_avaliable(struct input_binding* binding) {
@@ -217,13 +217,56 @@ void input_mapper_write_out_controls_to(string filename) {
 }
 
 bool input_mapper_read_controls_from(string filename) {
-    return false;
+    bool successful = true;
+
+    if (file_exists(filename)) {
+        /*
+          Reusing lexer from the lisp reader, since it happens to work fine
+         */
+        struct file_buffer data_file_buffer = read_entire_file(memory_arena_allocator(&scratch_arena), string_literal("./res/loot_tables.txt"));
+        struct lexer lexer_state            = {.buffer = data_file_buffer.data};
+
+        {
+            while (!lexer_done(&lexer_state) && successful) {
+                struct lexer_token action_id                  = lexer_next_token(&lexer_state);
+                struct lexer_token action_controller_binding  = lexer_next_token(&lexer_state);
+                struct lexer_token action_keybinding[2]       = {lexer_next_token(&lexer_state), lexer_next_token(&lexer_state)};
+
+                if (action_id.type == TOKEN_TYPE_NONE ||
+                    action_controller_binding.type == TOKEN_TYPE_NONE ||
+                    action_keybinding[0].type == TOKEN_TYPE_NONE ||
+                    action_keybinding[1].type == TOKEN_TYPE_NONE) {
+                    _debugprintf("Malformed controls file?");
+                    successful = false;
+                } else {
+                    /* okay all tokens are good, probably*/
+                    s32 action_binding_slot       = string_to_input_action(action_id.string);
+                    s32 action_controller_binding = string_to_controller_button(action_controller_binding.string);
+
+                    struct input_binding* binding = global_input_mapper.bindings + action_binding_slot;
+                    binding->gamepad_Button       = action_controller_binding;
+
+                    /* reading key strings plus modifiers */
+                    {
+                        
+                    }
+                }
+            }
+        }
+
+        file_buffer_free(&data_file_buffer);
+    } else {
+        successful = false;
+    }
+
+    return successful;
 }
 
 void initialize_input_mapper_with_bindings(void) {
     bool successful_read = input_mapper_read_controls_from(string_literal("controls.txt"));
 
     if (!successful_read) {
+        _debugprintf("New controls file created");
         {
             set_action_binding_key(INPUT_ACTION_MOVE_UP,                      KEY_UP,        KEY_MODIFIER_NONE,  0);
             set_action_binding_key(INPUT_ACTION_MOVE_DOWN,                    KEY_DOWN,      KEY_MODIFIER_NONE,  0);
@@ -253,6 +296,7 @@ void initialize_input_mapper_with_bindings(void) {
         }
 
         input_mapper_write_out_controls_to(string_literal("controls.txt"));
+    } else {
+        _debugprintf("Read controls file. Good.");
     }
-
 }
