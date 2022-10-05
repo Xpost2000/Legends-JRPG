@@ -1,6 +1,7 @@
 #ifndef INPUT_MAPPER_DEF_C
 
-enum input_actions {
+enum input_action {
+    INPUT_ACTION_NULL,
     INPUT_ACTION_MOVE_UP,
     INPUT_ACTION_MOVE_DOWN,
     INPUT_ACTION_MOVE_LEFT,
@@ -15,13 +16,16 @@ enum input_actions {
 };
 
 string input_action_strings[] = {
-    string_literal("move_up"),
-    string_literal("move_down"),
-    string_literal("move_left"),
-    string_literal("move_right"),
-    string_literal("pause"),
-    string_literal("confirm"),
-    string_literal("cancel"),
+    [INPUT_ACTION_NULL]                      = string_literal("INPUT_ACTION_NULL"),
+    [INPUT_ACTION_MOVE_UP]                   = string_literal("ACTION_MOVE_UP"),
+    [INPUT_ACTION_MOVE_DOWN]                 = string_literal("ACTION_MOVE_DOWN"),
+    [INPUT_ACTION_MOVE_LEFT]                 = string_literal("ACTION_MOVE_LEFT"),
+    [INPUT_ACTION_MOVE_RIGHT]                = string_literal("ACTION_MOVE_RIGHT"),
+    [INPUT_ACTION_PAUSE]                     = string_literal("ACTION_PAUSE"),
+    [INPUT_ACTION_CONFIRMATION]              = string_literal("ACTION_CONFIRM"),
+    [INPUT_ACTION_CANCEL]                    = string_literal("ACTION_CANCEL"),
+    [INPUT_ACTION_SWITCH_CATEGORY_FORWARDS]  = string_literal("ACTION_SWITCH_CATEGORY_FORWARD"),
+    [INPUT_ACTION_SWITCH_CATEGORY_BACKWARDS] = string_literal("ACTION_SWITCH_CATEGORY_BACKWARD"),
 };
 
 enum required_modifiers_flags {
@@ -55,5 +59,8 @@ void set_action_binding_key(s32 action, s32 key, s32 modifier_flags, s32 slot);
 bool is_action_down(s32 action);
 bool is_action_down_with_repeat(s32 action);
 bool is_action_pressed(s32 action);
+
+void input_mapper_write_out_controls_to(string filename);
+void input_mapper_read_controls_from(string filename);
 
 #endif

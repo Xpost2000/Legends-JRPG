@@ -66,6 +66,28 @@ enum controller_button {
     BUTTON_COUNT,
 };
 
+/* TODO: need to produce human readable strings later */
+static string controller_button_strings[] = {
+    [BUTTON_UNKNOWN] = string_literal("PAD_NONE"),
+    [BUTTON_A]       = string_literal("GAMEPAD_A"),
+    [BUTTON_B]       = string_literal("GAMEPAD_B"),
+    [BUTTON_X]       = string_literal("GAMEPAD_X"),
+    [BUTTON_Y]       = string_literal("GAMEPAD_Y"),
+    [BUTTON_RS]      = string_literal("GAMEPAD_RS"),
+    [BUTTON_LS]      = string_literal("GAMEPAD_LS"),
+    [BUTTON_RB]      = string_literal("GAMEPAD_RB"),
+    [BUTTON_LB]      = string_literal("GAMEPAD_LB"),
+    [BUTTON_START]   = string_literal("GAMEPAD_START"),
+    [BUTTON_BACK]    = string_literal("GAMEPAD_BACK"),
+    [DPAD_UP]        = string_literal("GAMEPAD_DPAD_UP"),
+    [DPAD_DOWN]      = string_literal("GAMEPAD_DPAD_DOWN"),
+    [DPAD_LEFT]      = string_literal("GAMEPAD_DPAD_LEFT"),
+    [DPAD_RIGHT]     = string_literal("GAMEPAD_DPAD_RIGHT"),
+};
+
+string controller_button_to_string(s32 buttonid);
+s32    string_to_controller_button(string buttonstring);
+
 struct game_controller_triggers {
     f32 left;
     f32 right;
@@ -185,8 +207,16 @@ internal char* keyboard_key_strings[] = {
     [KEY_CTRL]  = "Control",
     [KEY_ALT]   = "Alt",
 
+    [KEY_UP]    = "Arrow_Up",
+    [KEY_DOWN]    = "Arrow_Down",
+    [KEY_LEFT]    = "Arrow_Left",
+    [KEY_RIGHT]    = "Arrow_Right",
+
     [KEY_SPACE] = "Space",
 };
+
+string keycode_to_string(s32 keyid);
+s32    string_to_keyid(string string);
 
 struct input_state {
     bool keys[KEY_COUNT];

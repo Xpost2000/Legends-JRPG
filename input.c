@@ -236,4 +236,37 @@ bool is_mouse_wheel_down(void) {
     return false;
 }
 
+string keycode_to_string(s32 keyid) {
+    char* result = keyboard_key_strings[keyid];
+    assertion(result && "A string does not exist for this key yet...");
+    return string_from_cstring(result);
+}
+
+s32 string_to_keyid(string string) {
+    for (s32 string_index = 0; string_index < array_count(keyboard_key_strings); ++string_index) {
+        if (keyboard_key_strings[string_index]) {
+            string str = string_from_cstring(keyboard_key_strings[string_index]);
+            if (string_equal(string)) {
+                return string_index;
+            }
+        }
+    }
+
+    return -1;
+}
+
+string controller_button_to_string(s32 buttonid) {
+    return controller_button_strings[buttonid];
+}
+
+s32 string_to_controller_button(string buttonstring) {
+    for (s32 string_index = 0; string_index < array_count(controller_button_strings); ++string_index) {
+        if (string_match(buttonstring, controller_button_strings[string_index])) {
+            return string_index;
+        }
+    }
+
+    return -1;
+}
+
 #include "input_mapper.c"
