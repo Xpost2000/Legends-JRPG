@@ -2,8 +2,18 @@
 #define CURRENT_SAVE_RECORD_VERSION (2)
 #define SAVE_RECORDS_PER_SAVE_AREA_RECORD_CHUNK (64)
 
+/*
+  Metaprogramming would genuinely be nice for a lot of this savefile business.
+  Oh well.
+*/
+
 /* this linked list is fine since we only need to write */
 /* and read incredibly sparingly... */
+
+/*
+  Ideally I would've made an iterator interface which would allow for less painful read/write code,
+  but honestly it doesn't matter too much right now.
+*/
 
 /* delta based saving */
 enum save_record_type {
@@ -108,6 +118,27 @@ string filename_from_saveslot_id(s32 id) {
 }
 
 void game_serialize_save(struct binary_serializer* serializer);
+
+struct save_data_description get_save_data_description(s32 save_id) {
+    struct save_data_description result = {};
+
+    string filename = filename_from_saveslot_id(save_id);
+    if (file_exists(filename)) {
+        result.good = true;
+
+        /* partial version of serialization routine only for the "header" */
+        struct binary_serializer read_serializer = open_read_file_serializer(filename_from_saveslot_id(save_id));
+        {
+            u32 save_version = CURRENT_SAVE_RECORD_VERSION;
+            serialize_u32(&read_serializer, &save_version);
+            serialize_bytes(&read_serializer, result.name, SAVE_SLOT_WIDGET_SAVE_NAME_LENGTH);
+            serialize_bytes(&read_serializer, result.descriptor, SAVE_SLOT_WIDGET_DESCRIPTOR_LENGTH);
+        }
+        serializer_finish(&read_serializer);
+    }
+
+    return result;
+}
 
 void game_write_save_slot(s32 save_slot_id) {
     assertion(save_slot_id >= 0 && save_slot_id < GAME_MAX_SAVE_SLOTS);
@@ -227,6 +258,7 @@ void game_serialize_save(struct binary_serializer* serializer) {
     serialize_bytes(serializer, game_state->loaded_area_name, sizeof(game_state->loaded_area_name));
 
     if (serializer->mode == BINARY_SERIALIZER_READ) {
+        /* eh... Probably shouldn't be here */
         load_level_from_file(game_state, string_from_cstring(game_state->loaded_area_name));
     }
 
@@ -274,63 +306,107 @@ void game_serialize_save(struct binary_serializer* serializer) {
 
     if (serializer->mode == BINARY_SERIALIZER_WRITE) {
         /* we're going to write them as if they were flat entries */ 
-        struct save_area_record_entry* current_area_entry = global_save_data.first;
 
-        for (s32 area_entry_index = 0; area_entry_index < area_entry_count; ++area_entry_index) {
-            s32 record_entries = save_area_record_entry_record_count(current_area_entry);
-            _debugprintf("Current area entry has %d entries to write", record_entries);
+        { /* SAVE RECORDS */
+            struct save_area_record_entry* current_area_entry = global_save_data.first;
 
-            serialize_u32(serializer, &current_area_entry->map_hash_id);
-            serialize_s32(serializer, &record_entries);
+            for (s32 area_entry_index = 0; area_entry_index < area_entry_count; ++area_entry_index) {
+                s32 record_entries = save_area_record_entry_record_count(current_area_entry);
+                _debugprintf("Current area entry has %d entries to write", record_entries);
 
-            {
-                struct save_area_record_chunk* entry_chunk = current_area_entry->first;
+                serialize_u32(serializer, &current_area_entry->map_hash_id);
+                serialize_s32(serializer, &record_entries);
 
-                s32 written = 0;
-                while (entry_chunk) {
-                    serialize_bytes(serializer, entry_chunk->records, sizeof(*entry_chunk->records) * entry_chunk->written_entries);
-                    written += entry_chunk->written_entries;
-                    _debugprintf("Current entry chunk wrote: %d entries (%d total)", entry_chunk->written_entries, written);
+                {
+                    struct save_area_record_chunk* entry_chunk = current_area_entry->first;
 
-                    entry_chunk = entry_chunk->next;
-                }
+                    s32 written = 0;
+                    while (entry_chunk) {
+                        serialize_bytes(serializer, entry_chunk->records, sizeof(*entry_chunk->records) * entry_chunk->written_entries);
+                        written += entry_chunk->written_entries;
+                        _debugprintf("Current entry chunk wrote: %d entries (%d total)", entry_chunk->written_entries, written);
 
-                _debugprintf("Done writing area entry, advancing...");
-                assertion(written == record_entries && "Hmm, this doesn't smell so good to me.");
-            }
-
-            current_area_entry = current_area_entry->next;
-        }
-    } else {
-        for (s32 area_entry_index = 0; area_entry_index < area_entry_count; ++area_entry_index) {
-            struct save_area_record_entry* current_area_entry = save_record_allocate_area_entry_chunk();
-            s32                            record_entries     = save_area_record_entry_record_count(current_area_entry);
-
-            serialize_u32(serializer, &current_area_entry->map_hash_id);
-            serialize_s32(serializer, &record_entries);
-
-            {
-                s32 expected_chunks_to_write = record_entries / SAVE_RECORDS_PER_SAVE_AREA_RECORD_CHUNK + 1;
-                s32 consumed_chunks = 0;
-
-                _debugprintf("Read mode of save file, have to write %d chunks (%d total entries)", expected_chunks_to_write, record_entries);
-
-                s32 original_record_entries = record_entries;
-                for (s32 chunk_to_write = 0; chunk_to_write < expected_chunks_to_write; ++chunk_to_write) {
-                    struct save_area_record_chunk* entry_chunk = save_area_record_chunk_allocate_entry_chunk(current_area_entry);
-
-                    s32 amount_to_consume = record_entries;
-                    if (amount_to_consume >= SAVE_RECORDS_PER_SAVE_AREA_RECORD_CHUNK) {
-                        amount_to_consume = SAVE_RECORDS_PER_SAVE_AREA_RECORD_CHUNK;
+                        entry_chunk = entry_chunk->next;
                     }
 
-                    serialize_bytes(serializer, entry_chunk->records, sizeof(*entry_chunk->records) * amount_to_consume);
-                    entry_chunk->written_entries = amount_to_consume;
-                    record_entries -= amount_to_consume;
-                    consumed_chunks += 1;
+                    _debugprintf("Done writing area entry, advancing...");
+                    assertion(written == record_entries && "Hmm, this doesn't smell so good to me.");
                 }
 
-                assertion(save_area_record_entry_record_count(current_area_entry) == original_record_entries && "Okay, that's bad...");
+                current_area_entry = current_area_entry->next;
+            }
+        }
+        { /* GAME_ VARIABLES/FLAGS */
+            if (save_version > 1) {
+                s32 game_variables_total = game_variables_count_all();
+                serialize_s32(serializer, &game_variables_total);
+
+                s32 written = 0;
+                struct game_variable_chunk* cursor = game_state->variables.first;
+
+                while (cursor) {
+                    for (s32 current_variable_index = 0; current_variable_index < cursor->variable_count; ++current_variable_index) {
+                        struct game_variable* var = cursor->variables + current_variable_index;
+                        serialize_bytes(serializer, var->name, MAX_GAME_VARIABLE_NAME_LENGTH);
+                        serialize_s32(serializer, &var->value);
+                        _debugprintf("wrote game var: \"%s\": value: %d", var->name, var->value);
+                        written += 1;
+                    }
+                    cursor = cursor->next;
+                }
+
+                assertion(written == game_variables_total && "Weird, the written amount of game variables is different than the counted amount...");
+            }
+        }
+    } else {
+        {/* SAVE RECORDS */
+            for (s32 area_entry_index = 0; area_entry_index < area_entry_count; ++area_entry_index) {
+                struct save_area_record_entry* current_area_entry = save_record_allocate_area_entry_chunk();
+                s32                            record_entries     = save_area_record_entry_record_count(current_area_entry);
+
+                serialize_u32(serializer, &current_area_entry->map_hash_id);
+                serialize_s32(serializer, &record_entries);
+
+                {
+                    s32 expected_chunks_to_write = record_entries / SAVE_RECORDS_PER_SAVE_AREA_RECORD_CHUNK + 1;
+                    s32 consumed_chunks = 0;
+
+                    _debugprintf("Read mode of save file, have to write %d chunks (%d total entries)", expected_chunks_to_write, record_entries);
+
+                    s32 original_record_entries = record_entries;
+                    for (s32 chunk_to_write = 0; chunk_to_write < expected_chunks_to_write; ++chunk_to_write) {
+                        struct save_area_record_chunk* entry_chunk = save_area_record_chunk_allocate_entry_chunk(current_area_entry);
+
+                        s32 amount_to_consume = record_entries;
+                        if (amount_to_consume >= SAVE_RECORDS_PER_SAVE_AREA_RECORD_CHUNK) {
+                            amount_to_consume = SAVE_RECORDS_PER_SAVE_AREA_RECORD_CHUNK;
+                        }
+
+                        serialize_bytes(serializer, entry_chunk->records, sizeof(*entry_chunk->records) * amount_to_consume);
+                        entry_chunk->written_entries = amount_to_consume;
+                        record_entries -= amount_to_consume;
+                        consumed_chunks += 1;
+                    }
+
+                    assertion(save_area_record_entry_record_count(current_area_entry) == original_record_entries && "Okay, that's bad...");
+                }
+            }
+        }
+
+        /* thankfully this is way simpler than the other one since it kind of just does itself */
+        { /* GAME_ VARIABLES/FLAGS */
+            /* this is not read in chunks, though it probably should be later on! Although area save records might be expected to grow much bigger later? */
+            s32 game_variables_total = 0;
+            serialize_s32(serializer, &game_variables_total);
+
+            for (s32 game_variable_index = 0; game_variable_index < game_variables_total; ++game_variable_index) {
+                char game_var_name[MAX_GAME_VARIABLE_NAME_LENGTH];
+                int  game_var_value;
+                serialize_bytes(serializer, game_var_name, MAX_GAME_VARIABLE_NAME_LENGTH);
+                serialize_s32(serializer, &game_var_value);
+
+                game_variable_set(string_from_cstring(game_var_name), game_var_value);
+                _debugprintf("read game var: \"%s\": value: %d", game_var_name, game_var_value);
             }
         }
     }

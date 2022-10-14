@@ -1184,8 +1184,6 @@ void game_initialize(void) {
 
     game_script_initialize(&game_arena);
 
-    game_variable_set(string_literal("gvarrain"), 1);
-
     passive_speaking_dialogues = memory_arena_push(&game_arena, MAX_PASSIVE_SPEAKING_DIALOGUES * sizeof(*passive_speaking_dialogues));
 
     ui_blip = load_sound(string_literal("res/snds/ui_select.wav"), false);
@@ -2183,7 +2181,19 @@ struct game_variables game_variables(struct memory_arena* arena) {
     return result;
 }
 
-struct game_variable* game_variables_allocate_next(void) {
+s32 game_variables_count_all(void) {
+    s32 result = 0;
+
+    struct game_variable_chunk* current = game_state->variables.first;
+    while (current) {
+        result  += current->variable_count;
+        current  = current->next;
+    }
+
+    return result;
+}
+
+local struct game_variable* game_variables_allocate_next(void) {
     struct game_variables* variables = &game_state->variables;
     struct game_variable* result = NULL;
 

@@ -69,8 +69,11 @@ local void fill_all_save_slots(void) {
 
         struct save_slot_widget* current_save_slot = &main_menu.save_slot_widgets[save_slot_index];
         if (file_exists(filename_path)) {
-            cstring_copy("NEED TO LOAD", current_save_slot->name, array_count(current_save_slot->name));
-            cstring_copy("-------", current_save_slot->descriptor, array_count(current_save_slot->descriptor));
+            struct save_data_description save_description = get_save_data_description(save_slot_index);
+
+            assertion(save_description.good && "Hmm, corrupted save file? Or doesn't exist?");
+            cstring_copy(save_description.name, current_save_slot->name, array_count(current_save_slot->name));
+            cstring_copy(save_description.descriptor, current_save_slot->descriptor, array_count(current_save_slot->descriptor));
         } else {
             cstring_copy("NO SAVE", current_save_slot->name, array_count(current_save_slot->name));
             cstring_copy("-------", current_save_slot->descriptor, array_count(current_save_slot->descriptor));
@@ -284,7 +287,6 @@ local s32 do_save_menu(struct software_framebuffer* framebuffer, f32 y_offset, f
                 f32 relative_distance = fabs(main_menu.scroll_seek_y - (relative_target));
 
                 if (relative_distance > 1.512838f) {
-
                     /* smoothen out */
                     const s32 STEPS = 10;
                     for (s32 iters = 0; iters < STEPS; ++iters) {
@@ -292,11 +294,10 @@ local s32 do_save_menu(struct software_framebuffer* framebuffer, f32 y_offset, f
                         if (main_menu.scroll_seek_y < relative_target) sign_direction = 1;
                         else                                           sign_direction = -1;
 
-                        f32 displacement = (relative_target - main_menu.scroll_seek_y) * 45;
-                        f32 attenuation  = 1 - (1 / (1+(displacement*displacement)));
+                        relative_distance = fabs(main_menu.scroll_seek_y - (relative_target))
 
                         if (relative_distance > 1.512838f) {
-                            main_menu.scroll_seek_y += dt * attenuation*50 * sign_direction;
+                            main_menu.scroll_seek_y += dt * 100 * sign_direction;
                         } else {
                             break;
                         }
@@ -316,7 +317,8 @@ local s32 do_save_menu(struct software_framebuffer* framebuffer, f32 y_offset, f
 
         draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, v2f32(x_cursor, y_cursor + adjusted_scroll_offset), BOX_WIDTH, BOX_HEIGHT, ui_color);
         draw_ui_breathing_text(framebuffer, v2f32(x_cursor + 15, y_cursor + 15 + adjusted_scroll_offset), title_font, 2, format_temp_s("%s (%02d)", current_slot->name, save_slot_index), save_slot_index*22, color32f32(1, 1, 1, alpha));
-        software_framebuffer_draw_text(framebuffer, body_font, 1, v2f32(x_cursor + 20, y_cursor + 15+32 + adjusted_scroll_offset), string_from_cstring(current_slot->descriptor), color32f32(1, 1, 1, alpha), BLEND_MODE_ALPHA);
+        /* need to have good word wrap */
+        software_framebuffer_draw_text(framebuffer, body_font, 2, v2f32(x_cursor + 20, y_cursor + 15+32 + adjusted_scroll_offset), string_from_cstring(current_slot->descriptor), color32f32(1, 1, 1, alpha), BLEND_MODE_ALPHA);
 
         y_cursor += nine_patch_extents.y * 1.5;
     }

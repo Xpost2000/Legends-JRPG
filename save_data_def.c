@@ -11,4 +11,12 @@ void finish_save_data(void);
 string filename_from_saveslot_id(s32 id);
 void   save_data_register_chest_looted(u32 chest_id);
 
+struct save_data_description {
+    bool good;
+    char name[32];
+    char descriptor[64];
+};
+
+struct save_data_description get_save_data_description(s32 save_id);
+
 #endif

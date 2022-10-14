@@ -436,7 +436,7 @@ s32 screen_mode = GAME_SCREEN_MAIN_MENU;
 /* this isn't a hashmap FYI, just linear lookups. That's okay too. Since lookup is not frequent. */
 /* I can change this to a chunked hashmap I guess, not a big deal... */
 #define MAX_GAME_VARIABLES_PER_CHUNK (32)
-#define MAX_GAME_VARIABLE_NAME_LENGTH (16)
+#define MAX_GAME_VARIABLE_NAME_LENGTH (32)
 struct game_variable {
     // big names ****************
     char name[MAX_GAME_VARIABLE_NAME_LENGTH];
@@ -456,6 +456,7 @@ struct game_variables game_variables(struct memory_arena* arena);
 struct game_variable* lookup_game_variable(string name, bool create_when_not_found);
 void game_variable_set(string name, s32 value);
 s32  game_variable_get(string name);
+s32  game_variables_count_all(void);
 
 #include "shop_def.c"
 
