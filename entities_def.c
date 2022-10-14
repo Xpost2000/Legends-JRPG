@@ -335,6 +335,7 @@ struct entity_sequence_state {
     s32 current_sequence_index;
 };
 
+#define ENTITY_TALK_INTERACTIVE_RADIUS ((f32)1.9565 * TILE_UNIT_SIZE)
 struct entity {
     string name;
 
@@ -408,7 +409,13 @@ void entity_award_experience(struct entity* entity, s32 xp_amount); /* need to h
 
 /* lol how has this not been done yet? Spend too much time in combat methinks */
 void entity_set_dialogue_file(struct entity* entity, string str) {
-    
+    if (!str.length) {
+        entity->has_dialogue = false;
+        return;
+    }
+
+    entity->has_dialogue = true;
+    cstring_copy(str.data, entity->dialogue_file, 64);
 }
 
 #define ENTITY_MAX_LOOT_TABLE_ENTRIES (32)

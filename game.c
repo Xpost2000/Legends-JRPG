@@ -342,6 +342,23 @@ entity_id entity_list_create_player(struct entity_list* entities, v2f32 position
 
     return result;
 }
+entity_id entity_list_create_niceguy(struct entity_list* entities, v2f32 position) {
+    entity_id result = entity_list_create_entity(entities);
+    struct entity* e = entity_list_dereference_entity(entities, result);
+
+    e->flags               |= ENTITY_FLAGS_ALIVE;
+    e->position             = position;
+    e->scale.x              = TILE_UNIT_SIZE-2;
+    e->scale.y              = TILE_UNIT_SIZE-2;
+    e->health.value         = 100;
+    e->health.min           = 100;
+    e->health.max           = 100;
+    e->stat_block.xp_value  = 30;
+    e->name                 = string_literal("Guy");
+    entity_set_dialogue_file(e, string_literal("linear_test"));
+
+    return result;
+}
 entity_id entity_list_create_badguy(struct entity_list* entities, v2f32 position) {
     entity_id result = entity_list_create_entity(entities);
     struct entity* e = entity_list_dereference_entity(entities, result);
@@ -1210,7 +1227,8 @@ void game_initialize(void) {
     game_state->permenant_particle_emitters = entity_particle_emitter_list(&game_arena, GAME_MAX_PERMENANT_PARTICLE_EMITTERS);
     /* entity_particles_initialize_pool(&game_arena, MAX_PARTICLES_IN_ENGINE); */
     player_id                               = entity_list_create_player(&game_state->permenant_entities, v2f32(70, 70));
-    entity_list_create_badguy(&game_state->permenant_entities, v2f32(9 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE));
+    entity_list_create_niceguy(&game_state->permenant_entities, v2f32(9 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE));
+    /* entity_list_create_badguy(&game_state->permenant_entities, v2f32(9 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE)); */
     /* entity_list_create_badguy(&game_state->permenant_entities, v2f32(11 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE)); */
 
     {
@@ -1470,15 +1488,28 @@ local void update_and_render_ingame_game_menu_ui(struct game_state* state, struc
     }
 
     if (state->interactable_state.interactable_type != INTERACTABLE_TYPE_NONE) {
-        struct font_cache* font = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_BLUE]);
+        struct font_cache* font = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_STEEL]);
+
         switch (state->interactable_state.interactable_type) {
             case INTERACTABLE_TYPE_CHEST: {
                 struct entity_chest* chest = state->interactable_state.context;
-                software_framebuffer_draw_text_bounds_centered(framebuffer, font, 4, rectangle_f32(0, 400, framebuffer->width, framebuffer->height - 400),
+                software_framebuffer_draw_text_bounds_centered(framebuffer, font, 2, rectangle_f32(0, 400, framebuffer->width, framebuffer->height - 400),
                                                                string_literal("open chest"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
 
                 if (is_action_pressed(INPUT_ACTION_CONFIRMATION)) {
                     game_loot_chest(state, chest);
+                }
+            } break;
+            case INTERACTABLE_TYPE_ENTITY_CONVERSATION: {
+                struct entity* to_speak = state->interactable_state.context;
+
+                software_framebuffer_draw_text_bounds_centered(framebuffer, font, 2, rectangle_f32(0, 400, framebuffer->width, framebuffer->height - 400),
+                                                               string_literal("speak"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+
+                assertion(to_speak->has_dialogue && "I'm not sure how this was possible...");
+                if (is_action_pressed(INPUT_ACTION_CONFIRMATION)) {
+                    string conversation_path = format_temp_s("./dlg/%s.txt", to_speak->dialogue_file);
+                    game_open_conversation_file(state, conversation_path);
                 }
             } break;
             default: {
@@ -1904,15 +1935,35 @@ void player_handle_radial_interactables(struct game_state* state, struct entity*
     bool found_any_interactable = false;
     struct level_area* area   = &state->loaded_area;
 
-    if (!found_any_interactable) {
-        Array_For_Each(it, struct entity_chest, area->chests, area->entity_chest_count) {
-            f32 distance_sq = v2f32_distance_sq(entity->position, v2f32_scale(it->position, TILE_UNIT_SIZE));
-            if (it->flags & ENTITY_CHEST_FLAGS_UNLOCKED) continue;
+    f32 closest_interactive_distance = INFINITY;
 
-            if (distance_sq <= (ENTITY_CHEST_INTERACTIVE_RADIUS*ENTITY_CHEST_INTERACTIVE_RADIUS)) {
+    Array_For_Each(it, struct entity_chest, area->chests, area->entity_chest_count) {
+        f32 distance_sq = v2f32_distance_sq(entity->position, v2f32_scale(it->position, TILE_UNIT_SIZE));
+        if (it->flags & ENTITY_CHEST_FLAGS_UNLOCKED) continue;
+
+        if (distance_sq <= (ENTITY_CHEST_INTERACTIVE_RADIUS*ENTITY_CHEST_INTERACTIVE_RADIUS)) {
+            if (distance_sq < closest_interactive_distance) {
                 mark_interactable(state, INTERACTABLE_TYPE_CHEST, it);
                 found_any_interactable = true;
-                break;
+                closest_interactive_distance = distance_sq;
+            }
+        }
+    }
+
+    {
+        struct entity_iterator iterator = game_entity_iterator(state);
+
+        for (struct entity* current_entity = entity_iterator_begin(&iterator); !entity_iterator_finished(&iterator); current_entity = entity_iterator_advance(&iterator)) {
+            f32 distance_sq = v2f32_distance_sq(entity->position, current_entity->position);
+
+            if (distance_sq <= (ENTITY_TALK_INTERACTIVE_RADIUS*ENTITY_TALK_INTERACTIVE_RADIUS)) {
+                if (current_entity->has_dialogue) {
+                    if (distance_sq < closest_interactive_distance) {
+                        mark_interactable(state, INTERACTABLE_TYPE_ENTITY_CONVERSATION, current_entity);
+                        found_any_interactable = true;
+                        closest_interactive_distance = distance_sq;
+                    }
+                } 
             }
         }
     }

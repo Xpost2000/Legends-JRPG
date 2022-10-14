@@ -405,11 +405,13 @@ struct ui_sub_menu_inventory {
 enum interactable_type {
     INTERACTABLE_TYPE_NONE,
     INTERACTABLE_TYPE_CHEST,
+    INTERACTABLE_TYPE_ENTITY_CONVERSATION,
     INTERACTABLE_TYPE_COUNT,
 };
 static string interactable_type_strings[] = {
     string_literal("(none)"),
     string_literal("(chest)"),
+    string_literal("(conversation)"),
     string_literal("(count)"),
 };
 
@@ -532,6 +534,7 @@ struct game_state {
     char                current_region_name[96];
     char                current_region_subtitle[128];
 
+    /* only one interactable at a time */
     struct {
         s32   interactable_type;
         void* context;
