@@ -1223,6 +1223,7 @@ void game_initialize(void) {
             entity_model_add_animation(base_guy, string_literal("right"),      1, 0);
 
             const f32 WALK_TIMINGS = 0.13;
+            /* TODO: rename animation files to be more consistent */
             entity_model_add_animation(base_guy, string_literal("down_walk"),  3, WALK_TIMINGS);
             entity_model_add_animation(base_guy, string_literal("up_walk"),    3, WALK_TIMINGS);
             entity_model_add_animation(base_guy, string_literal("left_walk"),  3, WALK_TIMINGS);

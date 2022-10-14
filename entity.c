@@ -35,12 +35,49 @@ struct rectangle_f32 entity_rectangle_collision_bounds(struct entity* entity) {
                          entity->scale.y-10);
 }
 
+/* think about this a little further */
 struct entity_particle_emitter_list entity_particle_emitter_list(struct memory_arena* arena, s32 capacity) {
     struct entity_particle_emitter_list result = {
         .emitters = memory_arena_push(arena, capacity),
         .count    = 0,
     };
     return result;
+}
+
+void entity_look_at(struct entity* entity, v2f32 position) {
+    v2f32 position_delta = v2f32_direction(entity->position, position);
+
+    _debugprintf("look at delta: %f, %f\n", position_delta.x, position_delta.y);
+    if (fabs(position_delta.x) > fabs(position_delta.y)) {
+        if (position_delta.x < 0) {
+            entity->facing_direction = DIRECTION_LEFT;
+        } else if (position_delta.x > 0) {
+            entity->facing_direction = DIRECTION_RIGHT;
+        }
+    } else {
+        if (position_delta.y < 0) {
+            entity->facing_direction = DIRECTION_UP;
+        } else if (position_delta.y > 0) {
+            entity->facing_direction = DIRECTION_DOWN;
+        }
+    }
+
+    /*
+      Entities don't technically operate on a state machine, they have implicit states,
+      so I have to do this sometimes.
+
+      NOTE: In reality I should just have multiple versions of many animations and try to play the directional version as this shouldn't
+      be dependent on state.
+
+      Will probably do later if it becomes important
+
+      IE:
+
+      if (!try_to_play(animation + direction_name)) {
+          try_to_play(animation);
+      }
+    */
+    entity_play_animation(entity, facing_direction_strings_normal[entity->facing_direction]);
 }
 
 struct entity_list entity_list_create(struct memory_arena* arena, s32 capacity, u8 store_mark) {
@@ -51,10 +88,10 @@ struct entity_list entity_list_create(struct memory_arena* arena, s32 capacity, 
         .store_type       = store_mark,
     };
 
-    /* for (s32 entity_index = 0; entity_index < capacity; ++entity_index) { */
-    /*     struct entity* current_entity = result.entities + entity_index; */
-    /*     current_entity->flags = 0; */
-    /* } */
+    for (s32 entity_index = 0; entity_index < capacity; ++entity_index) {
+        struct entity* current_entity = result.entities + entity_index;
+        current_entity->flags = 0;
+    }
 
     zero_memory(result.generation_count, result.capacity * sizeof(*result.generation_count));
     return result;
@@ -862,6 +899,10 @@ void entity_combat_submit_attack_action(struct entity* entity, entity_id target_
     entity->ai.attack_animation_timer              = 0;
     entity->ai.attack_animation_phase              = ENTITY_ATTACK_ANIMATION_PHASE_MOVE_TO_TARGET;
     entity->ai.attack_animation_preattack_position = entity->position;
+    {
+        struct entity* target_entity = game_dereference_entity(game_state, target_id);
+        entity_look_at(entity, target_entity->position);
+    }
     _debugprintf("attacku");
 }
 
@@ -1244,6 +1285,7 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
                         entity_id      entity_to_hurt_id = attacking_entity_ids[entity_to_hurt_index];
                         struct entity* entity_to_hurt    = game_dereference_entity(game_state, entity_to_hurt_id);
 
+                        /* TODO: REPLACE */
                         entity_do_physical_hurt(entity_to_hurt, 9999);
                         battle_notify_killed_entity(entity_to_hurt_id);
                     }
@@ -1338,6 +1380,7 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
                         target_entity->ai.attack_animation_phase = ENTITY_ATTACK_ANIMATION_PHASE_RECOVER_FROM_HIT;
 
                         {
+                            /* TODO: REPLACE */
                             entity_do_physical_hurt(attacked_entity, 9999);
 
                             {

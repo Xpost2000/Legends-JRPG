@@ -100,6 +100,7 @@ struct main_menu_option {
     };
 };
 
+string game_title = string_literal("LEGENDS");
 local struct main_menu_option main_menu_first_page_options[] = {
     (struct main_menu_option) { .choice = ("continue") },
     (struct main_menu_option) { .choice = ("new game") },
@@ -387,7 +388,7 @@ local void update_and_render_main_menu(struct game_state* state, struct software
             f32 y_cursor = lerp_f32(-999, 100, t);
 
             software_framebuffer_draw_text_bounds_centered(framebuffer, font, TITLE_FONT_SCALE, rectangle_f32(0, y_cursor, framebuffer->width, framebuffer->height*0.1),
-                                                           string_literal("Tendered Shadows"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+                                                           game_title, color32f32(1,1,1,1), BLEND_MODE_ALPHA);
 
             if (main_menu.timer >= 4.3f) {
                 main_menu.phase = MAIN_MENU_OPTIONS_APPEAR;
@@ -403,7 +404,7 @@ local void update_and_render_main_menu(struct game_state* state, struct software
             f32 x_cursor = cubic_ease_in_f32(-999, 0, t);
 
             software_framebuffer_draw_text_bounds_centered(framebuffer, font, TITLE_FONT_SCALE, rectangle_f32(0, 100, framebuffer->width, framebuffer->height*0.1),
-                                                           string_literal("Tendered Shadows"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+                                                           game_title, color32f32(1,1,1,1), BLEND_MODE_ALPHA);
 
             s32 index = 0;
             main_menu_do_menu_ui(v2f32(x_cursor, y_cursor), framebuffer, main_menu_first_page_options, array_count(main_menu_first_page_options), &main_menu.currently_selected_option_choice, false);
@@ -415,7 +416,7 @@ local void update_and_render_main_menu(struct game_state* state, struct software
 
         case MAIN_MENU_IDLE: {
             software_framebuffer_draw_text_bounds_centered(framebuffer, font, TITLE_FONT_SCALE, rectangle_f32(0, 100, framebuffer->width, framebuffer->height*0.1),
-                                                           string_literal("Tendered Shadows"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+                                                           game_title, color32f32(1,1,1,1), BLEND_MODE_ALPHA);
             
             f32 y_cursor = 200;
 
@@ -447,7 +448,7 @@ local void update_and_render_main_menu(struct game_state* state, struct software
 
         case MAIN_MENU_SHOW_OPTIONS_PAGE_MOVE_AWAY_NORMAL_OPTIONS: {
             software_framebuffer_draw_text_bounds_centered(framebuffer, font, TITLE_FONT_SCALE, rectangle_f32(0, 100, framebuffer->width, framebuffer->height*0.1),
-                                                           string_literal("Tendered Shadows"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+                                                           game_title, color32f32(1,1,1,1), BLEND_MODE_ALPHA);
             f32 t = main_menu.timer / 3.5f;
             if (t >= 1.0) t = 1.0;
 
