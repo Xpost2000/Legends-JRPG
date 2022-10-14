@@ -643,19 +643,6 @@ void sortable_draw_entities_submit(struct render_commands* commands, struct grap
                     render_commands_set_shader(commands, game_foreground_things_shader, NULL);
                 }
             } break;
-            case SORTABLE_DRAW_ENTITY_PARTICLE_SYSTEM: {
-                struct entity_particle_emitter* emitter = current_draw_entity->pointer;
-
-                for (s32 particle_index = 0; particle_index < MAX_PARTICLES_PER_EMITTER; ++particle_index) {
-                    struct entity_particle* current_particle = &emitter->particles[particle_index];
-
-                    if (current_particle->lifetime <= 0.0) {
-                        continue;
-                    }
-
-                    /* living stuff */
-                }
-            } break;
         }
     }
 }
@@ -684,12 +671,6 @@ void render_entities(struct game_state* state, struct sortable_draw_entities* dr
         struct level_area* area = &state->loaded_area;
         Array_For_Each(it, struct entity_chest, area->chests, area->entity_chest_count) {
             sortable_draw_entities_push(draw_entities, SORTABLE_DRAW_ENTITY_CHEST, it->position.y*TILE_UNIT_SIZE, it);
-        }
-    }
-
-    {
-        Array_For_Each(it, struct entity_particle_emitter, state->permenant_particle_emitters.emitters, state->permenant_particle_emitters.count) {
-            sortable_draw_entities_push(draw_entities, SORTABLE_DRAW_ENTITY_PARTICLE_SYSTEM, it->position.y, it);
         }
     }
 }

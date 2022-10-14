@@ -140,15 +140,34 @@ struct entity_chest {
 /* might need to obey the simulated rules of a system but who cares? */
 /* reserved for in engine dynamic things, so burning and such. */
 /* levels will still have their own particle emitters if they would like. */
-#define GAME_MAX_PERMENANT_PARTICLE_EMITTERS (256) 
-#define MAX_PARTICLES_PER_EMITTER (128)
+#define GAME_MAX_PERMENANT_PARTICLE_EMITTERS (512) 
+
+#define MAX_PARTICLES_IN_ENGINE (16384)
+/* Separating particles into two separate passes to make life easier */
+#define  FULLBRIGHT_PARTICLE_COUNT (MAX_PARTICLES_IN_ENGINE/2)
+#define NORMALLY_LIT_PARTICLE_COUNT (MAX_PARTICLES_IN_ENGINE/2)
 
 /* NOTE(): these are point particle emitters to start with */
+enum entity_particle_type {
+    ENTITY_PARTICLE_TYPE_GENERIC, /* will obey the properties */
+
+    /*
+      Non-generic particles follow their own special case code
+      also they are considered "fullbright" entities so I have to draw them
+      on a separate pass. Sorry!
+     */
+    ENTITY_PARTICLE_TYPE_FIRE,
+};
+
 struct entity_particle {
-    /* flat lazy particles */
+    s32   associated_particle_emitter_index;
+
     v2f32 position;
     v2f32 scale;
+    v2f32 target_scale;
     f32   lifetime;
+    union color32u8 color;
+    union color32u8 target_color;
 };
 struct entity_particle_emitter {
     v2f32 position;
@@ -161,18 +180,18 @@ struct entity_particle_emitter {
 
     /* get schema listing data elsewhere, for now hard code */
     /* this will determine general spawning traits */
+
     s32 particle_type;
-    
-    /* frankly these shouldn't belong with their emitter usually. */
-    /* or they shouldn't be related like this but whatever. */
-    struct entity_particle particles[MAX_PARTICLES_PER_EMITTER];
 };
 struct entity_particle_emitter_list {
     s32 count;
     struct entity_particle_emitter* emitters;
 };
 struct entity_particle_emitter_list entity_particle_emitter_list(struct memory_arena* arena, s32 capacity);
-void  entity_particle_emitter_list_update(struct entity_particle_emitter_list* particle_emitters, f32 dt);
+void                                entity_particle_emitter_list_update(struct entity_particle_emitter_list* particle_emitters, f32 dt);
+void                                entity_update_all_particles(f32 dt);
+void                                entity_draw_fullbright_particles();
+void                                entity_draw_normal_particles();
 
 /* needs more parameters */
 void entity_particle_emitter_spawn(struct entity_particle_emitter_list* particle_emitter);
@@ -533,7 +552,6 @@ struct entity_query_list find_entities_within_radius(struct memory_arena* arena,
 enum sortable_draw_entity_type {
     SORTABLE_DRAW_ENTITY_ENTITY,
     SORTABLE_DRAW_ENTITY_CHEST,
-    SORTABLE_DRAW_ENTITY_PARTICLE_SYSTEM,
 };
 struct sortable_draw_entity {
     u8    type;
