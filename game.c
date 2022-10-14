@@ -993,9 +993,11 @@ union color32f32 grayscale_shader(struct software_framebuffer* framebuffer, unio
 union color32f32 lighting_shader(struct software_framebuffer* framebuffer, union color32f32 source_pixel, v2f32 pixel_position, void* context) {
     struct level_area* loaded_area = &game_state->loaded_area;
 
-    union color32f32 result = source_pixel;
+    if (special_effects_active() && special_full_effects.type == SPECIAL_EFFECT_INVERSION_1) {
+        return source_pixel;
+    }
 
-    /* render_commands_push_quad(&commands, rectangle_f32(commands.camera.xy.x-500,commands.camera.xy.y-500,9999,9999), global_color_grading_filter, BLEND_MODE_MULTIPLICATIVE); */
+    union color32f32 result = source_pixel;
 
     f32 r_accumulation = 0;
     f32 g_accumulation = 0;
