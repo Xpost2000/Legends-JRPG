@@ -981,7 +981,6 @@ void software_framebuffer_render_commands(struct software_framebuffer* framebuff
 
     sort_render_commands(commands);
 
-
     /* move all things into clip space */
     for (unsigned index = 0; index < commands->command_count; ++index) {
         struct render_command* command = &commands->commands[index];

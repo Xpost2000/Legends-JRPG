@@ -54,6 +54,31 @@ void camera_set_point_to_interpolate(struct camera* camera, v2f32 point) {
     camera->tracking_xy = point;
 }
 
+v2f32 camera_transform(struct camera* camera, v2f32 point, s32 screen_width, s32 screen_height) {
+    point.x *= camera->zoom;
+    point.y *= camera->zoom;
+
+    if (camera->centered) {
+        point.x += screen_width/2;
+        point.x += screen_height/2;
+    }
+
+    point.x -= camera->xy.x;
+    point.y -= camera->xy.y;
+
+    return point;
+}
+struct rectangle_f32 camera_transform_rectangle(struct camera* camera, struct rectangle_f32 rectangle, s32 screen_width, s32 screen_height) {
+    v2f32 rectangle_position = v2f32(rectangle.x, rectangle.y);
+    rectangle_position       = camera_transform(camera, rectangle_position, screen_width, screen_height);
+    rectangle.x              = rectangle_position.x;
+    rectangle.y              = rectangle_position.y;
+    rectangle.w             *= camera->zoom;
+    rectangle.h             *= camera->zoom;
+
+    return rectangle;
+}
+
 v2f32 camera_project(struct camera* camera, v2f32 point, s32 screen_width, s32 screen_height) {
 #if 0
     point.x *= camera->zoom;
@@ -79,6 +104,17 @@ v2f32 camera_project(struct camera* camera, v2f32 point, s32 screen_width, s32 s
     point.y /= camera->zoom;
 #endif
     return point;
+}
+
+struct rectangle_f32 camera_project_rectangle(struct camera* camera, struct rectangle_f32 rectangle, s32 screen_width, s32 screen_height) {
+    v2f32 rectangle_position = v2f32(rectangle.x, rectangle.y);
+    rectangle_position       = camera_project(camera, rectangle_position, screen_width, screen_height);
+    rectangle.x              = rectangle_position.x;
+    rectangle.y              = rectangle_position.y;
+    rectangle.w             /= camera->zoom;
+    rectangle.h             /= camera->zoom;
+
+    return rectangle;
 }
 
 #define camera(XY, ZOOM) (struct camera) { .xy=XY, .zoom=ZOOM }

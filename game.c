@@ -1022,8 +1022,10 @@ union color32f32 lighting_shader(struct software_framebuffer* framebuffer, union
                 light_screenspace_position.x *= game_state->camera.zoom;
                 light_screenspace_position.y *= game_state->camera.zoom;
 
-                light_screenspace_position.x += SCREEN_WIDTH/2;
-                light_screenspace_position.y += SCREEN_HEIGHT/2;
+                if (game_state->camera.centered) {
+                    light_screenspace_position.x += SCREEN_WIDTH/2;
+                    light_screenspace_position.y += SCREEN_HEIGHT/2;
+                }
 
                 light_screenspace_position.x -= game_state->camera.xy.x;
                 light_screenspace_position.y -= game_state->camera.xy.y;

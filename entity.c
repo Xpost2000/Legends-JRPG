@@ -603,11 +603,19 @@ void sortable_draw_entities_submit(struct render_commands* commands, struct grap
                     render_commands_set_shader(commands, game_foreground_things_shader, NULL);
                     /* test for fullbright */
                     if (current_entity == game_get_player(game_state)) {
-                        lightmask_buffer_blit_image(&global_lightmask_buffer, graphics_assets_get_image_by_id(graphics_assets, sprite_to_use),
-                                                    rectangle_f32(current_entity->position.x - alignment_offset.x + other_offsets.x,
-                                                                  current_entity->position.y - alignment_offset.y + other_offsets.y,
-                                                                  real_dimensions.x,
-                                                                  real_dimensions.y*(1 - height_trim)),
+                        v2f32 draw_point     = v2f32(current_entity->position.x - alignment_offset.x + other_offsets.x, current_entity->position.y - alignment_offset.y + other_offsets.y);
+                        v2f32 old_draw_point = v2f32(current_entity->position.x - alignment_offset.x + other_offsets.x, current_entity->position.y - alignment_offset.y + other_offsets.y);
+                        draw_point.x += SCREEN_WIDTH/2;
+                        draw_point.y += SCREEN_HEIGHT/2;
+                        draw_point.x -= commands->camera.xy.x;
+                        draw_point.y -= commands->camera.xy.y;
+                        struct rectangle_f32 dest_rect = rectangle_f32(draw_point.x, draw_point.y, real_dimensions.x, real_dimensions.y*(1 - height_trim));
+                        /* draw_point       = camera_transform(&commands->camera, draw_point, SCREEN_WIDTH, SCREEN_HEIGHT); */
+                        /* dest_rect = camera_transform_rectangle(&commands->camera, dest_rect, SCREEN_WIDTH, SCREEN_HEIGHT); */
+                        /* _debugprintf("olddrawpoint: %f, %f, drawpoint %f, %f (%f, %f) (%d, %d) (DSCALE: %f)", old_draw_point.x, old_draw_point.y, draw_point.x, draw_point.y, commands->camera.xy.x, commands->camera.xy.y, SCREEN_WIDTH/2, SCREEN_HEIGHT/2, commands->camera.zoom); */
+                        lightmask_buffer_blit_image(&global_lightmask_buffer,
+                                                    graphics_assets_get_image_by_id(graphics_assets, sprite_to_use),
+                                                    dest_rect, 
                                                     rectangle_f32(0, 0, sprite_dimensions.x, sprite_dimensions.y * (1 - height_trim)),
                                                     NO_FLAGS, 0);
                     }
