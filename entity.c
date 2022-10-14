@@ -598,9 +598,19 @@ void sortable_draw_entities_submit(struct render_commands* commands, struct grap
                                                              current_entity->position.y - alignment_offset.y + other_offsets.y,
                                                              real_dimensions.x,
                                                              real_dimensions.y*(1 - height_trim)),
-                                               rectangle_f32(0, 0,
-                                                             sprite_dimensions.x, sprite_dimensions.y * (1 - height_trim)), modulation_color, NO_FLAGS, BLEND_MODE_ALPHA);
+                                               rectangle_f32(0, 0, sprite_dimensions.x, sprite_dimensions.y * (1 - height_trim)),
+                                               modulation_color, NO_FLAGS, BLEND_MODE_ALPHA);
                     render_commands_set_shader(commands, game_foreground_things_shader, NULL);
+                    /* test for fullbright */
+                    if (current_entity == game_get_player(game_state)) {
+                        lightmask_buffer_blit_image(&global_lightmask_buffer, graphics_assets_get_image_by_id(graphics_assets, sprite_to_use),
+                                                    rectangle_f32(current_entity->position.x - alignment_offset.x + other_offsets.x,
+                                                                  current_entity->position.y - alignment_offset.y + other_offsets.y,
+                                                                  real_dimensions.x,
+                                                                  real_dimensions.y*(1 - height_trim)),
+                                                    rectangle_f32(0, 0, sprite_dimensions.x, sprite_dimensions.y * (1 - height_trim)),
+                                                    NO_FLAGS, 0);
+                    }
 
 #ifndef RELEASE
                     /* struct rectangle_f32 collision_bounds = entity_rectangle_collision_bounds(current_entity); */

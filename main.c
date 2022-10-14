@@ -408,6 +408,7 @@ void engine_main_loop() {
     char window_name_title_buffer[256] = {};
     u32 start_frame_time = SDL_GetTicks();
 
+    lightmask_buffer_clear(&global_lightmask_buffer);
     begin_input_frame();
     {
         handle_sdl_events();

@@ -994,6 +994,10 @@ union color32f32 grayscale_shader(struct software_framebuffer* framebuffer, unio
 union color32f32 lighting_shader(struct software_framebuffer* framebuffer, union color32f32 source_pixel, v2f32 pixel_position, void* context) {
     struct level_area* loaded_area = &game_state->loaded_area;
 
+    if (lightmask_buffer_is_lit(&global_lightmask_buffer, pixel_position.x, pixel_position.y)) {
+        return source_pixel;
+    }
+
     if (special_effects_active() && special_full_effects.type == SPECIAL_EFFECT_INVERSION_1) {
         return source_pixel;
     }
