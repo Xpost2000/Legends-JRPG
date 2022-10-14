@@ -1158,6 +1158,37 @@ local void draw_ui_breathing_text(struct software_framebuffer* framebuffer, v2f3
     }
 }
 
+local void draw_ui_breathing_text_word_wrapped(struct software_framebuffer* framebuffer, v2f32 where, f32 wrap_width, struct font_cache* font, f32 scale, string text, s32 seed_displacement, union color32f32 modulation) {
+    f32 font_height = font_cache_text_height(font) * scale;
+
+    f32 x_cursor = where.x;
+    f32 y_cursor = where.y;
+
+    for (unsigned character_index = 0; character_index < text.length; ++character_index) {
+        s32 current_word_start = character_index;
+        s32 current_word_end   = current_word_start;
+        {
+            while (current_word_end < text.length && text.data[current_word_end] != ' ') {
+                current_word_end++;
+            }
+        }
+        string word = string_slice(text, current_word_start, current_word_end);
+        f32 word_width = font_cache_text_width(font, word, scale);
+
+        if ((x_cursor-where.x) + word_width >= wrap_width) {
+            x_cursor  = where.x;
+            y_cursor += font_height;
+        }
+
+        f32 character_displacement_y = sinf((global_elapsed_time*2) + ((character_index+seed_displacement) * 2381.2318)) * 3;
+
+        v2f32 glyph_position = v2f32(x_cursor, y_cursor + character_displacement_y);
+        x_cursor += font->tile_width * scale;
+
+        software_framebuffer_draw_text(framebuffer, font, scale, glyph_position, string_slice(text, character_index, character_index+1), modulation, BLEND_MODE_ALPHA);
+    }
+}
+
 
 #ifdef USE_EDITOR
 void editor_initialize(struct editor_state* state);
