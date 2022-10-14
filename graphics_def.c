@@ -49,6 +49,31 @@ struct image_buffer {
 struct software_framebuffer;
 typedef union color32f32 (*shader_fn)(struct software_framebuffer* framebuffer, union color32f32 source_pixel, v2f32 pixel_position, void* context);
 
+/*
+  While this isn't strictly necessary for the graphics part,
+  this is an auxiliary data structure used to keep my lighting happening in one pass.
+
+  if a pixel is marked as 255, we will not light it, and draw it as full bright.
+  Otherwise behavior is just lighting. Not sure what to do with non-255 values.
+*/
+enum lightmask_draw_blend {
+    LIGHTMASK_BLEND_NONE,
+    LIGHTMASK_BLEND_OR,
+};
+struct lightmask_buffer {
+    uint8_t* mask_buffer;
+    u32 width;
+    u32 height;
+};
+struct lightmask_buffer lightmask_buffer_create(u32 buffer_width, u32 buffer_height);
+void                    lightmask_buffer_clear(struct lightmask_buffer* buffer);
+void                    lightmask_buffer_blit_image_clipped(struct lightmask_buffer* buffer, struct rectangle_f32 clip_rect, struct image_buffer* image, struct rectangle_f32 destination, struct rectangle_f32 src, u8 flags, u8 blend_mode);
+void                    lightmask_buffer_blit_rectangle_clipped(struct lightmask_buffer* buffer, struct rectangle_f32 clip_rect, struct rectangle_f32 destination, u8 blend_mode);
+void                    lightmask_buffer_blit_image(struct lightmask_buffer* buffer, struct image_buffer* image, struct rectangle_f32 destination, struct rectangle_f32 src, u8 flags, u8 blend_mode);
+void                    lightmask_buffer_blit_rectangle(struct lightmask_buffer* buffer, struct rectangle_f32 destination, u8 blend_mode);
+bool                    lightmask_buffer_is_lit(struct lightmask_buffer* buffer, s32 x, s32 y);
+void                    lightmask_buffer_finish(struct lightmask_buffer* buffer);
+
 struct software_framebuffer {
     Image_Buffer_Base;
 

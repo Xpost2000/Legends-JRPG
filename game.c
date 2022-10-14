@@ -11,6 +11,7 @@
 
 void game_initialize_game_world(void);
 
+
 /* These are some more specialized types of effects that require lots of perverse insertions */
 #define INVERSION_TIME_BETWEEN_FLASHES (0.07)
 #define INVERSION_FLASH_MAX            (12)
@@ -1203,7 +1204,7 @@ void game_initialize(void) {
      */
     game_state->permenant_entities          = entity_list_create(&game_arena, GAME_MAX_PERMENANT_ENTITIES, ENTITY_LIST_STORAGE_TYPE_PERMENANT_STORE);
     game_state->permenant_particle_emitters = entity_particle_emitter_list(&game_arena, GAME_MAX_PERMENANT_PARTICLE_EMITTERS);
-    entity_particles_initialize_pool(&game_arena, MAX_PARTICLES_IN_ENGINE);
+    /* entity_particles_initialize_pool(&game_arena, MAX_PARTICLES_IN_ENGINE); */
     player_id                               = entity_list_create_player(&game_state->permenant_entities, v2f32(70, 70));
     entity_list_create_badguy(&game_state->permenant_entities, v2f32(9 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE));
     /* entity_list_create_badguy(&game_state->permenant_entities, v2f32(11 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE)); */
