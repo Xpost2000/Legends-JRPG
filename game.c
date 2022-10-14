@@ -252,6 +252,8 @@ local void game_attempt_to_change_area_name(struct game_state* state, string nam
 }
 
 void game_finish_conversation(struct game_state* state) {
+    /* TODO: Wait until camera finishes interpolating */
+    camera_set_point_to_interpolate(&state->camera, state->before_conversation_camera.xy);
     state->is_conversation_active = false;
     file_buffer_free(&state->conversation_file_buffer);
 }
@@ -1541,6 +1543,8 @@ local void update_and_render_ingame_game_menu_ui(struct game_state* state, struc
                 if (is_action_pressed(INPUT_ACTION_CONFIRMATION)) {
                     string conversation_path = format_temp_s("./dlg/%s.txt", to_speak->dialogue_file);
                     game_open_conversation_file(state, conversation_path);
+                    v2f32 focus_point = to_speak->position;
+                    camera_set_point_to_interpolate(&state->camera, focus_point);
                 }
             } break;
             default: {
@@ -1855,7 +1859,9 @@ local void update_game_camera(struct game_state* state, f32 dt) {
     if (game_state->combat_state.active_combat) {
         update_game_camera_combat(state, dt);
     } else {
-        update_game_camera_exploration_mode(state, dt);
+        if (!game_state->is_conversation_active) {
+            update_game_camera_exploration_mode(state, dt);
+        }
     }
 
     {

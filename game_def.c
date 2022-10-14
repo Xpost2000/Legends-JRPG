@@ -520,6 +520,9 @@ struct game_state {
     /* I am a fan of animation, so we need to animate this. Even though it causes */
     /* state nightmares for me. */
     bool                is_conversation_active;
+    /* ideally I'd interpolate all states, but if that's not possible just steal the position from here.
+       I'm just saving everything just incase*/
+    struct camera       before_conversation_camera;
     bool                viewing_dialogue_choices;
     struct conversation current_conversation;
 
