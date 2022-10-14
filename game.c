@@ -1217,17 +1217,17 @@ void game_initialize(void) {
             
             /* He should have EVERY usable generic animation. Use as a fall back if animation is not drawn yet. */
             s32 base_guy = entity_model_database_add_model(&game_arena, string_literal("guy"));
-            entity_model_add_animation(base_guy, string_literal("down"),       1, 0);
-            entity_model_add_animation(base_guy, string_literal("up"),         1, 0);
-            entity_model_add_animation(base_guy, string_literal("left"),       1, 0);
-            entity_model_add_animation(base_guy, string_literal("right"),      1, 0);
+            entity_model_add_animation(base_guy, string_literal("idle_down"),       1, 0);
+            entity_model_add_animation(base_guy, string_literal("idle_up"),         1, 0);
+            entity_model_add_animation(base_guy, string_literal("idle_left"),       1, 0);
+            entity_model_add_animation(base_guy, string_literal("idle_right"),      1, 0);
 
             const f32 WALK_TIMINGS = 0.13;
             /* TODO: rename animation files to be more consistent */
-            entity_model_add_animation(base_guy, string_literal("down_walk"),  3, WALK_TIMINGS);
-            entity_model_add_animation(base_guy, string_literal("up_walk"),    3, WALK_TIMINGS);
-            entity_model_add_animation(base_guy, string_literal("left_walk"),  3, WALK_TIMINGS);
-            entity_model_add_animation(base_guy, string_literal("right_walk"), 3, WALK_TIMINGS);
+            entity_model_add_animation(base_guy, string_literal("walk_up"),  3, WALK_TIMINGS);
+            entity_model_add_animation(base_guy, string_literal("walk_down"),    3, WALK_TIMINGS);
+            entity_model_add_animation(base_guy, string_literal("walk_right"),  3, WALK_TIMINGS);
+            entity_model_add_animation(base_guy, string_literal("walk_left"), 3, WALK_TIMINGS);
 
             entity_model_add_animation(base_guy, string_literal("kneel_down"), 2, 0.4);
             entity_model_add_animation(base_guy, string_literal("dead"),       1, 0);

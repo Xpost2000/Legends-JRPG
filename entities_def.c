@@ -453,7 +453,9 @@ s32                       entity_database_loot_table_find_id_by_name(struct enti
 s32                       entity_database_ability_find_id_by_name(struct entity_database* entity_database, string name);
 
 bool is_entity_aggressive_to_player(struct entity* entity);
-void entity_play_animation(struct entity* entity, string name);
+void entity_play_animation(struct entity* entity, string name, bool with_direction);
+void entity_play_animation_no_direction(struct entity* entity, string name);
+void entity_play_animation_with_direction(struct entity* entity, string name);
 
 s32 entity_find_effective_stat_value(struct entity* entity, s32 stat_index);
 

@@ -15,7 +15,18 @@ void battle_ui_stop_stalk_entity_with_camera(void);
 void _debug_print_id(entity_id id) {
     _debugprintf("ent id[g:%d]: %d, %d", id.generation, id.store_type, id.index);
 }
-void entity_play_animation(struct entity* entity, string name) {
+
+void entity_play_animation(struct entity* entity, string name, bool with_direction) {
+
+    if (with_direction) {
+        string facing_direction_string = facing_direction_strings_normal[entity->facing_direction];
+        string directional_counterpart = format_temp_s("%.*s_%.*s", name.length, name.data, facing_direction_string.length, facing_direction_string.data);
+
+        if (find_animation_by_name(entity->model_index, directional_counterpart)) {
+            name = directional_counterpart;
+        }
+    }
+
     if (string_equal(entity->animation.name, name)) {
         return;
     }
@@ -24,6 +35,14 @@ void entity_play_animation(struct entity* entity, string name) {
     entity->animation.current_frame_index = 0;
     entity->animation.iterations          = 0;
     entity->animation.timer               = 0;
+}
+
+void entity_play_animation_no_direction(struct entity* entity, string name) {
+    entity_play_animation(entity, name, 0);
+}
+
+void entity_play_animation_with_direction(struct entity* entity, string name) {
+    entity_play_animation(entity, name, 1);
 }
 
 struct rectangle_f32 entity_rectangle_collision_bounds(struct entity* entity) {
@@ -61,23 +80,6 @@ void entity_look_at(struct entity* entity, v2f32 position) {
             entity->facing_direction = DIRECTION_DOWN;
         }
     }
-
-    /*
-      Entities don't technically operate on a state machine, they have implicit states,
-      so I have to do this sometimes.
-
-      NOTE: In reality I should just have multiple versions of many animations and try to play the directional version as this shouldn't
-      be dependent on state.
-
-      Will probably do later if it becomes important
-
-      IE:
-
-      if (!try_to_play(animation + direction_name)) {
-          try_to_play(animation);
-      }
-    */
-    entity_play_animation(entity, facing_direction_strings_normal[entity->facing_direction]);
 }
 
 struct entity_list entity_list_create(struct memory_arena* arena, s32 capacity, u8 store_mark) {
@@ -413,14 +415,14 @@ void update_entities(struct game_state* state, f32 dt, struct level_area* area) 
                 } else {
                     switch (current_entity->ai.death_animation_phase) {
                         case DEATH_ANIMATION_KNEEL: {
-                            entity_play_animation(current_entity, string_literal("kneel_down"));
+                            entity_play_animation_no_direction(current_entity, string_literal("kneel_down"));
                             if (current_entity->animation.iterations > DEATH_ANIMATION_MAX_KNEEL_HUFFS) {
                                 current_entity->ai.death_animation_phase = DEATH_ANIMATION_DIE;
                             }
                         } break;
                             /* can try to grow pool of blood... */
                         case DEATH_ANIMATION_DIE: {
-                            entity_play_animation(current_entity, string_literal("dead"));
+                            entity_play_animation_no_direction(current_entity, string_literal("dead"));
                         } break;
                     }
                 }
@@ -428,17 +430,9 @@ void update_entities(struct game_state* state, f32 dt, struct level_area* area) 
                 /* animation state will be controlled by the action while it happens */
                 if (!current_entity->ai.current_action) {
                     if (current_entity->velocity.x != 0 || current_entity->velocity.y != 0) {
-                        if (current_entity->velocity.y < 0) {
-                            entity_play_animation(current_entity, string_literal("up_walk"));
-                        } else if (current_entity->velocity.y > 0) {
-                            entity_play_animation(current_entity, string_literal("down_walk"));
-                        } else if (current_entity->velocity.x > 0) {
-                            entity_play_animation(current_entity, string_literal("right_walk"));
-                        } else if (current_entity->velocity.x < 0) {
-                            entity_play_animation(current_entity, string_literal("left_walk"));
-                        }
+                        entity_play_animation_with_direction(current_entity, string_literal("walk"));
                     } else {
-                        entity_play_animation(current_entity, facing_direction_strings_normal[current_entity->facing_direction]);
+                        entity_play_animation_with_direction(current_entity, string_literal("idle"));
                     }
                 }
             }
@@ -506,8 +500,9 @@ void sortable_draw_entities_submit(struct render_commands* commands, struct grap
 
                     if (!anim) {
                         _debugprintf("cannot find anim: %.*s. Falling back to \"down direction\"", current_entity->animation.name.length, current_entity->animation.name.data);
-                        anim = find_animation_by_name(model_index, string_literal("down"));
-                        assertion(anim && "no fallback anim? That is bad!");
+                        entity_play_animation_with_direction(current_entity, string_literal("idle"));
+                        anim = find_animation_by_name(model_index, current_entity->animation.name);
+                        assertion(anim && "Okay, if this still failed something is really wrong...");
                     }
 
                     current_entity->animation.timer += dt;
@@ -902,6 +897,7 @@ void entity_combat_submit_attack_action(struct entity* entity, entity_id target_
     {
         struct entity* target_entity = game_dereference_entity(game_state, target_id);
         entity_look_at(entity, target_entity->position);
+        entity_play_animation_with_direction(entity, string_literal("idle"));
     }
     _debugprintf("attacku");
 }
@@ -1034,17 +1030,9 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
 
         case ENTITY_ACTION_MOVEMENT: {
             if (target_entity->velocity.x != 0 || target_entity->velocity.y != 0) {
-                if (target_entity->velocity.y < 0) {
-                    entity_play_animation(target_entity, string_literal("up_walk"));
-                } else if (target_entity->velocity.y > 0) {
-                    entity_play_animation(target_entity, string_literal("down_walk"));
-                } else if (target_entity->velocity.x > 0) {
-                    entity_play_animation(target_entity, string_literal("right_walk"));
-                } else if (target_entity->velocity.x < 0) {
-                    entity_play_animation(target_entity, string_literal("left_walk"));
-                }
+                entity_play_animation_with_direction(target_entity, string_literal("walk"));
             } else {
-                entity_play_animation(target_entity, facing_direction_strings_normal[target_entity->facing_direction]);
+                entity_play_animation_with_direction(target_entity, string_literal("idle"));
             }
 
             if (target_entity->ai.current_path_point_index >= target_entity->ai.navigation_path.count) {

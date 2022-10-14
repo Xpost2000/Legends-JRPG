@@ -1,0 +1,10 @@
+# INPUT_ACTION GAMEPAD_BUTTON KEY0 KEY1 
+ACTION_MOVE_UP                  GAMEPAD_DPAD_UP    Arrow_Up          W
+ACTION_MOVE_DOWN                GAMEPAD_DPAD_DOWN  Arrow_Down        S
+ACTION_MOVE_LEFT                GAMEPAD_DPAD_LEFT  Arrow_Left        A
+ACTION_MOVE_RIGHT               GAMEPAD_DPAD_RIGHT Arrow_Right       D
+ACTION_PAUSE                    GAMEPAD_START      Escape            KEY_NONE
+ACTION_CONFIRM                  GAMEPAD_A          Return            KEY_NONE
+ACTION_CANCEL                   GAMEPAD_B          Escape            Backspace
+ACTION_SWITCH_CATEGORY_BACKWARD GAMEPAD_LB         Tab+Shift         KEY_NONE
+ACTION_SWITCH_CATEGORY_FORWARD  GAMEPAD_RB         Tab               KEY_NONE
