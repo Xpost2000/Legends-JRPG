@@ -8,6 +8,7 @@ void apply_save_data(struct game_state* state);
 
 void finish_save_data(void);
 
-void save_data_register_chest_looted(u32 chest_id);
+string filename_from_saveslot_id(s32 id);
+void   save_data_register_chest_looted(u32 chest_id);
 
 #endif

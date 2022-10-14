@@ -65,7 +65,7 @@ local void fill_all_save_slots(void) {
     /* without having to hold on to it in memory. */
 
     for (s32 save_slot_index = 0; save_slot_index < array_count(main_menu.save_slot_widgets); ++save_slot_index) {
-        string filename_path = format_temp_s("./saves/sav%d.sav", save_slot_index);
+        string filename_path = filename_from_saveslot_id(save_slot_index);
 
         struct save_slot_widget* current_save_slot = &main_menu.save_slot_widgets[save_slot_index];
         if (file_exists(filename_path)) {

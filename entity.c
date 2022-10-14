@@ -601,6 +601,7 @@ void sortable_draw_entities_submit(struct render_commands* commands, struct grap
                                                rectangle_f32(0, 0, sprite_dimensions.x, sprite_dimensions.y * (1 - height_trim)),
                                                modulation_color, NO_FLAGS, BLEND_MODE_ALPHA);
                     render_commands_set_shader(commands, game_foreground_things_shader, NULL);
+#if 0
                     /* test for fullbright */
                     {
                         u8 v = 0;
@@ -616,6 +617,7 @@ void sortable_draw_entities_submit(struct render_commands* commands, struct grap
                                                     rectangle_f32(0, 0, sprite_dimensions.x, sprite_dimensions.y * (1 - height_trim)),
                                                     NO_FLAGS, 0, v);
                     }
+#endif
 
 #ifndef RELEASE
                     /* struct rectangle_f32 collision_bounds = entity_rectangle_collision_bounds(current_entity); */

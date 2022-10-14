@@ -1,5 +1,5 @@
 #include "save_data_def.c"
-#define CURRENT_SAVE_RECORD_VERSION (1)
+#define CURRENT_SAVE_RECORD_VERSION (2)
 #define SAVE_RECORDS_PER_SAVE_AREA_RECORD_CHUNK (64)
 
 /* this linked list is fine since we only need to write */
@@ -103,7 +103,7 @@ void finish_save_data(void) {
   Who knows?
  */
 
-local string filename_from_saveslot_id(s32 id) {
+string filename_from_saveslot_id(s32 id) {
     return format_temp_s("./saves/sav%02d.sav", id);
 }
 
@@ -238,6 +238,13 @@ void game_serialize_save(struct binary_serializer* serializer) {
 
         serialize_f32(serializer, &player->position.x);
         serialize_f32(serializer, &player->position.y);
+        if (save_version > 1) {
+            serialize_u8(serializer, &player->facing_direction);
+            serialize_bytes(serializer, player->equip_slots, ENTITY_EQUIP_SLOT_INDEX_COUNT * sizeof(item_id));
+            /* prevent odd states happening on game load */
+            serialize_s32(serializer, &player->interacted_script_trigger_write_index);
+            serialize_bytes(serializer, player->interacted_script_trigger_ids, 32 * sizeof(s32));
+        }
 
         _debugprintf("PLAYER AT <%f, %f>", player->position.x, player->position.y);
 
