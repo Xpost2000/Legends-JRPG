@@ -1189,7 +1189,8 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
                                                 }
 
                                                 struct entity_base_data* data = entity_database_find_by_index(entities, entity_data_index);
-                                                struct entity_animation* anim = find_animation_by_name(data->model_index, facing_direction_strings_normal[editor_state->actor_property_menu.facing_direction_index_for_animation]);
+                                                string facing_direction_string = facing_direction_strings_normal[editor_state->actor_property_menu.facing_direction_index_for_animation];
+                                                struct entity_animation* anim = find_animation_by_name(data->model_index, format_temp_s("idle_%.*s", facing_direction_string.length, facing_direction_string.data));
 
                                                 image_id sprite_to_use = anim->sprites[0];
 

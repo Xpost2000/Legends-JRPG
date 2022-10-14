@@ -294,7 +294,7 @@ local s32 do_save_menu(struct software_framebuffer* framebuffer, f32 y_offset, f
                         if (main_menu.scroll_seek_y < relative_target) sign_direction = 1;
                         else                                           sign_direction = -1;
 
-                        relative_distance = fabs(main_menu.scroll_seek_y - (relative_target))
+                        relative_distance = fabs(main_menu.scroll_seek_y - (relative_target));
 
                         if (relative_distance > 1.512838f) {
                             main_menu.scroll_seek_y += dt * 100 * sign_direction;

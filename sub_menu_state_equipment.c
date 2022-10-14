@@ -386,7 +386,8 @@ local void update_and_render_character_equipment_screen(struct game_state* state
     struct entity* target_entity = entity_list_dereference_entity(&state->permenant_entities, equipment_screen_state.focus_entity);
 
     {
-        struct entity_animation* anim = find_animation_by_name(target_entity->model_index, facing_direction_strings_normal[equipment_screen_state.direction_index]);
+        string facing_direction_string = facing_direction_strings_normal[equipment_screen_state.direction_index];
+        struct entity_animation* anim = find_animation_by_name(target_entity->model_index, format_temp_s("idle_%.*s", facing_direction_string.length, facing_direction_string.data));
         image_id sprite_to_use = anim->sprites[0];
 
         software_framebuffer_draw_image_ex(framebuffer,
