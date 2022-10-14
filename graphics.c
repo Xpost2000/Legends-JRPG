@@ -1402,7 +1402,7 @@ static inline void lightmask_buffer_put_pixel(struct lightmask_buffer* buffer, s
     }
 }
 
-void lightmask_buffer_blit_image_clipped(struct lightmask_buffer* buffer, struct rectangle_f32 clip_rect, struct image_buffer* image, struct rectangle_f32 destination, struct rectangle_f32 src, u8 flags, u8 blend_mode) {
+void lightmask_buffer_blit_image_clipped(struct lightmask_buffer* buffer, struct rectangle_f32 clip_rect, struct image_buffer* image, struct rectangle_f32 destination, struct rectangle_f32 src, u8 flags, u8 blend_mode, u8 v) {
     if ((destination.x == 0) && (destination.y == 0) && (destination.w == 0) && (destination.h == 0)) {
         destination.w = buffer->width;
         destination.h = buffer->height;
@@ -1448,13 +1448,13 @@ void lightmask_buffer_blit_image_clipped(struct lightmask_buffer* buffer, struct
                                                         image->pixels[image_sample_y * image_stride * 4 + image_sample_x * 4 + 3] / 255.0f);
 
             if (sampled_pixel.a == 1.0) {
-                lightmask_buffer_put_pixel(buffer, x_cursor, y_cursor, 255, blend_mode);
+                lightmask_buffer_put_pixel(buffer, x_cursor, y_cursor, v, blend_mode);
             }
         }
     }
 }
 
-void lightmask_buffer_blit_rectangle_clipped(struct lightmask_buffer* buffer, struct rectangle_f32 clip_rect, struct rectangle_f32 destination, u8 blend_mode) {
+void lightmask_buffer_blit_rectangle_clipped(struct lightmask_buffer* buffer, struct rectangle_f32 clip_rect, struct rectangle_f32 destination, u8 blend_mode, u8 v) {
     s32 start_x = clamp_s32((s32)destination.x, clip_rect.x, clip_rect.x+clip_rect.w);
     s32 start_y = clamp_s32((s32)destination.y, clip_rect.y, clip_rect.y+clip_rect.h);
     s32 end_x   = clamp_s32((s32)(destination.x + destination.w), clip_rect.x, clip_rect.x+clip_rect.w);
@@ -1462,17 +1462,17 @@ void lightmask_buffer_blit_rectangle_clipped(struct lightmask_buffer* buffer, st
 
     for (s32 y_cursor = start_y; y_cursor < end_y; ++y_cursor) {
         for (s32 x_cursor = start_x; x_cursor < end_x; ++x_cursor) {
-            lightmask_buffer_put_pixel(buffer, x_cursor, y_cursor, 255, blend_mode);
+            lightmask_buffer_put_pixel(buffer, x_cursor, y_cursor, v, blend_mode);
         }
     }
 }
 
-void lightmask_buffer_blit_image(struct lightmask_buffer* buffer, struct image_buffer* image, struct rectangle_f32 destination, struct rectangle_f32 src, u8 flags, u8 blend_mode) {
-    lightmask_buffer_blit_image_clipped(buffer, rectangle_f32(0, 0, buffer->width, buffer->height), image, destination, src, flags, blend_mode);
+void lightmask_buffer_blit_image(struct lightmask_buffer* buffer, struct image_buffer* image, struct rectangle_f32 destination, struct rectangle_f32 src, u8 flags, u8 blend_mode, u8 v) {
+    lightmask_buffer_blit_image_clipped(buffer, rectangle_f32(0, 0, buffer->width, buffer->height), image, destination, src, flags, blend_mode, v);
 }
 
-void lightmask_buffer_blit_rectangle(struct lightmask_buffer* buffer, struct rectangle_f32 destination, u8 blend_mode) {
-    lightmask_buffer_blit_rectangle_clipped(buffer, rectangle_f32(0, 0, buffer->width, buffer->height), destination, blend_mode);
+void lightmask_buffer_blit_rectangle(struct lightmask_buffer* buffer, struct rectangle_f32 destination, u8 blend_mode, u8 v) {
+    lightmask_buffer_blit_rectangle_clipped(buffer, rectangle_f32(0, 0, buffer->width, buffer->height), destination, blend_mode, v);
 }
 
 bool lightmask_buffer_is_lit(struct lightmask_buffer* buffer, s32 x, s32 y) {

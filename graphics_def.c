@@ -55,6 +55,8 @@ typedef union color32f32 (*shader_fn)(struct software_framebuffer* framebuffer, 
 
   if a pixel is marked as 255, we will not light it, and draw it as full bright.
   Otherwise behavior is just lighting. Not sure what to do with non-255 values.
+
+  Okay it really seems like I'm just using this as a stencil buffer...
 */
 enum lightmask_draw_blend {
     LIGHTMASK_BLEND_NONE,
@@ -65,12 +67,16 @@ struct lightmask_buffer {
     u32 width;
     u32 height;
 };
+/*
+  NOTE: there is no render command/queueing system for the lightmask since it does not matter
+  what order they go in.
+ */
 struct lightmask_buffer lightmask_buffer_create(u32 buffer_width, u32 buffer_height);
 void                    lightmask_buffer_clear(struct lightmask_buffer* buffer);
-void                    lightmask_buffer_blit_image_clipped(struct lightmask_buffer* buffer, struct rectangle_f32 clip_rect, struct image_buffer* image, struct rectangle_f32 destination, struct rectangle_f32 src, u8 flags, u8 blend_mode);
-void                    lightmask_buffer_blit_rectangle_clipped(struct lightmask_buffer* buffer, struct rectangle_f32 clip_rect, struct rectangle_f32 destination, u8 blend_mode);
-void                    lightmask_buffer_blit_image(struct lightmask_buffer* buffer, struct image_buffer* image, struct rectangle_f32 destination, struct rectangle_f32 src, u8 flags, u8 blend_mode);
-void                    lightmask_buffer_blit_rectangle(struct lightmask_buffer* buffer, struct rectangle_f32 destination, u8 blend_mode);
+void                    lightmask_buffer_blit_image_clipped(struct lightmask_buffer* buffer, struct rectangle_f32 clip_rect, struct image_buffer* image, struct rectangle_f32 destination, struct rectangle_f32 src, u8 flags, u8 blend_mode, u8 v);
+void                    lightmask_buffer_blit_rectangle_clipped(struct lightmask_buffer* buffer, struct rectangle_f32 clip_rect, struct rectangle_f32 destination, u8 blend_mode, u8 v);
+void                    lightmask_buffer_blit_image(struct lightmask_buffer* buffer, struct image_buffer* image, struct rectangle_f32 destination, struct rectangle_f32 src, u8 flags, u8 blend_mode, u8 v);
+void                    lightmask_buffer_blit_rectangle(struct lightmask_buffer* buffer, struct rectangle_f32 destination, u8 blend_mode, u8 v);
 bool                    lightmask_buffer_is_lit(struct lightmask_buffer* buffer, s32 x, s32 y);
 void                    lightmask_buffer_finish(struct lightmask_buffer* buffer);
 

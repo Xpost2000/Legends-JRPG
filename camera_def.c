@@ -60,7 +60,7 @@ v2f32 camera_transform(struct camera* camera, v2f32 point, s32 screen_width, s32
 
     if (camera->centered) {
         point.x += screen_width/2;
-        point.x += screen_height/2;
+        point.y += screen_height/2;
     }
 
     point.x -= camera->xy.x;
