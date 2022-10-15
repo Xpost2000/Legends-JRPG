@@ -1790,6 +1790,7 @@ void level_area_entity_unpack(struct level_area_entity* entity, struct entity* u
     unpack_target->position             = v2f32_scale(entity->position, TILE_UNIT_SIZE);
     unpack_target->scale.x              = TILE_UNIT_SIZE* 0.8;
     unpack_target->scale.y              = TILE_UNIT_SIZE* 0.8;
+    cstring_copy(entity->script_name, unpack_target->script_name, array_count(unpack_target->script_name));
 
     if (entity->health_override != -1) {unpack_target->health.value = entity->health_override;}
     if (entity->magic_override != -1)  {unpack_target->magic.value  = entity->magic_override;}
@@ -2012,7 +2013,8 @@ struct entity_loot_table* entity_lookup_loot_table(struct entity_database* entit
 void serialize_level_area_entity(struct binary_serializer* serializer, s32 version, struct level_area_entity* entity) {
     switch (version) {
         case 5:
-        case 6: {
+        case 6:
+        case 7: {
             serialize_f32(serializer, &entity->position.x);
             serialize_f32(serializer, &entity->position.y);
 
@@ -2029,8 +2031,10 @@ void serialize_level_area_entity(struct binary_serializer* serializer, s32 versi
             serialize_u32(serializer, &entity->ai_flags);
             serialize_u32(serializer, &entity->spawn_flags);
 
-            for (int i = 0; i < 16; ++i) serialize_u32(serializer, entity->group_ids);
-            for (int i = 0; i < 128; ++i){u8 unused[128]; serialize_u8(serializer, unused);}
+            if (version < 7) { /* old unused */
+                for (int i = 0; i < 16; ++i) serialize_u32(serializer, entity->group_ids);
+                for (int i = 0; i < 128; ++i){u8 unused[128]; serialize_u8(serializer, unused);}
+            }
         } break;
         case CURRENT_LEVEL_AREA_VERSION: {
             Serialize_Structure(serializer, *entity);

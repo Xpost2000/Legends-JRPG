@@ -12,7 +12,7 @@
    Version 6: Add light entities
    Version 7: Change to the level area entity struct.
 */
-#define CURRENT_LEVEL_AREA_VERSION (7)
+#define CURRENT_LEVEL_AREA_VERSION (8)
 
 enum tile_layers {
     TILE_LAYER_GROUND,            /* render below all. dark color? */

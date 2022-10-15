@@ -5,6 +5,9 @@
   I can modify it slightly I guess...
   Or I can try to include the script as part of the level which would be a pretty herculean job
   considering the relative complexity of the tools...
+
+  TODO: Scrollable level loads?
+  TODO: Needs a lot of conveniences or a rewrite.
 */
 
 /*
@@ -971,17 +974,19 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
         }
     }
 
-    if (is_key_down(KEY_W)) {
-        editor_state->camera.xy.y -= 160 * dt;
-    } else if (is_key_down(KEY_S)) {
-        editor_state->camera.xy.y += 160 * dt;
+    if (!is_editing_text()) {
+        if (is_key_down(KEY_W)) {
+            editor_state->camera.xy.y -= 160 * dt;
+        } else if (is_key_down(KEY_S)) {
+            editor_state->camera.xy.y += 160 * dt;
+        }
+        if (is_key_down(KEY_A)) {
+            editor_state->camera.xy.x -= 160 * dt;
+        } else if (is_key_down(KEY_D)) {
+            editor_state->camera.xy.x += 160 * dt;
+        }
     }
-    if (is_key_down(KEY_A)) {
-        editor_state->camera.xy.x -= 160 * dt;
-    } else if (is_key_down(KEY_D)) {
-        editor_state->camera.xy.x += 160 * dt;
-    }
-
+    
     /* Consider using tab + radial/fuzzy menu selection for this */
     if (is_key_down(KEY_SHIFT) && is_key_pressed(KEY_TAB)) {
         editor_state->tab_menu_open ^= TAB_MENU_OPEN_BIT;
@@ -1228,6 +1233,10 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
                                         }
                                         draw_cursor_y += 16 * 2 * 1.5;
                                     }
+                                    {
+                                        EDITOR_imgui_text_edit_cstring(framebuffer, font, highlighted_font, 2, v2f32(10, draw_cursor_y), string_literal("scriptname"), entity->script_name, array_count(entity->script_name));
+                                        draw_cursor_y += 16 * 2 * 1.5;
+                                    }
 
                                     {
                                         string s = string_clone(&scratch_arena, string_from_cstring(format_temp("hidden: %s", cstr_yesno[(entity->flags & ENTITY_FLAGS_HIDDEN) > 0])));
@@ -1458,6 +1467,7 @@ void update_and_render_editor(struct software_framebuffer* framebuffer, f32 dt) 
         render_foreground_area(game_state, &commands, &editor_state->loaded_area);
     } else {
         /* Render world */
+        /* TODO: allow for lighting to show up */
         {
             for (s32 layer_index = 0; layer_index < array_count(editor_state->tile_layers); ++layer_index) {
                 for (s32 tile_index = 0; tile_index < editor_state->tile_counts[layer_index]; ++tile_index) {
@@ -1512,7 +1522,7 @@ void update_and_render_editor(struct software_framebuffer* framebuffer, f32 dt) 
                 {
                     
                     struct entity_base_data* base_def = entity_database_find_by_name(&game_state->entity_database, string_from_cstring(current_entity->base_name));
-                    struct entity_animation* anim = find_animation_by_name(base_def->model_index, facing_direction_strings_normal[current_entity->facing_direction]);
+                    struct entity_animation* anim = find_animation_by_name(base_def->model_index, string_concatenate(&scratch_arena, string_literal("idle_"), facing_direction_strings_normal[current_entity->facing_direction]));
 
                     if (anim) {
                         image_id sprite_to_use = anim->sprites[0];
