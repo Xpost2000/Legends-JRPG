@@ -1125,7 +1125,7 @@ bool game_script_waiting_on_form(struct game_script_script_instance* script_stat
         }
 
         if (lisp_form_symbol_matching(*first, string_literal("follow_path"))) {
-            struct entity* waiting_ent = entity_list_dereference_entity(&game_state->permenant_entities, current_stackframe->awaiters.entity_id);
+            struct entity* waiting_ent = game_dereference_entity(game_state, current_stackframe->awaiters.entity_id);
 
             if (waiting_ent) {
                 if (waiting_ent->ai.current_action == ENTITY_ACTION_NONE) {
