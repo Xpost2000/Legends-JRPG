@@ -2311,6 +2311,7 @@ struct game_variable* lookup_game_variable(string name, bool create_when_not_fou
             for (s32 variable_index = 0; variable_index < cursor->variable_count; ++variable_index) {
                 struct game_variable* variable = cursor->variables + variable_index;
 
+                _debugprintf("Trying to match %.*s vs %s", name.length, name.data, variable->name);
                 if (string_equal(name, string_from_cstring(variable->name))) {
                     return variable;
                 }
@@ -2321,9 +2322,11 @@ struct game_variable* lookup_game_variable(string name, bool create_when_not_fou
     }
 
     if (create_when_not_found) {
+        _debugprintf("Creating new game var: \"%.*s\"", name.length, name.data);
         struct game_variable* new_variable = game_variables_allocate_next();;
         cstring_copy(name.data, new_variable->name, array_count(new_variable->name));
-        new_variable->value = 0;
+        new_variable->name[name.length] = 0;
+        new_variable->value             = 0;
         return new_variable;
     }
     return NULL;
