@@ -710,21 +710,25 @@ u64 system_get_current_time(void) {
     return time(0);
 }
 
-struct calendar_time calendar_time_from(u64 timestamp) {
+struct calendar_time calendar_time_from(s64 timestamp) {
     time_t     current_time = timestamp; 
     struct tm* time_info    = localtime(&current_time);
 
-    assertion(time_info && "Hmm? Why is this?");
+    _debugprintf("%lld\n", timestamp);
 
-    return (struct calendar_time) {
-        .year            = time_info->tm_year,
-        .month           = time_info->tm_mon,
-        .hours           = time_info->tm_hour,
-        .minutes         = time_info->tm_min,
-        .seconds         = time_info->tm_sec,
-        .day             = time_info->tm_mday,
-        .day_of_the_week = time_info->tm_wday,
-    };
+    if (time_info) {
+        return (struct calendar_time) {
+            .year            = time_info->tm_year+1900,
+            .month           = time_info->tm_mon,
+            .hours           = time_info->tm_hour,
+            .minutes         = time_info->tm_min,
+            .seconds         = time_info->tm_sec,
+            .day             = time_info->tm_mday,
+            .day_of_the_week = time_info->tm_wday,
+        };
+    } else {
+        return (struct calendar_time){};
+    }
 }
 
 struct calendar_time current_calendar_time(void) {

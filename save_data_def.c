@@ -15,7 +15,7 @@ struct save_data_description {
     bool good;
     char name[32];
     char descriptor[64];
-    u64  timestamp;
+    s64  timestamp;
 };
 
 struct save_data_description get_save_data_description(s32 save_id);
