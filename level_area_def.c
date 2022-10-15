@@ -153,6 +153,8 @@ enum level_area_listen_event {
     LEVEL_AREA_LISTEN_EVENT_ON_TOUCH,
     LEVEL_AREA_LISTEN_EVENT_ON_ACTIVATE,
     LEVEL_AREA_LISTEN_EVENT_ON_DEATH,
+    /* this isn't really a listener but it's whatever. */
+    LEVEL_AREA_LISTEN_EVENT_ROUTINE,
 #if 0
     LEVEL_AREA_LISTEN_EVENT_ON_HIT,
 #endif
@@ -169,9 +171,10 @@ struct level_area_listener {
     struct lisp_form* subscriber_codes;
 };
 local string level_area_listen_event_form_names[] = {
-    string_literal("on-touch"),
-    string_literal("on-activate"),
-    string_literal("on-death"),
+    [LEVEL_AREA_LISTEN_EVENT_ON_TOUCH]    = string_literal("on-touch"),
+    [LEVEL_AREA_LISTEN_EVENT_ON_ACTIVATE] = string_literal("on-activate"),
+    [LEVEL_AREA_LISTEN_EVENT_ON_DEATH]    = string_literal("on-death"),
+    [LEVEL_AREA_LISTEN_EVENT_ROUTINE]     = string_literal("routine"),
 #if 0
     string_literal("on-hit"),
 #endif

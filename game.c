@@ -877,7 +877,7 @@ local void load_area_script(struct memory_arena* arena, struct level_area* area,
                     for (s32 name_index = 0; name_index < LEVEL_AREA_LISTEN_EVENT_COUNT; ++name_index) {
                         if (lisp_form_as_function_list_check_fn_name(form, level_area_listen_event_form_names[name_index])) {
                             event_listener_type_counters[name_index] += 1;
-                            _debugprintf("found an event listener");
+                            _debugprintf("found an event listener: \"%s\"", level_area_listen_event_form_names[name_index].data);
                         }
                     }
                 }
