@@ -896,8 +896,29 @@ struct game_script_typed_ptr game_script_object_handle_decode(struct lisp_form o
             case GAME_SCRIPT_TARGET_ENTITY: {
                 if (lisp_form_symbol_matching(*id_form, string_literal("player"))) {
                     result.entity_id = player_id;
-                } else if (lisp_form_get_s32(*id_form, &real_id)) {
-                    result.entity_id = entity_list_get_id(&game_state->permenant_entities, real_id);
+                } else {
+                    string script_name_string;
+
+                    if (lisp_form_get_s32(*id_form, &real_id)) {
+                        if (real_id < GAME_MAX_PERMENANT_ENTITIES) {
+                            result.entity_id = entity_list_get_id(&game_state->permenant_entities, real_id);
+                        } else {
+                            real_id -= GAME_MAX_PERMENANT_ENTITIES;
+                            result.entity_id = entity_list_get_id(&game_state->loaded_area.entities, real_id);
+                        }
+                    } else if (lisp_form_get_string(*id_form, &script_name_string)) {
+                        result.entity_id = entity_list_find_entity_id_with_scriptname(&game_state->permenant_entities, script_name_string);
+
+                        if (result.entity_id.index == 0) {
+                            result.entity_id = entity_list_find_entity_id_with_scriptname(&game_state->loaded_area.entities, script_name_string);
+                        }
+
+                        if (result.entity_id.index == 0) {
+                            _debugprintf("No entity with scriptname \"%.*s\" found.", script_name_string.length, script_name_string.data);
+                        }
+                    } else {
+                        assertion(false && "Invalid id type for entity");
+                    }
                 }
                 return result;
             } break;

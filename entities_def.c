@@ -538,6 +538,7 @@ struct entity_list entity_list_create(struct memory_arena* arena, s32 capacity, 
 struct entity_list entity_list_create_top(struct memory_arena* arena, s32 capacity, u8 storage_mark);
 entity_id          entity_list_create_entity(struct entity_list* entities);
 entity_id          entity_list_get_id(struct entity_list* entities, s32 index);
+entity_id          entity_list_find_entity_id_with_scriptname(struct entity_list* list, string scriptname);
 struct entity*     entity_list_dereference_entity(struct entity_list* entities, entity_id id);
 void               entity_list_clear(struct entity_list* entities);
 bool               entity_bad_ref(struct entity* e);

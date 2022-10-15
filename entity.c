@@ -169,6 +169,21 @@ s32 entity_iterator_count_all_entities(struct entity_iterator* entities) {
     return result;
 }
 
+entity_id entity_list_find_entity_id_with_scriptname(struct entity_list* list, string scriptname) {
+    entity_id result = {};
+
+    for (s32 entity_index = 0; entity_index < list->capacity; ++entity_index) {
+        struct entity* current_entity = list->entities + entity_index;
+
+        if (string_equal(string_from_cstring(current_entity->script_name), scriptname)) {
+            result = entity_list_get_id(list, entity_index);
+            break;
+        }
+    }
+
+    return result;
+}
+
 /* requires tilemap world... */
 /* TODO fix implicit decls, linker hasn't killed game yet */
 void player_handle_radial_interactables(struct game_state* state, struct entity* entity, f32 dt);
