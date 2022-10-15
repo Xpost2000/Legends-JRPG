@@ -478,14 +478,20 @@ local game_script_function lookup_script_function(string name) {
 }
 #undef GAME_LISP_FUNCTION
 
-struct lisp_form game_script_look_up_dictionary_value(struct lisp_form name) {
+bool game_script_look_up_contextual_binding(struct lisp_form name, struct lisp_form* output) {
+    return false;
+}
+
+bool game_script_look_up_dictionary_value(struct lisp_form name, struct lisp_form* output) {
     struct game_variable* variable = lookup_game_variable(name.string, false);
 
     if (variable) {
-        return lisp_form_integer(variable->value);
+        *output = lisp_form_integer(variable->value);
+        return true;
+    } else {
+        *output = LISP_nil;
+        return false;
     }
-
-    return LISP_nil;
 }
 
 /* TODO should allow us to flexibly change types though. */
@@ -849,7 +855,15 @@ struct lisp_form game_script_evaluate_form(struct memory_arena* arena, struct ga
             _debugprintf("self evaluating");
             if (form->type == LISP_FORM_SYMBOL) {
                 /* look up in the game variable list */
-                return game_script_look_up_dictionary_value(*form);
+                struct lisp_form result = LISP_nil;
+
+                if (!game_script_look_up_contextual_binding(*form, &result)) {
+                    if (!game_script_look_up_dictionary_value(*form, &result)) {
+                        
+                    }
+                }
+
+                return result;
             } else {
                 return (*form);
             }

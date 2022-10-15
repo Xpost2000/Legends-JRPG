@@ -2054,12 +2054,19 @@ local void execute_current_area_scripts(struct game_state* state, f32 dt) {
                Events are best. For this anyways. I don't know what I was thinking
                when I did this.
             */
+#if 0
             if (on_frame_script) {
-                /* for (s32 index = 1; index < on_frame_script->list.count; ++index) { */
-                /*     struct lisp_form* current_form = lisp_list_nth(on_frame_script, index); */
-                /*     game_script_evaluate_form(&scratch_arena, state, current_form); */
-                /* } */
+                for (s32 index = 1; index < on_frame_script->list.count; ++index) {
+                    struct lisp_form* current_form = lisp_list_nth(on_frame_script, index);
+                    game_script_evaluate_form(&scratch_arena, state, current_form);
+                }
             }
+#endif
+        }
+
+        /* execute all routine scripts if they haven't already been queued. */
+        {
+            
         }
 
 
