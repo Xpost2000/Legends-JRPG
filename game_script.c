@@ -856,12 +856,18 @@ struct lisp_form game_script_evaluate_case_and_return_used_branch(struct memory_
     for (s32 index = 2; index < case_form->list.count; ++index) {
         struct lisp_form* current_form = case_form->list.forms + index;
         {
-            struct lisp_form* condition_clause           = current_form->list.forms + 0;
+            struct lisp_form* condition_clause           = current_form->list.forms;
             struct lisp_form  evaluated_condition_clause = game_script_evaluate_form(arena, state, condition_clause);
 
             struct lisp_form condition_clause_action     = lisp_list_sliced(*current_form, 1, -1);
             if (evaluated_condition_clause.type == LISP_FORM_T || lisp_form_check_equality(evaluated_condition_clause, evaluated)) {
                 return condition_clause_action;
+            } else {
+                _debugprintf("CHECK\n");
+                _debug_print_out_lisp_code(condition);
+                _debug_print_out_lisp_code(&evaluated);
+                _debug_print_out_lisp_code(&evaluated_condition_clause);
+                _debugprintf("bad case\n");
             }
         }
     }
@@ -907,11 +913,12 @@ struct lisp_form game_script_evaluate_form(struct memory_arena* arena, struct ga
                 if (lisp_form_get_s32(evaluated, &s32_result)) {
                     string var_name_as_string;
                     if (lisp_form_get_string(*variable_name, &var_name_as_string)) {
-                        struct game_variable* var = lookup_game_variable(var_name_as_string, false);
+                        struct game_variable* var = lookup_game_variable(var_name_as_string, true);
                         if (!var) {
                             _debugprintf("this is an error!");
                         } else {
                             var->value = s32_result;
+                            _debugprintf("Successfully set var");
                         }
                     }
                 } else {
@@ -984,9 +991,11 @@ struct lisp_form game_script_evaluate_form(struct memory_arena* arena, struct ga
                 /* look up in the game variable list */
                 struct lisp_form result = LISP_nil;
 
+                _debug_print_out_lisp_code(form);
                 if (!game_script_look_up_contextual_binding(*form, &result)) {
+                    _debugprintf("failed to find contextual binding.");
                     if (!game_script_look_up_dictionary_value(*form, &result)) {
-                        
+                        _debugprintf("failed to find dictionary variable value? (%.*s)", form->string.length, form->string.data);
                     }
                 }
 
