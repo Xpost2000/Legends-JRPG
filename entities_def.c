@@ -338,6 +338,9 @@ struct entity_sequence_state {
 #define ENTITY_TALK_INTERACTIVE_RADIUS ((f32)1.9565 * TILE_UNIT_SIZE)
 struct entity {
     string name;
+    /* This is unique per entity! */
+    /* wish there was good way to do fixed strings */
+    char   script_name[64];
 
     /* used for abilities primarily. */
     struct entity_sequence_state  sequence_state;

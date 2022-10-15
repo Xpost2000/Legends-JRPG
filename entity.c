@@ -601,7 +601,7 @@ void sortable_draw_entities_submit(struct render_commands* commands, struct grap
                                                rectangle_f32(0, 0, sprite_dimensions.x, sprite_dimensions.y * (1 - height_trim)),
                                                modulation_color, NO_FLAGS, BLEND_MODE_ALPHA);
                     render_commands_set_shader(commands, game_foreground_things_shader, NULL);
-#if 0
+#if 1
                     /* test for fullbright */
                     {
                         u8 v = 0;
