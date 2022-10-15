@@ -114,6 +114,7 @@ struct level_area_entity {
     /* NOTE: Turns out I don't hash in the DB, so we could keep an index but that requires data changes. */
     char  base_name[ENTITY_BASENAME_LENGTH_MAX];
     char  script_name[ENTITY_BASENAME_LENGTH_MAX]; /* Use this to refer for game script reasons */
+    char  dialogue_file[ENTITY_BASENAME_LENGTH_MAX];
 
     /* not editted */
     /* Currently not editted. */

@@ -71,7 +71,17 @@ local void update_and_render_conversation_ui(struct game_state* state, struct so
                 state->viewing_dialogue_choices = false;
             }
 
-            wrap_around_key_selection(KEY_UP, KEY_DOWN, &state->currently_selected_dialogue_choice, 0, current_conversation_node->choice_count);
+            if (is_action_down_with_repeat(INPUT_ACTION_MOVE_DOWN)) {
+                state->currently_selected_dialogue_choice++;
+                if (state->currently_selected_dialogue_choice >= current_conversation_node->choice_count) {
+                    state->currently_selected_dialogue_choice = 0;
+                }
+            } else if (is_action_down_with_repeat(INPUT_ACTION_MOVE_UP)) {
+                state->currently_selected_dialogue_choice--;
+                if (state->currently_selected_dialogue_choice < 0) {
+                    state->currently_selected_dialogue_choice = current_conversation_node->choice_count-1;
+                }
+            }
 
             {
                 u32 BOX_WIDTH = 8; /* minimum size */

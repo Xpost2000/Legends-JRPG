@@ -1237,6 +1237,11 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
                                         EDITOR_imgui_text_edit_cstring(framebuffer, font, highlighted_font, 2, v2f32(10, draw_cursor_y), string_literal("scriptname"), entity->script_name, array_count(entity->script_name));
                                         draw_cursor_y += 16 * 2 * 1.5;
                                     }
+                                    {
+                                        /* this can actually just be a dropdown/modal selection since it's **known** which talk files are in the game, still going to be copied as a string but would be easier than guessing... */
+                                        EDITOR_imgui_text_edit_cstring(framebuffer, font, highlighted_font, 2, v2f32(10, draw_cursor_y), string_literal("dialogue file"), entity->dialogue_file, array_count(entity->dialogue_file));
+                                        draw_cursor_y += 16 * 2 * 1.5;
+                                    }
 
                                     {
                                         string s = string_clone(&scratch_arena, string_from_cstring(format_temp("hidden: %s", cstr_yesno[(entity->flags & ENTITY_FLAGS_HIDDEN) > 0])));
@@ -1484,7 +1489,7 @@ union color32f32 editor_lighting_shader(struct software_framebuffer* framebuffer
             f32 distance_squared = v2f32_magnitude_sq(v2f32_sub(pixel_position, light_screenspace_position));
             f32 attenuation      = 1/(distance_squared+1 + (sqrtf(distance_squared)/1.5));
 
-            f32 power = current_light->power;
+            f32 power = current_light->power * editor_state->camera.zoom;
             r_accumulation += attenuation * power * TILE_UNIT_SIZE * current_light->color.r/255.0f;
             g_accumulation += attenuation * power * TILE_UNIT_SIZE * current_light->color.g/255.0f;
             b_accumulation += attenuation * power * TILE_UNIT_SIZE * current_light->color.b/255.0f;

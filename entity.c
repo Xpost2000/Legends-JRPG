@@ -1790,7 +1790,13 @@ void level_area_entity_unpack(struct level_area_entity* entity, struct entity* u
     unpack_target->position             = v2f32_scale(entity->position, TILE_UNIT_SIZE);
     unpack_target->scale.x              = TILE_UNIT_SIZE* 0.8;
     unpack_target->scale.y              = TILE_UNIT_SIZE* 0.8;
+    _debugprintf("scriptfile %s, %s\n", entity->script_name, entity->dialogue_file);
     cstring_copy(entity->script_name, unpack_target->script_name, array_count(unpack_target->script_name));
+    cstring_copy(entity->dialogue_file, unpack_target->dialogue_file, array_count(unpack_target->dialogue_file));
+
+    if(cstring_length(entity->dialogue_file)) {
+        unpack_target->has_dialogue = true;
+    }
 
     if (entity->health_override != -1) {unpack_target->health.value = entity->health_override;}
     if (entity->magic_override != -1)  {unpack_target->magic.value  = entity->magic_override;}

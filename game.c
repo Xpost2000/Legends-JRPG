@@ -1041,7 +1041,7 @@ union color32f32 lighting_shader(struct software_framebuffer* framebuffer, union
             f32 distance_squared = v2f32_magnitude_sq(v2f32_sub(pixel_position, light_screenspace_position));
             f32 attenuation      = 1/(distance_squared+1 + (sqrtf(distance_squared)/1.5));
 
-            f32 power = current_light->power;
+            f32 power = current_light->power * game_state->camera.zoom;
             r_accumulation += attenuation * power * TILE_UNIT_SIZE * current_light->color.r/255.0f;
             g_accumulation += attenuation * power * TILE_UNIT_SIZE * current_light->color.g/255.0f;
             b_accumulation += attenuation * power * TILE_UNIT_SIZE * current_light->color.b/255.0f;
@@ -1248,7 +1248,7 @@ void game_initialize(void) {
     game_state->permenant_particle_emitters = entity_particle_emitter_list(&game_arena, GAME_MAX_PERMENANT_PARTICLE_EMITTERS);
     /* entity_particles_initialize_pool(&game_arena, MAX_PARTICLES_IN_ENGINE); */
     player_id                               = entity_list_create_player(&game_state->permenant_entities, v2f32(70, 70));
-    entity_list_create_niceguy(&game_state->permenant_entities, v2f32(9 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE));
+    /* entity_list_create_niceguy(&game_state->permenant_entities, v2f32(9 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE)); */
     /* entity_list_create_badguy(&game_state->permenant_entities, v2f32(9 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE)); */
     /* entity_list_create_badguy(&game_state->permenant_entities, v2f32(11 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE)); */
 
@@ -1309,7 +1309,8 @@ void game_initialize_game_world(void) {
     /* load_level_from_file(game_state, string_literal("pf.area")); */
 #endif
     /* load_level_from_file(game_state, string_literal("bt.area")); */
-    load_level_from_file(game_state, string_literal("testforest.area"));
+    load_level_from_file(game_state, string_literal("testmi.area"));
+    /* load_level_from_file(game_state, string_literal("testforest.area")); */
     /* load_level_from_file(game_state, string_literal("lighttest.area")); */
     /* load_level_from_file(game_state, string_literal("level.area")); */
     /* load_level_from_file(game_state, string_literal("testisland.area")); */
@@ -2142,7 +2143,7 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
 
 
                 commands.should_clear_buffer = true;
-                commands.clear_buffer_color  = color32u8(0, 0, 0, 255);
+                commands.clear_buffer_color  = color32u8(100, 128, 148, 255);
 
                 execute_current_area_scripts(game_state, dt);
 
