@@ -35,9 +35,7 @@ struct save_slot_widget {
     */
     char descriptor[SAVE_SLOT_WIDGET_DESCRIPTOR_LENGTH];
     /* game timestamp??? */
-#if 0
     u64 unix_timestamp;
-#endif
 
     /* same system used for the other stuff */
     f32 lean_in_t;
@@ -74,6 +72,7 @@ local void fill_all_save_slots(void) {
             assertion(save_description.good && "Hmm, corrupted save file? Or doesn't exist?");
             cstring_copy(save_description.name, current_save_slot->name, array_count(current_save_slot->name));
             cstring_copy(save_description.descriptor, current_save_slot->descriptor, array_count(current_save_slot->descriptor));
+            current_save_slot->unix_timestamp = save_description.timestamp;
         } else {
             cstring_copy("NO SAVE", current_save_slot->name, array_count(current_save_slot->name));
             cstring_copy("-------", current_save_slot->descriptor, array_count(current_save_slot->descriptor));
@@ -317,8 +316,12 @@ local s32 do_save_menu(struct software_framebuffer* framebuffer, f32 y_offset, f
 
         draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, v2f32(x_cursor, y_cursor + adjusted_scroll_offset), BOX_WIDTH, BOX_HEIGHT, ui_color);
         draw_ui_breathing_text(framebuffer, v2f32(x_cursor + 15, y_cursor + 15 + adjusted_scroll_offset), title_font, 2, format_temp_s("%s (%02d)", current_slot->name, save_slot_index), save_slot_index*22, color32f32(1, 1, 1, alpha));
+        {
+            struct calendar_time calendar_time_info = calendar_time_from(current_slot->unix_timestamp);    
+            software_framebuffer_draw_text(framebuffer, body_font, 2, v2f32(x_cursor + 20, y_cursor + 15+32 + adjusted_scroll_offset), format_temp_s("%s-%d-%d", month_strings[calendar_time_info.month], calendar_time_info.day, calendar_time_info.year), color32f32(1, 1, 1, alpha), BLEND_MODE_ALPHA);
+        }
         /* need to have good word wrap */
-        software_framebuffer_draw_text(framebuffer, body_font, 2, v2f32(x_cursor + 20, y_cursor + 15+32 + adjusted_scroll_offset), string_from_cstring(current_slot->descriptor), color32f32(1, 1, 1, alpha), BLEND_MODE_ALPHA);
+        software_framebuffer_draw_text(framebuffer, body_font, 2, v2f32(x_cursor + 20, y_cursor + 15+15+32 + adjusted_scroll_offset), string_from_cstring(current_slot->descriptor), color32f32(1, 1, 1, alpha), BLEND_MODE_ALPHA);
 
         y_cursor += nine_patch_extents.y * 1.5;
     }

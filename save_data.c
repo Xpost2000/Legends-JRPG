@@ -133,6 +133,7 @@ struct save_data_description get_save_data_description(s32 save_id) {
             serialize_u32(&read_serializer, &save_version);
             serialize_bytes(&read_serializer, result.name, SAVE_SLOT_WIDGET_SAVE_NAME_LENGTH);
             serialize_bytes(&read_serializer, result.descriptor, SAVE_SLOT_WIDGET_DESCRIPTOR_LENGTH);
+            serialize_u64(&read_serializer, &result.timestamp);
         }
         serializer_finish(&read_serializer);
     }
@@ -250,12 +251,16 @@ void game_serialize_save(struct binary_serializer* serializer) {
     serialize_u32(serializer, &save_version);
 
     /* need to write this from the game itself, TODO: need to think of where to store names or just don't? */
-    char area_name_DUMMY[SAVE_SLOT_WIDGET_SAVE_NAME_LENGTH]  = "BLACKROOT FOREST";
-    char area_desc_DUMMY[SAVE_SLOT_WIDGET_DESCRIPTOR_LENGTH] = "ACT1: A job to finish.";
+    char area_name_DUMMY[SAVE_SLOT_WIDGET_SAVE_NAME_LENGTH]  = "THE DRUNKEN DRAGON";
+    char area_desc_DUMMY[SAVE_SLOT_WIDGET_DESCRIPTOR_LENGTH] = "A GATHERING OF HEROES.";
 
     serialize_bytes(serializer, area_name_DUMMY, SAVE_SLOT_WIDGET_SAVE_NAME_LENGTH);
     serialize_bytes(serializer, area_desc_DUMMY, SAVE_SLOT_WIDGET_DESCRIPTOR_LENGTH);
     serialize_bytes(serializer, game_state->loaded_area_name, sizeof(game_state->loaded_area_name));
+    {
+        u64 timestamp = system_get_current_time();
+        serialize_u64(serializer, &timestamp);
+    }
 
     if (serializer->mode == BINARY_SERIALIZER_READ) {
         /* eh... Probably shouldn't be here */

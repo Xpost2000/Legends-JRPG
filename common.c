@@ -670,4 +670,65 @@ static u64 read_timestamp_counter(void) {
 /* more secure than format_temp, uses scratch buffer as backing memory. */
 string format_temp_s(const char* fmt, ...);
 
+struct calendar_time {
+    s32 year;
+    s32 day;
+    s32 day_of_the_week;
+    s32 month;
+
+    s32 hours;
+    s32 minutes;
+    s32 seconds;
+};
+
+static char* day_strings[] = {
+    "SUN",
+    "MON",
+    "TUE",
+    "WED",
+    "THU",
+    "FRI",
+    "SAT",
+};
+
+static char* month_strings[] = {
+    "JAN",
+    "FEB",
+    "MAR",
+    "APR",
+    "MAY",
+    "JUN",
+    "JUL",
+    "AUG",
+    "SEP",
+    "OCT",
+    "NOV",
+    "DEC",
+};
+
+u64 system_get_current_time(void) {
+    return time(0);
+}
+
+struct calendar_time calendar_time_from(u64 timestamp) {
+    time_t     current_time = timestamp; 
+    struct tm* time_info    = localtime(&current_time);
+
+    assertion(time_info && "Hmm? Why is this?");
+
+    return (struct calendar_time) {
+        .year            = time_info->tm_year,
+        .month           = time_info->tm_mon,
+        .hours           = time_info->tm_hour,
+        .minutes         = time_info->tm_min,
+        .seconds         = time_info->tm_sec,
+        .day             = time_info->tm_mday,
+        .day_of_the_week = time_info->tm_wday,
+    };
+}
+
+struct calendar_time current_calendar_time(void) {
+    return calendar_time_from(system_get_current_time());
+}
+
 #endif

@@ -2152,9 +2152,9 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                 execute_current_area_scripts(game_state, dt);
 
                 if (is_key_pressed(KEY_Y)) {
-                    game_begin_shopping(string_literal("basic"));
-                    /* game_write_save_slot(0); */
-#if 0
+                    /* game_begin_shopping(string_literal("basic")); */
+                    game_write_save_slot(0);
+#if 1
                     passive_speaking_dialogue_push(player_id, string_literal("Hello world!"), MENU_FONT_COLOR_LIME);
 #endif
                 }
