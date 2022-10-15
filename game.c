@@ -2066,7 +2066,12 @@ local void execute_current_area_scripts(struct game_state* state, f32 dt) {
 
         /* execute all routine scripts if they haven't already been queued. */
         {
-            
+            struct level_area_listener* routine_listeners = &script_data->listeners[LEVEL_AREA_LISTEN_EVENT_ROUTINE];
+            for (s32 routine_script_index = 0; routine_script_index < routine_listeners->subscribers; ++routine_script_index) {
+                struct lisp_form* routine_forms = routine_listeners->subscriber_codes + routine_script_index;
+                struct game_script_script_instance* context = game_script_enqueue_form_to_execute_ex(lisp_list_sliced(*routine_forms, 2, -1), routine_script_index);
+                game_script_instance_set_contextual_binding(context, CONTEXT_BINDING_SELF, *lisp_list_nth(routine_forms, 1));
+            } 
         }
 
 

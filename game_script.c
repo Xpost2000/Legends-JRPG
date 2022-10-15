@@ -1,3 +1,4 @@
+#define NO_SCRIPT (-1)
 /*
   Game script,
 
@@ -101,26 +102,60 @@ struct game_script_execution_state {
 struct game_script_script_instance {
     struct game_script_execution_state stackframe[GAME_SCRIPT_EXECUTION_STATE_STACK_SIZE];
     s32 execution_stack_depth;
+    s32 id;
 
     bool active;
+
+    struct lisp_form bindings[CONTEXT_BINDING_ID_COUNT];
+    /* I could check for nil, but this is cheaper and easier to write. */
+    bool             bindings_present[CONTEXT_BINDING_ID_COUNT];
 
     struct lisp_form _scratch_list_wrapper;
 };
 
 local struct game_script_script_instance* running_scripts;
 /* HACK: for reference with certain functions that behave differently when not in an eval environment. */
-local s32                                 running_script_index = -1;
+local s32                                 running_script_index = NO_SCRIPT;
 
-struct game_script_script_instance* new_script_instance(void) {
+void game_script_instance_set_contextual_binding(struct game_script_script_instance* instance, s32 context_binding_id, struct lisp_form new_value) {
+    if (new_value.type == LISP_FORM_NIL) {
+        instance->bindings_present[context_binding_id] = false;
+    } else {
+        instance->bindings_present[context_binding_id] = true;
+    }
+
+    instance->bindings[context_binding_id] = new_value;
+}
+
+void game_script_instance_clear_contextual_bindings(struct game_script_script_instance* instance) {
+    for (s32 binding_id = 0; binding_id < array_count(instance->bindings_present); ++binding_id) {
+        instance->bindings_present[binding_id] = false;
+    }
+}
+
+struct game_script_script_instance* new_script_instance(s32 enqueue_id) {
+    if (enqueue_id != DO_NOT_CARE) {
+        for (s32 script_index = 0; script_index < MAX_GAME_SCRIPT_RUNNING_SCRIPTS; ++script_index) {
+            struct game_script_script_instance* script = script_index + running_scripts;
+
+            if (script->active && script->id == enqueue_id) {
+                _debugprintf("Shall not enqueue! Script of the same kind is already running! (%d)", enqueue_id);
+                return NULL;
+            }
+        }
+    }
+
     for (s32 free_index = 0; free_index < MAX_GAME_SCRIPT_RUNNING_SCRIPTS; ++free_index) {
         struct game_script_script_instance* script = free_index + running_scripts;
 
         if (!script->active) {
             script->active = true;
+            script->id     = enqueue_id;
             return script;
         }
     }
 
+    assertion(false && "Run out of script instances!");
     return 0;
 }
 
@@ -141,16 +176,26 @@ void game_script_deinitialize(void) {
 
 void game_script_instance_push_stackframe(struct game_script_script_instance* script_state, struct lisp_form f) {
     assertion(script_state->execution_stack_depth < GAME_SCRIPT_EXECUTION_STATE_STACK_SIZE && "game_script stackoverflow!");
+
     script_state->stackframe[script_state->execution_stack_depth].current_form_index = 0;
     script_state->stackframe[script_state->execution_stack_depth].awaiters.timer_id  = -1;
     script_state->stackframe[script_state->execution_stack_depth].awaiters.entity_id = (entity_id){};
     script_state->stackframe[script_state->execution_stack_depth++].body             = f;
 }
 
-void game_script_enqueue_form_to_execute(struct lisp_form f) {
-    struct game_script_script_instance* new_script = new_script_instance();
-    assertion(new_script && "ran out of script instances to handle!");
-    game_script_instance_push_stackframe(new_script, f);
+struct game_script_script_instance* game_script_enqueue_form_to_execute_ex(struct lisp_form f, s32 enqueue_id) {
+    struct game_script_script_instance* new_script = new_script_instance(enqueue_id);
+
+    if (new_script) {
+        game_script_instance_push_stackframe(new_script, f);
+        return new_script;
+    }
+
+    return NULL;
+}
+
+struct game_script_script_instance* game_script_enqueue_form_to_execute(struct lisp_form f) {
+    return game_script_enqueue_form_to_execute_ex(f, DO_NOT_CARE);
 }
 
 /* considering this is so patternized, is it worth writing a mini metaprogramming thing that just automates this? Who knows */
@@ -239,7 +284,7 @@ GAME_LISP_FUNCTION(FOLLOW_PATH) {
 
     entity_combat_submit_movement_action(target_entity, path, path_count);
 
-    if (running_script_index != -1) {
+    if (running_script_index != NO_SCRIPT) {
         struct game_script_script_instance* script_instance    = running_scripts + running_script_index;
         struct game_script_execution_state* current_stackframe = script_instance->stackframe + (script_instance->execution_stack_depth-1);
         current_stackframe->awaiters.entity_id = ptr.entity_id;
@@ -479,6 +524,25 @@ local game_script_function lookup_script_function(string name) {
 #undef GAME_LISP_FUNCTION
 
 bool game_script_look_up_contextual_binding(struct lisp_form name, struct lisp_form* output) {
+    if (running_script_index == NO_SCRIPT) { /* contextual binding only makes sense with a queued script instance which can store it's own context. */
+        return false;
+    }
+
+    struct game_script_script_instance* current_running_script = &running_scripts[running_script_index];
+
+    {
+        if (lisp_form_symbol_matching(name, string_literal("self"))           && current_running_script->bindings_present[CONTEXT_BINDING_SELF]) {
+            *output = current_running_script->bindings[CONTEXT_BINDING_SELF];
+            return true;
+        } else if (lisp_form_symbol_matching(name, string_literal("toucher")) && current_running_script->bindings_present[CONTEXT_BINDING_TOUCHER]) {
+            *output = current_running_script->bindings[CONTEXT_BINDING_TOUCHER];
+            return true;
+        } else if (lisp_form_symbol_matching(name, string_literal("hitter"))  && current_running_script->bindings_present[CONTEXT_BINDING_HITTER]) {
+            *output = current_running_script->bindings[CONTEXT_BINDING_HITTER];
+            return true;
+        }
+    }
+
     return false;
 }
 
@@ -1007,13 +1071,13 @@ bool game_script_waiting_on_form(struct game_script_script_instance* script_stat
     return true;
 }
 
-/*
-  if it's a scalar (normal value), we'll assume it's the same as receiving a finished signal.
-  
-  if we get a (!game_script_coroutine_result_object! *status* *real-value*)
-  
-  TODO: does not handle multiple script enqueues yet... (is this even needed? Hope not.)
-*/
+void game_script_clear_all_awaited_scripts(void) {
+    for (s32 free_index = 0; free_index < MAX_GAME_SCRIPT_RUNNING_SCRIPTS; ++free_index) {
+        struct game_script_script_instance* script = free_index + running_scripts;
+        script->active = false;
+    }
+}
+
 void game_script_execute_awaiting_scripts(struct memory_arena* arena, struct game_state* state, f32 dt) {
     running_script_index = -1;
 
@@ -1025,6 +1089,7 @@ void game_script_execute_awaiting_scripts(struct memory_arena* arena, struct gam
             continue;
 
         if (script_instance->execution_stack_depth <= 0) {
+            game_script_instance_clear_contextual_bindings(script_instance);
             script_instance->active = false;
         } else {
             struct game_script_execution_state* current_stackframe = script_instance->stackframe + (script_instance->execution_stack_depth-1);
