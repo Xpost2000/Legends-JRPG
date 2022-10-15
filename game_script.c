@@ -293,6 +293,25 @@ GAME_LISP_FUNCTION(FOLLOW_PATH) {
     return LISP_nil;
 }
 
+GAME_LISP_FUNCTION(ENTITY_SPEAK) {
+    if (argument_count < 2) {
+        _debugprintf("entity_speak requires two arguments");
+        return LISP_nil;
+    }
+    struct game_script_typed_ptr ptr = game_script_object_handle_decode(arguments[0]);
+    assertion(ptr.type == GAME_SCRIPT_TARGET_ENTITY && "This only works on entities!");
+    struct entity* target_entity = entity_list_dereference_entity(&state->permenant_entities, ptr.entity_id);
+    assertion(target_entity && "no entity?");
+
+    string text;
+    if (lisp_form_get_string(arguments[1], &text)) {
+        passive_speaking_dialogue_push(ptr.entity_id, text, MENU_FONT_COLOR_GOLD);
+    } else {
+        _debugprintf("entity speak needs a string!");
+    }
+    return LISP_nil;
+}
+
 GAME_LISP_FUNCTION(KILL_ALL) {
     /* or any player entity rather, so we'll check for friendly */
     /*

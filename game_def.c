@@ -52,6 +52,23 @@
 #define UI_DEFAULT_COLOR        (color32f32(34/255.0f, 37/255.0f, 143/255.0f, 1.0))
 #define UI_BATTLE_COLOR UI_DEFAULT_COLOR
 
+/* using GNSH fonts, which are public domain, but credits to open game art, this font looks cool */
+enum menu_font_variation {
+    MENU_FONT_COLOR_GOLD,
+
+    MENU_FONT_COLOR_ORANGE,
+    MENU_FONT_COLOR_LIME,
+    MENU_FONT_COLOR_SKYBLUE,
+    MENU_FONT_COLOR_PURPLE,
+    MENU_FONT_COLOR_BLUE,
+    MENU_FONT_COLOR_STEEL,
+    MENU_FONT_COLOR_WHITE,
+    MENU_FONT_COLOR_YELLOW,
+    MENU_FONT_COLOR_BLOODRED,
+
+    MENU_FONT_COUNT,
+};
+
 enum entity_game_script_target_types {
     GAME_SCRIPT_TARGET_TRIGGER,
     GAME_SCRIPT_TARGET_ENTITY,
