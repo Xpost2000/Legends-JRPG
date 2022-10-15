@@ -1031,8 +1031,8 @@ union color32f32 lighting_shader(struct software_framebuffer* framebuffer, union
         struct light_def* current_light = loaded_area->lights + light_index;
         v2f32 light_screenspace_position = current_light->position;
         /* recentering lights */
-        light_screenspace_position.x -= 0.5;
-        light_screenspace_position.y -= 0.5;
+        light_screenspace_position.x += 0.5;
+        light_screenspace_position.y += 0.5;
         {
             light_screenspace_position.x *= TILE_UNIT_SIZE;
             light_screenspace_position.y *= TILE_UNIT_SIZE;

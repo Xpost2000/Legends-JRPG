@@ -1474,17 +1474,17 @@ union color32f32 editor_lighting_shader(struct software_framebuffer* framebuffer
         struct light_def* current_light = editor_state->lights + light_index;
         v2f32 light_screenspace_position = current_light->position;
         /* recentering lights */
-        light_screenspace_position.x -= 0.5;
-        light_screenspace_position.y -= 0.5;
+        light_screenspace_position.x += 0.5;
+        light_screenspace_position.y += 0.5;
         {
             light_screenspace_position.x *= TILE_UNIT_SIZE;
             light_screenspace_position.y *= TILE_UNIT_SIZE;
 
             {
-                light_screenspace_position.x *= game_state->camera.zoom;
-                light_screenspace_position.y *= game_state->camera.zoom;
+                light_screenspace_position.x *= editor_state->camera.zoom;
+                light_screenspace_position.y *= editor_state->camera.zoom;
 
-                if (game_state->camera.centered) {
+                if (editor_state->camera.centered) {
                     light_screenspace_position.x += SCREEN_WIDTH/2;
                     light_screenspace_position.y += SCREEN_HEIGHT/2;
                 }
