@@ -219,7 +219,7 @@ GAME_LISP_FUNCTION(FOLLOW_PATH) {
     v2f32* path       = 0;
     s32    path_count = 0;
 
-    struct entity* target_entity = entity_list_dereference_entity(&state->permenant_entities, ptr.entity_id);
+    struct entity* target_entity = game_dereference_entity(state, ptr.entity_id);
     assertion(target_entity && "no entity?");
 
     if (argument_count == 2) {
@@ -300,7 +300,7 @@ GAME_LISP_FUNCTION(ENTITY_SPEAK) {
     }
     struct game_script_typed_ptr ptr = game_script_object_handle_decode(arguments[0]);
     assertion(ptr.type == GAME_SCRIPT_TARGET_ENTITY && "This only works on entities!");
-    struct entity* target_entity = entity_list_dereference_entity(&state->permenant_entities, ptr.entity_id);
+    struct entity* target_entity = game_dereference_entity(state, ptr.entity_id);
     assertion(target_entity && "no entity?");
 
     string text;
@@ -897,6 +897,48 @@ struct lisp_form game_script_evaluate_form(struct memory_arena* arena, struct ga
                 }
 
                 return result;
+            } else if (lisp_form_symbol_matching(form->list.forms[0], string_literal("setvar"))) {
+                /* no error checking :/ */
+                struct lisp_form* variable_name = &form->list.forms[1];
+                struct lisp_form* expression    = &form->list.forms[2];
+                struct lisp_form evaluated = game_script_evaluate_form(arena, state, expression);
+
+                s32 s32_result;
+                if (lisp_form_get_s32(evaluated, &s32_result)) {
+                    string var_name_as_string;
+                    if (lisp_form_get_string(*variable_name, &var_name_as_string)) {
+                        struct game_variable* var = lookup_game_variable(var_name_as_string, false);
+                        if (!var) {
+                            _debugprintf("this is an error!");
+                        } else {
+                            var->value = s32_result;
+                        }
+                    }
+                } else {
+                    _debugprintf("please use an integer!");
+                }
+            } else if (lisp_form_symbol_matching(form->list.forms[0], string_literal("incvar"))) {
+                struct lisp_form* variable_name = &form->list.forms[1];
+                string var_name_as_string;
+                if (lisp_form_get_string(*variable_name, &var_name_as_string)) {
+                    struct game_variable* var = lookup_game_variable(var_name_as_string, false);
+                    if (!var) {
+                        _debugprintf("this is an error!");
+                    } else {
+                        var->value += 1;
+                    }
+                }
+            } else if (lisp_form_symbol_matching(form->list.forms[0], string_literal("decvar"))) {
+                struct lisp_form* variable_name = &form->list.forms[1];
+                string var_name_as_string;
+                if (lisp_form_get_string(*variable_name, &var_name_as_string)) {
+                    struct game_variable* var = lookup_game_variable(var_name_as_string, false);
+                    if (!var) {
+                        _debugprintf("this is an error!");
+                    } else {
+                        var->value -= 1;
+                    }
+                }
             } else {
                 struct lisp_form result = LISP_nil;
                 /* NOTE: 

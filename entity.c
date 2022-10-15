@@ -172,10 +172,13 @@ s32 entity_iterator_count_all_entities(struct entity_iterator* entities) {
 entity_id entity_list_find_entity_id_with_scriptname(struct entity_list* list, string scriptname) {
     entity_id result = {};
 
+    _debugprintf("Trying to find entity: %.*s\n", scriptname.length, scriptname.data);
     for (s32 entity_index = 0; entity_index < list->capacity; ++entity_index) {
         struct entity* current_entity = list->entities + entity_index;
+        string script_name_target = string_from_cstring(current_entity->script_name);
+        _debugprintf("\tcomparing against: %.*s\n", script_name_target.length, script_name_target.data);
 
-        if (string_equal(string_from_cstring(current_entity->script_name), scriptname)) {
+        if (string_equal(script_name_target, scriptname)) {
             result = entity_list_get_id(list, entity_index);
             break;
         }
@@ -889,12 +892,15 @@ local void entity_copy_path_array_into_navigation_data(struct entity* entity, v2
 }
 
 void entity_combat_submit_movement_action(struct entity* entity, v2f32* path_points, s32 path_count) {
-    if (entity->ai.current_action != ENTITY_ACTION_NONE)
+    if (entity->ai.current_action != ENTITY_ACTION_NONE) {
+        _debugprintf("%.*s shant walk!", entity->name.length, entity->name.data);
         return;
+    }
     
     entity_copy_path_array_into_navigation_data(entity, path_points, path_count);
     entity->ai.following_path = true;
     entity->ai.current_action  = ENTITY_ACTION_MOVEMENT;
+    _debugprintf("Okay... %.*s should walk!", entity->name.length, entity->name.data);
 }
 
 void entity_combat_submit_attack_action(struct entity* entity, entity_id target_id) {
