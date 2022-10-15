@@ -485,6 +485,7 @@ bool is_entity_aggressive_to_player(struct entity* entity);
 void entity_play_animation(struct entity* entity, string name, bool with_direction);
 void entity_play_animation_no_direction(struct entity* entity, string name);
 void entity_play_animation_with_direction(struct entity* entity, string name);
+void entity_look_at(struct entity* entity, v2f32 position);
 
 s32 entity_find_effective_stat_value(struct entity* entity, s32 stat_index);
 

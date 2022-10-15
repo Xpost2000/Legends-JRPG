@@ -293,6 +293,37 @@ GAME_LISP_FUNCTION(FOLLOW_PATH) {
     return LISP_nil;
 }
 
+GAME_LISP_FUNCTION(ENTITY_LOOK_AT) {
+    /* The only use case right now is looking at other entities */
+    if (argument_count < 2) {
+        _debugprintf("entity_look_at requires two arguments");
+        return LISP_nil;
+    }
+    struct game_script_typed_ptr ptr = game_script_object_handle_decode(arguments[0]);
+    assertion(ptr.type == GAME_SCRIPT_TARGET_ENTITY && "This only works on entities!");
+    struct entity* target_entity = game_dereference_entity(state, ptr.entity_id);
+    assertion(target_entity && "no entity?");
+
+    if (lisp_form_symbol_matching(arguments[1], string_literal("left"))) {
+        target_entity->facing_direction = DIRECTION_LEFT;
+    } else if (lisp_form_symbol_matching(arguments[1], string_literal("right"))) {
+        target_entity->facing_direction = DIRECTION_RIGHT;
+    } else if (lisp_form_symbol_matching(arguments[1], string_literal("down"))) {
+        target_entity->facing_direction = DIRECTION_DOWN;
+    } else if (lisp_form_symbol_matching(arguments[1], string_literal("up"))) {
+        target_entity->facing_direction = DIRECTION_UP;
+    } else {
+        struct game_script_typed_ptr ptr2 = game_script_object_handle_decode(arguments[1]);
+        assertion(ptr.type == GAME_SCRIPT_TARGET_ENTITY && "This only works on entities!");
+        struct entity* target_entity2 = game_dereference_entity(state, ptr2.entity_id);
+        assertion(target_entity2 && "no entity?");
+
+        entity_look_at(target_entity, target_entity2->position);
+    }
+
+    return LISP_nil;
+}
+
 GAME_LISP_FUNCTION(ENTITY_SPEAK) {
     if (argument_count < 2) {
         _debugprintf("entity_speak requires two arguments");
@@ -517,6 +548,7 @@ static struct game_script_function_builtin script_function_table[] = {
     GAME_LISP_FUNCTION(DLG_NEXT),
     GAME_LISP_FUNCTION(OBJ_ACTIVATIONS),
     GAME_LISP_FUNCTION(GAME_START_RAIN),
+    GAME_LISP_FUNCTION(ENTITY_LOOK_AT),
     GAME_LISP_FUNCTION(GAME_STOP_RAIN),
     GAME_LISP_FUNCTION(GAME_START_SNOW),
     GAME_LISP_FUNCTION(FOLLOW_PATH),

@@ -1989,6 +1989,7 @@ void player_handle_radial_interactables(struct game_state* state, struct entity*
 local void  do_ui_passive_speaking_dialogue(struct render_commands* commands, f32 dt) {
     passive_speaking_dialogue_cleanup();
 
+    /* TODO: I want word wrap here at some point. */
     for (s32 message_index = 0; message_index < passive_speaking_dialogue_count; ++message_index) {
         struct passive_speaking_dialogue* current_dialogue = passive_speaking_dialogues + message_index;
 
@@ -2008,7 +2009,9 @@ local void  do_ui_passive_speaking_dialogue(struct render_commands* commands, f3
         struct font_cache* font = game_get_font(current_dialogue->game_font_id);
 
         struct entity* speaker = game_dereference_entity(game_state, current_dialogue->speaker_entity);
-        render_commands_push_text(commands, font, 2, v2f32_sub(speaker->position, v2f32(0, speaker->scale.y*2)), display_text, color32f32_WHITE, BLEND_MODE_ALPHA);
+        f32 text_width         = font_cache_text_width(font, display_text, 2);
+        f32 text_height         = font_cache_text_height(font)*2;
+        render_commands_push_text(commands, font, 2, v2f32_sub(speaker->position, v2f32(text_width/2, text_height+speaker->scale.y*2.3)), display_text, color32f32_WHITE, BLEND_MODE_ALPHA);
     }
 
 }
