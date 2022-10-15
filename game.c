@@ -1007,7 +1007,11 @@ union color32f32 grayscale_shader(struct software_framebuffer* framebuffer, unio
         t = *(float*)context; 
     }
     f32 average = (source_pixel.r + source_pixel.g + source_pixel.b) / 3.0f;
-    return color32f32(average, average, average, source_pixel.a);
+
+    f32 new_r = lerp_f32(source_pixel.r, average, t);
+    f32 new_g = lerp_f32(source_pixel.g, average, t);
+    f32 new_b = lerp_f32(source_pixel.b, average, t);
+    return color32f32(new_r, new_g, new_b, source_pixel.a);
 }
 
 union color32f32 lighting_shader(struct software_framebuffer* framebuffer, union color32f32 source_pixel, v2f32 pixel_position, void* context) {
