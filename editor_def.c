@@ -104,9 +104,10 @@ struct editor_state {
     s32                              light_capacity;
     s32                              light_count;
     struct light_def*                lights;
+
+    bool fullbright;
     
     struct camera camera;
-
     v2f32 default_player_spawn;
 
     /* I should force a relative mouse mode? but later */

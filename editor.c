@@ -1450,13 +1450,86 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
     /* not using render commands here. I can trivially figure out what order most things should be... */
 }
 
+/* slightly different */
+union color32f32 editor_lighting_shader(struct software_framebuffer* framebuffer, union color32f32 source_pixel, v2f32 pixel_position, void* context) {
+    if (editor_state->fullbright) {
+        return source_pixel;
+    }
+
+    if (lightmask_buffer_is_lit(&global_lightmask_buffer, pixel_position.x, pixel_position.y)) {
+        return source_pixel;
+    }
+
+    if (special_effects_active() && special_full_effects.type == SPECIAL_EFFECT_INVERSION_1) {
+        return source_pixel;
+    }
+
+    union color32f32 result = source_pixel;
+
+    f32 r_accumulation = 0;
+    f32 g_accumulation = 0;
+    f32 b_accumulation = 0;
+
+    for (s32 light_index = 0; light_index < editor_state->light_count; ++light_index) {
+        struct light_def* current_light = editor_state->lights + light_index;
+        v2f32 light_screenspace_position = current_light->position;
+        /* recentering lights */
+        light_screenspace_position.x -= 0.5;
+        light_screenspace_position.y -= 0.5;
+        {
+            light_screenspace_position.x *= TILE_UNIT_SIZE;
+            light_screenspace_position.y *= TILE_UNIT_SIZE;
+
+            {
+                light_screenspace_position.x *= game_state->camera.zoom;
+                light_screenspace_position.y *= game_state->camera.zoom;
+
+                if (game_state->camera.centered) {
+                    light_screenspace_position.x += SCREEN_WIDTH/2;
+                    light_screenspace_position.y += SCREEN_HEIGHT/2;
+                }
+
+                light_screenspace_position.x -= editor_state->camera.xy.x;
+                light_screenspace_position.y -= editor_state->camera.xy.y;
+            }
+
+            f32 distance_squared = v2f32_magnitude_sq(v2f32_sub(pixel_position, light_screenspace_position));
+            f32 attenuation      = 1/(distance_squared+1 + (sqrtf(distance_squared)/2));
+
+            f32 power = current_light->power;
+            r_accumulation += attenuation * power * TILE_UNIT_SIZE * current_light->color.r/255.0f;
+            g_accumulation += attenuation * power * TILE_UNIT_SIZE * current_light->color.g/255.0f;
+            b_accumulation += attenuation * power * TILE_UNIT_SIZE * current_light->color.b/255.0f;
+        }
+    }
+
+    f32 overbright_r = source_pixel.r * 2.0;
+    f32 overbright_g = source_pixel.g * 2.0;
+    f32 overbright_b = source_pixel.b * 2.0;
+
+    if (r_accumulation > overbright_r) { r_accumulation = overbright_r; }
+    if (g_accumulation > overbright_g) { g_accumulation = overbright_g; }
+    if (b_accumulation > overbright_b) { b_accumulation = overbright_b; }
+
+    result.r = r_accumulation + global_color_grading_filter.r/255.0f * source_pixel.r;
+    result.g = g_accumulation + global_color_grading_filter.g/255.0f * source_pixel.g;
+    result.b = b_accumulation + global_color_grading_filter.b/255.0f * source_pixel.b;
+
+    return result;
+}
+
 void update_and_render_editor(struct software_framebuffer* framebuffer, f32 dt) {
     struct render_commands commands = render_commands(&scratch_arena, 4096,  editor_state->camera);
 
     commands.should_clear_buffer = true;
     commands.clear_buffer_color  = color32u8(100, 128, 148, 255);
 
+    if (is_key_pressed(KEY_F2)) {
+        editor_state->fullbright ^= 1;
+    }
+
     if (editor_state->viewing_loaded_area) {
+        /* this is pretty old, so I'd probably avoid using this part... */
         /* yeah this is a big mess */
         render_ground_area(game_state, &commands, &editor_state->loaded_area);
         if (editor_state->last_selected && editor_state->tool_mode == EDITOR_TOOL_TRIGGER_PLACEMENT) {
@@ -1636,6 +1709,7 @@ void update_and_render_editor(struct software_framebuffer* framebuffer, f32 dt) 
 
     /* cursor ghost */
     software_framebuffer_render_commands(framebuffer, &commands);
+    software_framebuffer_run_shader(framebuffer, rectangle_f32(0, 0, framebuffer->width, framebuffer->height), editor_lighting_shader, NULL);
     EDITOR_imgui_end_frame();
 }
 
