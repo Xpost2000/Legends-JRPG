@@ -520,6 +520,7 @@ static struct game_script_function_builtin script_function_table[] = {
     GAME_LISP_FUNCTION(GAME_STOP_RAIN),
     GAME_LISP_FUNCTION(GAME_START_SNOW),
     GAME_LISP_FUNCTION(FOLLOW_PATH),
+    GAME_LISP_FUNCTION(ENTITY_SPEAK),
     GAME_LISP_FUNCTION(GAME_STOP_SNOW),
     GAME_LISP_FUNCTION(GAME_IS_WEATHER),
     GAME_LISP_FUNCTION(GAME_SET_ENVIRONMENT_COLORS),
@@ -906,6 +907,7 @@ struct lisp_form game_script_evaluate_form(struct memory_arena* arena, struct ga
                 if (!handle_builtin_game_script_functions(arena, state, form, &result)) {
                     _debugprintf("calling from function table");
                     game_script_function function = lookup_script_function(form->list.forms[0].string);
+                    _debugprintf("Calling function %.*s", form->list.forms[0].string.length, form->list.forms[0].string.data);
 
                     if (function) {
                         s32 argument_count = 0;
@@ -964,6 +966,8 @@ struct game_script_typed_ptr game_script_object_handle_decode(struct lisp_form o
     assertion(object_handle.type == LISP_FORM_LIST && "lisp object handle is not a list??? Oh no");
     assertion(object_handle.list.count == 2 && "lisp representations of object handles should be like (TYPE ID)");
     struct game_script_typed_ptr result = {};
+    _debugprintf("Decoding object handle: ");
+    _debug_print_out_lisp_code(&object_handle);
 
     struct lisp_form* type_discriminator_form = lisp_list_nth(&object_handle, 0);
     struct lisp_form* id_form                 = lisp_list_nth(&object_handle, 1);
@@ -992,11 +996,13 @@ struct game_script_typed_ptr game_script_object_handle_decode(struct lisp_form o
             } break;
             case GAME_SCRIPT_TARGET_ENTITY: {
                 if (lisp_form_symbol_matching(*id_form, string_literal("player"))) {
+                    _debugprintf("found player");
                     result.entity_id = player_id;
                 } else {
                     string script_name_string;
 
                     if (lisp_form_get_s32(*id_form, &real_id)) {
+                        _debugprintf("looking up id?");
                         if (real_id < GAME_MAX_PERMENANT_ENTITIES) {
                             result.entity_id = entity_list_get_id(&game_state->permenant_entities, real_id);
                         } else {
@@ -1004,6 +1010,7 @@ struct game_script_typed_ptr game_script_object_handle_decode(struct lisp_form o
                             result.entity_id = entity_list_get_id(&game_state->loaded_area.entities, real_id);
                         }
                     } else if (lisp_form_get_string(*id_form, &script_name_string)) {
+                        _debugprintf("Looking up string name?");
                         result.entity_id = entity_list_find_entity_id_with_scriptname(&game_state->permenant_entities, script_name_string);
 
                         if (result.entity_id.index == 0) {
