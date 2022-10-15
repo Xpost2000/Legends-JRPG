@@ -1033,25 +1033,13 @@ union color32f32 lighting_shader(struct software_framebuffer* framebuffer, union
         /* recentering lights */
         light_screenspace_position.x += 0.5;
         light_screenspace_position.y += 0.5;
+        light_screenspace_position.x *= TILE_UNIT_SIZE;
+        light_screenspace_position.y *= TILE_UNIT_SIZE;
+
+        light_screenspace_position = camera_transform(&game_state->camera, light_screenspace_position, SCREEN_WIDTH, SCREEN_HEIGHT);
         {
-            light_screenspace_position.x *= TILE_UNIT_SIZE;
-            light_screenspace_position.y *= TILE_UNIT_SIZE;
-
-            {
-                light_screenspace_position.x *= game_state->camera.zoom;
-                light_screenspace_position.y *= game_state->camera.zoom;
-
-                if (game_state->camera.centered) {
-                    light_screenspace_position.x += SCREEN_WIDTH/2;
-                    light_screenspace_position.y += SCREEN_HEIGHT/2;
-                }
-
-                light_screenspace_position.x -= game_state->camera.xy.x;
-                light_screenspace_position.y -= game_state->camera.xy.y;
-            }
-
             f32 distance_squared = v2f32_magnitude_sq(v2f32_sub(pixel_position, light_screenspace_position));
-            f32 attenuation      = 1/(distance_squared+1 + (sqrtf(distance_squared)/2));
+            f32 attenuation      = 1/(distance_squared+1 + (sqrtf(distance_squared)/1.5));
 
             f32 power = current_light->power;
             r_accumulation += attenuation * power * TILE_UNIT_SIZE * current_light->color.r/255.0f;
