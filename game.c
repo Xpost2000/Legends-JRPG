@@ -11,14 +11,9 @@
 
 void game_initialize_game_world(void);
 
-
 /* These are some more specialized types of effects that require lots of perverse insertions */
 #define INVERSION_TIME_BETWEEN_FLASHES (0.07)
 #define INVERSION_FLASH_MAX            (12)
-enum {
-    SPECIAL_EFFECT_NONE,
-    SPECIAL_EFFECT_INVERSION_1,
-};
 struct special_effect_information {
     s32 type;
 

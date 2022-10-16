@@ -8,6 +8,10 @@
  TODO: Add weapon animation types for the base model so that I can start reskinning stuff
  TODO: Obviously add placeholder weapon types.
  */
+
+#include "handle_specialfx_sequence_action.c"
+#include "handle_hardcoded_animation_sequence_action.c"
+
 bool entity_bad_ref(struct entity* e);
 
 void battle_ui_stalk_entity_with_camera(struct entity*);
@@ -1301,14 +1305,13 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
                 case SEQUENCE_ACTION_START_SPECIAL_FX: {
                     struct sequence_action_special_fx* special_fx = &sequence_action->special_fx;
                     s32 effect_id = special_fx->effect_id; 
-
-                    switch (effect_id) {
-                        case 0: {
-                            special_effect_start_inversion();
-                        } break;
-                    }
-
+                    handle_specialfx_sequence_action(effect_id);
                     entity_advance_ability_sequence(target_entity);
+                } break;
+                case SEQUENCE_ACTION_DO_HARDCODED_ANIM: {
+                    struct sequence_action_do_hardcoded_anim* hardcoded_anim = &sequence_action->hardcoded_anim;
+                    s32 effect_id = hardcoded_anim->id;
+                    handle_hardcoded_animation_sequence_action(effect_id, entity);
                 } break;
                 case SEQUENCE_ACTION_STOP_SPECIAL_FX: {
                     special_effect_stop_effects();

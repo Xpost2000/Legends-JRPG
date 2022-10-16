@@ -44,7 +44,7 @@
 (focus-camera user)
 (move-to user (direction-relative-to last-target by -1) linear-ease 0.6)
 (move-to user (past last-target by 1) back-ease-out 2)
-(start-special-effects 0)
+(start-special-effects 1)
 (wait-special-effects)
 (hurt all-selected) # uses damage formula
 (stop-special-effects)

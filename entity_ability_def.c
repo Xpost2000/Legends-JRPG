@@ -44,6 +44,7 @@ enum sequence_action_type {
     SEQUENCE_ACTION_FOCUS_CAMERA,
     SEQUENCE_ACTION_MOVE_TO,
     SEQUENCE_ACTION_HURT,
+    SEQUENCE_ACTION_DO_HARDCODED_ANIM,
     SEQUENCE_ACTION_START_SPECIAL_FX,
     SEQUENCE_ACTION_STOP_SPECIAL_FX,
     SEQUENCE_ACTION_WAIT_SPECIAL_FX_TO_FINISH,
@@ -115,6 +116,14 @@ struct sequence_action_hurt {
     struct sequence_action_target_entity targets[ENTITY_ABILITY_SELECTION_FIELD_MAX_X*ENTITY_ABILITY_SELECTION_FIELD_MAX_Y];
 };
 
+/*
+  Using this for escape hatches if it's a bit **too** difficult
+  to express using the data format.
+*/
+struct sequence_action_hardcoded_animation {
+    s32 id;
+};
+
 struct sequence_action_special_fx {
     s32 effect_id;
 };
@@ -122,10 +131,11 @@ struct sequence_action_special_fx {
 struct entity_ability_sequence_action {
     s32 type;
     union {
-        struct sequence_action_hurt         hurt;
-        struct sequence_action_move_to      move_to;
-        struct sequence_action_focus_camera focus_camera;
-        struct sequence_action_special_fx   special_fx;
+        struct sequence_action_hurt                hurt;
+        struct sequence_action_move_to             move_to;
+        struct sequence_action_focus_camera        focus_camera;
+        struct sequence_action_special_fx          special_fx;
+        struct sequence_action_hardcoded_animation hardcoded_anim;
     };
 };
 struct entity_ability_sequence {

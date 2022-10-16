@@ -210,6 +210,10 @@ void entity_ability_compile_animation_sequence(struct memory_arena* arena, struc
                         action_data->type = SEQUENCE_ACTION_START_SPECIAL_FX;
                         struct lisp_form* effect_id = lisp_list_nth(&action_form_rest_arguments, 0);
                         lisp_form_get_s32(*effect_id, &action_data->special_fx.effect_id);
+                    } else if (lisp_form_symbol_matching(*action_form_header, string_literal("do-anim"))) {
+                        action_data->type = SEQUENCE_ACTION_DO_HARDCODED_ANIM;
+                        struct lisp_form* anim_id = lisp_list_nth(&action_form_rest_arguments, 0);
+                        lisp_form_get_s32(*anim_id, &action_data->hardcoded_anim.id);
                     } else if (lisp_form_symbol_matching(*action_form_header, string_literal("stop-special-effects"))) {
                         action_data->type = SEQUENCE_ACTION_STOP_SPECIAL_FX;
                     } else if (lisp_form_symbol_matching(*action_form_header, string_literal("wait-special-effects"))) {

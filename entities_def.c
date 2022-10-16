@@ -289,6 +289,9 @@ struct entity_ai_data {
     s32 death_animation_phase;
     f32 death_animation_kneel_linger_timer;
 
+    /* NOTE: for ANIMATION_SEQUENCE_ACTION_ANIM_BUILTIN if I need it */
+    s32 anim_param[8];
+
     /* DEBUG TODO */
     f32 wait_timer;
 };
