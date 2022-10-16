@@ -239,6 +239,12 @@ void game_finish_conversation(struct game_state* state) {
     /* TODO: Wait until camera finishes interpolating */
     camera_set_point_to_interpolate(&state->camera, state->before_conversation_camera.xy);
     state->is_conversation_active = false;
+    for (s32 node_index = 0; node_index < MAX_CONVERSATION_NODES; ++node_index) {
+        state->current_conversation.nodes[node_index].script_code = (string){};
+        for (s32 choice_index = 0; choice_index < MAX_CONVERSATION_CHOICES; ++choice_index) {
+            state->current_conversation.nodes[node_index].choices[choice_index].script_code = (string){};
+        }
+    }
     file_buffer_free(&state->conversation_file_buffer);
 }
 
