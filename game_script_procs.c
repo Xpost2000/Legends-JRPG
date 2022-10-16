@@ -371,7 +371,7 @@ GAME_LISP_FUNCTION(GAME_START_FIGHT_WITH) {
     for (unsigned argument_index = 0; argument_index < argument_count; ++argument_index) {
         struct game_script_typed_ptr ptr       = game_script_object_handle_decode(arguments[argument_index]);
         struct entity*               to_fight  = game_dereference_entity(state, ptr.entity_id);
-        to_fight->ai.flags                 |= ENTITY_AI_FLAGS_AGGRESSIVE_TO_PLAYER;
+        to_fight->ai.flags                    |= ENTITY_AI_FLAGS_AGGRESSIVE_TO_PLAYER;
     }
     return LISP_nil;
 }

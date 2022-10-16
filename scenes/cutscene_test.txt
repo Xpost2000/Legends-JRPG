@@ -13,7 +13,7 @@
 # TODO cutscene flashback!
 
 (game_open_conversation "sam_test" '(entity "sam"))
-(game_start_fight_with '(entity "sam"))
 (game_enable_input)
+(game_start_fight_with '(entity "sam"))
 (end_cutscene)
 # initial flash back.

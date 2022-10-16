@@ -22,7 +22,7 @@ local void add_all_combat_participants(struct game_state* state) {
 /* no need for anything fancy right now. That comes later. */
 /* (hard coding data is a real pain in my ass, so until I can specify NPCs through data, I just
    want the quickest way of doing stuff) */
-local void determine_if_combat_should_begin(struct game_state* state) {
+local bool should_be_in_combat(struct game_state* state) {
     struct entity* player = game_get_player(state);
 
     bool should_be_in_combat = false;
@@ -42,7 +42,11 @@ local void determine_if_combat_should_begin(struct game_state* state) {
         }
     }
 
-    if (should_be_in_combat) {
+    return should_be_in_combat;
+}
+
+local void determine_if_combat_should_begin(struct game_state* state) {
+    if (should_be_in_combat(state)) {
         state->combat_state.active_combat    = true;
         state->combat_state.active_combatant = 0;
         start_combat_ui();
@@ -60,21 +64,7 @@ void update_combat(struct game_state* state, f32 dt) {
     struct game_state_combat_state* combat_state = &state->combat_state;
     struct entity* combatant = find_current_combatant(state);
 
-    bool should_end_combat = true;
-
-    {
-        struct entity* player = game_get_player(state);
-        for (s32 index = 0; index < combat_state->count; ++index) {
-            struct entity* potential_combatant = entity_list_dereference_entity(&state->permenant_entities, combat_state->participants[index]);
-            if (player != potential_combatant) {
-                bool aggressive = is_entity_aggressive_to_player(potential_combatant);
-
-                if (aggressive) {
-                    should_end_combat = false;
-                }
-            }
-        }
-    }
+    bool should_end_combat = !should_be_in_combat(state);
 
     if (should_end_combat) {
         end_combat_ui();
