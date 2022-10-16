@@ -428,6 +428,15 @@ bool handle_builtin_game_script_functions(struct memory_arena* arena, struct gam
                 return false;
             }
             is_boolean_operator = true;
+        } else if (lisp_form_symbol_matching(first_form, string_literal("not"))) {
+            assertion(form->list.count == 2 && "NOT is a unary operator");
+            struct lisp_form child_first = game_script_evaluate_form(arena, state, form->list.forms + 1);
+            if (child_first.type == LISP_FORM_NIL || (child_first.type == LISP_FORM_LIST && child_first.list.count == 0)) {
+                evaled_boolean_result = true;
+            } else {
+                evaled_boolean_result = false;
+            }
+            is_boolean_operator = true;
         }
 
         if (evaled_boolean_result) {
@@ -499,7 +508,11 @@ struct lisp_form game_script_evaluate_if_and_return_used_branch(struct memory_ar
     if (evaluated.type != LISP_FORM_NIL) {
         return *true_branch;
     } else {
-        return *false_branch;
+        if (false_branch) {
+            return *false_branch;
+        } else {
+            return LISP_nil;
+        }
     }
 }
 
