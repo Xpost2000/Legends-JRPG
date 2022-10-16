@@ -351,8 +351,9 @@ GAME_LISP_FUNCTION(GAME_MESSAGE_QUEUE) {
 GAME_LISP_FUNCTION(GAME_OPEN_CONVERSATION) {
     assertion(argument_count >= 1 && "need at least one argument");
 
-    string conversation_path;
-    lisp_form_get_string(arguments[0], &conversation_path);
+    string conversation_path_partial;
+    lisp_form_get_string(arguments[0], &conversation_path_partial);
+    string conversation_path = format_temp_s("dlg/%.*s.txt", conversation_path_partial.length, conversation_path_partial.data);
     game_open_conversation_file(state, conversation_path);
 
     if (argument_count == 2) {
@@ -384,6 +385,10 @@ GAME_LISP_FUNCTION(START_CUTSCENE) {
     
     return LISP_nil;
 }
+GAME_LISP_FUNCTION(END_CUTSCENE) {
+    cutscene_stop();
+    return LISP_nil;
+}
 
 #undef GAME_LISP_FUNCTION
 
@@ -413,6 +418,7 @@ static struct game_script_function_builtin script_function_table[] = {
     GAME_LISP_FUNCTION(OPEN_SHOP),
     GAME_LISP_FUNCTION(GAME_START_FIGHT_WITH),
     GAME_LISP_FUNCTION(START_CUTSCENE),
+    GAME_LISP_FUNCTION(END_CUTSCENE)
 
     /*
       ALL CUTSCENE ACTIONS WILL BE PREFIXED, SINCE THE CUTSCENE SYSTEM RUNS GENERALIZED GAME SCRIPT,

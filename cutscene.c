@@ -45,7 +45,6 @@ void cutscene_update(f32 dt) {
 
       Most other stuff is just handled by the game alone.
     */
-    /* NOTE: UNUSED */
     return;
 }
 

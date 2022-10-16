@@ -1862,8 +1862,18 @@ local void update_game_camera_exploration_mode(struct game_state* state, f32 dt)
     {
         /* kind of like a project on everythign */
         v2f32                projected_rectangle_position = camera_project(camera, v2f32(camera->travel_bounds.x, camera->travel_bounds.y), SCREEN_WIDTH, SCREEN_HEIGHT);
-        struct rectangle_f32 projected_rectangle          = rectangle_f32(projected_rectangle_position.x, projected_rectangle_position.y, camera->travel_bounds.w * camera->zoom, camera->travel_bounds.h * camera->zoom);
+        struct rectangle_f32 projected_rectangle          = rectangle_f32(projected_rectangle_position.x, projected_rectangle_position.y, camera->travel_bounds.w / camera->zoom, camera->travel_bounds.h / camera->zoom);
         struct rectangle_f32 player_rectangle             = entity_rectangle_collision_bounds(player);
+
+        f32 new_w = projected_rectangle.w * 0.8;
+        f32 new_h = projected_rectangle.h * 0.8;
+        f32 delta_w = projected_rectangle.w - new_w;
+        f32 delta_h = projected_rectangle.w - new_h;
+
+        projected_rectangle.x += delta_w/2;
+        projected_rectangle.y += delta_h/2;
+        projected_rectangle.w = new_w;
+        projected_rectangle.h = new_h;
 
         if (!camera->try_interpolation[0]) {
             bool pushing_left_edge  = (player_rectangle.x < projected_rectangle.x);
