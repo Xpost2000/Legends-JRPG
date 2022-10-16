@@ -205,6 +205,10 @@ void entity_handle_player_controlled(struct game_state* state, struct entity* en
             return;
         }
 
+        if (cutscene_active()) {
+            return;
+        }
+
         if (global_popup_state.message_count > 0) {
             return;
         }

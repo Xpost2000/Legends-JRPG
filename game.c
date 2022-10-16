@@ -3,6 +3,7 @@
 /* virtual pixels */
 #define TILE_UNIT_SIZE                      (32) /* measured with a reference of 640x480 */
 #define GAME_COMMAND_CONSOLE_LINE_INPUT_MAX (512)
+#include "cutscene_def.c"
 #include "game_def.c"
 #include "save_data_def.c"
 #include "game_script_def.c"
@@ -1188,6 +1189,7 @@ void game_initialize(void) {
     game_state->variables           = game_variables(&game_arena);
     game_state->conversation_arena  = memory_arena_push_sub_arena(&game_arena, Kilobyte(64));
 
+    cutscene_initialize(&game_arena);
     game_state->entity_database     = entity_database_create(&game_arena);
     
     initialize_save_data();
@@ -1546,6 +1548,10 @@ local void update_and_render_ingame_game_menu_ui(struct game_state* state, struc
     game_display_and_update_damage_notifications(framebuffer, dt);
 
     /* I seem to have a pretty inconsistent UI priority state thing. */
+    if (cutscene_active()) {
+        return;
+    }
+
     if (state->shopping) {
         game_display_and_update_shop_ui(framebuffer, dt);
         return;
@@ -1624,6 +1630,7 @@ local void update_and_render_ingame_game_menu_ui(struct game_state* state, struc
 #include "sub_menu_state_inventory.c"
 #include "sub_menu_state_equipment.c"
 
+/* NOTE: Might need to overhaul the pause menu... */
 local void update_and_render_sub_menu_states(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
     f32 font_scale = 3;
     struct ui_pause_menu* menu_state = &state->ui_pause;
@@ -1904,7 +1911,7 @@ local void update_game_camera(struct game_state* state, f32 dt) {
     if (game_state->combat_state.active_combat) {
         update_game_camera_combat(state, dt);
     } else {
-        if (!game_state->is_conversation_active) {
+        if (!game_state->is_conversation_active || !cutscene_active()) {
             update_game_camera_exploration_mode(state, dt);
         }
     }
@@ -2255,13 +2262,15 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                         update_entities(game_state, dt, &game_state->loaded_area);
                         entity_particle_emitter_list_update(&game_state->permenant_particle_emitters, dt);
 
-                        game_script_execute_awaiting_scripts(&scratch_arena, game_state, dt);
-                        game_script_run_all_timers(dt);
+                        if (!cutscene_active()) {
+                            game_script_execute_awaiting_scripts(&scratch_arena, game_state, dt);
+                            game_script_run_all_timers(dt);
 
-                        if (!game_state->combat_state.active_combat) {
-                            determine_if_combat_should_begin(game_state);
-                        } else {
-                            update_combat(game_state, dt);
+                            if (!game_state->combat_state.active_combat) {
+                                determine_if_combat_should_begin(game_state);
+                            } else {
+                                update_combat(game_state, dt);
+                            }
                         }
                     }
 
@@ -2419,3 +2428,4 @@ s32 game_variable_get(string name) {
 #include "storyboard_presentation.c"
 #include "entity_model.c"
 #include "shop.c"
+#include "cutscene.c"
