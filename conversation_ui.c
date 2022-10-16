@@ -115,8 +115,11 @@ local void update_and_render_conversation_ui(struct game_state* state, struct so
             if (is_action_pressed(INPUT_ACTION_CONFIRMATION)) {
                 state->viewing_dialogue_choices = false;
                 u32 target = current_conversation_node->choices[state->currently_selected_dialogue_choice].target;
-                dialogue_ui_set_target_node(target);
-                dialogue_choice_try_to_execute_script_actions(state, &current_conversation_node->choices[state->currently_selected_dialogue_choice], state->currently_selected_dialogue_choice);
+                if (current_conversation_node->choices[state->currently_selected_dialogue_choice].script_code.length) {
+                    dialogue_choice_try_to_execute_script_actions(state, &current_conversation_node->choices[state->currently_selected_dialogue_choice], state->currently_selected_dialogue_choice);
+                } else {
+                    dialogue_ui_set_target_node(target);
+                }
             }
         } else {
             if (is_action_pressed(INPUT_ACTION_CONFIRMATION)) {

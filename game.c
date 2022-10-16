@@ -1523,11 +1523,11 @@ local void dialogue_choice_try_to_execute_script_actions(struct game_state* stat
                         }
                         can_eval = false;
                     }
-                }
 
-                if (can_eval) {
-                    _debugprintf("can eval");
-                    game_script_evaluate_form(&scratch_arena, state, subform);
+                    if (can_eval) {
+                        _debugprintf("can eval");
+                        game_script_evaluate_form(&scratch_arena, state, subform);
+                    }
                 }
             }
 #endif
