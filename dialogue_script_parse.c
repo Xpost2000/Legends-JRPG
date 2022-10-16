@@ -100,26 +100,36 @@ local void parse_and_compose_dialogue(struct game_state* state, struct lexer* le
     struct lexer_token determiner_token = lexer_peek_token(lexer_state);
 
     if (determiner_token.type == TOKEN_TYPE_LIST) {
+        _debugprintf("DETERMINE_START?");
         /* try to hope it's a determiner form */
         struct lisp_form  code            = lisp_read_form(&scratch_arena, determiner_token.str);
         struct lisp_form* DETERMINE_START = lisp_list_nth(&code, 0);
-        struct lisp_form  body            = lisp_list_sliced(code, 1, -1);
+        if (lisp_form_symbol_matching(*DETERMINE_START,string_literal( "DETERMINE-START"))) {
+            _debugprintf("all good boss!");
+            struct lisp_form  body            = lisp_list_sliced(code, 1, -1);
 
-        if (body.list.count != 1) {
-            _debugprintf("This could be trouble!");
-        }
+            if (body.list.count != 1) {
+                _debugprintf("This could be trouble!");
+            }
 
-        struct lisp_form winning_start;
-        for (s32 body_form_index = 0; body_form_index < body.list.count; ++body_form_index) {
-            winning_start = game_script_evaluate_form(&scratch_arena, state, &body.list.forms[body_form_index]);
-        }
+            struct lisp_form winning_start;
+            for (s32 body_form_index = 0; body_form_index < body.list.count; ++body_form_index) {
+                _debugprintf("Evaluating:");
+                _debug_print_out_lisp_code(&body.list.forms[body_form_index]);
+                winning_start = game_script_evaluate_form(&scratch_arena, state, &body.list.forms[body_form_index]);
+            }
 
-        s32 new_start;
-        if (!lisp_form_get_s32(winning_start, &new_start)) {
-            _debugprintf("that's bad! The last form evaled was not an index!");
-        } else {
-            state->current_conversation_node_id = new_start;
+            s32 new_start;
+            if (!lisp_form_get_s32(winning_start, &new_start)) {
+                _debugprintf("that's bad! The last form evaled was not an index!");
+                _debugprintf("Got back\n");
+                _debug_print_out_lisp_code(&winning_start);
+            } else {
+                state->current_conversation_node_id = new_start;
+                _debugprintf("Figured out the new start should be: %d\n", state->current_conversation_node_id);
+            }
         }
+        lexer_next_token(lexer_state);
     } else {
         /* no error checking */
         struct lexer_token speaker_name  = lexer_next_token(lexer_state);
