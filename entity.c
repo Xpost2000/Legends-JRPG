@@ -9,6 +9,8 @@
  TODO: Obviously add placeholder weapon types.
  */
 
+local void entity_advance_ability_sequence(struct entity* entity);
+
 #include "handle_specialfx_sequence_action.c"
 #include "handle_hardcoded_animation_sequence_action.c"
 
@@ -1309,7 +1311,7 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
                     entity_advance_ability_sequence(target_entity);
                 } break;
                 case SEQUENCE_ACTION_DO_HARDCODED_ANIM: {
-                    struct sequence_action_do_hardcoded_anim* hardcoded_anim = &sequence_action->hardcoded_anim;
+                    struct sequence_action_hardcoded_animation* hardcoded_anim = &sequence_action->hardcoded_anim;
                     s32 effect_id = hardcoded_anim->id;
                     handle_hardcoded_animation_sequence_action(effect_id, entity);
                 } break;
