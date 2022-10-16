@@ -24,18 +24,15 @@ void cutscene_initialize(struct memory_arena* arena) {
 
 void cutscene_open(string filepath) {
     /* kill any movement, just in-case it was happening earlier. */
-    struct entity*   player    = game_get_player(game_state);
+    struct entity* player            = game_get_player(game_state);
     player->velocity.x               = 0; player->velocity.y = 0;
     cutscene_state.file_buffer       = read_entire_file(memory_arena_allocator(&cutscene_state.arena), format_temp_s("./scenes/%.*s.txt", filepath.length, filepath.data));
-    cutscene_state.script_forms.list = lisp_read_string_into_forms(&scratch_arena, file_buffer_as_string(&cutscene_state.file_buffer));
+    cutscene_state.script_forms.list = lisp_read_string_into_forms(&cutscene_state.arena, file_buffer_as_string(&cutscene_state.file_buffer));
     cutscene_state.script_forms.type = LISP_FORM_LIST;
 
-    /* game_script_clear_all_awaited_scripts(); */
-    _debugprintf("why has this not been enqueued");
+    game_script_clear_all_awaited_scripts();
     game_script_enqueue_form_to_execute(cutscene_state.script_forms);
-    _debug_print_out_lisp_code(&cutscene_state.script_forms);
     cutscene_state.running = true;
-    _debugprintf("CUTSCENE TIME BABES!");
 }
 
 /* same as awaiting scripts but for only one script instance */

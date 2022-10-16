@@ -181,6 +181,7 @@ void game_script_instance_push_stackframe(struct game_script_script_instance* sc
     script_state->stackframe[script_state->execution_stack_depth].awaiters.timer_id  = -1;
     script_state->stackframe[script_state->execution_stack_depth].awaiters.entity_id = (entity_id){};
     script_state->stackframe[script_state->execution_stack_depth++].body             = f;
+    _debug_print_out_lisp_code(&f);
 }
 
 struct game_script_script_instance* game_script_enqueue_form_to_execute_ex(struct lisp_form f, s32 enqueue_id) {
