@@ -188,6 +188,8 @@ struct game_script_script_instance* game_script_enqueue_form_to_execute_ex(struc
 
     if (new_script) {
         game_script_instance_push_stackframe(new_script, f);
+        _debugprintf("enqueued");
+        _debug_print_out_lisp_code(&f);
         return new_script;
     }
 
@@ -883,11 +885,13 @@ void game_script_execute_awaiting_scripts(struct memory_arena* arena, struct gam
 
             /* BAD? */
             /* if (cutscene_active()) { */
+            /*     _debugprintf("Cutscene ending"); */
             /*     cutscene_stop(); */
             /* } */
         } else {
             struct game_script_execution_state* current_stackframe = script_instance->stackframe + (script_instance->execution_stack_depth-1);
             _debugprintf("current stack frame(script: %d) (%d)", script_instance_index, script_instance->execution_stack_depth);
+            _debug_print_out_lisp_code(&current_stackframe->body);
 
             if (current_stackframe->current_form_index >= current_stackframe->body.list.count) {
                 script_instance->execution_stack_depth -= 1;
@@ -913,6 +917,7 @@ void game_script_execute_awaiting_scripts(struct memory_arena* arena, struct gam
 
                     struct lisp_form* last_form = lisp_list_nth(&current_stackframe->body, current_stackframe->current_form_index-1);
                     allow_advancement = game_script_waiting_on_form(script_instance, last_form);
+                    _debugprintf("Can I advance? %d", allow_advancement);
                 }
             
 

@@ -7,7 +7,5 @@
           (setvar gtrigger 1))))
 
 (on-touch (trigger 1)
-          (if (not (equal gtriggerscene 1))
-          (progn 
-          (start_cutscene "cutscene_test")
-          (setvar gtriggerscene 1)))
+(start_cutscene "cutscene_test")
+          )
