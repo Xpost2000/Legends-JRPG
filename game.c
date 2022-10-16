@@ -11,6 +11,7 @@
 #include "storyboard_presentation_def.c"
 
 void game_initialize_game_world(void);
+void game_report_entity_death(entity_id id);
 
 /* These are some more specialized types of effects that require lots of perverse insertions */
 #define INVERSION_TIME_BETWEEN_FLASHES (0.07)
@@ -1969,6 +1970,36 @@ void handle_entity_level_trigger_interactions(struct game_state* state, struct e
             return;
         }
     }
+}
+
+void game_report_entity_death(entity_id id) {
+    struct level_area*          area           = &game_state->loaded_area;
+    struct level_area_listener* listener_lists = area->script.listeners + LEVEL_AREA_LISTEN_EVENT_ON_DEATH;
+
+    for (s32 existing_reported_dead_entity_index = 0; existing_reported_dead_entity_index < area->reported_entity_death_count; ++existing_reported_dead_entity_index) {
+        if (entity_id_equal(area->reported_entity_deaths[existing_reported_dead_entity_index], id)) {
+            _debugprintf("Already known to be dead. Bugger off!");
+            return;
+        }
+    }
+
+    for (s32 subscriber_index = 0; subscriber_index < listener_lists->subscribers; ++subscriber_index) {
+        struct lisp_form* event_action_form = listener_lists->subscriber_codes + subscriber_index;
+        struct lisp_form* object_handle     = lisp_list_nth(event_action_form, 1);
+
+        struct game_script_typed_ptr ptr   = game_script_object_handle_decode(*object_handle);
+        struct entity*               dead  = game_dereference_entity(game_state, ptr.entity_id);
+
+
+        if (entity_id_equal(ptr.entity_id, id)) {
+            area->reported_entity_deaths[area->reported_entity_death_count++] = id;
+            struct lisp_form body = lisp_list_sliced(*event_action_form, 2, -1);
+            game_script_enqueue_form_to_execute(body);
+            return;
+        }
+    }
+
+    return;
 }
 
 void handle_entity_scriptable_trigger_interactions(struct game_state* state, struct entity* entity, s32 trigger_count, struct trigger* triggers, f32 dt) {

@@ -229,6 +229,8 @@ struct level_area {
     struct entity_list               entities;
     struct level_area_script_data    script;
     struct level_area_navigation_map navigation_data;
+    s32                              reported_entity_death_count;
+    entity_id                        reported_entity_deaths[1024];
     /* used for displaying what tiles you can walk to. */
     u8*                              combat_movement_visibility_map;
 };

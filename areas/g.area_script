@@ -3,9 +3,16 @@
 (on-touch (trigger 0)
           (if (not (equal gtrigger 1))
           (progn
-          (entity_speak '(entity player) "Hmm... Something about this seems familiar to me...")
+          (entity_speak '(entity player) "... Why do I sense...")
           (setvar gtrigger 1))))
 
 (on-touch (trigger 1)
-(start_cutscene "cutscene_test")
-          )
+          (if (not (equal gtrigger1 1))
+          (progn
+          (setvar gtrigger1 1)
+          (start_cutscene "cutscene_test")))
+)
+
+# NOT USED
+(on-death (entity "sam")
+          (game_open_conversation "sam_test"))

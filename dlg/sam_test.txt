@@ -1,6 +1,16 @@
+(DETERMINE_START
+       (if (equal gtrigger1 1)
+           6
+           1) 
+)
 "CHARNAME": "How did this ever come to pass..."
 "Sam": "YOU!"
 "Sam": "YOU'VE COME TO TAKE THIS TREASURE DIDN'T YOU?"
 "CHARNAME": "No! I-"
 "Sam": "SAVE YOUR BREATH! YOUR DEATH SHALL COME!"
-"CHARNAME": "I wish it was never this way..."
+"CHARNAME": "I wish it was never this way..." => (BYE)
+#6
+"Sam": "AAHHHHHHHHHHHHHHHHHH!!"
+"CHARNAME": "It..."
+"CHARNAME": "It, was never meant to end like this."
+"CHARNAME": "I love you dear brother." => (BYE)
