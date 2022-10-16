@@ -93,59 +93,87 @@ local void dialogue_node_evaluate_code(struct memory_arena* arena, struct conver
     }
 }
 
+/*
+  NOTE: This essentially operates "line" mode
+*/
 local void parse_and_compose_dialogue(struct game_state* state, struct lexer* lexer_state) {
-    /* no error checking */
-    struct lexer_token speaker_name  = lexer_next_token(lexer_state);
-    struct lexer_token colon         = lexer_next_token(lexer_state);
-    struct lexer_token dialogue_line = lexer_next_token(lexer_state);
-    /* try to peek and see if we find an arrow */
-    struct lexer_token maybe_arrow   = lexer_peek_token(lexer_state);
+    struct lexer_token determiner_token = lexer_peek_token(lexer_state);
 
-    struct conversation* conversation = &state->current_conversation;
+    if (determiner_token.type == TOKEN_TYPE_LIST) {
+        /* try to hope it's a determiner form */
+        struct lisp_form  code            = lisp_read_form(&scratch_arena, determiner_token.str);
+        struct lisp_form* DETERMINE_START = lisp_list_nth(&code, 0);
+        struct lisp_form  body            = lisp_list_sliced(code, 1, -1);
 
-    if (speaker_name.type == TOKEN_TYPE_STRING && colon.type == TOKEN_TYPE_COLON && dialogue_line.type == TOKEN_TYPE_STRING) {
-        struct conversation_node* new_node = &conversation->nodes[conversation->node_count++];
-        _debugprintf("allocating new node: (%d)", conversation->node_count);
+        if (body.list.count != 1) {
+            _debugprintf("This could be trouble!");
+        }
 
-        new_node->speaker_name = speaker_name.str;
-        new_node->text         = dialogue_line.str;
-        new_node->choice_count = 0;
-        new_node->target       = conversation->node_count+1;
+        struct lisp_form winning_start;
+        for (s32 body_form_index = 0; body_form_index < body.list.count; ++body_form_index) {
+            winning_start = game_script_evaluate_form(&scratch_arena, state, &body.list.forms[body_form_index]);
+        }
 
-        if (lexer_token_is_symbol_matching(maybe_arrow, string_literal("=>"))) {
-            lexer_next_token(lexer_state);
-            _debugprintf("has arrow... Look for lisp code and parse it into instructions!");
-            struct lexer_token lisp_code = lexer_next_token(lexer_state);
-
-            if (lisp_code.type != TOKEN_TYPE_LIST) {
-                _debug_print_token(lisp_code);
-                goto error;
-            } else {
-                /* not top-level */
-                /* 
-                   I mean theoretically I could interpret all of this and not have the structure... 
-                   
-                   Maybe consider that at some point?
-                */
-                /* build code */
-                dialogue_node_evaluate_code(&state->conversation_arena, conversation, conversation->node_count-1, lisp_code.str);
-            }
+        s32 new_start;
+        if (!lisp_form_get_s32(winning_start, &new_start)) {
+            _debugprintf("that's bad! The last form evaled was not an index!");
         } else {
-            _debugprintf("linear dialogue");
-            if (lexer_token_is_null(maybe_arrow)) {
-                lexer_next_token(lexer_state);
-                new_node->target = 0;
-            }
+            state->current_conversation_node_id = new_start;
         }
     } else {
-    error:
-        _debugprintf("dialogue error, cannot read for some reason... Not sure why right now");
-        _debug_print_token(speaker_name);
-        _debug_print_token(colon);
-        _debug_print_token(dialogue_line);
-        state->is_conversation_active             = false;
-    }
+        /* no error checking */
+        struct lexer_token speaker_name  = lexer_next_token(lexer_state);
+        struct lexer_token colon         = lexer_next_token(lexer_state);
+        struct lexer_token dialogue_line = lexer_next_token(lexer_state);
+        /* try to peek and see if we find an arrow */
+        struct lexer_token maybe_arrow   = lexer_peek_token(lexer_state);
 
+        struct conversation* conversation = &state->current_conversation;
+
+        if (speaker_name.type == TOKEN_TYPE_STRING && colon.type == TOKEN_TYPE_COLON && dialogue_line.type == TOKEN_TYPE_STRING) {
+            struct conversation_node* new_node = &conversation->nodes[conversation->node_count++];
+            _debugprintf("allocating new node: (%d)", conversation->node_count);
+
+            new_node->speaker_name = speaker_name.str;
+            new_node->text         = dialogue_line.str;
+            new_node->choice_count = 0;
+            new_node->target       = conversation->node_count+1;
+
+            if (lexer_token_is_symbol_matching(maybe_arrow, string_literal("=>"))) {
+                lexer_next_token(lexer_state);
+                _debugprintf("has arrow... Look for lisp code and parse it into instructions!");
+                struct lexer_token lisp_code = lexer_next_token(lexer_state);
+
+                if (lisp_code.type != TOKEN_TYPE_LIST) {
+                    _debug_print_token(lisp_code);
+                    goto error;
+                } else {
+                    /* not top-level */
+                    /* 
+                       I mean theoretically I could interpret all of this and not have the structure... 
+                   
+                       Maybe consider that at some point?
+                    */
+                    /* build code */
+                    dialogue_node_evaluate_code(&state->conversation_arena, conversation, conversation->node_count-1, lisp_code.str);
+                }
+            } else {
+                _debugprintf("linear dialogue");
+                if (lexer_token_is_null(maybe_arrow)) {
+                    lexer_next_token(lexer_state);
+                    new_node->target = 0;
+                }
+            }
+        } else {
+        error:
+            _debugprintf("dialogue error, cannot read for some reason... Not sure why right now");
+            _debug_print_token(speaker_name);
+            _debug_print_token(colon);
+            _debug_print_token(dialogue_line);
+            state->is_conversation_active             = false;
+        }
+
+    }
 }
 
 local void game_open_conversation_file(struct game_state* state, string filename) {

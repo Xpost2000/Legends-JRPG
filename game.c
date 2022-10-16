@@ -5,8 +5,8 @@
 #define GAME_COMMAND_CONSOLE_LINE_INPUT_MAX (512)
 #include "game_def.c"
 #include "save_data_def.c"
-#include "dialogue_script_parse.c"
 #include "game_script_def.c"
+#include "dialogue_script_parse.c"
 #include "storyboard_presentation_def.c"
 
 void game_initialize_game_world(void);
