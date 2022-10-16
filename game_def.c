@@ -565,6 +565,7 @@ struct game_state {
 
 void game_write_save_slot(s32 save_slot_id);
 void game_load_from_save_slot(s32 save_slot_id);
+void dialogue_ui_set_target_node(u32 id);
 
 #include "save_data_def.c"
 void handle_entity_level_trigger_interactions(struct game_state* state, struct entity* entity, s32 trigger_level_transition_count, struct trigger_level_transition* trigger_level_transitions, f32 dt);

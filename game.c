@@ -1451,7 +1451,6 @@ local void dialogue_try_to_execute_script_actions(struct game_state* state, stru
         struct lisp_form code = lisp_read_form(&scratch_arena, node->script_code);
         /* we should already know this is a DO form so just go */
 
-        /* TODO MARKME */
         struct lisp_list* list_contents = &code.list;
         for (unsigned index = 1; index < list_contents->count; ++index) {
             struct lisp_form* form = list_contents->forms + index;
@@ -1465,6 +1464,63 @@ local void dialogue_choice_try_to_execute_script_actions(struct game_state* stat
     if (choice->script_code.length) {
         _debugprintf("dialogue choice script present");
         _debugprintf("choice script-code: %.*s", choice->script_code.length, choice->script_code.data);
+        struct lisp_form code = lisp_read_form(&scratch_arena, choice->script_code);
+        
+        s32 choice_index = choice - state->current_conversation.nodes[state->current_conversation_node_id].choices;
+
+        struct lisp_form* relevant_form = code.list.forms + (choice_index+1);
+        {
+            _debug_print_out_lisp_code(relevant_form);
+            /* start at 1, skip the *DO* */
+            for (unsigned form_index = 1; form_index < relevant_form->list.count; ++form_index) {
+                struct lisp_form* subform = relevant_form->list.forms + form_index;
+
+                bool can_eval = true;
+                if (subform->type == LISP_FORM_LIST) {
+                    if (lisp_form_symbol_matching(subform->list.forms[0], string_literal("next"))) {
+                        s32 offset = 1;
+
+                        if (subform->list.count > 1) {
+                            struct lisp_form* action_form_second = &subform->list.forms[1];
+                            if (action_form_second->type == LISP_FORM_NUMBER) {
+                                if (action_form_second->is_real == false) {
+                                    offset += action_form_second->integer;
+                                } else {
+                                    _debugprintf("found a (next) instruction but bad second arg");
+                                }
+                            } else {
+                                _debugprintf("found a (next) instruction but bad second arg");
+                            }
+                        }
+
+                        dialogue_ui_set_target_node(state->current_conversation_node_id+offset);
+                        can_eval = false;
+                    } else if (lisp_form_symbol_matching(subform->list.forms[0], string_literal("bye"))) {
+                        game_finish_conversation(state);
+                        can_eval = false;
+                    } else if (lisp_form_symbol_matching(subform->list.forms[0], string_literal("goto"))) {
+                        if (subform->list.count > 1) {
+                            struct lisp_form* action_form_second = &subform->list.forms[1];
+
+                            if (action_form_second->type == LISP_FORM_NUMBER) {
+                                if (action_form_second->is_real == false) {
+                                    dialogue_ui_set_target_node(action_form_second->integer);
+                                } else {
+                                    _debugprintf("found a (next) instruction but bad second arg");
+                                }
+                            } else {
+                                _debugprintf("found a (next) instruction but bad second arg");
+                            }
+                        } else {
+                            _debugprintf("found a (goto) instruction but bad second arg");
+                        }
+                        can_eval = false;
+                    }
+                }
+
+                if (can_eval) game_script_evaluate_form(&scratch_arena, state, subform);
+            }
+        }
     } else {
         _debugprintf("no dialogue choice script present");
     }

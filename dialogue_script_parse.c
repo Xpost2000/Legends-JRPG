@@ -60,10 +60,10 @@ local void dialogue_node_evaluate_code(struct memory_arena* arena, struct conver
                                     if (action_form_second->is_real == false) {
                                         new_choice->target = action_form_second->integer;
                                     } else {
-                                        _debugprintf("found a (next) instruction but bad second arg");
+                                        _debugprintf("found a (goto) instruction but bad second arg");
                                     }
                                 } else {
-                                    _debugprintf("found a (next) instruction but bad second arg");
+                                    _debugprintf("found a (goto) instruction but bad second arg");
                                 }
                             } else {
                                 _debugprintf("found a (goto) instruction but bad second arg");
