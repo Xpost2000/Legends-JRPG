@@ -1460,24 +1460,29 @@ local void dialogue_try_to_execute_script_actions(struct game_state* state, stru
         _debugprintf("no dialogue script present");
     }
 }
-local void dialogue_choice_try_to_execute_script_actions(struct game_state* state, struct conversation_choice* choice) {
+local void dialogue_choice_try_to_execute_script_actions(struct game_state* state, struct conversation_choice* choice, s32 choice_index) {
     if (choice->script_code.length) {
         _debugprintf("dialogue choice script present");
         _debugprintf("choice script-code: %.*s", choice->script_code.length, choice->script_code.data);
         struct lisp_form code = lisp_read_form(&scratch_arena, choice->script_code);
         
-        s32 choice_index = choice - state->current_conversation.nodes[state->current_conversation_node_id].choices;
-
         struct lisp_form* relevant_form = code.list.forms + (choice_index+1);
+        /* relevant_form = &relevant_form->list.forms[1]; */
         {
-            _debug_print_out_lisp_code(relevant_form);
+            struct lisp_form* do_block = lisp_list_nth(relevant_form, 1);
+            _debugprintf("Relevant form");
+            _debug_print_out_lisp_code(do_block);
             /* start at 1, skip the *DO* */
-            for (unsigned form_index = 1; form_index < relevant_form->list.count; ++form_index) {
-                struct lisp_form* subform = relevant_form->list.forms + form_index;
+            if (!do_block) return;
+#if 1
+            for (unsigned form_index = 1; form_index < do_block->list.count; ++form_index) {
+                struct lisp_form* subform = do_block->list.forms + form_index;
 
+                _debug_print_out_lisp_code(subform);
                 bool can_eval = true;
                 if (subform->type == LISP_FORM_LIST) {
                     if (lisp_form_symbol_matching(subform->list.forms[0], string_literal("next"))) {
+                        _debugprintf("Found a next");
                         s32 offset = 1;
 
                         if (subform->list.count > 1) {
@@ -1496,9 +1501,11 @@ local void dialogue_choice_try_to_execute_script_actions(struct game_state* stat
                         dialogue_ui_set_target_node(state->current_conversation_node_id+offset);
                         can_eval = false;
                     } else if (lisp_form_symbol_matching(subform->list.forms[0], string_literal("bye"))) {
+                        _debugprintf("Found a bye");
                         game_finish_conversation(state);
                         can_eval = false;
                     } else if (lisp_form_symbol_matching(subform->list.forms[0], string_literal("goto"))) {
+                        _debugprintf("Found a goto");
                         if (subform->list.count > 1) {
                             struct lisp_form* action_form_second = &subform->list.forms[1];
 
@@ -1518,8 +1525,12 @@ local void dialogue_choice_try_to_execute_script_actions(struct game_state* stat
                     }
                 }
 
-                if (can_eval) game_script_evaluate_form(&scratch_arena, state, subform);
+                if (can_eval) {
+                    _debugprintf("can eval");
+                    game_script_evaluate_form(&scratch_arena, state, subform);
+                }
             }
+#endif
         }
     } else {
         _debugprintf("no dialogue choice script present");
