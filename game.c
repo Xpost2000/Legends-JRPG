@@ -2127,7 +2127,7 @@ local void execute_current_area_scripts(struct game_state* state, f32 dt) {
         }
 
         /* execute all routine scripts if they haven't already been queued. */
-        {
+        if (!cutscene_active() && !game_state->is_conversation_active) {
             struct level_area_listener* routine_listeners = &script_data->listeners[LEVEL_AREA_LISTEN_EVENT_ROUTINE];
             for (s32 routine_script_index = 0; routine_script_index < routine_listeners->subscribers; ++routine_script_index) {
                 struct lisp_form* routine_forms = routine_listeners->subscriber_codes + routine_script_index;
@@ -2262,10 +2262,10 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                         update_entities(game_state, dt, &game_state->loaded_area);
                         entity_particle_emitter_list_update(&game_state->permenant_particle_emitters, dt);
 
-                        if (!cutscene_active()) {
-                            game_script_execute_awaiting_scripts(&scratch_arena, game_state, dt);
-                            game_script_run_all_timers(dt);
+                        game_script_execute_awaiting_scripts(&scratch_arena, game_state, dt);
+                        game_script_run_all_timers(dt);
 
+                        if (!cutscene_active()) {
                             if (!game_state->combat_state.active_combat) {
                                 determine_if_combat_should_begin(game_state);
                             } else {
