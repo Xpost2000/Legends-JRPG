@@ -13,8 +13,8 @@
 "Frimor" : "The stars are certainly blessed tonight..." => (NEXT)
 "Frimor" : "Aren't they? Calamir." =>
 (CHOICES
-    ("Perhaps."           => (NEXT))
-    ("Same as any other." => (GOTO 4)))
+    ("Perhaps."           (NEXT))
+    ("Same as any other." (GOTO 4)))
 
 "Frimor" : "There's something special tonight isn't there?"               => (NEXT 1)
 "Frimor" : "Heh, maybe it is. I don't spend as much time as you do here." => (NEXT)

@@ -19,6 +19,8 @@ local void dialogue_node_evaluate_code(struct memory_arena* arena, struct conver
             /* we can build our stuff here pretty easily... */
             for (unsigned choice_index = 0; choice_index < list->count-1; ++choice_index) {
                 struct conversation_choice* new_choice = &node->choices[node->choice_count++];
+                _debugprintf("ALLOC CHOICE");
+                _debug_print_out_lisp_code(&code);
 
                 struct lisp_form* choice_form = &list->forms[choice_index+1];
                 /* should be a list... Hope it is! */
@@ -89,6 +91,8 @@ local void dialogue_node_evaluate_code(struct memory_arena* arena, struct conver
             /* just save the whole do and parse from there. */
             _debugprintf("do block spotted! Saving code to evaluate on demand.");
             node->script_code = code_string;
+        } else if (lisp_form_symbol_matching(first, string_literal("bye"))) { /* hacky but okay, need to have subset of none actionable things */
+            node->target = 0;
         }
     }
 }
@@ -130,6 +134,10 @@ local void parse_and_compose_dialogue(struct game_state* state, struct lexer* le
             }
         }
         lexer_next_token(lexer_state);
+    } else if (determiner_token.type == TOKEN_TYPE_NONE) {
+        _debugprintf("EOF? (%d v. %d)", lexer_state->current_read_index, lexer_state->buffer.length);
+        /* try to eat remaining state to finish off the lexer */
+        lexer_next_token(lexer_state);
     } else {
         /* no error checking */
         struct lexer_token speaker_name  = lexer_next_token(lexer_state);
@@ -155,6 +163,7 @@ local void parse_and_compose_dialogue(struct game_state* state, struct lexer* le
                 struct lexer_token lisp_code = lexer_next_token(lexer_state);
 
                 if (lisp_code.type != TOKEN_TYPE_LIST) {
+                    _debugprintf("So this is a problem");
                     _debug_print_token(lisp_code);
                     goto error;
                 } else {
@@ -211,6 +220,7 @@ local void game_open_conversation_file(struct game_state* state, string filename
 
     while (!lexer_done(&lexer_state)) {
         parse_and_compose_dialogue(state, &lexer_state);
+        _debugprintf("next line\n");
     }
 
     void dialogue_ui_setup_for_next_line_of_dialogue(void);

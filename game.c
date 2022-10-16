@@ -2183,9 +2183,12 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                 render_ground_area(game_state, &commands, &game_state->loaded_area);
 
                 if (game_state->ui_state != UI_STATE_PAUSE) {
-                    if (!storyboard_active) {
+                    if (!storyboard_active && !game_state->is_conversation_active) {
                         update_entities(game_state, dt, &game_state->loaded_area);
                         entity_particle_emitter_list_update(&game_state->permenant_particle_emitters, dt);
+
+                        game_script_execute_awaiting_scripts(&scratch_arena, game_state, dt);
+                        game_script_run_all_timers(dt);
 
                         if (!game_state->combat_state.active_combat) {
                             determine_if_combat_should_begin(game_state);
@@ -2204,9 +2207,6 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                 sortable_draw_entities_submit(&commands, &graphics_assets, &draw_entities, dt);
 
                 render_foreground_area(game_state, &commands, &game_state->loaded_area);
-
-                game_script_execute_awaiting_scripts(&scratch_arena, game_state, dt);
-                game_script_run_all_timers(dt);
 
                 software_framebuffer_render_commands(framebuffer, &commands);
                 {
