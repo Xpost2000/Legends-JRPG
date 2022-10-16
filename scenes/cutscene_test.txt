@@ -1,0 +1,18 @@
+(game_disable_input)
+(entity_speak '(entity player) "Wait... I think I...")
+(wait 1.5)
+(entity_speak '(entity player) "No... It can't be!")
+(wait 2)
+(follow_path '(entity player) '(right right right right right right right right down))
+(wait 0.25)
+(entity_speak '(entity player) "Brother?")
+
+# The cutscene system bases itself on a stack layer so if we open
+# another area, all actions will apply to the new area.
+# the player obviously does not exist in that layer
+# TODO cutscene flashback!
+
+(game_open_conversation "sam_test" '(entity "sam"))
+(game_start_fight_with '(entity "sam"))
+(game_enable_input)
+# initial flash back.

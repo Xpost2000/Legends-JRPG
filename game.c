@@ -1300,7 +1300,7 @@ void game_initialize_game_world(void) {
     /* load_level_from_file(game_state, string_literal("pf.area")); */
 #endif
     /* load_level_from_file(game_state, string_literal("bt.area")); */
-    load_level_from_file(game_state, string_literal("testmi.area"));
+    load_level_from_file(game_state, string_literal("g.area"));
     /* load_level_from_file(game_state, string_literal("testforest.area")); */
     /* load_level_from_file(game_state, string_literal("lighttest.area")); */
     /* load_level_from_file(game_state, string_literal("level.area")); */
@@ -1548,9 +1548,6 @@ local void update_and_render_ingame_game_menu_ui(struct game_state* state, struc
     game_display_and_update_damage_notifications(framebuffer, dt);
 
     /* I seem to have a pretty inconsistent UI priority state thing. */
-    if (cutscene_active()) {
-        return;
-    }
 
     if (state->shopping) {
         game_display_and_update_shop_ui(framebuffer, dt);
@@ -1568,6 +1565,10 @@ local void update_and_render_ingame_game_menu_ui(struct game_state* state, struc
 
     if (state->is_conversation_active) {
         update_and_render_conversation_ui(state, framebuffer, dt);
+        return;
+    }
+
+    if (cutscene_active()) {
         return;
     }
 

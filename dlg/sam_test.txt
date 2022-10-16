@@ -1,0 +1,6 @@
+"CHARNAME": "How did this ever come to pass..."
+"Sam": "YOU!"
+"Sam": "YOU'VE COME TO TAKE THIS TREASURE DIDN'T YOU?"
+"CHARNAME": "No! I-"
+"Sam": "SAVE YOUR BREATH! YOUR DEATH SHALL COME!"
+"CHARNAME": "I wish it was never this way..."

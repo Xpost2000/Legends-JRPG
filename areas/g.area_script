@@ -1,0 +1,13 @@
+# The cave of testings!
+
+(on-touch (trigger 0)
+          (if (not (= gtrigger 1))
+          (progn
+          (entity_speak '(entity player) "Hmm... Something about this seems familiar to me...")
+          (setvar gtrigger 1))))
+
+(on-touch (trigger 1)
+          (if (not (= gtriggerscene 1))
+          (progn 
+          (start_cutscene "cutscene_test")
+          (setvar gtriggerscene 1)))

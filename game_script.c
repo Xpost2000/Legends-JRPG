@@ -834,6 +834,14 @@ bool game_script_waiting_on_form(struct game_script_script_instance* script_stat
                 return false;
             }
         }
+
+        if (lisp_form_symbol_matching(*first, string_literal("game_open_conversation"))) {
+            if (game_state->is_conversation_active) {
+                return false;
+            } else {
+                return true;
+            }
+        }
     }
 
     return true;
@@ -859,6 +867,11 @@ void game_script_execute_awaiting_scripts(struct memory_arena* arena, struct gam
         if (script_instance->execution_stack_depth <= 0) {
             game_script_instance_clear_contextual_bindings(script_instance);
             script_instance->active = false;
+
+            /* BAD? */
+            /* if (cutscene_active()) { */
+            /*     cutscene_stop(); */
+            /* } */
         } else {
             struct game_script_execution_state* current_stackframe = script_instance->stackframe + (script_instance->execution_stack_depth-1);
             _debugprintf("current stack frame(script: %d) (%d)", script_instance_index, script_instance->execution_stack_depth);
