@@ -1,6 +1,6 @@
-(DETERMINE_START
-       (if (equal gtrigger1 1)
-           6
+(DETERMINE-START
+       (if (equal gtrigger1 2)
+           7
            1) 
 )
 "CHARNAME": "How did this ever come to pass..."

@@ -2086,7 +2086,7 @@ void player_handle_radial_interactables(struct game_state* state, struct entity*
             f32 distance_sq = v2f32_distance_sq(entity->position, current_entity->position);
 
             if (distance_sq <= (ENTITY_TALK_INTERACTIVE_RADIUS*ENTITY_TALK_INTERACTIVE_RADIUS)) {
-                if (current_entity->has_dialogue) {
+                if ((current_entity->flags & ENTITY_FLAGS_ALIVE) && current_entity->has_dialogue) {
                     if (distance_sq < closest_interactive_distance) {
                         mark_interactable(state, INTERACTABLE_TYPE_ENTITY_CONVERSATION, current_entity);
                         found_any_interactable = true;

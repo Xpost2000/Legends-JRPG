@@ -15,4 +15,5 @@
 
 # NOT USED
 (on-death (entity "sam")
+          (setvar gtrigger1 2)
           (game_open_conversation "sam_test"))
