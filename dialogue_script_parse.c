@@ -108,7 +108,7 @@ local void parse_and_compose_dialogue(struct game_state* state, struct lexer* le
         /* try to hope it's a determiner form */
         struct lisp_form  code            = lisp_read_form(&scratch_arena, determiner_token.str);
         struct lisp_form* DETERMINE_START = lisp_list_nth(&code, 0);
-        if (lisp_form_symbol_matching(*DETERMINE_START,string_literal( "DETERMINE-START"))) {
+        if (lisp_form_symbol_matching(*DETERMINE_START,string_literal("determine-start"))) {
             _debugprintf("all good boss!");
             struct lisp_form  body            = lisp_list_sliced(code, 1, -1);
 
@@ -117,10 +117,11 @@ local void parse_and_compose_dialogue(struct game_state* state, struct lexer* le
             }
 
             struct lisp_form winning_start;
-            for (s32 body_form_index = 0; body_form_index < body.list.count; ++body_form_index) {
+            for (s32 body_form_index = 0; body_form_index < 1; ++body_form_index) {
                 _debugprintf("Evaluating:");
                 _debug_print_out_lisp_code(&body.list.forms[body_form_index]);
                 winning_start = game_script_evaluate_form(&scratch_arena, state, &body.list.forms[body_form_index]);
+                _debugprintf("DONNNNNNNNNNE");
             }
 
             s32 new_start;

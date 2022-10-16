@@ -893,6 +893,12 @@ struct lisp_form game_script_evaluate_case_and_return_used_branch(struct memory_
 
             struct lisp_form condition_clause_action     = lisp_list_sliced(*current_form, 1, -1);
             if (evaluated_condition_clause.type == LISP_FORM_T || lisp_form_check_equality(evaluated_condition_clause, evaluated)) {
+                _debugprintf("CHECK\n");
+                _debug_print_out_lisp_code(condition);
+                _debug_print_out_lisp_code(&evaluated);
+                _debug_print_out_lisp_code(&evaluated_condition_clause);
+                _debugprintf("good case\n");
+                _debug_print_out_lisp_code(&condition_clause_action);
                 return condition_clause_action;
             } else {
                 _debugprintf("CHECK\n");
@@ -909,6 +915,7 @@ struct lisp_form game_script_evaluate_case_and_return_used_branch(struct memory_
 
 struct lisp_form game_script_evaluate_form(struct memory_arena* arena, struct game_state* state, struct lisp_form* form) {
     _debugprintf("begin");
+    _debug_print_out_lisp_code(form);
     if (form) {
         if (form->quoted) {
             _debugprintf("quoted eval");
@@ -917,15 +924,28 @@ struct lisp_form game_script_evaluate_form(struct memory_arena* arena, struct ga
 
         /* evalute for standard forms, like if mostly... Actually only if */
         if (form->type == LISP_FORM_LIST) {
+            _debugprintf("LIST FORM TO EVAL");
+            _debug_print_out_lisp_code(form);
             if (lisp_form_symbol_matching(form->list.forms[0], string_literal("if"))) {
                 struct lisp_form used_branch = game_script_evaluate_if_and_return_used_branch(arena, state, form);
                 return game_script_evaluate_form(arena, state, &used_branch);
             } else if (lisp_form_symbol_matching(form->list.forms[0], string_literal("case"))) {
                 struct lisp_form used_branch = game_script_evaluate_case_and_return_used_branch(arena, state, form);
-                return game_script_evaluate_form(arena, state, &used_branch);
+                _debug_print_out_lisp_code(&used_branch);
+                /* evaluate branch like progn... */
+                struct lisp_form last;
+                for (s32 index = 0; index < used_branch.list.count; ++index) {
+                    last = game_script_evaluate_form(arena, state, &used_branch.list.forms[index]);
+                }
+                return last;
             } else if (lisp_form_symbol_matching(form->list.forms[0], string_literal("cond"))) {
                 struct lisp_form used_branch = game_script_evaluate_cond_and_return_used_branch(arena, state, form);
-                return game_script_evaluate_form(arena, state, &used_branch);
+                /* evaluate branch like progn... */
+                struct lisp_form last;
+                for (s32 index = 0; index < used_branch.list.count; ++index) {
+                    last = game_script_evaluate_form(arena, state, &used_branch.list.forms[index]);
+                }
+                return last;
             } else if (lisp_form_symbol_matching(form->list.forms[0], string_literal("progn"))) {
                 _debugprintf("Found a progn");
                 struct lisp_form result = {};
