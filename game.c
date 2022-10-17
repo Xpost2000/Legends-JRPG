@@ -277,9 +277,12 @@ struct entity* game_dereference_entity(struct game_state* state, entity_id id) {
     switch (id.store_type) {
         case ENTITY_LIST_STORAGE_TYPE_PER_LEVEL_CUTSCENE: {
             /* assertion(false && "DO NOT KNOW HOW TO HANDLE THIS RIGHT NOW"); */
-            assertion(cutscene_viewing_separate_area() && "cutscene not active, this handle is impossible to derefe");
-            struct level_area* area = cutscene_view_area();
-            return entity_list_dereference_entity(&area->entities, id);
+            if (cutscene_viewing_separate_area()) {
+                struct level_area* area = cutscene_view_area();
+                return entity_list_dereference_entity(&area->entities, id);
+            } else {
+                return entity_list_dereference_entity(&state->permenant_entities, id);
+            }
         } break;
 
         case ENTITY_LIST_STORAGE_TYPE_PER_LEVEL: {

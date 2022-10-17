@@ -55,6 +55,7 @@ void cutscene_unload_area(void) {
         cutscene_state.viewing_loaded_area = false;
         memory_arena_clear_top(&cutscene_state.arena);
         special_effect_start_crossfade_scene(1, 1.4);
+        _debugprintf("unload area");
     }
 }
 

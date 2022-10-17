@@ -111,7 +111,7 @@ void editor_clear_all(struct editor_state* state) {
 void editor_initialize(struct editor_state* state) {
     state->arena = &editor_arena;
     for (s32 index = 0; index < TILE_LAYER_COUNT; ++index) {
-        state->tile_capacities[index] = 8192;
+        state->tile_capacities[index] = 65535;
     }
     state->trigger_level_transition_capacity = 1024;
     state->entity_chest_capacity             = 1024;
