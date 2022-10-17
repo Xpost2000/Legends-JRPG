@@ -153,6 +153,7 @@ enum level_area_listen_event {
     LEVEL_AREA_LISTEN_EVENT_ON_TOUCH,
     LEVEL_AREA_LISTEN_EVENT_ON_ACTIVATE,
     LEVEL_AREA_LISTEN_EVENT_ON_DEATH,
+    LEVEL_AREA_LISTEN_EVENT_ON_LOOT,
     /* this isn't really a listener but it's whatever. */
     LEVEL_AREA_LISTEN_EVENT_ROUTINE,
 #if 0
@@ -174,6 +175,7 @@ local string level_area_listen_event_form_names[] = {
     [LEVEL_AREA_LISTEN_EVENT_ON_TOUCH]    = string_literal("on-touch"),
     [LEVEL_AREA_LISTEN_EVENT_ON_ACTIVATE] = string_literal("on-activate"),
     [LEVEL_AREA_LISTEN_EVENT_ON_DEATH]    = string_literal("on-death"),
+    [LEVEL_AREA_LISTEN_EVENT_ON_LOOT]    = string_literal("on-loot"),
     [LEVEL_AREA_LISTEN_EVENT_ROUTINE]     = string_literal("routine"),
 #if 0
     string_literal("on-hit"),

@@ -1,4 +1,6 @@
 # The cave of testings!
+(on-enter
+        (setvar gtrigger1 -1))
 
 (on-touch (trigger 0)
           (if (not (equal gtrigger 1))
@@ -7,13 +9,19 @@
           (setvar gtrigger 1))))
 
 (on-touch (trigger 1)
-          (if (not (equal gtrigger1 1))
-          (progn
-          (setvar gtrigger1 1)
-          (start_cutscene "cutscene_test")))
+          (cond
+                ((< gtrigger1 1)
+                (setvar gtrigger1 1)
+                (start_cutscene "cutscene_test"))
+
+                ((< gtrigger1 4)
+                (incvar gtrigger1)
+                (entity_speak '(entity player) "We've both wasted our lives...")))
 )
 
-# NOT USED
+(on-loot  (chest 0)
+          (setvar gtrigger1 3)
+          (game_open_conversation "sam_test"))
 (on-death (entity "sam")
           (setvar gtrigger1 2)
           (game_open_conversation "sam_test"))

@@ -409,7 +409,7 @@ bool handle_builtin_game_script_functions(struct memory_arena* arena, struct gam
                 }
             }
             is_boolean_operator = true;
-        } else if (lisp_form_symbol_matching(first_form, string_literal("equal"))) {
+        } else if (lisp_form_symbol_matching(first_form, string_literal("equal")) || lisp_form_symbol_matching(first_form, string_literal("="))) {
             /* allow checking lots of equals */
             if (form->list.count >= 2) {
                 evaled_boolean_result = false;
@@ -439,6 +439,33 @@ bool handle_builtin_game_script_functions(struct memory_arena* arena, struct gam
             } else {
                 evaled_boolean_result = false;
             }
+            is_boolean_operator = true;
+        } else if (
+            lisp_form_symbol_matching(first_form, string_literal("<")) ||
+            lisp_form_symbol_matching(first_form, string_literal(">")) ||
+            lisp_form_symbol_matching(first_form, string_literal("<=")) ||
+            lisp_form_symbol_matching(first_form, string_literal(">="))
+        ) {
+            assertion(form->list.count == 3 && "COMPARISONS ARE BINARY");
+            struct lisp_form child_first  = game_script_evaluate_form(arena, state, form->list.forms + 1);
+            struct lisp_form child_second = game_script_evaluate_form(arena, state, form->list.forms + 2);
+
+            /* TODO: For now these are integer only comparisons */
+            s32 child_first_v;
+            s32 child_second_v;
+            lisp_form_get_s32(child_first, &child_first_v);
+            lisp_form_get_s32(child_second, &child_second_v);
+
+            if (lisp_form_symbol_matching(first_form, string_literal("<"))) {
+                evaled_boolean_result = child_first_v < child_second_v;
+            } else if (lisp_form_symbol_matching(first_form, string_literal(">"))) {
+                evaled_boolean_result = child_first_v > child_second_v;
+            } else if (lisp_form_symbol_matching(first_form, string_literal("<="))) {
+                evaled_boolean_result = child_first_v <= child_second_v;
+            } else if (lisp_form_symbol_matching(first_form, string_literal(">="))) {
+                evaled_boolean_result = child_first_v >= child_second_v;
+            }
+
             is_boolean_operator = true;
         }
 
@@ -524,7 +551,9 @@ struct lisp_form game_script_evaluate_cond_and_return_used_branch(struct memory_
         struct lisp_form* current_form = cond_form->list.forms + index;
         {
             struct lisp_form* condition_clause           = current_form->list.forms + 0;
+            _debugprintf("COND");
             struct lisp_form  evaluated_condition_clause = game_script_evaluate_form(arena, state, condition_clause);
+            _debug_print_out_lisp_code(&evaluated_condition_clause);
 
             struct lisp_form condition_clause_action     = lisp_list_sliced(*current_form, 1, -1);
             if (evaluated_condition_clause.type != LISP_FORM_NIL) {

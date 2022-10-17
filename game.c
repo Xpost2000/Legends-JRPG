@@ -1330,6 +1330,8 @@ local void game_loot_chest(struct game_state* state, struct entity_chest* chest)
     struct entity* player = game_get_player(state);
     
     bool permit_unlocking = true;
+
+    /* Possibly dead code path? */
     if (chest->flags & ENTITY_CHEST_FLAGS_REQUIRES_ITEM_FOR_UNLOCK) {
         if (entity_inventory_has_item((struct entity_inventory*)&state->inventory, chest->key_item)) {
             {
@@ -1358,6 +1360,9 @@ local void game_loot_chest(struct game_state* state, struct entity_chest* chest)
         chest->flags |= ENTITY_CHEST_FLAGS_UNLOCKED;
         u32 chest_index = (u32)(chest - state->loaded_area.chests);
         save_data_register_chest_looted(chest_index);
+
+        struct lisp_form listener_body = level_area_find_listener_for_object(state, &state->loaded_area, LEVEL_AREA_LISTEN_EVENT_ON_LOOT, GAME_SCRIPT_TARGET_CHEST, chest_index);
+        game_script_enqueue_form_to_execute(listener_body);
     }
 }
 
