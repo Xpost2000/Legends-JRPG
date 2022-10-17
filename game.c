@@ -21,6 +21,11 @@ struct special_effect_information {
 
     s32 flashes;
     f32 time;
+
+    f32 crossfade_timer;
+    f32 crossfade_max_timer;
+    f32 crossfade_delay_timer;
+    /* use the global copy framebuffer */
 } special_full_effects;
 
 bool special_effects_active(void) {
@@ -35,8 +40,22 @@ void special_effect_start_inversion(void) {
     special_full_effects.flashes = 0;
     special_full_effects.time    = 0;
 }
+
 void special_effect_stop_effects(void) {
     special_full_effects.type = 0;
+}
+
+local void game_do_special_effects(struct software_framebuffer* framebuffer, f32 dt);
+
+void special_effect_start_crossfade_scene(f32 delay_before_fade, f32 fade_time) {
+    /* not sure if "blit" would be faster, but let's just do it this way first... */
+    memory_copy(global_default_framebuffer.pixels,
+                global_copy_framebuffer.pixels,
+                global_default_framebuffer.width * global_default_framebuffer.height * sizeof(u32));
+    special_full_effects.type                  = SPECIAL_EFFECT_CROSSFADE_SCENE;
+    special_full_effects.crossfade_timer       = fade_time;
+    special_full_effects.crossfade_delay_timer = delay_before_fade;
+    special_full_effects.crossfade_max_timer   = fade_time;
 }
 
 struct game_state* game_state         = 0;
@@ -2238,6 +2257,11 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
         image_buffer_write_to_disk((struct image_buffer*)framebuffer, string_literal("scr"));
     }
 
+    /* This is a bit harder to replicate through hardware acceleration... */
+    if (is_key_pressed(KEY_F10)) {
+        special_effect_start_crossfade_scene(1.5f, 1.2f);
+    }
+
 #ifdef USE_EDITOR
     if (is_key_pressed(KEY_F1)) {
         game_state->in_editor ^= 1;
@@ -2270,13 +2294,6 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
 
                   So this means
                  */
-                struct render_commands        commands      = render_commands(&scratch_arena, 16384, game_state->camera);
-                struct sortable_draw_entities draw_entities = sortable_draw_entities(&scratch_arena, 8192);
-
-
-                commands.should_clear_buffer = true;
-                commands.clear_buffer_color  = color32u8(100, 128, 148, 255);
-
                 execute_current_area_scripts(game_state, dt);
 
                 if (is_key_pressed(KEY_Y)) {
@@ -2305,8 +2322,6 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                     }
                 }
 
-                render_ground_area(game_state, &commands, &game_state->loaded_area);
-
                 if (game_state->ui_state != UI_STATE_PAUSE) {
                     if (!storyboard_active && !game_state->is_conversation_active) {
                         update_entities(game_state, dt, &game_state->loaded_area);
@@ -2328,13 +2343,16 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                     game_state->weather.timer += dt;
                 }
 
+                struct render_commands        commands      = render_commands(&scratch_arena, 16384, game_state->camera);
+                struct sortable_draw_entities draw_entities = sortable_draw_entities(&scratch_arena, 8192);
 
+                commands.should_clear_buffer = true;
+                commands.clear_buffer_color  = color32u8(100, 128, 148, 255);
+
+                render_ground_area(game_state, &commands, &game_state->loaded_area);
                 render_entities(game_state, &draw_entities);
-
                 sortable_draw_entities_submit(&commands, &graphics_assets, &draw_entities, dt);
-
                 render_foreground_area(game_state, &commands, &game_state->loaded_area);
-
                 software_framebuffer_render_commands(framebuffer, &commands);
                 {
                     software_framebuffer_run_shader(framebuffer, rectangle_f32(0, 0, framebuffer->width, framebuffer->height), lighting_shader, NULL);
@@ -2347,25 +2365,7 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                     software_framebuffer_render_commands(framebuffer, &commands);
                 }
 
-                { /* run special effects code */
-                    switch (special_full_effects.type) {
-                        case SPECIAL_EFFECT_INVERSION_1: {
-                            if (special_full_effects.time >= INVERSION_TIME_BETWEEN_FLASHES) {
-                                special_full_effects.time = 0;
-                                special_full_effects.flashes += 1;
-                            }
-
-                            if (special_full_effects.flashes >= INVERSION_FLASH_MAX) {
-                                special_effect_stop_effects();
-                            }
-
-                            special_full_effects.time += dt;
-                        } break;
-                        default: {
-                            
-                        } break;
-                    }
-                }
+                game_do_special_effects(framebuffer, dt);
 
                 do_weather(framebuffer, game_state, dt);
                 update_and_render_game_menu_ui(game_state, framebuffer, dt);
@@ -2383,6 +2383,52 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
         software_framebuffer_draw_quad(framebuffer, game_state->camera.travel_bounds, color32u8(0,0,255,100), BLEND_MODE_ALPHA);
     }
 #endif
+}
+
+local void game_do_special_effects(struct software_framebuffer* framebuffer, f32 dt) {
+    { /* run special effects code */
+        switch (special_full_effects.type) {
+            case SPECIAL_EFFECT_NONE: {
+                
+            } break;
+            case SPECIAL_EFFECT_INVERSION_1: {
+                if (special_full_effects.time >= INVERSION_TIME_BETWEEN_FLASHES) {
+                    special_full_effects.time = 0;
+                    special_full_effects.flashes += 1;
+                }
+
+                if (special_full_effects.flashes >= INVERSION_FLASH_MAX) {
+                    special_effect_stop_effects();
+                }
+
+                special_full_effects.time += dt;
+            } break;
+            case SPECIAL_EFFECT_CROSSFADE_SCENE: {
+                f32 alpha = (special_full_effects.crossfade_delay_timer + special_full_effects.crossfade_timer) / special_full_effects.crossfade_max_timer;
+                if (alpha < 0) alpha = 0;
+                if (alpha > 1) alpha = 1;
+
+                if (special_full_effects.crossfade_delay_timer > 0) {
+                    special_full_effects.crossfade_delay_timer -= dt;
+                } else {
+                    if (special_full_effects.crossfade_timer > 0) {
+                        special_full_effects.crossfade_timer -= dt;
+                    } else {
+                        special_effect_stop_effects();
+                    }
+                }
+
+                software_framebuffer_draw_image_ex(framebuffer, (struct image_buffer*)&global_copy_framebuffer,
+                                                   rectangle_f32(0, 0, framebuffer->width, framebuffer->height),
+                                                   RECTANGLE_F32_NULL,
+                                                   color32f32(1, 1, 1, alpha),
+                                                   NO_FLAGS, BLEND_MODE_ALPHA);
+            } break;
+            default: {
+                unimplemented("This effect was not done?");
+            } break;
+        }
+    }
 }
 
 struct game_variables game_variables(struct memory_arena* arena) {

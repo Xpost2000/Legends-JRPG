@@ -54,7 +54,9 @@
 
 enum special_effect_id {
     SPECIAL_EFFECT_NONE,
-    SPECIAL_EFFECT_INVERSION_1 = 1,
+    SPECIAL_EFFECT_INVERSION_1     = 1,
+    /* crossfade on the framebuffer */
+    SPECIAL_EFFECT_CROSSFADE_SCENE = 2,
 };
 
 /* using GNSH fonts, which are public domain, but credits to open game art, this font looks cool */

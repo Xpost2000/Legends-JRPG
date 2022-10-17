@@ -17,6 +17,14 @@
 #ifndef CUTSCENE_DEF_C
 #define CUTSCENE_DEF_C
 
+/*
+  NOTE: major limitation of how this system works, is that I just wouldn't be able to do things
+  like have combat in a flashback scene, since the system is literally not designed that way.
+
+  (Also frankly changing the player character is also not how this engine was designed, which is a
+  shame since that would be kind of cool. But that would be a fucking nightmare (I mean actually I can
+  but that would involve lots of things... So let's not))
+*/
 void cutscene_initialize(struct memory_arena* arena);
 void cutscene_open(string filepath);
 void cutscene_update(f32 dt);

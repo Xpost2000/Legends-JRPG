@@ -72,6 +72,8 @@ static SDL_Texture*                global_game_texture_surface  = NULL;
 static SDL_GameController*         global_controller_devices[4] = {};
 static SDL_Haptic*                 global_haptic_devices[4]     = {};
 static struct software_framebuffer global_default_framebuffer   = {};
+/* an exact duplicate of the existing framebuffer, which is used for cross-fading. This is extremely expensive! */
+static struct software_framebuffer global_copy_framebuffer      = {};
 static struct lightmask_buffer     global_lightmask_buffer      = {};
 static struct graphics_assets      graphics_assets              = {};
 
@@ -243,6 +245,7 @@ local v2f32 get_scaled_screen_resolution(v2f32 base_resolution) {
 }
 
 local void initialize_framebuffer(void) {
+    software_framebuffer_finish(&global_copy_framebuffer);
     software_framebuffer_finish(&global_default_framebuffer);
     lightmask_buffer_finish(&global_lightmask_buffer);
 
@@ -255,8 +258,9 @@ local void initialize_framebuffer(void) {
 
     /* TODO: Seems to be a variable crash sometimes. Check this later. */
     _debugprintf("framebuffer resolution is: (%d, %d) vs (%d, %d) real resolution", SCREEN_WIDTH, SCREEN_HEIGHT, REAL_SCREEN_WIDTH, REAL_SCREEN_HEIGHT);
-    global_default_framebuffer  = software_framebuffer_create(framebuffer_resolution.x, framebuffer_resolution.y);
-    global_lightmask_buffer     = lightmask_buffer_create(framebuffer_resolution.x, framebuffer_resolution.y);
+    global_default_framebuffer = software_framebuffer_create(framebuffer_resolution.x, framebuffer_resolution.y);
+    global_copy_framebuffer    = software_framebuffer_create(framebuffer_resolution.x, framebuffer_resolution.y);
+    global_lightmask_buffer    = lightmask_buffer_create(framebuffer_resolution.x, framebuffer_resolution.y);
 
     if (global_game_texture_surface) {
         SDL_DestroyTexture(global_game_texture_surface);
