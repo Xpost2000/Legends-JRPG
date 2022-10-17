@@ -21,6 +21,8 @@ enum entity_list_storage_type {
     ENTITY_LIST_STORAGE_TYPE_TEMPORARY_STORE,
     /* for levels which are disappearing. */
     ENTITY_LIST_STORAGE_TYPE_PER_LEVEL,
+    /* cutscene loaded levels, these entities are even more temporary */
+    ENTITY_LIST_STORAGE_TYPE_PER_LEVEL_CUTSCENE,
 };
 typedef struct entity_id {
     /* use this flag to reference a companion instead. */

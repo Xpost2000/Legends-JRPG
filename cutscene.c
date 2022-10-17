@@ -23,6 +23,20 @@ struct {
     bool running;
 } cutscene_state;
 
+void cutscene_load_area(string path) {
+    if (cutscene_state.viewing_loaded_area) {
+        /* reload with a different area. */
+        unimplemented("reloading area is not done yet");
+    } else {
+        cutscene_state.viewing_loaded_area = true;
+    }
+}
+
+void cutscene_unload_area(void) {
+    cutscene_state.viewing_loaded_area = false;
+    memory_arena_clear_top(&cutscene_state.arena);
+}
+
 void cutscene_initialize(struct memory_arena* arena) {
     cutscene_state.arena = memory_arena_push_sub_arena(arena, Megabyte(4));
 }

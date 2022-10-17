@@ -299,6 +299,10 @@ void render_ground_area(struct game_state* state, struct render_commands* comman
 entity_id player_id;
 struct entity* game_dereference_entity(struct game_state* state, entity_id id) {
     switch (id.store_type) {
+        case ENTITY_LIST_STORAGE_TYPE_PER_LEVEL_CUTSCENE: {
+            assertion(false && "DO NOT KNOW HOW TO HANDLE THIS RIGHT NOW");
+        } break;
+
         case ENTITY_LIST_STORAGE_TYPE_PER_LEVEL: {
             return entity_list_dereference_entity(&state->loaded_area.entities, id);
         } break;
@@ -705,10 +709,10 @@ struct navigation_path navigation_path_find(struct memory_arena* arena, struct l
 }
 
 void level_area_entity_unpack(struct level_area_entity* entity, struct entity* unpack_target);
-void serialize_level_area(struct game_state* state, struct binary_serializer* serializer, struct level_area* level, bool use_default_spawn) {
-    memory_arena_set_allocation_region_top(state->arena); {
-        _debugprintf("%llu memory used", state->arena->used + state->arena->used_top);
-        memory_arena_clear_top(state->arena);
+void _serialize_level_area(struct memory_arena* arena, struct binary_serializer* serializer, struct level_area* level, s32 level_type) {
+    memory_arena_set_allocation_region_top(arena); {
+        _debugprintf("%llu memory used", arena->used + arena->used_top);
+        memory_arena_clear_top(arena);
         _debugprintf("reading version");
         serialize_u32(serializer, &level->version);
         _debugprintf("V: %d", level->version);
@@ -722,10 +726,10 @@ void serialize_level_area(struct game_state* state, struct binary_serializer* se
                 /* for older versions I have to know what the tile layers were and assign them like this. */
                 switch (level->version) {
                     case 4: {
-                        Serialize_Fixed_Array_And_Allocate_From_Arena(serializer, state->arena, s32, level->tile_counts[TILE_LAYER_GROUND],     level->tile_layers[TILE_LAYER_GROUND]);
-                        Serialize_Fixed_Array_And_Allocate_From_Arena(serializer, state->arena, s32, level->tile_counts[TILE_LAYER_OBJECT],     level->tile_layers[TILE_LAYER_OBJECT]);
-                        Serialize_Fixed_Array_And_Allocate_From_Arena(serializer, state->arena, s32, level->tile_counts[TILE_LAYER_ROOF],       level->tile_layers[TILE_LAYER_ROOF]);
-                        Serialize_Fixed_Array_And_Allocate_From_Arena(serializer, state->arena, s32, level->tile_counts[TILE_LAYER_FOREGROUND], level->tile_layers[TILE_LAYER_FOREGROUND]);
+                        Serialize_Fixed_Array_And_Allocate_From_Arena(serializer, arena, s32, level->tile_counts[TILE_LAYER_GROUND],     level->tile_layers[TILE_LAYER_GROUND]);
+                        Serialize_Fixed_Array_And_Allocate_From_Arena(serializer, arena, s32, level->tile_counts[TILE_LAYER_OBJECT],     level->tile_layers[TILE_LAYER_OBJECT]);
+                        Serialize_Fixed_Array_And_Allocate_From_Arena(serializer, arena, s32, level->tile_counts[TILE_LAYER_ROOF],       level->tile_layers[TILE_LAYER_ROOF]);
+                        Serialize_Fixed_Array_And_Allocate_From_Arena(serializer, arena, s32, level->tile_counts[TILE_LAYER_FOREGROUND], level->tile_layers[TILE_LAYER_FOREGROUND]);
                     } break;
                     default: {
                         goto didnt_change_level_tile_format_from_current;
@@ -735,25 +739,25 @@ void serialize_level_area(struct game_state* state, struct binary_serializer* se
                 /* the current version of the tile layering, we can just load them in order. */
             didnt_change_level_tile_format_from_current:
                 for (s32 index = 0; index < TILE_LAYER_COUNT; ++index) {
-                    Serialize_Fixed_Array_And_Allocate_From_Arena(serializer, state->arena, s32, level->tile_counts[index], level->tile_layers[index]);
+                    Serialize_Fixed_Array_And_Allocate_From_Arena(serializer, arena, s32, level->tile_counts[index], level->tile_layers[index]);
                 }
             }
         } else {
-            Serialize_Fixed_Array_And_Allocate_From_Arena(serializer, state->arena, s32, level->tile_counts[TILE_LAYER_OBJECT], level->tile_layers[TILE_LAYER_OBJECT]);
+            Serialize_Fixed_Array_And_Allocate_From_Arena(serializer, arena, s32, level->tile_counts[TILE_LAYER_OBJECT], level->tile_layers[TILE_LAYER_OBJECT]);
         }
 
         if (level->version >= 1) {
             _debugprintf("reading level transitions");
-            Serialize_Fixed_Array_And_Allocate_From_Arena(serializer, state->arena, s32, level->trigger_level_transition_count, level->trigger_level_transitions);
+            Serialize_Fixed_Array_And_Allocate_From_Arena(serializer, arena, s32, level->trigger_level_transition_count, level->trigger_level_transitions);
             /* this thing is allergic to chest updates. Unfortunately it might happen a lot... */
         }
         if (level->version >= 2) {
             _debugprintf("reading containers");
-            Serialize_Fixed_Array_And_Allocate_From_Arena(serializer, state->arena, s32, level->entity_chest_count, level->chests);
+            Serialize_Fixed_Array_And_Allocate_From_Arena(serializer, arena, s32, level->entity_chest_count, level->chests);
         }
         if (level->version >= 3) {
             _debugprintf("reading scriptable triggers");
-            Serialize_Fixed_Array_And_Allocate_From_Arena(serializer, state->arena, s32, level->script_trigger_count, level->script_triggers);
+            Serialize_Fixed_Array_And_Allocate_From_Arena(serializer, arena, s32, level->script_trigger_count, level->script_triggers);
         }
         if (level->version >= 5) {
             struct level_area_entity current_packed_entity = {};
@@ -774,7 +778,7 @@ void serialize_level_area(struct game_state* state, struct binary_serializer* se
               NOTE: While this is more explicit since it simply requires an unpacking step,
               it also helps since the entity holder may change formats...
              */
-            level->entities = entity_list_create(state->arena, (entity_count+1), ENTITY_LIST_STORAGE_TYPE_PER_LEVEL);
+            level->entities = entity_list_create(arena, (entity_count+1), level_type);
 
             for (s32 entity_index = 0; entity_index < entity_count; ++entity_index) {
                 serialize_level_area_entity(serializer, level->version, &current_packed_entity);
@@ -791,22 +795,22 @@ void serialize_level_area(struct game_state* state, struct binary_serializer* se
         }
         if (level->version >= 6) {
             _debugprintf("loading lights");
-            Serialize_Fixed_Array_And_Allocate_From_Arena(serializer, state->arena, s32, level->light_count, level->lights);
+            Serialize_Fixed_Array_And_Allocate_From_Arena(serializer, arena, s32, level->light_count, level->lights);
         }
 
-        /* until we have new area transititons or whatever. */
-        /* TODO dumb to assume only the player... but okay */
-        struct entity* player = entity_list_dereference_entity(&state->permenant_entities, player_id);
-        if (use_default_spawn) {
-            player->position.x             = level->default_player_spawn.x;
-            player->position.y             = level->default_player_spawn.y;
-        }
+        build_navigation_map_for_level_area(arena, level);
+    } memory_arena_set_allocation_region_bottom(arena);
+}
+void serialize_level_area(struct game_state* state, struct binary_serializer* serializer, struct level_area* level, bool use_default_spawn) {
+    _serialize_level_area(state->arena, serializer, level, ENTITY_LIST_STORAGE_TYPE_PER_LEVEL);
+    struct entity* player = entity_list_dereference_entity(&state->permenant_entities, player_id);
+    if (use_default_spawn) {
+        player->position.x             = level->default_player_spawn.x;
+        player->position.y             = level->default_player_spawn.y;
+    }
 
-        state->camera.xy.x = player->position.x;
-        state->camera.xy.y = player->position.y;
-
-        build_navigation_map_for_level_area(state->arena, level);
-    } memory_arena_set_allocation_region_bottom(state->arena);
+    state->camera.xy.x = player->position.x;
+    state->camera.xy.y = player->position.y;
 }
 
 local void load_area_script(struct memory_arena* arena, struct level_area* area, string script_name) {
