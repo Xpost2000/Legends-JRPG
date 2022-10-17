@@ -29,9 +29,12 @@ void cutscene_initialize(struct memory_arena* arena);
 void cutscene_open(string filepath);
 void cutscene_update(f32 dt);
 bool cutscene_active(void);
+bool cutscene_viewing_separate_area(void);
 void cutscene_stop(void);
 void cutscene_load_area(string path);
 void cutscene_unload_area(void);
+
+struct level_area* cutscene_view_area(void);
 
 struct entity_iterator game_cutscene_entity_iterator(void);
 

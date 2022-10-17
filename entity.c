@@ -329,9 +329,7 @@ struct entity_iterator game_entity_iterator(struct game_state* state) {
     return result;
 }
 
-void update_entities(struct game_state* state, f32 dt, struct level_area* area) {
-    struct entity_iterator it = game_entity_iterator(state);
-
+void update_entities(struct game_state* state, f32 dt, struct entity_iterator it, struct level_area* area) {
     for (struct entity* current_entity = entity_iterator_begin(&it); !entity_iterator_finished(&it); current_entity = entity_iterator_advance(&it)) {
         if (!(current_entity->flags & ENTITY_FLAGS_ACTIVE)) {
             continue;

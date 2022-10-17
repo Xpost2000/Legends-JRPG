@@ -52,12 +52,7 @@
 #define UI_DEFAULT_COLOR        (color32f32(34/255.0f, 37/255.0f, 143/255.0f, 1.0))
 #define UI_BATTLE_COLOR UI_DEFAULT_COLOR
 
-enum special_effect_id {
-    SPECIAL_EFFECT_NONE,
-    SPECIAL_EFFECT_INVERSION_1     = 1,
-    /* crossfade on the framebuffer */
-    SPECIAL_EFFECT_CROSSFADE_SCENE = 2,
-};
+#include "special_effects_def.c"
 
 /* using GNSH fonts, which are public domain, but credits to open game art, this font looks cool */
 enum menu_font_variation {

@@ -402,6 +402,11 @@ GAME_LISP_FUNCTION(CUTSCENE_UNLOAD_AREA) {
     cutscene_unload_area();
     return LISP_nil;
 }
+GAME_LISP_FUNCTION(CAMERA_PUTAT_FORCE) {
+    lisp_form_get_f32(arguments[0].list.forms[0], &game_state->camera.xy.x);
+    lisp_form_get_f32(arguments[0].list.forms[1], &game_state->camera.xy.y);
+    return LISP_nil;
+}
 
 #undef GAME_LISP_FUNCTION
 
@@ -433,7 +438,8 @@ static struct game_script_function_builtin script_function_table[] = {
     GAME_LISP_FUNCTION(START_CUTSCENE),
     GAME_LISP_FUNCTION(END_CUTSCENE),
     GAME_LISP_FUNCTION(CUTSCENE_LOAD_AREA),
-    GAME_LISP_FUNCTION(CUTSCENE_UNLOAD_AREA)
+    GAME_LISP_FUNCTION(CUTSCENE_UNLOAD_AREA),
+    GAME_LISP_FUNCTION(CAMERA_PUTAT_FORCE),
     /*
       ALL CUTSCENE ACTIONS WILL BE PREFIXED, SINCE THE CUTSCENE SYSTEM RUNS GENERALIZED GAME SCRIPT,
       it's kind of easy to accidently break something this way!

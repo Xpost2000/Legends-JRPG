@@ -1,7 +1,6 @@
-/* #define NO_POSTPROCESSING */
-#ifndef RELEASE
-/* #define NO_FANCY_FADEIN_INTRO */
-#endif
+#define NO_POSTPROCESSING
+#define RELEASE
+#define NO_FANCY_FADEIN_INTRO
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>

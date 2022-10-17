@@ -45,13 +45,17 @@ void cutscene_load_area(string path) {
             _serialize_level_area(&cutscene_state.arena, &serializer, &cutscene_state.loaded_area, ENTITY_LIST_STORAGE_TYPE_PER_LEVEL_CUTSCENE);
             load_area_script(&cutscene_state.arena, &cutscene_state.loaded_area, string_concatenate(&scratch_arena, string_slice(fullpath, 0, (fullpath.length+1)-sizeof("area")), string_literal("area_script")));
         }
+        special_effect_start_crossfade_scene(1, 1.4);
         serializer_finish(&serializer);
     }
 }
 
 void cutscene_unload_area(void) {
-    cutscene_state.viewing_loaded_area = false;
-    memory_arena_clear_top(&cutscene_state.arena);
+    if (cutscene_state.viewing_loaded_area) {
+        cutscene_state.viewing_loaded_area = false;
+        memory_arena_clear_top(&cutscene_state.arena);
+        special_effect_start_crossfade_scene(1, 1.4);
+    }
 }
 
 void cutscene_initialize(struct memory_arena* arena) {
@@ -88,9 +92,42 @@ bool cutscene_active(void) {
     return cutscene_state.running;
 }
 
+bool cutscene_viewing_separate_area(void) {
+    return cutscene_active() && cutscene_state.viewing_loaded_area;
+}
+
 void cutscene_stop(void) {
     _debugprintf("Bye bye cutscene");
-    cutscene_state.running = false;
+    cutscene_state.running             = false;
+    cutscene_unload_area();
     memory_arena_clear_top(&cutscene_state.arena);
     memory_arena_clear_bottom(&cutscene_state.arena);
+}
+
+void render_cutscene_entities(struct sortable_draw_entities* draw_entities) {
+    if (!cutscene_state.viewing_loaded_area) {
+        return;
+    }
+
+    {
+        struct entity_iterator it = game_cutscene_entity_iterator();
+
+        for (struct entity* current_entity = entity_iterator_begin(&it); !entity_iterator_finished(&it); current_entity = entity_iterator_advance(&it)) {
+            if (!(current_entity->flags & ENTITY_FLAGS_ACTIVE)) {
+                continue;
+            }
+            sortable_draw_entities_push_entity(draw_entities, current_entity->position.y, it.current_id);
+        }
+    }
+
+    {
+        struct level_area* area = &cutscene_state.loaded_area;
+        Array_For_Each(it, struct entity_chest, area->chests, area->entity_chest_count) {
+            sortable_draw_entities_push(draw_entities, SORTABLE_DRAW_ENTITY_CHEST, it->position.y*TILE_UNIT_SIZE, it);
+        }
+    }
+}
+
+struct level_area* cutscene_view_area(void) {
+    return &cutscene_state.loaded_area;
 }

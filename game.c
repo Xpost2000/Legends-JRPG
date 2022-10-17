@@ -1,3 +1,4 @@
+#define RELEASE
 /* Needs lots of clean up. (Man I keep saying this every time I come back here, but it doesn't seem to matter too much.) */
 /* TODO fix coordinate system <3 */
 /* virtual pixels */
@@ -10,53 +11,9 @@
 #include "dialogue_script_parse.c"
 #include "storyboard_presentation_def.c"
 
+void render_cutscene_entities(struct sortable_draw_entities* draw_entities);
 void game_initialize_game_world(void);
 void game_report_entity_death(entity_id id);
-
-/* These are some more specialized types of effects that require lots of perverse insertions */
-#define INVERSION_TIME_BETWEEN_FLASHES (0.07)
-#define INVERSION_FLASH_MAX            (12)
-struct special_effect_information {
-    s32 type;
-
-    s32 flashes;
-    f32 time;
-
-    f32 crossfade_timer;
-    f32 crossfade_max_timer;
-    f32 crossfade_delay_timer;
-    /* use the global copy framebuffer */
-} special_full_effects;
-
-bool special_effects_active(void) {
-    if (special_full_effects.type != SPECIAL_EFFECT_NONE) {
-        return true;
-    }
-    return false;
-}
-
-void special_effect_start_inversion(void) {
-    special_full_effects.type    = SPECIAL_EFFECT_INVERSION_1;
-    special_full_effects.flashes = 0;
-    special_full_effects.time    = 0;
-}
-
-void special_effect_stop_effects(void) {
-    special_full_effects.type = 0;
-}
-
-local void game_do_special_effects(struct software_framebuffer* framebuffer, f32 dt);
-
-void special_effect_start_crossfade_scene(f32 delay_before_fade, f32 fade_time) {
-    /* not sure if "blit" would be faster, but let's just do it this way first... */
-    memory_copy(global_default_framebuffer.pixels,
-                global_copy_framebuffer.pixels,
-                global_default_framebuffer.width * global_default_framebuffer.height * sizeof(u32));
-    special_full_effects.type                  = SPECIAL_EFFECT_CROSSFADE_SCENE;
-    special_full_effects.crossfade_timer       = fade_time;
-    special_full_effects.crossfade_delay_timer = delay_before_fade;
-    special_full_effects.crossfade_max_timer   = fade_time;
-}
 
 struct game_state* game_state         = 0;
 local bool         disable_game_input = false;
@@ -319,7 +276,10 @@ entity_id player_id;
 struct entity* game_dereference_entity(struct game_state* state, entity_id id) {
     switch (id.store_type) {
         case ENTITY_LIST_STORAGE_TYPE_PER_LEVEL_CUTSCENE: {
-            assertion(false && "DO NOT KNOW HOW TO HANDLE THIS RIGHT NOW");
+            /* assertion(false && "DO NOT KNOW HOW TO HANDLE THIS RIGHT NOW"); */
+            assertion(cutscene_viewing_separate_area() && "cutscene not active, this handle is impossible to derefe");
+            struct level_area* area = cutscene_view_area();
+            return entity_list_dereference_entity(&area->entities, id);
         } break;
 
         case ENTITY_LIST_STORAGE_TYPE_PER_LEVEL: {
@@ -1027,6 +987,10 @@ union color32f32 grayscale_shader(struct software_framebuffer* framebuffer, unio
 union color32f32 lighting_shader(struct software_framebuffer* framebuffer, union color32f32 source_pixel, v2f32 pixel_position, void* context) {
     struct level_area* loaded_area = &game_state->loaded_area;
 
+    if (cutscene_viewing_separate_area()) {
+        loaded_area = cutscene_view_area();
+    }
+
     if (lightmask_buffer_is_lit(&global_lightmask_buffer, pixel_position.x, pixel_position.y)) {
         return source_pixel;
     }
@@ -1075,48 +1039,6 @@ union color32f32 lighting_shader(struct software_framebuffer* framebuffer, union
     result.b = b_accumulation + global_color_grading_filter.b/255.0f * source_pixel.b;
 
     return result;
-}
-
-union color32f32 game_background_things_shader(struct software_framebuffer* framebuffer, union color32f32 source_pixel, v2f32 pixel_position, void* context) {
-    switch (special_full_effects.type) {
-        case SPECIAL_EFFECT_INVERSION_1: {
-            if ((special_full_effects.flashes % 2) == 0) { 
-                if (source_pixel.a > 0.5) {
-                    return color32f32(1, 1, 1, 1);
-                } else {
-                    return color32f32(0, 0, 0, 1);
-                }
-            } else {
-                if (source_pixel.a > 0.5) {
-                    return color32f32(0, 0, 0, 1);
-                } else {
-                    return color32f32(1, 1, 1, 1);
-                }
-            }
-        } break;
-    }
-    return source_pixel;
-}
-
-union color32f32 game_foreground_things_shader(struct software_framebuffer* framebuffer, union color32f32 source_pixel, v2f32 pixel_position, void* context) {
-    switch (special_full_effects.type) {
-        case SPECIAL_EFFECT_INVERSION_1: {
-            if ((special_full_effects.flashes % 2) == 0) { 
-                if (source_pixel.a > 0.5) {
-                    return color32f32(0, 0, 0, 1);
-                } else {
-                    return color32f32(1, 1, 1, 1);
-                }
-            } else {
-                if (source_pixel.a > 0.5) {
-                    return color32f32(1, 1, 1, 1);
-                } else {
-                    return color32f32(0, 0, 0, 1);
-                }
-            }
-        } break;
-    }
-    return source_pixel;
 }
 
 void game_postprocess_grayscale(struct software_framebuffer* framebuffer, f32 t) {
@@ -2324,7 +2246,7 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
 
                 if (game_state->ui_state != UI_STATE_PAUSE) {
                     if (!storyboard_active && !game_state->is_conversation_active) {
-                        update_entities(game_state, dt, &game_state->loaded_area);
+                        update_entities(game_state, dt, game_entity_iterator(game_state), &game_state->loaded_area);
                         entity_particle_emitter_list_update(&game_state->permenant_particle_emitters, dt);
 
                         game_script_execute_awaiting_scripts(&scratch_arena, game_state, dt);
@@ -2349,10 +2271,19 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                 commands.should_clear_buffer = true;
                 commands.clear_buffer_color  = color32u8(100, 128, 148, 255);
 
-                render_ground_area(game_state, &commands, &game_state->loaded_area);
-                render_entities(game_state, &draw_entities);
-                sortable_draw_entities_submit(&commands, &graphics_assets, &draw_entities, dt);
-                render_foreground_area(game_state, &commands, &game_state->loaded_area);
+                if (cutscene_viewing_separate_area()) {
+                    update_entities(game_state, dt, game_cutscene_entity_iterator(), cutscene_view_area());
+                    render_ground_area(game_state, &commands, cutscene_view_area());
+                    render_cutscene_entities(&draw_entities);
+                    sortable_draw_entities_submit(&commands, &graphics_assets, &draw_entities, dt);
+                    render_foreground_area(game_state, &commands, cutscene_view_area());
+                } else {
+                    render_ground_area(game_state, &commands, &game_state->loaded_area);
+                    render_entities(game_state, &draw_entities);
+                    sortable_draw_entities_submit(&commands, &graphics_assets, &draw_entities, dt);
+                    render_foreground_area(game_state, &commands, &game_state->loaded_area);
+                }
+
                 software_framebuffer_render_commands(framebuffer, &commands);
                 {
                     software_framebuffer_run_shader(framebuffer, rectangle_f32(0, 0, framebuffer->width, framebuffer->height), lighting_shader, NULL);
@@ -2383,52 +2314,6 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
         software_framebuffer_draw_quad(framebuffer, game_state->camera.travel_bounds, color32u8(0,0,255,100), BLEND_MODE_ALPHA);
     }
 #endif
-}
-
-local void game_do_special_effects(struct software_framebuffer* framebuffer, f32 dt) {
-    { /* run special effects code */
-        switch (special_full_effects.type) {
-            case SPECIAL_EFFECT_NONE: {
-                
-            } break;
-            case SPECIAL_EFFECT_INVERSION_1: {
-                if (special_full_effects.time >= INVERSION_TIME_BETWEEN_FLASHES) {
-                    special_full_effects.time = 0;
-                    special_full_effects.flashes += 1;
-                }
-
-                if (special_full_effects.flashes >= INVERSION_FLASH_MAX) {
-                    special_effect_stop_effects();
-                }
-
-                special_full_effects.time += dt;
-            } break;
-            case SPECIAL_EFFECT_CROSSFADE_SCENE: {
-                f32 alpha = (special_full_effects.crossfade_delay_timer + special_full_effects.crossfade_timer) / special_full_effects.crossfade_max_timer;
-                if (alpha < 0) alpha = 0;
-                if (alpha > 1) alpha = 1;
-
-                if (special_full_effects.crossfade_delay_timer > 0) {
-                    special_full_effects.crossfade_delay_timer -= dt;
-                } else {
-                    if (special_full_effects.crossfade_timer > 0) {
-                        special_full_effects.crossfade_timer -= dt;
-                    } else {
-                        special_effect_stop_effects();
-                    }
-                }
-
-                software_framebuffer_draw_image_ex(framebuffer, (struct image_buffer*)&global_copy_framebuffer,
-                                                   rectangle_f32(0, 0, framebuffer->width, framebuffer->height),
-                                                   RECTANGLE_F32_NULL,
-                                                   color32f32(1, 1, 1, alpha),
-                                                   NO_FLAGS, BLEND_MODE_ALPHA);
-            } break;
-            default: {
-                unimplemented("This effect was not done?");
-            } break;
-        }
-    }
 }
 
 struct game_variables game_variables(struct memory_arena* arena) {
@@ -2525,3 +2410,4 @@ s32 game_variable_get(string name) {
 #include "entity_model.c"
 #include "shop.c"
 #include "cutscene.c"
+#include "special_effects.c"

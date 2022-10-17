@@ -549,7 +549,7 @@ struct entity*     entity_list_dereference_entity(struct entity_list* entities, 
 void               entity_list_clear(struct entity_list* entities);
 bool               entity_bad_ref(struct entity* e);
 
-void               update_entities(struct game_state* state, f32 dt, struct level_area* area);
+void               update_entities(struct game_state* state, f32 dt, struct entity_iterator it, struct level_area* area);
 
 struct rectangle_f32 entity_rectangle_collision_bounds(struct entity* entity);
 
