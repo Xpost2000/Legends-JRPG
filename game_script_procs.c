@@ -404,8 +404,10 @@ GAME_LISP_FUNCTION(CUTSCENE_UNLOAD_AREA) {
 }
 GAME_LISP_FUNCTION(CAMERA_PUTAT_FORCE) {
     _debugprintf("???? CAMERA PUTAT FORCE");
-    lisp_form_get_f32(arguments[0].list.forms[0], &game_state->camera.xy.x);
-    lisp_form_get_f32(arguments[0].list.forms[1], &game_state->camera.xy.y);
+    _debugprintf("%f, %f\n", game_state->camera.xy.x, game_state->camera.xy.y);
+    assertion(lisp_form_get_f32(arguments[0].list.forms[0], &game_state->camera.xy.x) && "camera x fail?");
+    assertion(lisp_form_get_f32(arguments[0].list.forms[1], &game_state->camera.xy.y) && "camera y fail?");
+    _debugprintf("%f, %f\n", game_state->camera.xy.x, game_state->camera.xy.y);
     return LISP_nil;
 }
 

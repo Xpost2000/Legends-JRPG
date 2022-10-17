@@ -1,5 +1,5 @@
 #define NO_POSTPROCESSING
-#define RELEASE
+/* #define RELEASE */
 #define NO_FANCY_FADEIN_INTRO
 
 #ifdef __EMSCRIPTEN__

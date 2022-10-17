@@ -1820,7 +1820,7 @@ local void update_game_camera_exploration_mode(struct game_state* state, f32 dt)
     if (!cutscene_active())
         camera->tracking_xy = player->position;
 
-    {
+    if (!cutscene_active()) {
         /* kind of like a project on everythign */
         v2f32                projected_rectangle_position = camera_project(camera, v2f32(camera->travel_bounds.x, camera->travel_bounds.y), SCREEN_WIDTH, SCREEN_HEIGHT);
         struct rectangle_f32 projected_rectangle          = rectangle_f32(projected_rectangle_position.x, projected_rectangle_position.y, camera->travel_bounds.w / camera->zoom, camera->travel_bounds.h / camera->zoom);
@@ -2231,7 +2231,8 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
 
                 if (is_key_pressed(KEY_Y)) {
                     /* game_begin_shopping(string_literal("basic")); */
-                    game_write_save_slot(0);
+                    cutscene_open(string_literal("bridgescene"));
+                    /* game_write_save_slot(0); */
 #if 1
                     passive_speaking_dialogue_push(player_id, string_literal("Hello world!"), MENU_FONT_COLOR_LIME);
 #endif
@@ -2278,7 +2279,6 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
 
                 struct render_commands        commands      = render_commands(&scratch_arena, 16384, game_state->camera);
                 struct sortable_draw_entities draw_entities = sortable_draw_entities(&scratch_arena, 8192);
-
                 commands.should_clear_buffer = true;
                 commands.clear_buffer_color  = color32u8(100, 128, 148, 255);
 
