@@ -1923,7 +1923,8 @@ void handle_entity_level_trigger_interactions(struct game_state* state, struct e
             /* queue a level transition, animation (god animation sucks... For now instant transition) */
             /* struct binary_serializer serializer = open_read_file_serializer(string_concatenate(&scratch_arena, string_literal("areas/"), string_from_cstring(current_trigger->target_level))); */
             /* serialize_level_area(state, &serializer, &state->loaded_area, false); */
-            load_level_from_file(state, string_from_cstring(current_trigger->target_level));
+            string copy = format_temp_s("%s", current_trigger->target_level);
+            load_level_from_file(state, copy);
             /* NOTE entity positions are in pixels still.... */
             entity->position.x = spawn_location.x * TILE_UNIT_SIZE;
             entity->position.y = spawn_location.y * TILE_UNIT_SIZE;
