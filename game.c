@@ -1,4 +1,4 @@
-#define RELEASE
+/* #define RELEASE */
 /* Needs lots of clean up. (Man I keep saying this every time I come back here, but it doesn't seem to matter too much.) */
 /* TODO fix coordinate system <3 */
 /* virtual pixels */
@@ -909,9 +909,13 @@ local void level_area_clean_up(struct level_area* area) {
     }
 }
 
+/* this is a game level load, changes zone */
 void load_level_from_file(struct game_state* state, string filename) {
+    game_script_clear_all_awaited_scripts();
+    cutscene_stop();
     level_area_clean_up(&state->loaded_area);
     memory_arena_clear_top(state->arena);
+    /* clear scripts to prevent resident memory from doing things */
 
     state->level_area_on_enter_triggered = false;
 
@@ -1812,7 +1816,9 @@ local void update_game_camera_exploration_mode(struct game_state* state, f32 dt)
     struct camera* camera = &state->camera;
 
     struct entity* player = entity_list_dereference_entity(&state->permenant_entities, player_id);
-    camera->tracking_xy = player->position;
+
+    if (!cutscene_active())
+        camera->tracking_xy = player->position;
 
     {
         /* kind of like a project on everythign */
@@ -1875,7 +1881,7 @@ local void update_game_camera(struct game_state* state, f32 dt) {
     if (game_state->combat_state.active_combat) {
         update_game_camera_combat(state, dt);
     } else {
-        if (!game_state->is_conversation_active || !cutscene_active()) {
+        if (!game_state->is_conversation_active) {
             update_game_camera_exploration_mode(state, dt);
         }
     }
@@ -1915,8 +1921,9 @@ void handle_entity_level_trigger_interactions(struct game_state* state, struct e
 
         if (rectangle_f32_intersect(current_trigger->bounds, entity_collision_bounds)) {
             /* queue a level transition, animation (god animation sucks... For now instant transition) */
-            struct binary_serializer serializer = open_read_file_serializer(string_concatenate(&scratch_arena, string_literal("areas/"), string_from_cstring(current_trigger->target_level)));
-            serialize_level_area(state, &serializer, &state->loaded_area, false);
+            /* struct binary_serializer serializer = open_read_file_serializer(string_concatenate(&scratch_arena, string_literal("areas/"), string_from_cstring(current_trigger->target_level))); */
+            /* serialize_level_area(state, &serializer, &state->loaded_area, false); */
+            load_level_from_file(state, string_from_cstring(current_trigger->target_level));
             /* NOTE entity positions are in pixels still.... */
             entity->position.x = spawn_location.x * TILE_UNIT_SIZE;
             entity->position.y = spawn_location.y * TILE_UNIT_SIZE;
