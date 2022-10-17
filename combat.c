@@ -57,7 +57,7 @@ local void determine_if_combat_should_begin(struct game_state* state) {
 local struct entity* find_current_combatant(struct game_state* state) {
     struct game_state_combat_state* combat_state        = &state->combat_state;
     entity_id                       active_combatant_id = combat_state->participants[combat_state->active_combatant];
-    return entity_list_dereference_entity(&state->permenant_entities, active_combatant_id);
+    return game_dereference_entity(state, active_combatant_id);
 }
 
 void update_combat(struct game_state* state, f32 dt) {
