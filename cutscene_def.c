@@ -22,5 +22,7 @@ void cutscene_open(string filepath);
 void cutscene_update(f32 dt);
 bool cutscene_active(void);
 void cutscene_stop(void);
+void cutscene_load_area(string path);
+void cutscene_unload_area(void);
 
 #endif

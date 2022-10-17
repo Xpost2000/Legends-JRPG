@@ -351,7 +351,7 @@ GAME_LISP_FUNCTION(GAME_MESSAGE_QUEUE) {
 GAME_LISP_FUNCTION(GAME_OPEN_CONVERSATION) {
     assertion(argument_count >= 1 && "need at least one argument");
 
-    string conversation_path_partial;
+    string conversation_path_partial = {};
     lisp_form_get_string(arguments[0], &conversation_path_partial);
     string conversation_path = format_temp_s("dlg/%.*s.txt", conversation_path_partial.length, conversation_path_partial.data);
     game_open_conversation_file(state, conversation_path);

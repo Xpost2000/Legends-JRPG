@@ -196,7 +196,7 @@ entity_id entity_list_find_entity_id_with_scriptname(struct entity_list* list, s
 /* requires tilemap world... */
 /* TODO fix implicit decls, linker hasn't killed game yet */
 void player_handle_radial_interactables(struct game_state* state, struct entity* entity, f32 dt);
-#define DEFAULT_VELOCITY (TILE_UNIT_SIZE * 4)
+#define DEFAULT_VELOCITY (TILE_UNIT_SIZE * 5)
 
 void entity_handle_player_controlled(struct game_state* state, struct entity* entity, f32 dt) {
     /* all the input blockers. */

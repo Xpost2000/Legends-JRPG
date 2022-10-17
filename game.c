@@ -1301,7 +1301,8 @@ void game_initialize_game_world(void) {
     /* load_level_from_file(game_state, string_literal("pf.area")); */
 #endif
     /* load_level_from_file(game_state, string_literal("bt.area")); */
-    load_level_from_file(game_state, string_literal("g.area"));
+    /* load_level_from_file(game_state, string_literal("g.area")); */
+    load_level_from_file(game_state, string_literal("bforest1.area"));
     /* load_level_from_file(game_state, string_literal("testforest.area")); */
     /* load_level_from_file(game_state, string_literal("lighttest.area")); */
     /* load_level_from_file(game_state, string_literal("level.area")); */

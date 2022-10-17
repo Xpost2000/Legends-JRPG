@@ -451,8 +451,8 @@ bool handle_builtin_game_script_functions(struct memory_arena* arena, struct gam
             struct lisp_form child_second = game_script_evaluate_form(arena, state, form->list.forms + 2);
 
             /* TODO: For now these are integer only comparisons */
-            s32 child_first_v;
-            s32 child_second_v;
+            s32 child_first_v = 0;
+            s32 child_second_v = 0;
             lisp_form_get_s32(child_first, &child_first_v);
             lisp_form_get_s32(child_second, &child_second_v);
 

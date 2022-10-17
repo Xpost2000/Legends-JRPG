@@ -15,6 +15,11 @@ struct {
      * entities here to see if we should restore them later?
      */
 
+    /* NOTE: Separate copy! */
+    struct level_area loaded_area;
+    bool              level_area_on_enter_triggered;
+    bool              viewing_loaded_area;
+
     bool running;
 } cutscene_state;
 
