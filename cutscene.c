@@ -23,6 +23,16 @@ struct {
     bool running;
 } cutscene_state;
 
+struct entity_iterator game_cutscene_entity_iterator(void) {
+    struct entity_iterator result = {};
+
+    if (cutscene_active() && cutscene_state.viewing_loaded_area) {
+        entity_iterator_push(&result, &cutscene_state.loaded_area.entities);
+    }
+
+    return result;
+}
+
 void cutscene_load_area(string path) {
     if (cutscene_state.viewing_loaded_area) {
         /* reload with a different area. */

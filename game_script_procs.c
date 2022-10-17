@@ -379,7 +379,7 @@ GAME_LISP_FUNCTION(GAME_START_FIGHT_WITH) {
 GAME_LISP_FUNCTION(START_CUTSCENE) {
     assertion(argument_count >= 1 && "need at least one argument");
 
-    string cutscene_path;
+    string cutscene_path = {};
     lisp_form_get_string(arguments[0], &cutscene_path);
     cutscene_open(cutscene_path);
     
@@ -387,6 +387,19 @@ GAME_LISP_FUNCTION(START_CUTSCENE) {
 }
 GAME_LISP_FUNCTION(END_CUTSCENE) {
     cutscene_stop();
+    return LISP_nil;
+}
+
+GAME_LISP_FUNCTION(CUTSCENE_LOAD_AREA) {
+    string cutscene_area_path = {};
+    lisp_form_get_string(arguments[0], &cutscene_area_path);
+    cutscene_load_area(cutscene_area_path);
+
+    return LISP_nil;
+}
+
+GAME_LISP_FUNCTION(CUTSCENE_UNLOAD_AREA) {
+    cutscene_unload_area();
     return LISP_nil;
 }
 
@@ -418,8 +431,9 @@ static struct game_script_function_builtin script_function_table[] = {
     GAME_LISP_FUNCTION(OPEN_SHOP),
     GAME_LISP_FUNCTION(GAME_START_FIGHT_WITH),
     GAME_LISP_FUNCTION(START_CUTSCENE),
-    GAME_LISP_FUNCTION(END_CUTSCENE)
-
+    GAME_LISP_FUNCTION(END_CUTSCENE),
+    GAME_LISP_FUNCTION(CUTSCENE_LOAD_AREA),
+    GAME_LISP_FUNCTION(CUTSCENE_UNLOAD_AREA)
     /*
       ALL CUTSCENE ACTIONS WILL BE PREFIXED, SINCE THE CUTSCENE SYSTEM RUNS GENERALIZED GAME SCRIPT,
       it's kind of easy to accidently break something this way!

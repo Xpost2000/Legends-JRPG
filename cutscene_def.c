@@ -25,4 +25,6 @@ void cutscene_stop(void);
 void cutscene_load_area(string path);
 void cutscene_unload_area(void);
 
+struct entity_iterator game_cutscene_entity_iterator(void);
+
 #endif
