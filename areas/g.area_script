@@ -1,7 +1,6 @@
 # The cave of testings!
 (on-enter
-(game_set_environment_colors 'midnight)
-(setvar gtrigger1 -1))
+(game_set_environment_colors 'midnight))
 
 (on-touch (trigger 0)
           (if (not (equal gtrigger 1))

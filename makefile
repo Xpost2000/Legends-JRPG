@@ -18,7 +18,7 @@ pack.exe: bigfilemaker/bigfile_packer.c bigfilemaker/bigfile_def.c
 depack.exe: bigfilemaker/depacker.c bigfilemaker/bigfile_unpacker.c bigfilemaker/bigfile_def.c
 	$(cc) bigfilemaker/depacker.c -o $@ -O2
 game.exe: $(wildcard *.c *.h)
-	$(CC) $(SOURCE_FILE_MODULES) -DRELEASE -o $@ $(CFLAGS) $(CLIBS) -O2 -mwindows
+	$(CC) $(SOURCE_FILE_MODULES) -DUSE_EDITOR  -DRELEASE -o $@ $(CFLAGS) $(CLIBS) -O2 -mwindows
 game-debug.exe: $(wildcard *.c *.h)
 	$(CC) $(SOURCE_FILE_MODULES) -DUSE_EDITOR -o $@ $(CFLAGS) $(CLIBS) -ggdb3
 web-experimental: $(wildcard *.c *.h)

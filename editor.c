@@ -111,13 +111,13 @@ void editor_clear_all(struct editor_state* state) {
 void editor_initialize(struct editor_state* state) {
     state->arena = &editor_arena;
     for (s32 index = 0; index < TILE_LAYER_COUNT; ++index) {
-        state->tile_capacities[index] = 65535;
+        state->tile_capacities[index] = 65535*2;
     }
-    state->trigger_level_transition_capacity = 1024;
-    state->entity_chest_capacity             = 1024;
-    state->generic_trigger_capacity          = 1024;
-    state->entity_capacity                   = 512;
-    state->light_capacity                    = 256;
+    state->trigger_level_transition_capacity = 1024*2;
+    state->entity_chest_capacity             = 1024*2;
+    state->generic_trigger_capacity          = 1024*2;
+    state->entity_capacity                   = 512*2;
+    state->light_capacity                    = 256*2;
 
     for (s32 index = 0; index < TILE_LAYER_COUNT; ++index) {
         state->tile_layers[index] = memory_arena_push(state->arena, state->tile_capacities[index] * sizeof(*state->tile_layers[0]));
