@@ -19,6 +19,46 @@
   WHOCARES: May crash if touching the last_selected pointer incorrectly?
 */
 
+#define EDITOR_BRUSH_SQUARE_SIZE (5)
+#define HALF_EDITOR_BRUSH_SQUARE_SIZE (5/2)
+local u8 editor_brush_patterns[][EDITOR_BRUSH_SQUARE_SIZE][EDITOR_BRUSH_SQUARE_SIZE] = {
+    {
+        {0, 0, 0, 0, 0,},
+        {0, 0, 0, 0, 0,},
+        {0, 0, 1, 0, 0,},
+        {0, 0, 0, 0, 0,},
+        {0, 0, 0, 0, 0,},
+    },
+    {
+        {0, 0, 0, 0, 0,},
+        {0, 0, 1, 0, 0,},
+        {0, 1, 1, 1, 0,},
+        {0, 0, 1, 0, 0,},
+        {0, 0, 0, 0, 0,},
+    },
+    {
+        {0, 0, 0, 0, 0,},
+        {0, 1, 1, 1, 0,},
+        {0, 1, 1, 1, 0,},
+        {0, 1, 1, 1, 0,},
+        {0, 0, 0, 0, 0,},
+    },
+    {
+        {0, 0, 1, 0, 0,},
+        {0, 1, 1, 1, 0,},
+        {1, 1, 1, 1, 1,},
+        {0, 1, 1, 1, 0,},
+        {0, 0, 1, 0, 0,},
+    },
+    {
+        {1, 1, 1, 1, 1,},
+        {1, 1, 1, 1, 1,},
+        {1, 1, 1, 1, 1,},
+        {1, 1, 1, 1, 1,},
+        {1, 1, 1, 1, 1,},
+    },
+};
+
 local bool is_dragging(void) {
     return editor_state->drag_data.context != NULL;
 }
@@ -168,6 +208,19 @@ void editor_remove_tile_at(v2f32 point_in_tilespace) {
         }
     }
 }
+
+local void editor_brush_remove_tile_at(v2f32 tile_space_mouse_location) {
+    for (s32 y_index = 0; y_index < EDITOR_BRUSH_SQUARE_SIZE; ++y_index) {
+        for (s32 x_index = 0; x_index < EDITOR_BRUSH_SQUARE_SIZE; ++x_index) {
+            if (editor_brush_patterns[editor_state->editor_brush_pattern][y_index][x_index] == 1) {
+                v2f32 point = tile_space_mouse_location;
+                point.x += x_index - HALF_EDITOR_BRUSH_SQUARE_SIZE;
+                point.y += y_index - HALF_EDITOR_BRUSH_SQUARE_SIZE;
+                editor_remove_tile_at(point);
+            }
+        }
+    }
+}
 void editor_remove_scriptable_transition_trigger_at(v2f32 point_in_tilespace) {
     for (s32 index = 0; index < editor_state->generic_trigger_count; ++index) {
         struct trigger* current_trigger = editor_state->generic_triggers + index;
@@ -209,6 +262,19 @@ void editor_place_tile_at(v2f32 point_in_tilespace) {
     new_tile->x  = where_x;
     new_tile->y  = where_y;
     editor_state->last_selected = new_tile;
+}
+
+local void editor_brush_place_tile_at(v2f32 tile_space_mouse_location) {
+    for (s32 y_index = 0; y_index < EDITOR_BRUSH_SQUARE_SIZE; ++y_index) {
+        for (s32 x_index = 0; x_index < EDITOR_BRUSH_SQUARE_SIZE; ++x_index) {
+            if (editor_brush_patterns[editor_state->editor_brush_pattern][y_index][x_index] == 1) {
+                v2f32 point = tile_space_mouse_location;
+                point.x += x_index - HALF_EDITOR_BRUSH_SQUARE_SIZE;
+                point.y += y_index - HALF_EDITOR_BRUSH_SQUARE_SIZE;
+                editor_place_tile_at(point);
+            }
+        }
+    }
 }
 
 /* TODO find a better way for the camera to get screen dimensions, I know my fixed resolution though so it's fine... Always guarantee we have a multiple of our fixed resolution to simplify things */
@@ -519,11 +585,23 @@ local void handle_editor_tool_mode_input(struct software_framebuffer* framebuffe
 
     switch (editor_state->tool_mode) {
         case EDITOR_TOOL_TILE_PAINTING: {
+            if (is_key_pressed(KEY_1)) {
+                editor_state->editor_brush_pattern = 0;
+            } else if (is_key_pressed(KEY_2)) {
+                editor_state->editor_brush_pattern = 1;
+            } else if (is_key_pressed(KEY_3)) {
+                editor_state->editor_brush_pattern = 2;
+            } else if (is_key_pressed(KEY_4)) {
+                editor_state->editor_brush_pattern = 3;
+            } else if (is_key_pressed(KEY_5)) {
+                editor_state->editor_brush_pattern = 4;
+            }
+
             if (!editor_state->viewing_loaded_area) {
                 if (left_clicked) {
-                    editor_place_tile_at(tile_space_mouse_location);
+                    editor_brush_place_tile_at(tile_space_mouse_location);
                 } else if (right_clicked) {
-                    editor_remove_tile_at(tile_space_mouse_location);
+                    editor_brush_remove_tile_at(tile_space_mouse_location);
                 }
             }
         } break;
@@ -1680,10 +1758,19 @@ void update_and_render_editor(struct software_framebuffer* framebuffer, f32 dt) 
                         tile_space_mouse_location.x = floorf(world_space_mouse_location.x / TILE_UNIT_SIZE);
                         tile_space_mouse_location.y = floorf(world_space_mouse_location.y / TILE_UNIT_SIZE);
                     }
+                    for (s32 y_index = 0; y_index < EDITOR_BRUSH_SQUARE_SIZE; ++y_index) {
+                        for (s32 x_index = 0; x_index < EDITOR_BRUSH_SQUARE_SIZE; ++x_index) {
+                            if (editor_brush_patterns[editor_state->editor_brush_pattern][y_index][x_index] == 1) {
+                                v2f32 point = tile_space_mouse_location;
+                                point.x += x_index - HALF_EDITOR_BRUSH_SQUARE_SIZE;
+                                point.y += y_index - HALF_EDITOR_BRUSH_SQUARE_SIZE;
 
-                    render_commands_push_quad(&commands, rectangle_f32(tile_space_mouse_location.x * TILE_UNIT_SIZE, tile_space_mouse_location.y * TILE_UNIT_SIZE,
-                                                                       TILE_UNIT_SIZE, TILE_UNIT_SIZE),
-                                              color32u8(0, 0, 255, normalized_sinf(global_elapsed_time*4) * 0.5*255 + 64), BLEND_MODE_ALPHA);
+                                render_commands_push_quad(&commands, rectangle_f32(point.x * TILE_UNIT_SIZE, point.y * TILE_UNIT_SIZE,
+                                                                                   TILE_UNIT_SIZE, TILE_UNIT_SIZE),
+                                                          color32u8(0, 0, 255, normalized_sinf(global_elapsed_time*4) * 0.5*255 + 64), BLEND_MODE_ALPHA);
+                            }
+                        }
+                    }
                 }
             } break;
         }

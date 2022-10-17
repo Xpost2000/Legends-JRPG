@@ -29,3 +29,30 @@
 (luck 100))
 
 )
+
+(
+"deadcorpse_b1"
+"Dead Body"
+0 # Models should be referenced through numbers but I can fix that later
+() # FLAGS
+() # AI FLAGS
+
+0 # health
+0  # magic
+
+nil
+
+() # equip slots not being used
+() # inventory avaliable during battle
+
+(
+(level 1)
+(xp 0)
+(vigor 0)
+(strength 0)
+(constitution 0)
+(willpower 0)
+(agility 0)
+(speed 0)
+(intelligence 0)
+(luck 0)))

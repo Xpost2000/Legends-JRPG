@@ -150,6 +150,8 @@ struct editor_state {
     /* also a cstring... Ughhhh */
     char current_save_name[128];
 
+    u16 editor_brush_pattern;
+
     /* for edits that may require cross area interaction */
     /* we just load another full level and display it normally without editor mode stuff */
     char loaded_area_name[260]; /* level_areas don't know where they come from... */
