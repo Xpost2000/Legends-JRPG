@@ -226,7 +226,6 @@ local void render_tile_layer(struct render_commands* commands, struct level_area
     for (s32 index = 0; index < area->tile_counts[layer]; ++index) {
         s32 tile_id = area->tile_layers[layer][index].id;
         struct tile_data_definition* tile_data = tile_table_data + tile_id;
-
         image_id tex = get_tile_image_id(tile_data);
 
         render_commands_push_image(commands,
@@ -258,6 +257,10 @@ void render_foreground_area(struct game_state* state, struct render_commands* co
 
 void render_ground_area(struct game_state* state, struct render_commands* commands, struct level_area* area) {
     /* TODO do it lazy mode. Once only */
+    /*
+      NOTE: if I didn't know what I meant by that earlier, I meant just render the entire level image once and just blit the
+      prerendered layers, not needed but okay.
+    */
 
     /* Object & ground layer */
     {
@@ -992,11 +995,7 @@ union color32f32 grayscale_shader(struct software_framebuffer* framebuffer, unio
 }
 
 union color32f32 lighting_shader(struct software_framebuffer* framebuffer, union color32f32 source_pixel, v2f32 pixel_position, void* context) {
-    struct level_area* loaded_area = &game_state->loaded_area;
-
-    if (cutscene_viewing_separate_area()) {
-        loaded_area = cutscene_view_area();
-    }
+    struct level_area* loaded_area = context;
 
     if (lightmask_buffer_is_lit(&global_lightmask_buffer, pixel_position.x, pixel_position.y)) {
         return source_pixel;
@@ -2288,6 +2287,7 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                 commands.clear_buffer_color  = color32u8(100, 128, 148, 255);
 
                 if (cutscene_viewing_separate_area()) {
+                    /* might need to rethink this a little... */
                     update_entities(game_state, dt, game_cutscene_entity_iterator(), cutscene_view_area());
                     render_ground_area(game_state, &commands, cutscene_view_area());
                     render_cutscene_entities(&draw_entities);
@@ -2302,7 +2302,11 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
 
                 software_framebuffer_render_commands(framebuffer, &commands);
                 {
-                    software_framebuffer_run_shader(framebuffer, rectangle_f32(0, 0, framebuffer->width, framebuffer->height), lighting_shader, NULL);
+                    struct level_area* area = &game_state->loaded_area;
+                    if (cutscene_viewing_separate_area()) {
+                        area = cutscene_view_area();
+                    }
+                    software_framebuffer_run_shader(framebuffer, rectangle_f32(0, 0, framebuffer->width, framebuffer->height), lighting_shader, area);
                 }
                 game_postprocess_blur_ingame(framebuffer, 2, 0.62, BLEND_MODE_ALPHA);
 

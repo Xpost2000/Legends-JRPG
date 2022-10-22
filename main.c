@@ -386,9 +386,10 @@ local void initialize(void) {
 }
 
 void deinitialize(void) {
+    synchronize_and_finish_thread_pool();
+    lightmask_buffer_finish(&global_lightmask_buffer);
     software_framebuffer_finish(&global_default_framebuffer);
     audio_deinitialize();
-    synchronize_and_finish_thread_pool();
     game_deinitialize();
 
     close_all_controllers();
