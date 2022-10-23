@@ -178,11 +178,15 @@ s32 entity_iterator_count_all_entities(struct entity_iterator* entities) {
 entity_id entity_list_find_entity_id_with_scriptname(struct entity_list* list, string scriptname) {
     entity_id result = {};
 
+#if 0
     _debugprintf("Trying to find entity: %.*s\n", scriptname.length, scriptname.data);
+#endif
     for (s32 entity_index = 0; entity_index < list->capacity; ++entity_index) {
         struct entity* current_entity = list->entities + entity_index;
         string script_name_target = string_from_cstring(current_entity->script_name);
+#if 0
         _debugprintf("\tcomparing against: %.*s\n", script_name_target.length, script_name_target.data);
+#endif
 
         if (string_equal(script_name_target, scriptname)) {
             result = entity_list_get_id(list, entity_index);
@@ -699,10 +703,8 @@ void entity_particle_emitter_list_update(struct entity_particle_emitter_list* pa
     
 }
 
-void render_entities(struct game_state* state, struct sortable_draw_entities* draw_entities) {
+void render_entities_from_area_and_iterator(struct sortable_draw_entities* draw_entities, struct entity_iterator it, struct level_area* area) {
     {
-        struct entity_iterator it = game_entity_iterator(state);
-
         for (struct entity* current_entity = entity_iterator_begin(&it); !entity_iterator_finished(&it); current_entity = entity_iterator_advance(&it)) {
             if (!(current_entity->flags & ENTITY_FLAGS_ACTIVE)) {
                 continue;
@@ -712,11 +714,16 @@ void render_entities(struct game_state* state, struct sortable_draw_entities* dr
     }
 
     {
-        struct level_area* area = &state->loaded_area;
         Array_For_Each(it, struct entity_chest, area->chests, area->entity_chest_count) {
             sortable_draw_entities_push(draw_entities, SORTABLE_DRAW_ENTITY_CHEST, it->position.y*TILE_UNIT_SIZE, it);
         }
     }
+}
+
+void render_entities(struct game_state* state, struct sortable_draw_entities* draw_entities) {
+    struct entity_iterator iterator = game_entity_iterator(state);
+    struct level_area*     area     = &state->loaded_area;
+    render_entities_from_area_and_iterator(draw_entities, iterator, area);
 }
 
 struct entity_query_list find_entities_within_radius(struct memory_arena* arena, struct game_state* state, v2f32 position, f32 radius) {

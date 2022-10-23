@@ -110,23 +110,9 @@ void render_cutscene_entities(struct sortable_draw_entities* draw_entities) {
         return;
     }
 
-    {
-        struct entity_iterator it = game_cutscene_entity_iterator();
-
-        for (struct entity* current_entity = entity_iterator_begin(&it); !entity_iterator_finished(&it); current_entity = entity_iterator_advance(&it)) {
-            if (!(current_entity->flags & ENTITY_FLAGS_ACTIVE)) {
-                continue;
-            }
-            sortable_draw_entities_push_entity(draw_entities, current_entity->position.y, it.current_id);
-        }
-    }
-
-    {
-        struct level_area* area = &cutscene_state.loaded_area;
-        Array_For_Each(it, struct entity_chest, area->chests, area->entity_chest_count) {
-            sortable_draw_entities_push(draw_entities, SORTABLE_DRAW_ENTITY_CHEST, it->position.y*TILE_UNIT_SIZE, it);
-        }
-    }
+    struct entity_iterator iterator = game_cutscene_entity_iterator();
+    struct level_area*     area     = &cutscene_state.loaded_area;
+    render_entities_from_area_and_iterator(draw_entities, iterator, area);
 }
 
 struct level_area* cutscene_view_area(void) {

@@ -753,8 +753,10 @@ struct game_script_typed_ptr game_script_object_handle_decode(struct lisp_form o
     assertion(object_handle.type == LISP_FORM_LIST && "lisp object handle is not a list??? Oh no");
     assertion(object_handle.list.count == 2 && "lisp representations of object handles should be like (TYPE ID)");
     struct game_script_typed_ptr result = {};
+#if 0 
     _debugprintf("Decoding object handle: ");
     _debug_print_out_lisp_code(&object_handle);
+#endif
 
     struct lisp_form* type_discriminator_form = lisp_list_nth(&object_handle, 0);
     struct lisp_form* id_form                 = lisp_list_nth(&object_handle, 1);
