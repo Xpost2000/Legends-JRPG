@@ -5,6 +5,7 @@
   also metaprogramming playground for myself.
 */
 
+#define RELEASE
 #include "common.c"
 #include "stretchy_buffer_extra.c"
 
@@ -16,7 +17,8 @@ static struct game_script_function_entry game_script_function_entry(char* name, 
     return result;
 }
 
-struct game_script_function_entry* global_game_script_functions_list = 0;
+static struct game_script_function_entry* global_game_script_functions_list = 0;
+static struct memory_arena                arena;
 
 string* string_sliced_into_lines(string original) {
     string* line_list = 0;
@@ -48,7 +50,6 @@ string* string_sliced_into_lines(string original) {
 static void parse_for_game_script_entries_and_append(string filestring) {
     string* lines = string_sliced_into_lines(filestring);
 
-    printf("Going to parse\n");
     for (unsigned line_index = 0; line_index < array_get_count(lines); ++line_index) {
         string current_line         = lines[line_index];
         string substring_to_compare = string_slice(current_line, 0, cstring_length("GAME_LISP_FUNCTION"));
@@ -69,13 +70,53 @@ static void parse_for_game_script_entries_and_append(string filestring) {
             continue;
         }
     }
+    array_finish(lines);
 }
 
 static void generate_game_script_builtins_procedure_table(char* argv0, const char* outfile) {
-    struct file_buffer input_file = read_entire_file(heap_allocator(), string_literal("game_script_procs.c"));
-
     printf("Going to generate: %s\n", outfile);
-    parse_for_game_script_entries_and_append(file_buffer_as_string(&input_file));
+
+    {
+        /*
+          Prune as many directories as possible and automatically generate the binding table.
+          generally though all script procedures should be in game_script_procs.c... If they aren't that's
+          okay too...
+         */
+        struct directory_listing listing = directory_listing_list_all_files_in(&arena, string_literal("./"));
+
+        static string blacklisted_files[] = {
+            string_literal("metagen.c"),
+            string_literal("generated_game_script_proc_table.c"),
+        };
+
+        for (unsigned entry_index = 0; entry_index < listing.count; ++entry_index) {
+            string filename = string_from_cstring(listing.files[entry_index].name);
+
+            if (!listing.files[entry_index].is_directory) {
+                if (!string_is_substring(filename,string_literal(".c")) &&
+                    !string_is_substring(filename,string_literal(".h")) &&
+                    !string_is_substring(filename,string_literal(".cc"))) {
+                    continue;
+                }
+
+                bool cancel = false;
+                for (unsigned blacklist_entry_index = 0; blacklist_entry_index < array_count(blacklisted_files); ++blacklist_entry_index) {
+                    if (string_equal(filename, blacklisted_files[blacklist_entry_index])) {
+                        cancel = true;
+                        printf("Bad file: %.*s", filename.length, filename.data);
+                        break;
+                    }
+                }
+
+                if (!cancel) {
+                    struct file_buffer input_file = read_entire_file(heap_allocator(), filename);
+                    printf("parsing: %.*s\n", filename.length, filename.data);
+                    parse_for_game_script_entries_and_append(file_buffer_as_string(&input_file));
+                    file_buffer_free(&input_file);
+                }
+            }
+        }
+    }
 
 #if 1
     FILE* output = fopen(outfile, "wb+");
@@ -95,6 +136,7 @@ static void generate_game_script_builtins_procedure_table(char* argv0, const cha
 }
 
 int main(int argc, char** argv) {
+    arena = memory_arena_create_from_heap("LOL", Megabyte(16));
     {
         generate_game_script_builtins_procedure_table(argv[0], "generated_game_script_proc_table.c");
     }

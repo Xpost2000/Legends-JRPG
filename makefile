@@ -16,7 +16,7 @@ data.bigfile: pack.exe
 pack.exe: bigfilemaker/bigfile_packer.c bigfilemaker/bigfile_def.c
 	$(CC) bigfilemaker/bigfile_packer.c -o $@ -O2
 metagen.exe: metagen.c
-	$(CC) metagen.c -w -o $@
+	$(CC) metagen.c -g -w -o $@
 depack.exe: bigfilemaker/depacker.c bigfilemaker/bigfile_unpacker.c bigfilemaker/bigfile_def.c
 	$(cc) bigfilemaker/depacker.c -o $@ -O2
 game.exe: metagen.exe $(wildcard *.c *.h)
