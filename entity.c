@@ -1942,7 +1942,9 @@ struct entity_iterator entity_iterator_create(void) {
 }
 
 void entity_iterator_push(struct entity_iterator* iterator, struct entity_list* list) {
-    iterator->entity_lists[iterator->list_count++] = list;
+    if (list && list->entities) {
+        iterator->entity_lists[iterator->list_count++] = list;
+    }
 }
 
 struct entity* entity_iterator_begin(struct entity_iterator* iterator) {
