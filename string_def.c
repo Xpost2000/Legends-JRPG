@@ -28,6 +28,7 @@ string string_from_cstring_length_counted(cstring str, u64 length);
 string string_slice(string a, s32 start, s32 end);
 bool   string_equal(string a, string b);
 bool   string_equal_case_insensitive(string a, string b);
+bool   string_is_substring(string a, string substring);
 
 bool cstring_equal(cstring a, cstring b);
 u64  cstring_length(const char* cstring);

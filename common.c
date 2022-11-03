@@ -5,6 +5,7 @@
 #include <x86intrin.h>
 #endif
 
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -514,6 +515,16 @@ struct file_buffer read_entire_file(IAllocator allocator, string path) {
         .buffer = file_buffer,
         .length = file_size,
     };
+}
+
+void write_entire_file(string path, u8* buffer, size_t buffer_length) {
+    FILE* file = fopen(path.data, "wb+");
+    fwrite(buffer, 1, buffer_length, file);
+    fclose(file);
+}
+
+void write_string_into_entire_file(string path, string contents) {
+    write_entire_file(path, (u8*)contents.data, contents.length);
 }
 
 void file_buffer_free(struct file_buffer* file) {

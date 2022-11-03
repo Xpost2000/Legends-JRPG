@@ -77,6 +77,10 @@ bool cstring_equal(cstring a, cstring b) {
 }
 
 string string_slice(string a, s32 start, s32 end) {
+    if (end == -1) {
+        end = start + a.length;   
+    }
+
     return (string) {
         .length = end - start,
         .data   = a.data + start
@@ -238,4 +242,50 @@ struct string_array string_split(struct memory_arena* arena, string input_string
     }
 
     return result;
+}
+
+bool string_is_substring(string a, string substring) {
+    if (a.length < substring.length) {
+        return false;
+    }
+
+    /* while this isn't obviously stupid, it's also not really that great. Just build small prefix search list */
+    /* this is only really possible on small strings, since I don't ask for an arena. (Ideally you shouldn't need one) */
+    s32 possible_starting_locations[8192] = {};
+    s32 possible_starting_location_count = 0;
+
+    for (unsigned index = 0; index < a.length; ++index) {
+        if (a.data[index] == substring.data[0]) {
+            if (index+1 < a.length && substring.length > 2) {
+                if (a.data[index+1] == substring.data[1]) {
+                    possible_starting_locations[possible_starting_location_count++] = index;
+                }
+            } else {
+                possible_starting_locations[possible_starting_location_count++] = index;
+            }
+        }
+    }
+
+    for (unsigned starting_location_index = 0; starting_location_index < possible_starting_location_count; ++starting_location_index) {
+        for (unsigned i = possible_starting_locations[starting_location_index]; i < a.length; ++i) {
+            bool success = true;
+
+            for (unsigned j = 0; j < substring.length; ++j) {
+                if (i+j >= a.length) {
+                    success = false;
+                    break;
+                }
+                if (a.data[i+j] != substring.data[j]) {
+                    success = false;
+                    break;
+                }
+            }
+
+            if (success) {
+                return true;
+            }
+        }
+    }
+
+    return false;
 }

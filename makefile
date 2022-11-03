@@ -15,11 +15,15 @@ data.bigfile: pack.exe
 	./pack $@ areas dlg res scenes shops
 pack.exe: bigfilemaker/bigfile_packer.c bigfilemaker/bigfile_def.c
 	$(CC) bigfilemaker/bigfile_packer.c -o $@ -O2
+metagen.exe: metagen.c
+	$(CC) metagen.c -w -o $@
 depack.exe: bigfilemaker/depacker.c bigfilemaker/bigfile_unpacker.c bigfilemaker/bigfile_def.c
 	$(cc) bigfilemaker/depacker.c -o $@ -O2
-game.exe: $(wildcard *.c *.h)
+game.exe: metagen.exe $(wildcard *.c *.h)
+	./metagen.exe
 	$(CC) $(SOURCE_FILE_MODULES) -DUSE_EDITOR  -DRELEASE -o $@ $(CFLAGS) $(CLIBS) -O2 -mwindows
-game-debug.exe: $(wildcard *.c *.h)
+game-debug.exe: metagen.exe $(wildcard *.c *.h)
+	./metagen.exe
 	$(CC) $(SOURCE_FILE_MODULES) -DUSE_EDITOR -o $@ $(CFLAGS) $(CLIBS) -ggdb3
 web-experimental: $(wildcard *.c *.h)
 	$(EMCC) $(SOURCE_FILE_MODULES) -DRELEASE -s USE_SDL=2 -s USE_WEBGL2=1 -o game.html $(CFLAGS) $(CLIBS) -s INITIAL_MEMORY=127MB --preload-file res --preload-file scenes --preload-file areas

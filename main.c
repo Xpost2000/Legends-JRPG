@@ -2,6 +2,11 @@
 /* #define RELEASE */
 /* #define NO_FANCY_FADEIN_INTRO */
 
+#ifdef STRETCHYBUFFER_C
+#error "Avoid the temptation of easy dynamically allocated arrays! I want to avoid this during runtime!"
+#error "Unless I have a genuinely good reason, this will stay here forever!"
+#endif
+
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #else
