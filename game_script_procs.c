@@ -178,17 +178,35 @@ GAME_LISP_FUNCTION(ENTITY_LOOK_AT) {
 }
 GAME_LISP_FUNCTION(ENTITY_IS_DEAD) {
     Required_Argument_Count(ENTITY_IS_DEAD, 1);
-    return LISP_nil;
+
+    struct game_script_typed_ptr ptr = game_script_object_handle_decode(arguments[0]);
+    assertion(ptr.type == GAME_SCRIPT_TARGET_ENTITY && "This only works on entities!");
+    struct entity* target_entity = game_dereference_entity(state, ptr.entity_id);
+    assertion(target_entity && "no entity?");
+
+    return lisp_form_produce_truthy_value_form(entity_is_dead(target_entity));
 }
 
 GAME_LISP_FUNCTION(ENTITY_GET_HEALTH) {
-    Required_Argument_Count(ENTITY_IS_DEAD, 1);
-    return LISP_nil;
+    Required_Argument_Count(ENTITY_GET_HEALTH, 1);
+
+    struct game_script_typed_ptr ptr = game_script_object_handle_decode(arguments[0]);
+    assertion(ptr.type == GAME_SCRIPT_TARGET_ENTITY && "This only works on entities!");
+    struct entity* target_entity = game_dereference_entity(state, ptr.entity_id);
+    assertion(target_entity && "no entity?");
+
+    return lisp_form_integer(target_entity->health.value);
 }
 
 GAME_LISP_FUNCTION(ENTITY_GET_HEALTH_PERCENT) {
-    Required_Argument_Count(ENTITY_IS_DEAD, 1);
-    return LISP_nil;
+    Required_Argument_Count(ENTITY_GET_HEALTH_PERCENT, 1);
+
+    struct game_script_typed_ptr ptr = game_script_object_handle_decode(arguments[0]);
+    assertion(ptr.type == GAME_SCRIPT_TARGET_ENTITY && "This only works on entities!");
+    struct entity* target_entity = game_dereference_entity(state, ptr.entity_id);
+    assertion(target_entity && "no entity?");
+
+    return lisp_form_real(entity_health_percentage(target_entity));
 }
 
 GAME_LISP_FUNCTION(ENTITY_SPEAK) {

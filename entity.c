@@ -197,6 +197,21 @@ entity_id entity_list_find_entity_id_with_scriptname(struct entity_list* list, s
     return result;
 }
 
+local f32 entity_health_percentage(struct entity* entity) {
+    int current = entity->health.value;
+    int max     = entity->health.max;
+
+    return (f32)current/(f32)max;
+}
+
+local bool entity_is_dead(struct entity* entity) {
+    if (!(entity->flags & ENTITY_FLAGS_ALIVE)) {
+        return true;
+    }
+
+    return false;
+}
+
 /* requires tilemap world... */
 /* TODO fix implicit decls, linker hasn't killed game yet */
 void player_handle_radial_interactables(struct game_state* state, struct entity* entity, f32 dt);
