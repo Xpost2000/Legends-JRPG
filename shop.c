@@ -3,7 +3,7 @@
 struct shop_instance load_shop_definition(struct memory_arena* arena, string shopname) {
     struct shop_instance result = {};
 
-    string             fullpath   = string_from_cstring(format_temp("./shops/%.*s.shop", shopname.length, shopname.data));
+    string             fullpath   = string_from_cstring(format_temp(GAME_DEFAULT_SHOPS_PATH "/%.*s.shop", shopname.length, shopname.data));
     struct file_buffer buffer     = read_entire_file(memory_arena_allocator(&scratch_arena), fullpath);
     struct lisp_list   shop_forms = lisp_read_string_into_forms(&scratch_arena, file_buffer_as_string(&buffer));
 

@@ -25,16 +25,7 @@
    However, a fair amount of effort will be done in the language script.
  */
 
-/* NOTE: */
-/* I need to give NPCs some dialogue associations. */
-/* So today, I'm going to double check the dialogue system and give it a facelift on the UI */
-/* Then try to revise some game animations and allow you attribute arbitrary scripts to a game region.
-
-   I'll read over the game script to figure out what I'm supposed to whitebox for the intro...
-*/
-/* Also add game lighting (for graphics reasons. Also lamps and stuff like that.) */
-/* Lots of animation related things I guess */
-
+#include "game_config_defines.c"
 #define GAME_MAX_PERMENANT_ENTITIES (64)
 
 /* TODO */

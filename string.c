@@ -1,3 +1,4 @@
+#define MAX_START_LOCATION_TABLE_SIZE_FOR_SUBSTRING (8192)
 #include "string_def.c"
 
 string string_from_cstring(cstring str) {
@@ -251,7 +252,7 @@ bool string_is_substring(string a, string substring) {
 
     /* while this isn't obviously stupid, it's also not really that great. Just build small prefix search list */
     /* this is only really possible on small strings, since I don't ask for an arena. (Ideally you shouldn't need one) */
-    s32 possible_starting_locations[8192] = {};
+    s32 possible_starting_locations[MAX_START_LOCATION_TABLE_SIZE_FOR_SUBSTRING] = {};
     s32 possible_starting_location_count = 0;
 
     for (unsigned index = 0; index < a.length; ++index) {

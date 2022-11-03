@@ -67,7 +67,7 @@ void cutscene_open(string filepath) {
     /* kill any movement, just in-case it was happening earlier. */
     struct entity* player            = game_get_player(game_state);
     player->velocity.x               = 0; player->velocity.y = 0;
-    cutscene_state.file_buffer       = read_entire_file(memory_arena_allocator(&cutscene_state.arena), format_temp_s("./scenes/%.*s.txt", filepath.length, filepath.data));
+    cutscene_state.file_buffer       = read_entire_file(memory_arena_allocator(&cutscene_state.arena), format_temp_s(GAME_DEFAULT_SCENES_PATH "/%.*s.txt", filepath.length, filepath.data));
     cutscene_state.script_forms.list = lisp_read_string_into_forms(&cutscene_state.arena, file_buffer_as_string(&cutscene_state.file_buffer));
     cutscene_state.script_forms.type = LISP_FORM_LIST;
 

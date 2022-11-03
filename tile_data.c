@@ -38,7 +38,7 @@ struct file_buffer tile_data_source_file = {};
   path which is fine and all but this is kind of annoying to do sometimes...)
 */
 static void initialize_static_table_data(void) {
-    tile_data_source_file       = read_entire_file(memory_arena_allocator(&game_arena), string_literal("./res/tile_data.txt"));
+    tile_data_source_file       = read_entire_file(memory_arena_allocator(&game_arena), string_literal(GAME_DEFAULT_TILE_DATA_FILE));
     /* NOTE: it would be cleaner to copy all strings and own them directly here. It's not too much of a change but the lisp form reader makes certain assumptions. */
     struct lisp_list file_forms = lisp_read_string_into_forms(&game_arena, file_buffer_as_string(&tile_data_source_file));
 

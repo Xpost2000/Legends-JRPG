@@ -114,7 +114,7 @@ void finish_save_data(void) {
  */
 
 string filename_from_saveslot_id(s32 id) {
-    return format_temp_s("./saves/sav%02d.sav", id);
+    return format_temp_s(GAME_DEFAULT_SAVE_PATH "/sav%02d.sav", id);
 }
 
 void game_serialize_save(struct binary_serializer* serializer);

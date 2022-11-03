@@ -1518,7 +1518,7 @@ void entity_database_add_entity(struct entity_database* entity_database, struct 
 local void entity_database_initialize_loot_tables(struct entity_database* database) {
     _debugprintf("loading form");
     struct memory_arena* arena            = database->arena;
-    struct file_buffer   data_file_buffer = read_entire_file(memory_arena_allocator(&scratch_arena), string_literal("./res/loot_tables.txt"));
+    struct file_buffer   data_file_buffer = read_entire_file(memory_arena_allocator(&scratch_arena), string_literal(GAME_DEFAULT_LOOT_TABLES_FILE));
     struct lisp_list     data_file_forms  = lisp_read_string_into_forms(&scratch_arena, file_buffer_as_string(&data_file_buffer));
 
     s32 loot_table_count = data_file_forms.count;
@@ -1603,7 +1603,7 @@ local void entity_database_initialize_loot_tables(struct entity_database* databa
 
 local void entity_database_initialize_entities(struct entity_database* database) {
     struct memory_arena* arena            = database->arena;
-    struct file_buffer   data_file_buffer = read_entire_file(memory_arena_allocator(&scratch_arena), string_literal("./res/entities.txt"));
+    struct file_buffer   data_file_buffer = read_entire_file(memory_arena_allocator(&scratch_arena), string_literal(GAME_DEFAULT_ENTITY_DEF_FILE));
     struct lisp_list     data_file_forms  = lisp_read_string_into_forms(&scratch_arena, file_buffer_as_string(&data_file_buffer));
 
     s32 entity_count = data_file_forms.count + 1;
@@ -1713,7 +1713,7 @@ void entity_database_initialize_abilities(struct entity_database* database) {
     _debugprintf("loading abilities file");
 
     struct memory_arena* arena             = database->arena;
-    struct lisp_list     ability_forms     = lisp_read_entire_file_into_forms(&scratch_arena, string_literal("./res/abilities.txt"));
+    struct lisp_list     ability_forms     = lisp_read_entire_file_into_forms(&scratch_arena, string_literal(GAME_DEFAULT_ENTITY_ABILITY_FILE));
 
     s32 ability_count = ability_forms.count;
 

@@ -39,7 +39,7 @@ local void parse_stat_form(struct item_def* item_definition, struct lisp_form* s
 }
 
 static void initialize_items_database(void) {
-    item_schema_file                  = read_entire_file(memory_arena_allocator(&game_arena), string_literal("./res/item_data.txt"));
+    item_schema_file                  = read_entire_file(memory_arena_allocator(&game_arena), string_literal(GAME_DEFAULT_ITEM_FILE));
     struct lisp_list item_schema_list = lisp_read_string_into_forms(&game_arena, file_buffer_as_string(&item_schema_file));
 
     item_database_count = item_schema_list.count;

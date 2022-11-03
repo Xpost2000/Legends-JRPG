@@ -1152,14 +1152,14 @@ void game_initialize(void) {
 
     graphics_assets = graphics_assets_create(&game_arena, 64, 1024);
 
-    combat_square_unselected = DEBUG_CALL(graphics_assets_load_image(&graphics_assets, string_literal("./res/img/cmbt/cmbt_grid_sq.png")));
-    combat_square_selected   = DEBUG_CALL(graphics_assets_load_image(&graphics_assets, string_literal("./res/img/cmbt/cmbt_selected_sq.png")));
-    drop_shadow              = DEBUG_CALL(graphics_assets_load_image(&graphics_assets, string_literal("./res/img/dropshadow.png")));
+    combat_square_unselected = DEBUG_CALL(graphics_assets_load_image(&graphics_assets, string_literal(GAME_DEFAULT_RESOURCE_PATH "/img/cmbt/cmbt_grid_sq.png")));
+    combat_square_selected   = DEBUG_CALL(graphics_assets_load_image(&graphics_assets, string_literal(GAME_DEFAULT_RESOURCE_PATH "/img/cmbt/cmbt_selected_sq.png")));
+    drop_shadow              = DEBUG_CALL(graphics_assets_load_image(&graphics_assets, string_literal(GAME_DEFAULT_RESOURCE_PATH "/img/dropshadow.png")));
 
-    chest_closed_img      = DEBUG_CALL(graphics_assets_load_image(&graphics_assets, string_literal("./res/img/chestclosed.png")));
-    chest_open_bottom_img = DEBUG_CALL(graphics_assets_load_image(&graphics_assets, string_literal("./res/img/chestopenbottom.png")));
-    chest_open_top_img    = DEBUG_CALL(graphics_assets_load_image(&graphics_assets, string_literal("./res/img/chestopentop.png")));
-    ui_chunky             = DEBUG_CALL(game_ui_nine_patch_load_from_directory(&graphics_assets, string_literal("./res/img/ui/chunky"), 16, 16));
+    chest_closed_img      = DEBUG_CALL(graphics_assets_load_image(&graphics_assets, string_literal(GAME_DEFAULT_RESOURCE_PATH "/img/chestclosed.png")));
+    chest_open_bottom_img = DEBUG_CALL(graphics_assets_load_image(&graphics_assets, string_literal(GAME_DEFAULT_RESOURCE_PATH "/img/chestopenbottom.png")));
+    chest_open_top_img    = DEBUG_CALL(graphics_assets_load_image(&graphics_assets, string_literal(GAME_DEFAULT_RESOURCE_PATH "/img/chestopentop.png")));
+    ui_chunky             = DEBUG_CALL(game_ui_nine_patch_load_from_directory(&graphics_assets, string_literal(GAME_DEFAULT_RESOURCE_PATH "/img/ui/chunky"), 16, 16));
     /* selection_sword_img   = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/selection_sword.png")); */
     global_entity_models = entity_model_database_create(&game_arena, 512);
 
@@ -1247,9 +1247,9 @@ void game_initialize_game_world(void) {
     game_clear_party_inventory();
     entity_clear_all_abilities(game_get_player(game_state));
 
-    if (file_exists(string_literal("./res/gamestartup.txt"))) {
+    if (file_exists(string_literal(GAME_DEFAULT_STARTUP_FILE))) {
         _debugprintf("Trying to execute game startup script!");
-        struct lisp_list startup_forms = lisp_read_entire_file_into_forms(&scratch_arena, string_literal("./res/gamestartup.txt"));
+        struct lisp_list startup_forms = lisp_read_entire_file_into_forms(&scratch_arena, string_literal(GAME_DEFAULT_STARTUP_FILE));
 
         /* NOTE: none of the code here */
         for (unsigned form_index = 0; form_index < startup_forms.count; ++form_index) {
@@ -1552,7 +1552,7 @@ local void update_and_render_ingame_game_menu_ui(struct game_state* state, struc
 
                 assertion(to_speak->has_dialogue && "I'm not sure how this was possible...");
                 if (is_action_pressed(INPUT_ACTION_CONFIRMATION)) {
-                    string conversation_path = format_temp_s("./dlg/%s.txt", to_speak->dialogue_file);
+                    string conversation_path = format_temp_s(GAME_DEFAULT_DIALOGUE_PATH "/%s.txt", to_speak->dialogue_file);
                     game_open_conversation_file(state, conversation_path);
                     v2f32 focus_point = to_speak->position;
                     camera_set_point_to_interpolate(&state->camera, focus_point);
