@@ -463,6 +463,8 @@ GAME_LISP_FUNCTION(GAME_LOAD_AREA) {
     string level_path;
     if(!lisp_form_get_string(arguments[0], &level_path)) {
         Fatal_Script_Error(!"Bad level path!");
+    } else {
+        _debugprintf("LEVEL PATH: %.*s", level_path.length, level_path.data);
     }
 
     if (!lisp_form_get_string(arguments[1], &direction_string)) {
@@ -495,7 +497,7 @@ GAME_LISP_FUNCTION(ENTITY_REMOVE_ITEM) {
     struct entity*               entity = game_dereference_entity(state, ptr.entity_id);
 
     string object_name;
-    if (lisp_form_get_string(arguments[1], &object_name)) {
+    if (!lisp_form_get_string(arguments[1], &object_name)) {
         Fatal_Script_Error(!"Bad item name");
     }
 
@@ -530,7 +532,7 @@ GAME_LISP_FUNCTION(ENTITY_REMOVE_ABILITY) {
     struct entity*               entity = game_dereference_entity(state, ptr.entity_id);
 
     string object_name;
-    if (lisp_form_get_string(arguments[1], &object_name)) {
+    if (!lisp_form_get_string(arguments[1], &object_name)) {
         Fatal_Script_Error(!"Bad ability name");
     }
 
@@ -544,7 +546,7 @@ GAME_LISP_FUNCTION(ENTITY_ADD_ITEM) {
     struct entity*               entity = game_dereference_entity(state, ptr.entity_id);
 
     string object_name;
-    if (lisp_form_get_string(arguments[1], &object_name)) {
+    if (!lisp_form_get_string(arguments[1], &object_name)) {
         Fatal_Script_Error(!"Bad item name");
     }
 
@@ -576,7 +578,7 @@ GAME_LISP_FUNCTION(ENTITY_ADD_ABILITY) {
     struct entity*               entity = game_dereference_entity(state, ptr.entity_id);
 
     string object_name;
-    if (lisp_form_get_string(arguments[1], &object_name)) {
+    if (!lisp_form_get_string(arguments[1], &object_name)) {
         Fatal_Script_Error(!"Bad ability name");
     }
 
@@ -590,7 +592,7 @@ GAME_LISP_FUNCTION(ENTITY_HAS_ITEM) {
     struct entity*               entity = game_dereference_entity(state, ptr.entity_id);
 
     string object_name;
-    if (lisp_form_get_string(arguments[1], &object_name)) {
+    if (!lisp_form_get_string(arguments[1], &object_name)) {
         Fatal_Script_Error(!"Bad item name");
     }
 
@@ -606,7 +608,7 @@ GAME_LISP_FUNCTION(ENTITY_GET_ITEM_COUNT) {
     struct entity*               entity = game_dereference_entity(state, ptr.entity_id);
 
     string object_name;
-    if (lisp_form_get_string(arguments[1], &object_name)) {
+    if (!lisp_form_get_string(arguments[1], &object_name)) {
         Fatal_Script_Error(!"Bad item name");
     }
 
