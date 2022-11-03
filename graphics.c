@@ -730,8 +730,7 @@ local void software_framebuffer_draw_glyph_clipped(struct software_framebuffer* 
     );
 }
 
-/* we do not have a draw glyph */
-void software_framebuffer_draw_text_clipped(struct software_framebuffer* framebuffer, struct font_cache* font, float scale, v2f32 xy, string text, union color32f32 modulation, u8 blend_mode, struct rectangle_f32 clip_rect) {
+local void software_framebuffer_draw_text_clipped(struct software_framebuffer* framebuffer, struct font_cache* font, float scale, v2f32 xy, string text, union color32f32 modulation, u8 blend_mode, struct rectangle_f32 clip_rect) {
     f32 x_cursor = xy.x;
     f32 y_cursor = xy.y;
 
@@ -750,6 +749,10 @@ void software_framebuffer_draw_text_clipped(struct software_framebuffer* framebu
 
 void software_framebuffer_draw_text(struct software_framebuffer* framebuffer, struct font_cache* font, float scale, v2f32 xy, string text, union color32f32 modulation, u8 blend_mode)  {
     software_framebuffer_draw_text_clipped(framebuffer, font, scale, xy, text, modulation, blend_mode, rectangle_f32(0, 0, framebuffer->width, framebuffer->height));
+}
+
+void software_framebuffer_draw_glyph(struct software_framebuffer* framebuffer, struct font_cache* font, f32 scale, v2f32 xy, char glyph, union color32f32 modulation, u8 blend_mode) {
+    software_framebuffer_draw_glyph_clipped(framebuffer, font, scale, xy, glyph, modulation, blend_mode, rectangle_f32(0, 0, framebuffer->width, framebuffer->height));
 }
 
 /* TODO: provide clipped versions */

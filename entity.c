@@ -1703,8 +1703,7 @@ void entity_database_initialize_abilities(struct entity_database* database) {
     _debugprintf("loading abilities file");
 
     struct memory_arena* arena             = database->arena;
-    struct file_buffer   ability_data_file = read_entire_file(memory_arena_allocator(&scratch_arena), string_literal("./res/abilities.txt"));
-    struct lisp_list     ability_forms     = lisp_read_string_into_forms(&scratch_arena, file_buffer_as_string(&ability_data_file));
+    struct lisp_list     ability_forms     = lisp_read_entire_file_into_forms(&scratch_arena, string_literal("./res/abilities.txt"));
 
     s32 ability_count = ability_forms.count;
 
@@ -2087,6 +2086,10 @@ void serialize_level_area_entity(struct binary_serializer* serializer, s32 versi
     }
 }
 
+void entity_clear_all_abilities(struct entity* entity) {
+    entity->ability_count = 0;
+}
+
 void entity_add_ability_by_name(struct entity* entity, string id) {
     if (entity->ability_count < ENTITY_MAX_ABILITIES) {
         struct entity_ability_slot* ability_slot = &entity->abilities[entity->ability_count++];
@@ -2097,7 +2100,7 @@ void entity_add_ability_by_name(struct entity* entity, string id) {
 /* should have static level up table somewhere... probably here? */
 /* knows? */
 
-s32 get_xp_level_cutoff(s32 current_level) {
+local s32 get_xp_level_cutoff(s32 current_level) {
     return 300;
 }
 

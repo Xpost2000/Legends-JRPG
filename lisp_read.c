@@ -809,3 +809,15 @@ struct lisp_form lisp_form_produce_truthy_value_form(bool v) {
         return LISP_nil;
     }
 }
+
+/*
+  NOTE: This is meant to be used in scratch capacity, if you want to memoize all the string data from
+  this, you have to make a separate pass to copy all the strings into permenant storage! This is not immediately
+  obvious, but I don't know why I'm writing this anyways since this is very internal engine code, and chances
+  are anyone else who knows enough about how this engine is styled would find this obvious...
+*/
+struct lisp_list lisp_read_entire_file_into_forms(struct memory_arena* arena, string file_location) {
+    struct file_buffer data_file = read_entire_file(memory_arena_allocator(arena), file_location);
+    struct lisp_list   forms     = lisp_read_string_into_forms(arena, file_buffer_as_string(&data_file));
+    return forms;
+}

@@ -411,6 +411,7 @@ void entity_snap_to_grid_position(struct entity* entity) {
     entity->position = position;
 }
 
+void entity_clear_all_abilities(struct entity* entity);
 void entity_add_ability_by_name(struct entity* entity, string id);
 void entity_do_level_up(struct entity* entity);
 void entity_award_experience(struct entity* entity, s32 xp_amount); /* need to handle level ups */

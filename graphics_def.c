@@ -212,9 +212,9 @@ void software_framebuffer_clear_buffer(struct software_framebuffer* framebuffer,
 void software_framebuffer_draw_quad(struct software_framebuffer* framebuffer, struct rectangle_f32 destination, union color32u8 rgba, u8 blend_mode);
 void software_framebuffer_draw_image_ex(struct software_framebuffer* framebuffer, struct image_buffer* image, struct rectangle_f32 destination, struct rectangle_f32 src, union color32f32 modulation, u32 flags, u8 blend_mode);
 void software_framebuffer_draw_image_ex_clipped(struct software_framebuffer* framebuffer, struct image_buffer* image, struct rectangle_f32 destination, struct rectangle_f32 src, union color32f32 modulation, u32 flags, u8 blend_mode, struct rectangle_f32 clip_rect, shader_fn shader, void* shader_ctx);
-/* we do not have a draw glyph */
 /* add layout draw_text */
 void software_framebuffer_draw_text(struct software_framebuffer* framebuffer, struct font_cache* font, f32 scale, v2f32 xy, string text, union color32f32 modulation, u8 blend_mode);
+void software_framebuffer_draw_glyph(struct software_framebuffer* framebuffer, struct font_cache* font, f32 scale, v2f32 xy, char glyph, union color32f32 modulation, u8 blend_mode);
 /* TODO make command buffer version */
 void software_framebuffer_draw_text_bounds(struct software_framebuffer* framebuffer, struct font_cache* font, f32 scale, v2f32 xy, f32 bounds_w, string cstring, union color32f32 modulation, u8 blend_mode);
 void software_framebuffer_draw_text_bounds_centered(struct software_framebuffer* framebuffer, struct font_cache* font, f32 scale, struct rectangle_f32 bounds, string text, union color32f32 modulation, u8 blend_mode);

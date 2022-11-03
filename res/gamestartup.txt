@@ -1,0 +1,25 @@
+# Game startup script
+# replaces game_initialize_game_world in the game code
+
+# GAME NOTE: I think there might've been a bug in the shops or something?
+# might need to double check this stuff later.
+
+(game_load_area "bforest1" 'retained)
+
+(entity_add_ability '(entity player) "ability_shock")
+(entity_add_ability '(entity player) "ability_sword_rush")
+
+(entity_add_item '(entity player) "item_gold" 450)
+(entity_add_item '(entity player) "item_armor_loincloth")
+(entity_add_item '(entity player) "item_armor_bandage_wraps")
+(entity_add_item '(entity player) "item_accessory_wedding_ring")
+(entity_add_item '(entity player) "item_sardine_fish_5")
+
+# Tutorials
+# Are meant to be customized UIs that are developed.
+# these will ideally have their own way of producing UIs
+# (basically it's a UI DSL),
+# Or because the tutorial system might be so specific, I might have to
+# hack in tutorial code to get it to show the exact way I want it to....
+# who knows.
+# (game_show_tutorial "welcome")

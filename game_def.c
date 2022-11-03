@@ -157,9 +157,18 @@ static string facing_direction_strings_normal[] = {
     [DIRECTION_UP]       = string_literal("up"),
     [DIRECTION_LEFT]     = string_literal("left"),
     [DIRECTION_RIGHT]    = string_literal("right"),
-    [DIRECTION_RETAINED] = string_literal("(retained)"),
+    [DIRECTION_RETAINED] = string_literal("retained"),
     string_literal("(count)"),
 };
+local u8 facing_direction_from_string(string name) {
+    for (unsigned index = 0; index < array_count(facing_direction_strings_normal); ++index) {
+        if (string_equal_case_insensitive(name, facing_direction_strings_normal[index])) {
+            return index;
+        }
+    }
+
+    return DIRECTION_DOWN;
+}
 /* loaded from a table at runtime or compile time? */
 /* Since this isn't serialized, I can change this pretty often. */
 enum tile_data_flags {

@@ -1195,11 +1195,14 @@ void game_initialize(void) {
     /* entity_list_create_badguy(&game_state->permenant_entities, v2f32(9 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE)); */
     /* entity_list_create_badguy(&game_state->permenant_entities, v2f32(11 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE)); */
 
+    /* This should be else where */
+#if 0
     {
         struct entity* player = game_get_player(game_state);
         entity_add_ability_by_name(player, string_literal("ability_shock"));
         entity_add_ability_by_name(player, string_literal("ability_sword_rush"));
     }
+#endif
 
     {
         {
@@ -1236,29 +1239,26 @@ void game_initialize(void) {
     assertion(verify_no_item_id_name_hash_collisions());
 }
 
-void game_initialize_game_world(void) {
+local void game_clear_party_inventory(void) {
     zero_memory(&game_state->inventory, sizeof(game_state->inventory));
+}
 
-    for (s32 i = 0; i < 450; ++i) entity_inventory_add((struct entity_inventory*)&game_state->inventory, MAX_PARTY_ITEMS, item_id_make(string_literal("item_gold")));
-    entity_inventory_add((struct entity_inventory*)&game_state->inventory, MAX_PARTY_ITEMS, item_id_make(string_literal("item_armor_rags")));
-    entity_inventory_add((struct entity_inventory*)&game_state->inventory, MAX_PARTY_ITEMS, item_id_make(string_literal("item_armor_loincloth")));
-    entity_inventory_add((struct entity_inventory*)&game_state->inventory, MAX_PARTY_ITEMS, item_id_make(string_literal("item_armor_bandage_wraps")));
-    entity_inventory_add((struct entity_inventory*)&game_state->inventory, MAX_PARTY_ITEMS, item_id_make(string_literal("item_accessory_wedding_ring")));
-    entity_inventory_add((struct entity_inventory*)&game_state->inventory, MAX_PARTY_ITEMS, item_id_make(string_literal("item_sardine_fish_5")));
+void game_initialize_game_world(void) {
+    game_clear_party_inventory();
+    entity_clear_all_abilities(game_get_player(game_state));
 
-#if 1
-    /* game_open_conversation_file(game_state, string_literal("./dlg/linear_test.txt")); */
-    /* game_open_conversation_file(game_state, string_literal("./dlg/simple_choices.txt")); */
-    /* load_level_from_file(game_state, string_literal("pf.area")); */
-#endif
-    /* load_level_from_file(game_state, string_literal("bt.area")); */
-    /* load_level_from_file(game_state, string_literal("g.area")); */
-    load_level_from_file(game_state, string_literal("bforest1.area"));
-    /* load_level_from_file(game_state, string_literal("testforest.area")); */
-    /* load_level_from_file(game_state, string_literal("lighttest.area")); */
-    /* load_level_from_file(game_state, string_literal("level.area")); */
-    /* load_level_from_file(game_state, string_literal("testisland.area")); */
-    /* game_attempt_to_change_area_name(game_state, string_literal("Old Iyeila"), string_literal("Grave of Stars")); */
+    if (file_exists(string_literal("./res/gamestartup"))) {
+        struct lisp_list startup_forms = lisp_read_entire_file_into_forms(&scratch_arena, string_literal("./res/gamestartup.txt"));
+
+        /* NOTE: none of the code here */
+        for (unsigned form_index = 0; form_index < startup_forms.count; ++form_index) {
+            struct lisp_form* current_form = startup_forms.forms + form_index;
+            game_script_evaluate_form(&scratch_arena, game_state, current_form);
+        }
+    } else {
+        _debugprintf("no startup file!");
+    }
+
 #if 0
     int _game_sandbox_testing(void);
     _game_sandbox_testing();

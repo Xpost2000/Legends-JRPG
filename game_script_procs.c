@@ -509,6 +509,15 @@ GAME_LISP_FUNCTION(CAMERA_PUTAT_FORCE) {
     return LISP_nil;
 }
 
+/*
+  ARG0: AreaName
+  ARG1: FacingDirection (of main character) { up, left, right, down, retain }
+  ARG2(?): Where (x, y): if null, use default spawn area
+ */
+GAME_LISP_FUNCTION(GAME_LOAD_AREA) {
+    return LISP_nil;
+}
+
 #undef GAME_LISP_FUNCTION
 
 #define STRINGIFY(x) #x
@@ -539,8 +548,11 @@ static struct game_script_function_builtin script_function_table[] = {
     GAME_LISP_FUNCTION(GAME_DISABLE_INPUT),
     GAME_LISP_FUNCTION(GAME_INPUT_ENABLED),
     GAME_LISP_FUNCTION(GAME_SET_REGION_NAME),
-    GAME_LISP_FUNCTION(OPEN_SHOP),
+    GAME_LISP_FUNCTION(GAME_LOAD_AREA),
     GAME_LISP_FUNCTION(GAME_START_FIGHT_WITH),
+
+    GAME_LISP_FUNCTION(OPEN_SHOP),
+
     GAME_LISP_FUNCTION(START_CUTSCENE),
     GAME_LISP_FUNCTION(END_CUTSCENE),
     GAME_LISP_FUNCTION(CUTSCENE_LOAD_AREA),
