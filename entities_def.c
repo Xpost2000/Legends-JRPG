@@ -119,6 +119,7 @@ struct entity_inventory{s32 count; struct item_instance items[1];};
 void                  entity_inventory_add(struct entity_inventory* inventory, s32 limits, item_id item);
 void                  entity_inventory_add_multiple(struct entity_inventory* inventory, s32 limits, item_id item, s32 count);
 void                  entity_inventory_remove_item(struct entity_inventory* inventory, s32 item_index, bool remove_all);
+void                  entity_inventory_remove_item_by_name(struct entity_inventory* inventory, string item, bool remove_all);
 bool                  entity_inventory_has_item(struct entity_inventory* inventory, item_id item);
 
 /* assume only player/npc style entity for now */
@@ -413,6 +414,7 @@ void entity_snap_to_grid_position(struct entity* entity) {
 
 void entity_clear_all_abilities(struct entity* entity);
 void entity_add_ability_by_name(struct entity* entity, string id);
+void entity_remove_ability_by_name(struct entity* entity, string id);
 void entity_do_level_up(struct entity* entity);
 void entity_award_experience(struct entity* entity, s32 xp_amount); /* need to handle level ups */
 

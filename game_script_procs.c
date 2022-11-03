@@ -1,71 +1,5 @@
 #define GAME_LISP_FUNCTION(name) struct lisp_form name ## __script_proc (struct memory_arena* arena, struct game_state* state, struct lisp_form* arguments, s32 argument_count)
 
-
-/* NOTE: Not type checking fyi, while the game is moddable, making it fault tolerant is really annoying. So it will crash. */
-
-/* only used to pretty print required argument checks, which is the only "safe-check" that I do */
-local string numeric_strings_table_to_nineteen[] = {
-    string_literal("zero"),
-    string_literal("one"),
-    string_literal("two"),
-    string_literal("three"),
-    string_literal("four"),
-    string_literal("five"),
-    string_literal("six"),
-    string_literal("seven"),
-    string_literal("eight"),
-    string_literal("nine"),
-    string_literal("ten"),
-    string_literal("eleven"),
-    string_literal("twelve"),
-    string_literal("thirteen"),
-    string_literal("fourteen"),
-    string_literal("fifteen"),
-    string_literal("sixteen"),
-    string_literal("seventeen"),
-    string_literal("eighteen"),
-    string_literal("nineteen"),
-};
-char* _script_error_number_to_string(s32 n) {
-    if (n >= array_count(numeric_strings_table_to_nineteen)) {
-        return "[too high!]";
-    }
-
-    return numeric_strings_table_to_nineteen[n].data;
-}
-
-/*
-  Macro might need to be evolved at some point to be more fault tolerant...
-  Or we might need a "script" error log, to show up during debug mode so I can actually
-  figure out what the hell is wrong
-*/
-#define Script_Error(FUNCTION, ERRORSTRING, rest...)            \
-    do {                                                        \
-        _debugprintf(#FUNCTION " :error: " ERRORSTRING, ##rest); \
-        return LISP_nil;                                        \
-    } while(0); 
-
-#define Required_Minimum_Argument_Count(FUNCTION, COUNT)                        \
-    do {                                                                \
-        if (argument_count < COUNT) {                                   \
-            Script_Error(FUNCTION, " requires %s arguments!", _script_error_number_to_string(COUNT)); \
-        }                                                               \
-    } while(0);
-#define Required_Argument_Count(FUNCTION, COUNT)                        \
-    do {                                                                \
-        if (argument_count < COUNT) {                                   \
-            Script_Error(FUNCTION, " requires %s arguments!", _script_error_number_to_string(COUNT)); \
-        } else if (argument_count > COUNT) {                            \
-            Script_Error(FUNCTION, " has %s too many arguments!", _script_error_number_to_string(argument_count - COUNT)); \
-        }                                                               \
-    } while(0);
-#define Fatal_Script_Error(x) assertion(x)
-/*
-  (follow_path GSO_HANDLE PathForm)
-  
-  PathForm -> '(left/down/up/right ...)
-  PathForm -> '(start-x start-y) '(end-x end-y)
-*/
 GAME_LISP_FUNCTION(FOLLOW_PATH) {
     Required_Argument_Count(FOLLOW_PATH, 2)
 
@@ -515,7 +449,171 @@ GAME_LISP_FUNCTION(CAMERA_PUTAT_FORCE) {
   ARG2(?): Where (x, y): if null, use default spawn area
  */
 GAME_LISP_FUNCTION(GAME_LOAD_AREA) {
+    Required_Minimum_Argument_Count(GAME_LOAD_AREA, 2);
+
+    bool  use_spawn      = true;
+    v2f32 spawn_location = {};
+
+    if (argument_count == 3) {
+        use_spawn = false;
+        lisp_form_get_v2f32(arguments[2], &spawn_location);
+    }
+
+    string direction_string;
+    string level_path;
+    if(!lisp_form_get_string(arguments[0], &level_path)) {
+        Fatal_Script_Error(!"Bad level path!");
+    }
+
+    if (!lisp_form_get_string(arguments[1], &direction_string)) {
+        Fatal_Script_Error(!"Bad direction string!?");
+    }
+
+    u8 direction = facing_direction_from_string(direction_string);
+    load_level_from_file(game_state, level_path);
+
+
+    /* * get all player entities */
+    struct entity* player = game_get_player(game_state);
+    if (!use_spawn) {
+        player->position    = spawn_location;
+        player->position.x *= TILE_UNIT_SIZE;
+        player->position.y *= TILE_UNIT_SIZE;
+    }
+
+    if (direction != DIRECTION_RETAINED) {
+        player->facing_direction = direction;
+    }
+
     return LISP_nil;
+}
+
+/* NOTE: ENTITY INVENTORY RELATED STUFF DOESN'T COUNT CHESTS! (YET?) */
+GAME_LISP_FUNCTION(ENTITY_REMOVE_ITEM) {
+    Required_Minimum_Argument_Count(ENTITY_REMOVE_ITEM, 2);
+    struct game_script_typed_ptr ptr    = game_script_object_handle_decode(arguments[0]);
+    struct entity*               entity = game_dereference_entity(state, ptr.entity_id);
+
+    string object_name;
+    if (lisp_form_get_string(arguments[1], &object_name)) {
+        Fatal_Script_Error(!"Bad item name");
+    }
+
+    s32 item_count = 1;
+
+    if (argument_count == 3) {
+        lisp_form_get_s32(arguments[2], &item_count);
+    }
+
+    struct entity_inventory* inventory_target = (struct entity_inventory*)&entity->inventory;
+    int                      inventory_limits = MAX_ACTOR_AVALIABLE_ITEMS;
+
+    if (game_get_player(game_state) == entity) {
+        inventory_target = (struct entity_inventory*)&game_state->inventory;
+        inventory_limits = MAX_PARTY_ITEMS;
+    }
+
+    if (item_count == -1) {
+        entity_inventory_remove_item_by_name(inventory_target, object_name, true);
+    } else {
+        for (unsigned removed = 0; removed < item_count; ++removed) {
+            entity_inventory_remove_item_by_name(inventory_target, object_name, false);
+        }
+    }
+
+    return LISP_nil;
+}
+
+GAME_LISP_FUNCTION(ENTITY_REMOVE_ABILITY) {
+    Required_Argument_Count(ENTITY_REMOVE_ABILITY, 2);
+    struct game_script_typed_ptr ptr    = game_script_object_handle_decode(arguments[0]);
+    struct entity*               entity = game_dereference_entity(state, ptr.entity_id);
+
+    string object_name;
+    if (lisp_form_get_string(arguments[1], &object_name)) {
+        Fatal_Script_Error(!"Bad ability name");
+    }
+
+    entity_remove_ability_by_name(entity, object_name);
+    return LISP_nil;
+}
+
+GAME_LISP_FUNCTION(ENTITY_ADD_ITEM) {
+    Required_Minimum_Argument_Count(ENTITY_REMOVE_ITEM, 2);
+    struct game_script_typed_ptr ptr    = game_script_object_handle_decode(arguments[0]);
+    struct entity*               entity = game_dereference_entity(state, ptr.entity_id);
+
+    string object_name;
+    if (lisp_form_get_string(arguments[1], &object_name)) {
+        Fatal_Script_Error(!"Bad item name");
+    }
+
+    s32 item_count = 1;
+
+    if (argument_count == 3) {
+        lisp_form_get_s32(arguments[2], &item_count);
+    }
+
+    struct entity_inventory* inventory_target = (struct entity_inventory*)&entity->inventory;
+    int                      inventory_limits = MAX_ACTOR_AVALIABLE_ITEMS;
+
+    if (game_get_player(game_state) == entity) {
+        inventory_target = (struct entity_inventory*)&game_state->inventory;
+        inventory_limits = MAX_PARTY_ITEMS;
+    }
+
+    item_id added_item_id = item_id_make(object_name);
+    for (unsigned added = 0; added < item_count; ++added) {
+        entity_inventory_add(inventory_target, inventory_limits, added_item_id);
+    }
+
+    return LISP_nil;
+}
+
+GAME_LISP_FUNCTION(ENTITY_ADD_ABILITY) {
+    Required_Argument_Count(ENTITY_ADD_ABILITY, 2);
+    struct game_script_typed_ptr ptr    = game_script_object_handle_decode(arguments[0]);
+    struct entity*               entity = game_dereference_entity(state, ptr.entity_id);
+
+    string object_name;
+    if (lisp_form_get_string(arguments[1], &object_name)) {
+        Fatal_Script_Error(!"Bad ability name");
+    }
+
+    entity_add_ability_by_name(entity, object_name);
+    return LISP_nil;
+}
+
+GAME_LISP_FUNCTION(ENTITY_HAS_ITEM) {
+    Required_Argument_Count(ENTITY_HAS_ITEM, 2);
+    struct game_script_typed_ptr ptr    = game_script_object_handle_decode(arguments[0]);
+    struct entity*               entity = game_dereference_entity(state, ptr.entity_id);
+
+    string object_name;
+    if (lisp_form_get_string(arguments[1], &object_name)) {
+        Fatal_Script_Error(!"Bad item name");
+    }
+
+    struct entity_inventory* inventory_target = (struct entity_inventory*)&entity->inventory;
+    int                      inventory_limits = MAX_ACTOR_AVALIABLE_ITEMS;
+
+    return lisp_form_produce_truthy_value_form(entity_inventory_has_item(inventory_target, item_id_make(object_name)));
+}
+
+GAME_LISP_FUNCTION(ENTITY_GET_ITEM_COUNT) {
+    Required_Argument_Count(ENTITY_GET_ITEM_COUNT, 2);
+    struct game_script_typed_ptr ptr    = game_script_object_handle_decode(arguments[0]);
+    struct entity*               entity = game_dereference_entity(state, ptr.entity_id);
+
+    string object_name;
+    if (lisp_form_get_string(arguments[1], &object_name)) {
+        Fatal_Script_Error(!"Bad item name");
+    }
+
+    struct entity_inventory* inventory_target = (struct entity_inventory*)&entity->inventory;
+    int                      inventory_limits = MAX_ACTOR_AVALIABLE_ITEMS;
+
+    return lisp_form_integer(entity_inventory_count_instances_of(inventory_target, object_name));
 }
 
 #undef GAME_LISP_FUNCTION
@@ -550,6 +648,13 @@ static struct game_script_function_builtin script_function_table[] = {
     GAME_LISP_FUNCTION(GAME_SET_REGION_NAME),
     GAME_LISP_FUNCTION(GAME_LOAD_AREA),
     GAME_LISP_FUNCTION(GAME_START_FIGHT_WITH),
+
+    GAME_LISP_FUNCTION(ENTITY_REMOVE_ITEM),
+    GAME_LISP_FUNCTION(ENTITY_REMOVE_ABILITY),
+    GAME_LISP_FUNCTION(ENTITY_ADD_ITEM),
+    GAME_LISP_FUNCTION(ENTITY_ADD_ABILITY),
+    GAME_LISP_FUNCTION(ENTITY_HAS_ITEM),
+    GAME_LISP_FUNCTION(ENTITY_GET_ITEM_COUNT),
 
     GAME_LISP_FUNCTION(OPEN_SHOP),
 

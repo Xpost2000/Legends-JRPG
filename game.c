@@ -1933,6 +1933,10 @@ void handle_entity_level_trigger_interactions(struct game_state* state, struct e
             entity->position.x = spawn_location.x * TILE_UNIT_SIZE;
             entity->position.y = spawn_location.y * TILE_UNIT_SIZE;
 
+            if (new_facing_direction != DIRECTION_RETAINED) {
+                entity->facing_direction  = new_facing_direction;
+            }
+
             return;
         }
     }

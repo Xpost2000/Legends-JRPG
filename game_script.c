@@ -202,6 +202,70 @@ struct game_script_script_instance* game_script_enqueue_form_to_execute(struct l
 }
 
 /* considering this is so patternized, is it worth writing a mini metaprogramming thing that just automates this? Who knows */
+/* NOTE: Not type checking fyi, while the game is moddable, making it fault tolerant is really annoying. So it will crash. */
+/* only used to pretty print required argument checks, which is the only "safe-check" that I do */
+local string numeric_strings_table_to_nineteen[] = {
+    string_literal("zero"),
+    string_literal("one"),
+    string_literal("two"),
+    string_literal("three"),
+    string_literal("four"),
+    string_literal("five"),
+    string_literal("six"),
+    string_literal("seven"),
+    string_literal("eight"),
+    string_literal("nine"),
+    string_literal("ten"),
+    string_literal("eleven"),
+    string_literal("twelve"),
+    string_literal("thirteen"),
+    string_literal("fourteen"),
+    string_literal("fifteen"),
+    string_literal("sixteen"),
+    string_literal("seventeen"),
+    string_literal("eighteen"),
+    string_literal("nineteen"),
+};
+char* _script_error_number_to_string(s32 n) {
+    if (n >= array_count(numeric_strings_table_to_nineteen)) {
+        return "[too high!]";
+    }
+
+    return numeric_strings_table_to_nineteen[n].data;
+}
+
+/*
+  Macro might need to be evolved at some point to be more fault tolerant...
+  Or we might need a "script" error log, to show up during debug mode so I can actually
+  figure out what the hell is wrong
+*/
+#define Script_Error(FUNCTION, ERRORSTRING, rest...)            \
+    do {                                                        \
+        _debugprintf(#FUNCTION " :error: " ERRORSTRING, ##rest); \
+        return LISP_nil;                                        \
+    } while(0); 
+
+#define Required_Minimum_Argument_Count(FUNCTION, COUNT)                        \
+    do {                                                                \
+        if (argument_count < COUNT) {                                   \
+            Script_Error(FUNCTION, " requires %s arguments!", _script_error_number_to_string(COUNT)); \
+        }                                                               \
+    } while(0);
+#define Required_Argument_Count(FUNCTION, COUNT)                        \
+    do {                                                                \
+        if (argument_count < COUNT) {                                   \
+            Script_Error(FUNCTION, " requires %s arguments!", _script_error_number_to_string(COUNT)); \
+        } else if (argument_count > COUNT) {                            \
+            Script_Error(FUNCTION, " has %s too many arguments!", _script_error_number_to_string(argument_count - COUNT)); \
+        }                                                               \
+    } while(0);
+#define Fatal_Script_Error(x) assertion(x)
+/*
+  (follow_path GSO_HANDLE PathForm)
+  
+  PathForm -> '(left/down/up/right ...)
+  PathForm -> '(start-x start-y) '(end-x end-y)
+*/
 #include "game_script_procs.c"
 
 local game_script_function lookup_script_function(string name) {

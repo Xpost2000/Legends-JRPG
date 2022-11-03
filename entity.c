@@ -828,6 +828,16 @@ void entity_inventory_set_gold_count(struct entity_inventory* inventory, s32 amo
     }
 }
 
+void entity_inventory_remove_item_by_name(struct entity_inventory* inventory, string item, bool remove_all) {
+    item_id id = item_id_make(item);
+
+    for (s32 item_index = inventory->count-1; item_index >= 0; --item_index) {
+        if (item_id_equal(inventory->items[item_index].item, id)) {
+            entity_inventory_remove_item(inventory, item_index, remove_all);
+        }
+    }
+}
+
 void entity_inventory_remove_item(struct entity_inventory* inventory, s32 item_index, bool remove_all) {
     struct item_instance* item = inventory->items + item_index;
     item->count -= 1;
@@ -2096,6 +2106,19 @@ void entity_add_ability_by_name(struct entity* entity, string id) {
     if (entity->ability_count < ENTITY_MAX_ABILITIES) {
         struct entity_ability_slot* ability_slot = &entity->abilities[entity->ability_count++];
         ability_slot->ability = entity_database_ability_find_id_by_name(&game_state->entity_database, id);
+    }
+}
+
+void entity_remove_ability_by_name(struct entity* entity, string id) {
+    s32 ability_id = entity_database_ability_find_id_by_name(&game_state->entity_database, id);
+
+    for (s32 ability_index = entity->ability_count-1; ability_index >= 0; --ability_index) {
+        struct entity_ability_slot* ability_slot = &entity->abilities[entity->ability_count++];
+
+        if (ability_id == ability_slot->ability) {
+            entity->abilities[ability_index] = entity->abilities[--entity->ability_count];
+            return;
+        }
     }
 }
 
