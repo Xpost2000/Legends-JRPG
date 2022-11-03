@@ -4,7 +4,7 @@
 # GAME NOTE: I think there might've been a bug in the shops or something?
 # might need to double check this stuff later.
 
-(game_load_area "bforest1" 'retained)
+(game_load_area "bforest1.area" 'retained)
 
 (entity_add_ability '(entity player) "ability_shock")
 (entity_add_ability '(entity player) "ability_sword_rush")

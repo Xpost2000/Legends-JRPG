@@ -1247,7 +1247,8 @@ void game_initialize_game_world(void) {
     game_clear_party_inventory();
     entity_clear_all_abilities(game_get_player(game_state));
 
-    if (file_exists(string_literal("./res/gamestartup"))) {
+    if (file_exists(string_literal("./res/gamestartup.txt"))) {
+        _debugprintf("Trying to execute game startup script!");
         struct lisp_list startup_forms = lisp_read_entire_file_into_forms(&scratch_arena, string_literal("./res/gamestartup.txt"));
 
         /* NOTE: none of the code here */
