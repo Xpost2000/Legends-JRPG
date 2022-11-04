@@ -11,6 +11,8 @@
 #include "dialogue_script_parse.c"
 #include "storyboard_presentation_def.c"
 
+#include "fade_transitions.c"
+
 void render_cutscene_entities(struct sortable_draw_entities* draw_entities);
 void game_initialize_game_world(void);
 void game_report_entity_death(entity_id id);
@@ -1792,6 +1794,11 @@ local void update_and_render_pause_game_menu_ui(struct game_state* state, struct
 }
 
 void update_and_render_game_menu_ui(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
+    /* fader/transitions is rendered under the game ui */
+    {
+        transitions_update_and_render(state, framebuffer, dt);
+    }
+
     switch (state->ui_state) {
         case UI_STATE_INGAME: {
             update_and_render_ingame_game_menu_ui(state, framebuffer, dt);
@@ -2243,7 +2250,14 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                     /* cutscene_open(string_literal("bridgescene")); */
                     /* game_write_save_slot(0); */
 #if 1
-                    passive_speaking_dialogue_push(player_id, string_literal("Hello world!"), MENU_FONT_COLOR_LIME);
+                    if (!transition_fading()) {
+                        if (!transition_faded_in()) {
+                            do_color_transition_in(color32f32(0,0,0,1), 0.2, 1);
+                        } else {
+                            do_color_transition_out(color32f32(0,0,0,1), 0.2, 1);
+                        }
+                    }
+                    /* passive_speaking_dialogue_push(player_id, string_literal("Hello world!"), MENU_FONT_COLOR_LIME); */
 #endif
                 }
 
