@@ -5,12 +5,17 @@
 /* I'm tired of having a distinction between the view camera, and a game camera
    which is basically the same struct but *smarter*. I'm just going to shove all camera code in here... */
 
-#define MAX_CAMERA_TRAUMA (2)
+/* global across all cameras */
+#define MAX_CAMERA_TRAUMA (16)
 
-#define MAX_TRAUMA_DISPLACEMENT_X (40)
-#define MAX_TRAUMA_DISPLACEMENT_Y (40)
+#define TRAUMA_FACTOR_WEIGHT_X (0.367)
+#define TRAUMA_FACTOR_WEIGHT_Y (0.24)
+
+#define MAX_TRAUMA_DISPLACEMENT_X (150)
+#define MAX_TRAUMA_DISPLACEMENT_Y (150)
 
 struct camera {
+    struct random_state* rng;
     union {
         struct {
             v2f32 xy; /* rename to position */
@@ -51,6 +56,13 @@ struct camera {
     f32 trauma;
 };
 
+void camera_set_trauma(struct camera* camera, f32 trauma) {
+    camera->trauma = trauma;
+
+    if (camera->trauma >= MAX_CAMERA_TRAUMA) {
+        camera->trauma = MAX_CAMERA_TRAUMA;
+    }
+}
 void camera_traumatize(struct camera* camera, f32 trauma) {
     camera->trauma += trauma;
 
@@ -120,6 +132,16 @@ v2f32 camera_project(struct camera* camera, v2f32 point, s32 screen_width, s32 s
     point.y /= camera->zoom;
 #endif
     return point;
+}
+
+v2f32 camera_displacement_from_trauma(struct camera* camera) {
+    struct random_state* rng           = camera->rng;
+    f32                  trauma_factor = camera->trauma;
+
+    f32 random_x = random_ranged_integer(rng, -MAX_TRAUMA_DISPLACEMENT_X * trauma_factor * TRAUMA_FACTOR_WEIGHT_X, MAX_TRAUMA_DISPLACEMENT_X * trauma_factor * TRAUMA_FACTOR_WEIGHT_X);
+    f32 random_y = random_ranged_integer(rng, -MAX_TRAUMA_DISPLACEMENT_Y * trauma_factor * TRAUMA_FACTOR_WEIGHT_Y, MAX_TRAUMA_DISPLACEMENT_Y * trauma_factor * TRAUMA_FACTOR_WEIGHT_Y);
+
+    return v2f32(random_x, random_y);
 }
 
 struct rectangle_f32 camera_project_rectangle(struct camera* camera, struct rectangle_f32 rectangle, s32 screen_width, s32 screen_height) {

@@ -942,7 +942,7 @@ s32 thread_software_framebuffer_render_commands_tiles(void* context) {
     return 0;
 }
 
-local void transform_command_into_clip_space(v2f32 resolution, struct render_command* command, struct camera* camera) {
+local void transform_command_into_clip_space(v2f32 resolution, struct render_command* command, struct camera* camera, v2f32 trauma_displacement) {
     f32 half_screen_width  = resolution.x/2;
     f32 half_screen_height = resolution.y/2;
 
@@ -968,22 +968,12 @@ local void transform_command_into_clip_space(v2f32 resolution, struct render_com
     }
 
     {
-        command->start.x       -= camera->xy.x;
-        command->start.y       -= camera->xy.y;
-        command->end.x         -= camera->xy.x;
-        command->end.y         -= camera->xy.y;
-        command->destination.x -= camera->xy.x;
-        command->destination.y -= camera->xy.y;
-    }
-
-    {
-        v2f32 displacement      = camera_displacement_from_trauma(camera);
-        command->start.x       += displacement.x; 
-        command->start.y       += displacement.y; 
-        command->end.x         += displacement.x; 
-        command->end.y         += displacement.y; 
-        command->destination.x += displacement.x; 
-        command->destination.y += displacement.y; 
+        command->start.x       -= camera->xy.x + (trauma_displacement.x);
+        command->start.y       -= camera->xy.y + (trauma_displacement.y);
+        command->end.x         -= camera->xy.x + (trauma_displacement.x);
+        command->end.y         -= camera->xy.y + (trauma_displacement.y);
+        command->destination.x -= camera->xy.x + (trauma_displacement.x);
+        command->destination.y -= camera->xy.y + (trauma_displacement.y);
     }
 }
                                   
@@ -995,9 +985,11 @@ void software_framebuffer_render_commands(struct software_framebuffer* framebuff
     sort_render_commands(commands);
 
     /* move all things into clip space */
+    v2f32 displacement      = camera_displacement_from_trauma(&commands->camera);
+
     for (unsigned index = 0; index < commands->command_count; ++index) {
         struct render_command* command = &commands->commands[index];
-        transform_command_into_clip_space(v2f32(SCREEN_WIDTH, SCREEN_HEIGHT), command, &commands->camera);
+        transform_command_into_clip_space(v2f32(SCREEN_WIDTH, SCREEN_HEIGHT), command, &commands->camera, displacement);
     }
 
 #ifndef MULTITHREADED_EXPERIMENTAL

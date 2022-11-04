@@ -194,16 +194,6 @@ void sortable_draw_entities_sort_keys(struct sortable_draw_entities* entities) {
 }
 
 /* only used in the render command system which is smart enough to apply this stuff */
-v2f32 camera_displacement_from_trauma(struct camera* camera) {
-    struct random_state* game_rng      = &game_state->rng;
-    f32                  trauma_factor = camera->trauma;
-
-    f32 random_x = random_ranged_integer(game_rng, -MAX_TRAUMA_DISPLACEMENT_X * trauma_factor, MAX_TRAUMA_DISPLACEMENT_X * trauma_factor);
-    f32 random_y = random_ranged_integer(game_rng, -MAX_TRAUMA_DISPLACEMENT_Y * trauma_factor, MAX_TRAUMA_DISPLACEMENT_Y * trauma_factor);
-
-    return v2f32(random_x, random_y);
-}
-
 local struct tile_data_definition* tile_table_data;
 local struct autotile_table*       auto_tile_info;
 
@@ -1208,14 +1198,7 @@ void game_initialize(void) {
     /* entity_list_create_badguy(&game_state->permenant_entities, v2f32(9 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE)); */
     /* entity_list_create_badguy(&game_state->permenant_entities, v2f32(11 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE)); */
 
-    /* This should be else where */
-#if 0
-    {
-        struct entity* player = game_get_player(game_state);
-        entity_add_ability_by_name(player, string_literal("ability_shock"));
-        entity_add_ability_by_name(player, string_literal("ability_sword_rush"));
-    }
-#endif
+    game_state->camera.rng = &game_state->rng;
 
     {
         {
@@ -2269,16 +2252,17 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                     /* cutscene_open(string_literal("bridgescene")); */
                     /* game_write_save_slot(0); */
 #if 1
-                    if (!transition_fading()) {
-                        if (!transition_faded_in()) {
-                            /* do_horizontal_slide_in(color32f32(0,0,0,1), 0.2, 1); */
-                            do_shuteye_in(color32f32(0,0,0,1), 0.2, 1);
-                        } else {
-                            do_curtainclose_out(color32f32(0,0,0,1), 0.2, 1);
-                            /* do_vertical_slide_out(color32f32(0,0,0,1), 0.2, 1); */
-                            /* do_color_transition_out(color32f32(0,0,0,1), 0.2, 1); */
-                        }
-                    }
+                    camera_traumatize(&game_state->camera, 0.5);
+                    /* if (!transition_fading()) { */
+                    /*     if (!transition_faded_in()) { */
+                    /*         /\* do_horizontal_slide_in(color32f32(0,0,0,1), 0.2, 1); *\/ */
+                    /*         do_shuteye_in(color32f32(0,0,0,1), 0.2, 1); */
+                    /*     } else { */
+                    /*         do_curtainclose_out(color32f32(0,0,0,1), 0.2, 1); */
+                    /*         /\* do_vertical_slide_out(color32f32(0,0,0,1), 0.2, 1); *\/ */
+                    /*         /\* do_color_transition_out(color32f32(0,0,0,1), 0.2, 1); *\/ */
+                    /*     } */
+                    /* } */
                     /* passive_speaking_dialogue_push(player_id, string_literal("Hello world!"), MENU_FONT_COLOR_LIME); */
 #endif
                 }
