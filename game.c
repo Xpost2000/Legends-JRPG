@@ -193,8 +193,19 @@ void sortable_draw_entities_sort_keys(struct sortable_draw_entities* entities) {
     }
 }
 
-struct tile_data_definition* tile_table_data;
-struct autotile_table*       auto_tile_info;
+/* only used in the render command system which is smart enough to apply this stuff */
+v2f32 camera_displacement_from_trauma(struct camera* camera) {
+    struct random_state* game_rng      = &game_state->rng;
+    f32                  trauma_factor = camera->trauma;
+
+    f32 random_x = random_ranged_integer(game_rng, -MAX_TRAUMA_DISPLACEMENT_X * trauma_factor, MAX_TRAUMA_DISPLACEMENT_X * trauma_factor);
+    f32 random_y = random_ranged_integer(game_rng, -MAX_TRAUMA_DISPLACEMENT_Y * trauma_factor, MAX_TRAUMA_DISPLACEMENT_Y * trauma_factor);
+
+    return v2f32(random_x, random_y);
+}
+
+local struct tile_data_definition* tile_table_data;
+local struct autotile_table*       auto_tile_info;
 
 #include "region_change_presentation.c"
 local void game_attempt_to_change_area_name(struct game_state* state, string name, string subtitle) {
@@ -1887,6 +1898,14 @@ local void update_game_camera(struct game_state* state, f32 dt) {
             camera->xy.x        = camera->tracking_xy.x + 16;
             camera->xy.y        = camera->tracking_xy.y + 32;
             camera_init         = true;
+        }
+    }
+
+    {
+        if (camera->trauma > 0) {
+            camera->trauma -= dt;
+        } else {
+            camera->trauma = 0;
         }
     }
 

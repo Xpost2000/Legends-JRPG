@@ -4,6 +4,12 @@
 /* NOTE/TODO For now our camera isn't really intelligent */
 /* I'm tired of having a distinction between the view camera, and a game camera
    which is basically the same struct but *smarter*. I'm just going to shove all camera code in here... */
+
+#define MAX_CAMERA_TRAUMA (2)
+
+#define MAX_TRAUMA_DISPLACEMENT_X (40)
+#define MAX_TRAUMA_DISPLACEMENT_Y (40)
+
 struct camera {
     union {
         struct {
@@ -41,7 +47,17 @@ struct camera {
     f32                  interpolation_t[3];
     f32                  start_interpolation_values[3];
     bool                 try_interpolation[3];
+
+    f32 trauma;
 };
+
+void camera_traumatize(struct camera* camera, f32 trauma) {
+    camera->trauma += trauma;
+
+    if (camera->trauma >= MAX_CAMERA_TRAUMA) {
+        camera->trauma = MAX_CAMERA_TRAUMA;
+    }
+}
 
 void camera_set_point_to_interpolate(struct camera* camera, v2f32 point) {
     camera->interpolation_t[0] = 0;

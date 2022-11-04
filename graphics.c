@@ -975,6 +975,16 @@ local void transform_command_into_clip_space(v2f32 resolution, struct render_com
         command->destination.x -= camera->xy.x;
         command->destination.y -= camera->xy.y;
     }
+
+    {
+        v2f32 displacement      = camera_displacement_from_trauma(camera);
+        command->start.x       += displacement.x; 
+        command->start.y       += displacement.y; 
+        command->end.x         += displacement.x; 
+        command->end.y         += displacement.y; 
+        command->destination.x += displacement.x; 
+        command->destination.y += displacement.y; 
+    }
 }
                                   
 void software_framebuffer_render_commands(struct software_framebuffer* framebuffer, struct render_commands* commands) {
