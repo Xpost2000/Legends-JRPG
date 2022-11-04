@@ -88,6 +88,7 @@ local void do_color_transition_in(union color32f32 target_color, f32 delay_time,
     state->forwards                      = true;
     transition_register_on_delay_finish(___transition_stubs, NULL, 0);
     transition_register_on_finish(___transition_stubs, NULL, 0);
+    _debugprintf("Starting a color fade in!");
 }
 
 local void do_color_transition_out(union color32f32 target_color, f32 delay_time, f32 time) {
@@ -100,6 +101,7 @@ local void do_color_transition_out(union color32f32 target_color, f32 delay_time
     state->forwards                      = false;
     transition_register_on_delay_finish(___transition_stubs, NULL, 0);
     transition_register_on_finish(___transition_stubs, NULL, 0);
+    _debugprintf("Starting a color fade out!");
 }
 
 local void update_and_render_color_fades(struct game_state* state, struct transition_fader_state* fader_state, struct software_framebuffer* framebuffer, f32 effective_t);
@@ -147,5 +149,5 @@ local void update_and_render_color_fades(struct game_state* state, struct transi
     union color32f32 render_color = fader_state->color;
     render_color.a                = lerp_f32(fader_state->color.a, 0, effective_t);
 
-    software_framebuffer_draw_quad(framebuffer, RECTANGLE_F32_NULL, color32f32_to_color32u8(render_color), BLEND_MODE_ALPHA);
+    software_framebuffer_draw_quad(framebuffer, rectangle_f32(0, 0, framebuffer->width, framebuffer->height), color32f32_to_color32u8(render_color), BLEND_MODE_ALPHA);
 }
