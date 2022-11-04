@@ -2207,9 +2207,9 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
     }
 
     /* This is a bit harder to replicate through hardware acceleration... */
-    if (is_key_pressed(KEY_F10)) {
-        special_effect_start_crossfade_scene(1.5f, 1.2f);
-    }
+    /* if (is_key_pressed(KEY_F10)) { */
+    /*     special_effect_start_crossfade_scene(1.5f, 1.2f); */
+    /* } */
 
 #ifdef USE_EDITOR
     if (is_key_pressed(KEY_F1)) {
@@ -2252,7 +2252,7 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
 #if 1
                     if (!transition_fading()) {
                         if (!transition_faded_in()) {
-                            do_color_transition_in(color32f32(0,0,0,1), 0.2, 1);
+                            do_horizontal_slide_in(color32f32(0,0,0,1), 0.2, 1);
                         } else {
                             do_color_transition_out(color32f32(0,0,0,1), 0.2, 1);
                         }

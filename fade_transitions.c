@@ -102,40 +102,96 @@ local void transition_register_on_start(transition_on_start_callback callback, u
     memory_copy(data, state->callback_data_on_start, data_length);
 }
 
-local void do_color_transition_in(union color32f32 target_color, f32 delay_time, f32 time) {
+local void fader_generic_setup(s32 type, union color32f32 color, f32 delay_timer, f32 time, bool forwards) {
     struct transition_fader_state* state = &global_transition_fader_state;
-    state->type                          = TRANSITION_FADER_TYPE_COLOR;
-    state->color                         = target_color;
+    state->type                          = type;
+    state->color                         = color;
     state->max_time                      = time;
     state->time                          = 0;
-    state->delay_time                    = delay_time;
-    state->forwards                      = true;
+    state->delay_time                    = delay_timer;
+    state->forwards                      = forwards;
 
     transition_register_on_delay_finish(___transition_stubs, NULL, 0);
     transition_register_on_finish(___transition_stubs, NULL, 0);
     transition_register_on_start(___transition_stubs, NULL, 0);
+}
+
+local void do_horizontal_slide_in(union color32f32 target_color, f32 delay_timer, f32 time) {
+    struct transition_fader_state* state = &global_transition_fader_state;
+    fader_generic_setup(
+        TRANSITION_FADER_TYPE_HORIZONTAL_SLIDE,
+        target_color,
+        delay_timer,
+        time,
+        true
+    );
+    _debugprintf("Starting a horizontal slide fade in!");
+}
+
+local void do_horizontal_slide_out(union color32f32 target_color, f32 delay_timer, f32 time) {
+    struct transition_fader_state* state = &global_transition_fader_state;
+    fader_generic_setup(
+        TRANSITION_FADER_TYPE_HORIZONTAL_SLIDE,
+        target_color,
+        delay_timer,
+        time,
+        false
+    );
+    _debugprintf("Starting a horizontal slide fade out!");
+}
+
+local void do_vertical_slide_in(union color32f32 target_color, f32 delay_timer, f32 time) {
+    struct transition_fader_state* state = &global_transition_fader_state;
+    fader_generic_setup(
+        TRANSITION_FADER_TYPE_VERTICAL_SLIDE,
+        target_color,
+        delay_timer,
+        time,
+        true
+    );
+    _debugprintf("Starting a vertical slide fade in!");
+}
+
+local void do_vertical_slide_out(union color32f32 target_color, f32 delay_timer, f32 time) {
+    struct transition_fader_state* state = &global_transition_fader_state;
+    fader_generic_setup(
+        TRANSITION_FADER_TYPE_VERTICAL_SLIDE,
+        target_color,
+        delay_timer,
+        time,
+        false
+    );
+    _debugprintf("Starting a vertical slide fade out!");
+}
+
+local void do_color_transition_in(union color32f32 target_color, f32 delay_time, f32 time) {
+    struct transition_fader_state* state = &global_transition_fader_state;
+    fader_generic_setup(
+        TRANSITION_FADER_TYPE_COLOR,
+        target_color,
+        delay_time,
+        time,
+        true
+    );
 
     _debugprintf("Starting a color fade in!");
 }
 
 local void do_color_transition_out(union color32f32 target_color, f32 delay_time, f32 time) {
     struct transition_fader_state* state = &global_transition_fader_state;
-    state->type                          = TRANSITION_FADER_TYPE_COLOR;
-    state->color                         = target_color;
-    state->max_time                      = time;
-    state->time                          = 0;
-    state->delay_time                    = delay_time;
-    state->forwards                      = false;
-
-    transition_register_on_delay_finish(___transition_stubs, NULL, 0);
-    transition_register_on_finish(___transition_stubs, NULL, 0);
-    transition_register_on_start(___transition_stubs, NULL, 0);
+    fader_generic_setup(
+        TRANSITION_FADER_TYPE_COLOR,
+        target_color,
+        delay_time,
+        time,
+        false
+    );
 
     _debugprintf("Starting a color fade out!");
 }
 
 local void update_and_render_color_fades(struct game_state* state, struct transition_fader_state* fader_state, struct software_framebuffer* framebuffer, f32 effective_t);
-local void update_and_render_slide_fades(struct game_state* state, struct transition_fader_state* fader_state, struct software_framebuffer* framebuffer, f32 effective_t);
+local void update_and_render_horizontal_slide_fades(struct game_state* state, struct transition_fader_state* fader_state, struct software_framebuffer* framebuffer, f32 effective_t);
 local void transitions_update_and_render(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
     struct transition_fader_state* transition_state = &global_transition_fader_state;
 
@@ -172,6 +228,9 @@ local void transitions_update_and_render(struct game_state* state, struct softwa
         case TRANSITION_FADER_TYPE_COLOR: {
             update_and_render_color_fades(state, transition_state, framebuffer, effective_t);
         } break;
+        case TRANSITION_FADER_TYPE_HORIZONTAL_SLIDE: {
+            update_and_render_horizontal_slide_fades(state, transition_state, framebuffer, effective_t);
+        } break;
             bad_case;
     }
 
@@ -188,13 +247,24 @@ local void update_and_render_color_fades(struct game_state* state, struct transi
     software_framebuffer_draw_quad(framebuffer, rectangle_f32(0, 0, framebuffer->width, framebuffer->height), color32f32_to_color32u8(render_color), BLEND_MODE_ALPHA);
 }
 
-local void update_and_render_slide_fades(struct game_state* state, struct transition_fader_state* fader_state, struct software_framebuffer* framebuffer, f32 effective_t) {
+local void update_and_render_horizontal_slide_fades(struct game_state* state, struct transition_fader_state* fader_state, struct software_framebuffer* framebuffer, f32 effective_t) {
     if (fader_state->forwards) {
         effective_t = 1 - effective_t;
     }
 
     union color32f32 render_color = fader_state->color;
-    f32 x_position;
+    f32 position_to_draw          = lerp_f32(-framebuffer->width, 0, effective_t);
 
-    software_framebuffer_draw_quad(framebuffer, rectangle_f32(0, 0, framebuffer->width, framebuffer->height), color32f32_to_color32u8(render_color), BLEND_MODE_ALPHA);
+    software_framebuffer_draw_quad(framebuffer, rectangle_f32(position_to_draw, 0, framebuffer->width, framebuffer->height), color32f32_to_color32u8(render_color), BLEND_MODE_ALPHA);
+}
+
+local void update_and_render_vertical_slide_fades(struct game_state* state, struct transition_fader_state* fader_state, struct software_framebuffer* framebuffer, f32 effective_t) {
+    if (fader_state->forwards) {
+        effective_t = 1 - effective_t;
+    }
+
+    union color32f32 render_color = fader_state->color;
+    f32 position_to_draw          = lerp_f32(-framebuffer->height, 0, effective_t);
+
+    software_framebuffer_draw_quad(framebuffer, rectangle_f32(0, position_to_draw, framebuffer->width, framebuffer->height), color32f32_to_color32u8(render_color), BLEND_MODE_ALPHA);
 }
