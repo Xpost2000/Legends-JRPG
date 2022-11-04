@@ -164,6 +164,54 @@ local void do_vertical_slide_out(union color32f32 target_color, f32 delay_timer,
     _debugprintf("Starting a vertical slide fade out!");
 }
 
+local void do_curtainclose_in(union color32f32 target_color, f32 delay_timer, f32 time) {
+    struct transition_fader_state* state = &global_transition_fader_state;
+    fader_generic_setup(
+        TRANSITION_FADER_TYPE_CURTAINCLOSE_SLIDE,
+        target_color,
+        delay_timer,
+        time,
+        true
+    );
+    _debugprintf("Starting a curtain close slide fade in!");
+}
+
+local void do_curtainclose_out(union color32f32 target_color, f32 delay_timer, f32 time) {
+    struct transition_fader_state* state = &global_transition_fader_state;
+    fader_generic_setup(
+        TRANSITION_FADER_TYPE_CURTAINCLOSE_SLIDE,
+        target_color,
+        delay_timer,
+        time,
+        false
+    );
+    _debugprintf("Starting a curtain close slide fade out!");
+}
+
+local void do_shuteye_in(union color32f32 target_color, f32 delay_timer, f32 time) {
+    struct transition_fader_state* state = &global_transition_fader_state;
+    fader_generic_setup(
+        TRANSITION_FADER_TYPE_SHUTEYE_SLIDE,
+        target_color,
+        delay_timer,
+        time,
+        true
+    );
+    _debugprintf("Starting a shuteye slide fade in!");
+}
+
+local void do_shuteye_out(union color32f32 target_color, f32 delay_timer, f32 time) {
+    struct transition_fader_state* state = &global_transition_fader_state;
+    fader_generic_setup(
+        TRANSITION_FADER_TYPE_SHUTEYE_SLIDE,
+        target_color,
+        delay_timer,
+        time,
+        false
+    );
+    _debugprintf("Starting a shuteye slide fade out!");
+}
+
 local void do_color_transition_in(union color32f32 target_color, f32 delay_time, f32 time) {
     struct transition_fader_state* state = &global_transition_fader_state;
     fader_generic_setup(
@@ -192,6 +240,10 @@ local void do_color_transition_out(union color32f32 target_color, f32 delay_time
 
 local void update_and_render_color_fades(struct game_state* state, struct transition_fader_state* fader_state, struct software_framebuffer* framebuffer, f32 effective_t);
 local void update_and_render_horizontal_slide_fades(struct game_state* state, struct transition_fader_state* fader_state, struct software_framebuffer* framebuffer, f32 effective_t);
+local void update_and_render_vertical_slide_fades(struct game_state* state, struct transition_fader_state* fader_state, struct software_framebuffer* framebuffer, f32 effective_t);
+local void update_and_render_curtainclose_fades(struct game_state* state, struct transition_fader_state* fader_state, struct software_framebuffer* framebuffer, f32 effective_t);
+local void update_and_render_shuteye_fades(struct game_state* state, struct transition_fader_state* fader_state, struct software_framebuffer* framebuffer, f32 effective_t);
+
 local void transitions_update_and_render(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
     struct transition_fader_state* transition_state = &global_transition_fader_state;
 
@@ -231,6 +283,16 @@ local void transitions_update_and_render(struct game_state* state, struct softwa
         case TRANSITION_FADER_TYPE_HORIZONTAL_SLIDE: {
             update_and_render_horizontal_slide_fades(state, transition_state, framebuffer, effective_t);
         } break;
+        case TRANSITION_FADER_TYPE_VERTICAL_SLIDE: {
+            update_and_render_vertical_slide_fades(state, transition_state, framebuffer, effective_t);
+        } break;
+        case TRANSITION_FADER_TYPE_SHUTEYE_SLIDE: {
+            update_and_render_shuteye_fades(state, transition_state, framebuffer, effective_t);
+        } break;
+        case TRANSITION_FADER_TYPE_CURTAINCLOSE_SLIDE: {
+            update_and_render_curtainclose_fades(state, transition_state, framebuffer, effective_t);
+        } break;
+
             bad_case;
     }
 
@@ -248,23 +310,60 @@ local void update_and_render_color_fades(struct game_state* state, struct transi
 }
 
 local void update_and_render_horizontal_slide_fades(struct game_state* state, struct transition_fader_state* fader_state, struct software_framebuffer* framebuffer, f32 effective_t) {
-    if (fader_state->forwards) {
+    if (!fader_state->forwards) {
         effective_t = 1 - effective_t;
     }
 
     union color32f32 render_color = fader_state->color;
-    f32 position_to_draw          = lerp_f32(-framebuffer->width, 0, effective_t);
+    f32 position_to_draw          = lerp_f32(-(s32)framebuffer->width, 0, effective_t);
 
-    software_framebuffer_draw_quad(framebuffer, rectangle_f32(position_to_draw, 0, framebuffer->width, framebuffer->height), color32f32_to_color32u8(render_color), BLEND_MODE_ALPHA);
+    software_framebuffer_draw_quad(framebuffer,
+                                   rectangle_f32(position_to_draw, 0,
+                                                 framebuffer->width, framebuffer->height),
+                                   color32f32_to_color32u8(render_color), BLEND_MODE_ALPHA);
 }
 
 local void update_and_render_vertical_slide_fades(struct game_state* state, struct transition_fader_state* fader_state, struct software_framebuffer* framebuffer, f32 effective_t) {
-    if (fader_state->forwards) {
+    if (!fader_state->forwards) {
         effective_t = 1 - effective_t;
     }
 
     union color32f32 render_color = fader_state->color;
-    f32 position_to_draw          = lerp_f32(-framebuffer->height, 0, effective_t);
+    f32 position_to_draw          = lerp_f32(-(s32)framebuffer->height, 0, effective_t);
 
     software_framebuffer_draw_quad(framebuffer, rectangle_f32(0, position_to_draw, framebuffer->width, framebuffer->height), color32f32_to_color32u8(render_color), BLEND_MODE_ALPHA);
+}
+
+local void update_and_render_curtainclose_fades(struct game_state* state, struct transition_fader_state* fader_state, struct software_framebuffer* framebuffer, f32 effective_t) {
+    if (!fader_state->forwards) {
+        effective_t = 1 - effective_t;
+    }
+
+    union color32f32 render_color = fader_state->color;
+    s32              half_width  = framebuffer->width/2;
+
+    f32 lid_positions[] = {
+        lerp_f32(-(s32)framebuffer->width,                     0, effective_t),
+        lerp_f32((s32)framebuffer->width+half_width,  half_width, effective_t),
+    };
+
+    software_framebuffer_draw_quad(framebuffer, rectangle_f32(lid_positions[0], 0, half_width, framebuffer->height), color32f32_to_color32u8(render_color), BLEND_MODE_ALPHA);
+    software_framebuffer_draw_quad(framebuffer, rectangle_f32(lid_positions[1], 0, half_width, framebuffer->height), color32f32_to_color32u8(render_color), BLEND_MODE_ALPHA);
+}
+
+local void update_and_render_shuteye_fades(struct game_state* state, struct transition_fader_state* fader_state, struct software_framebuffer* framebuffer, f32 effective_t) {
+    if (!fader_state->forwards) {
+        effective_t = 1 - effective_t;
+    }
+
+    union color32f32 render_color = fader_state->color;
+    s32              half_height  = framebuffer->height/2;
+
+    f32 lid_positions[] = {
+        lerp_f32(-(s32)framebuffer->height,                        0, effective_t),
+        lerp_f32((s32)framebuffer->height+half_height,   half_height, effective_t),
+    };
+
+    software_framebuffer_draw_quad(framebuffer, rectangle_f32(0, lid_positions[0], framebuffer->width, half_height), color32f32_to_color32u8(render_color), BLEND_MODE_ALPHA);
+    software_framebuffer_draw_quad(framebuffer, rectangle_f32(0, lid_positions[1], framebuffer->width, half_height), color32f32_to_color32u8(render_color), BLEND_MODE_ALPHA);
 }
