@@ -557,6 +557,7 @@ struct directory_listing {
     struct directory_file* files;
 };
 
+#ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #ifndef __EMSCRIPTEN__
 #include <windows.h>
@@ -646,6 +647,7 @@ struct directory_listing directory_listing_list_all_files_in(struct memory_arena
 
     return result;
 }
+#endif
 
 s32 length_of_longest_string(string* strings, s32 count) {
     s32 length_of_longest = 0;

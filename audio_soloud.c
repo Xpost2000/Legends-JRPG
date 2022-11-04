@@ -1,3 +1,4 @@
+/* NOTE: I literally have no idea how to build this, but I would like this to work... */
 #include "audio_def.c"
 
 #include <soloud/soloud_c.h>

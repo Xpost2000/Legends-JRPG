@@ -371,12 +371,12 @@ local void initialize(void) {
 
     audio_initialize();
 
-    global_game_window          = SDL_CreateWindow("RPG",
+    global_game_window          = SDL_CreateWindow("Legends RPG",
                                                    SDL_WINDOWPOS_CENTERED,
                                                    SDL_WINDOWPOS_CENTERED,
                                                    REAL_SCREEN_WIDTH,
                                                    REAL_SCREEN_HEIGHT,
-                                                   SDL_WINDOW_HIDDEN);
+                                                   SDL_WINDOW_HIDDEN | SDL_WINDOW_ALLOW_HIGHDPI);
     global_game_sdl_renderer    = SDL_CreateRenderer(global_game_window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 
     initialize_thread_pool();
@@ -472,6 +472,9 @@ void engine_main_loop() {
 }
 
 int engine_main(int argc, char** argv) {
+#ifdef _WIN32
+    SetProcessDPIAware();
+#endif
     initialize();
     
     /* feature testing */

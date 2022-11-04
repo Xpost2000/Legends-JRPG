@@ -139,7 +139,9 @@ struct game_script_script_instance* new_script_instance(s32 enqueue_id) {
             struct game_script_script_instance* script = script_index + running_scripts;
 
             if (script->active && script->id == enqueue_id) {
+#if 0
                 _debugprintf("Shall not enqueue! Script of the same kind is already running! (%d)", enqueue_id);
+#endif
                 return NULL;
             }
         }
@@ -863,7 +865,9 @@ struct game_script_typed_ptr game_script_object_handle_decode(struct lisp_form o
                             result.entity_id = entity_list_get_id(&game_state->loaded_area.entities, real_id);
                         }
                     } else if (lisp_form_get_string(*id_form, &script_name_string)) {
+#if 0
                         _debugprintf("Looking up string name?");
+#endif
 
                         if (cutscene_viewing_separate_area()) {
                             result.entity_id = entity_list_find_entity_id_with_scriptname(&cutscene_view_area()->entities, script_name_string);

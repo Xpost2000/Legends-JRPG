@@ -3,6 +3,10 @@
 
   Will add features as I occasionally want to reduce work,
   also metaprogramming playground for myself.
+
+  Would be curious to get metagen to autogenerate many of the wrapper script
+  functions, since the vast majority of the script functions are trivially
+  wrappable.
 */
 
 #define RELEASE
