@@ -32,6 +32,7 @@
 #define Set_Bit(a, x)    (a |= x)
 #define Get_Bit(a, x)    (a & x)
 
+#define Bytes(x)                    (uint64_t)(x)
 #define Kilobyte(x)                 (uint64_t)(x * 1024LL)
 #define Megabyte(x)                 (uint64_t)(x * 1024LL * 1024LL)
 #define Gigabyte(x)                 (uint64_t)(x * 1024LL * 1024LL * 1024LL)
