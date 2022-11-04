@@ -106,6 +106,10 @@ local void update_and_render_color_fades(struct game_state* state, struct transi
 local void transitions_update_and_render(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
     struct transition_fader_state* transition_state = &global_transition_fader_state;
 
+    if (transition_state->type == TRANSITION_FADER_TYPE_NONE) {
+        return;
+    }
+
     if (transition_state->delay_time > 0) {
         transition_state->delay_time -= dt;
 
@@ -136,8 +140,12 @@ local void transitions_update_and_render(struct game_state* state, struct softwa
 }
 
 local void update_and_render_color_fades(struct game_state* state, struct transition_fader_state* fader_state, struct software_framebuffer* framebuffer, f32 effective_t) {
-    if (!fader_state->forwards) {
+    if (fader_state->forwards) {
         effective_t = 1 - effective_t;
     }
 
+    union color32f32 render_color = fader_state->color;
+    render_color.a                = lerp_f32(fader_state->color.a, 0, effective_t);
+
+    software_framebuffer_draw_quad(framebuffer, RECTANGLE_F32_NULL, color32f32_to_color32u8(render_color), BLEND_MODE_ALPHA);
 }
