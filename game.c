@@ -777,7 +777,7 @@ local void load_area_script(struct memory_arena* arena, struct level_area* area,
     memory_arena_set_allocation_region_top(arena);
     if (file_exists(script_name)) {
         script_data->present     = true;
-        script_data->buffer      = read_entire_file(heap_allocator(), script_name);
+        script_data->buffer      = read_entire_file(memory_arena_allocator(arena), script_name);
         script_data->code_forms  = memory_arena_push(arena, sizeof(*script_data->code_forms));
         *script_data->code_forms = lisp_read_string_into_forms(arena, file_buffer_as_string(&script_data->buffer));
 

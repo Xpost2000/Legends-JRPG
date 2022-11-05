@@ -33,6 +33,7 @@
 #define Get_Bit(a, x)    (a & x)
 
 #define Bytes(x)                    (uint64_t)(x)
+#define Byte(x)                    (uint64_t)(x)
 #define Kilobyte(x)                 (uint64_t)(x * 1024LL)
 #define Megabyte(x)                 (uint64_t)(x * 1024LL * 1024LL)
 #define Gigabyte(x)                 (uint64_t)(x * 1024LL * 1024LL * 1024LL)
@@ -70,6 +71,8 @@ typedef int32_t s32;
 typedef int16_t s16;
 typedef int8_t  s8;
 
+local char* memory_strings(size_t in_bytes);
+local char* biggest_valid_memory_string(size_t in_bytes);
 static inline f32 normalized_sinf(f32 t) {
     return (sinf(t)+1)/2.0;
 }
@@ -440,8 +443,8 @@ f32 get_average_frametime(void) {
     return sum / global_frametime_sample_array.length;
 }
 
-#define TEMPORARY_STORAGE_BUFFER_SIZE (4096)
-#define TEMPORARY_STORAGE_BUFFER_COUNT (4)
+#define TEMPORARY_STORAGE_BUFFER_SIZE (2048)
+#define TEMPORARY_STORAGE_BUFFER_COUNT (8)
 static const char* cstr_yesno[]     = {"no", "yes"};
 static const char* cstr_truefalse[] = {"false", "true"};
 
@@ -766,6 +769,30 @@ struct calendar_time calendar_time_from(s64 timestamp) {
 
 struct calendar_time current_calendar_time(void) {
     return calendar_time_from(system_get_current_time());
+}
+
+local char* memory_strings(size_t in_bytes) {
+    return format_temp("%llu(B) (%llu)(KB) (%llu)(MB) (%llu)(GB)",
+                       in_bytes,
+                       in_bytes / Kilobyte(1),
+                       in_bytes / Megabyte(1),
+                       in_bytes / Gigabyte(1));
+}
+local char* biggest_valid_memory_string(size_t in_bytes) {
+    size_t bytes     = in_bytes/Byte(1);
+    size_t kilobytes = in_bytes/Kilobyte(1);
+    size_t megabytes = in_bytes/Megabyte(1);
+    size_t gigabytes = in_bytes/Gigabyte(1);
+
+    if (gigabytes) {
+        return format_temp("%llu (GB)", gigabytes);
+    } else if (megabytes) {
+        return format_temp("%llu (MB)", megabytes);
+    } else if (kilobytes) {
+        return format_temp("%llu (KB)", kilobytes);
+    }
+
+    return format_temp("%llu (B)", bytes);
 }
 
 #endif

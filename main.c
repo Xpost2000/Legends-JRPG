@@ -395,6 +395,7 @@ local void initialize(void) {
 void deinitialize(void) {
     synchronize_and_finish_thread_pool();
     lightmask_buffer_finish(&global_lightmask_buffer);
+    software_framebuffer_finish(&global_copy_framebuffer);
     software_framebuffer_finish(&global_default_framebuffer);
     audio_deinitialize();
     game_deinitialize();
@@ -402,7 +403,9 @@ void deinitialize(void) {
     close_all_controllers();
 
     SDL_Quit();
-    _debugprintf("Peak allocations at: %llu bytes", system_heap_peak_allocated_amount());
+    _memory_arena_peak_usages(&game_arena);
+    _memory_arena_peak_usages(&scratch_arena);
+    _debugprintf("Peak allocations at: %s", memory_strings(system_heap_peak_allocated_amount()));
     if (system_heap_memory_leak_check())
         _debugprintf("no leaked memory");
     else

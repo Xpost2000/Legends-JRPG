@@ -216,7 +216,7 @@ local void game_open_conversation_file(struct game_state* state, string filename
     state->current_conversation_node_id       = 1;
     state->currently_selected_dialogue_choice = 0;
     /* TODO: This can be allocated through the arena!!! We have a dialogue sub arena of 64 KB!! That's a lotta text! Maybe a couple chapters of text! Who's reading that much anyways? */
-    state->conversation_file_buffer           = read_entire_file(heap_allocator(), filename);
+    state->conversation_file_buffer           = read_entire_file(memory_arena_allocator(&state->conversation_arena), filename);
     struct lexer lexer_state                  = {.buffer = file_buffer_as_string(&state->conversation_file_buffer),};
 
     while (!lexer_done(&lexer_state)) {

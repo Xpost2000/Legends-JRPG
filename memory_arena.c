@@ -76,6 +76,11 @@ void* memory_arena_push_unaligned(struct memory_arena* arena, u64 amount) {
         void* base_pointer = arena->memory + arena->used;
 
         arena->used += amount;
+
+        if (arena->used > arena->peak_bottom) {
+            arena->peak_bottom = arena->used;
+        }
+
         arena->flags |= MEMORY_ARENA_TOUCHED_BOTTOM;
         _memory_arena_usage_bounds_check(arena);
 
@@ -84,6 +89,10 @@ void* memory_arena_push_unaligned(struct memory_arena* arena, u64 amount) {
         void* end_of_memory = arena->memory + arena->capacity;
         arena->used_top += amount;
         void* base_pointer  = end_of_memory - arena->used_top;
+
+        if (arena->used_top > arena->peak_top) {
+            arena->peak_top = arena->used_top;
+        }
 
         arena->flags |= MEMORY_ARENA_TOUCHED_TOP;
         _memory_arena_usage_bounds_check(arena);
@@ -132,4 +141,14 @@ string memory_arena_push_string(struct memory_arena* arena, string to_copy) {
     cstring_copy(to_copy.data, result.data, result.length);
     result.data[to_copy.length] = 0;
     return result;
+}
+
+
+void _memory_arena_peak_usages(struct memory_arena* arena) {
+    _debugprintf("\n\t(%s)[%s cap!] has peak allocations at:\n\t%s (bottom)\n\t%s (top)\n\t%s (total)",
+                 arena->name,
+                 biggest_valid_memory_string(arena->capacity),
+                 memory_strings(arena->peak_bottom),
+                 memory_strings(arena->peak_top),
+                 biggest_valid_memory_string(arena->peak_bottom + arena->peak_top));
 }

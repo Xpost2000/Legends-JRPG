@@ -36,6 +36,8 @@ enum memory_arena_allocation_region {
     u64                  used;                  \
     u64                  used_top;              \
     u8                   flags;                 \
+    s32                  peak_top;              \
+    s32                  peak_bottom;           \
     struct memory_arena* next;                  \
     u8                   alloc_region;
 
@@ -63,6 +65,7 @@ struct memory_arena     memory_arena_push_sub_arena(struct memory_arena* arena, 
 struct temporary_memory memory_arena_begin_temporary_memory(cstring name, struct memory_arena* arena);
 void                    memory_arena_end_temporary_memory(struct temporary_memory* temporary_arena);
 string                  memory_arena_push_string(struct memory_arena* arena, string to_copy);
+void                    _memory_arena_peak_usages(struct memory_arena* arena);
 #define                 memory_arena_push(arena, amount) memory_arena_push_unaligned(arena, amount)
 
 #endif
