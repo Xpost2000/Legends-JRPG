@@ -1221,7 +1221,7 @@ void game_initialize_game_world(void) {
         struct entity_particle_emitter* emitter = entity_particle_emitter_dereference(&game_state->permenant_particle_emitters, player->particle_attachment_TEST);
         {
             /* I want this to be like a bleed effect... */
-            emitter->time_per_spawn = 0.14;
+            emitter->time_per_spawn = 0.5;
             emitter->position = player->position;
             emitter->position.x /= TILE_UNIT_SIZE;
             emitter->position.y /= TILE_UNIT_SIZE;

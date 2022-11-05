@@ -23,7 +23,6 @@ bool entity_bad_ref(struct entity* e);
 local struct entity_particle_list global_particle_list = {};
 
 void initialize_particle_pools(struct memory_arena* arena, s32 particles_total_count) {
-    global_particle_list.count     = 0;
     global_particle_list.capacity  = particles_total_count;
     global_particle_list.particles = memory_arena_push(arena, sizeof(*global_particle_list.particles) * particles_total_count);
 }
@@ -32,8 +31,9 @@ local struct entity_particle* particle_list_allocate_particle(struct entity_part
     for (s32 particle_index = 0; particle_index < particle_list->capacity; ++particle_index) {
         struct entity_particle* current_particle = particle_list->particles + particle_index;
 
-        if (current_particle->lifetime <= 0) {
-            particle_list->count++;
+        if (!(current_particle->flags & ENTITY_PARTICLE_FLAG_ALIVE) &&
+            current_particle->lifetime <= 0) {
+            current_particle->flags |= ENTITY_PARTICLE_FLAG_ALIVE;
             return current_particle;
         }
     }
@@ -62,7 +62,7 @@ void entity_particle_emitter_list_update(struct entity_particle_emitter_list* pa
                 }
 
                 for (s32 emitted = 0; emitted < current_emitter->burst_amount; ++emitted) {
-                    _debugprintf("[emit %d] would've spawned new particle!", particle_emitter_index);
+                    /* _debugprintf("[emit %d] would've spawned new particle!", particle_emitter_index); */
 #if 1
                     /* new particle */
                     struct entity_particle* particle = particle_list_allocate_particle(&global_particle_list);
@@ -92,24 +92,28 @@ void entity_particle_emitter_list_update(struct entity_particle_emitter_list* pa
 }
 
 local void particle_list_cleanup_dead_particles(struct entity_particle_list* particle_list) {
-    for (s32 particle_index = particle_list->count-1; particle_index >= 0; --particle_index) {
+    for (s32 particle_index = 0; particle_index < particle_list->capacity; ++particle_index) {
         struct entity_particle* current_particle = particle_list->particles + particle_index;
         if (current_particle->lifetime <= 0) {
-            particle_list->particles[particle_index] = particle_list->particles[--particle_list->count];
+            particle_list->particles[particle_index].flags = 0;
         }
     }
 }
 
 local void particle_list_kill_all_particles(struct entity_particle_list* particle_list) {
-    for (unsigned particle_index = 0; particle_index < particle_list->count; ++particle_index) {
+    for (unsigned particle_index = 0; particle_index < particle_list->capacity; ++particle_index) {
         struct entity_particle* current_particle = particle_list->particles + particle_index;
         current_particle->lifetime = 0;
     }
 }
 
 local void particle_list_update_particles(struct entity_particle_list* particle_list, f32 dt) {
-    for (unsigned particle_index = 0; particle_index < particle_list->count; ++particle_index) {
+    for (unsigned particle_index = 0; particle_index < particle_list->capacity; ++particle_index) {
         struct entity_particle* current_particle = particle_list->particles + particle_index;
+
+        if (!(current_particle->flags & ENTITY_PARTICLE_FLAG_ALIVE)) {
+            continue;
+        }
 
         current_particle->position.x += dt;
         current_particle->position.y += dt;
@@ -129,7 +133,7 @@ void DEBUG_render_particle_emitters(struct render_commands* commands, struct ent
                                                               current_emitter->position.y * TILE_UNIT_SIZE,
                                                               TILE_UNIT_SIZE,
                                                               TILE_UNIT_SIZE),
-                                      color32u8(255, 255, 255, 255), BLEND_MODE_ALPHA);
+                                      color32u8(255, 0, 255, 255), BLEND_MODE_ALPHA);
             render_commands_set_shader(commands, game_foreground_things_shader, NULL);
         }
     }
@@ -137,9 +141,11 @@ void DEBUG_render_particle_emitters(struct render_commands* commands, struct ent
 }
 
 void render_particles_list(struct entity_particle_list* particle_list, struct sortable_draw_entities* draw_entities) {
-    for (unsigned particle_index = 0; particle_index < particle_list->count; ++particle_index) {
+    for (unsigned particle_index = 0; particle_index < particle_list->capacity; ++particle_index) {
         struct entity_particle* current_particle = particle_list->particles + particle_index;
-        sortable_draw_entities_push_particle(draw_entities, current_particle->position.y, current_particle);
+        if (current_particle->flags & ENTITY_PARTICLE_FLAG_ALIVE) {
+            sortable_draw_entities_push_particle(draw_entities, current_particle->position.y, current_particle);
+        }
     }
 }
 
@@ -172,7 +178,7 @@ s32 entity_particle_emitter_allocate(struct entity_particle_emitter_list* emitte
 }
 
 void entity_particle_emitter_kill_all_particles(s32 particle_emitter_id) {
-    for (s32 particle_index = 0; particle_index < global_particle_list.count; ++particle_index) {
+    for (s32 particle_index = 0; particle_index < global_particle_list.capacity; ++particle_index) {
         struct entity_particle* current_particle = global_particle_list.particles + particle_index;
 
         if (current_particle->associated_particle_emitter_index == particle_emitter_id) {

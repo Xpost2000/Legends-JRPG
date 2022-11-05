@@ -152,16 +152,20 @@ enum entity_particle_type {
 };
 
 /* UNITS are TILE_UNITS! */
+enum entity_particle_flag {
+    ENTITY_PARTICLE_FLAGS_NONE = 0,
+    ENTITY_PARTICLE_FLAG_ALIVE = BIT(0),
+};
 struct entity_particle {
     s32             associated_particle_emitter_index;
     s32             typeid;
     v2f32           position;
     v2f32           scale;
     f32             lifetime;
+    u32             flags;
     union color32u8 color;
 };
 struct entity_particle_list {
-    s32 count;
     s32 capacity;
     struct entity_particle* particles;
 };
