@@ -23,6 +23,10 @@ s32 random_ranged_integer(struct random_state* state, s32 minimum, s32 maximum) 
     return (random_state_next(state) % (maximum - minimum)) + minimum;
 }
 
+f32 random_ranged_float(struct random_state* state, f32 a, f32 b) {
+    return lerp_f32(a, b, random_float(state)); 
+}
+
 /* generic weighted random, provide list of weights and use the index to find your answer. */
 s32 random_weighted_selection(struct random_state* random, f32* weights, u64 item_count) {
     f32 weight_sum = 0.0f;

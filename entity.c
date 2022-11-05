@@ -43,7 +43,9 @@ local struct entity_particle* particle_list_allocate_particle(struct entity_part
 }
 
 void entity_particle_emitter_list_update(struct entity_particle_emitter_list* particle_emitters, f32 dt) {
+    struct random_state* rng = &game_state->rng;
     /* TODO: Does not have dying particle emitters yet! */
+
     for (unsigned particle_emitter_index = 0; particle_emitter_index < particle_emitters->capacity; ++particle_emitter_index) {
         struct entity_particle_emitter* current_emitter = particle_emitters->emitters + particle_emitter_index;
 
@@ -62,10 +64,7 @@ void entity_particle_emitter_list_update(struct entity_particle_emitter_list* pa
                     current_emitter->burst_amount = 1;
                 }
 
-                /* for (s32 emitted = 0; emitted < current_emitter->burst_amount; ++emitted) */
-                {
-                    _debugprintf("[emit %d] would've spawned new particle!", particle_emitter_index);
-#if 1
+                for (s32 emitted = 0; emitted < current_emitter->burst_amount; ++emitted) {
                     /* new particle */
                     struct entity_particle* particle = particle_list_allocate_particle(&global_particle_list);
                     current_emitter->currently_spawned_batch_amount++;
@@ -75,10 +74,22 @@ void entity_particle_emitter_list_update(struct entity_particle_emitter_list* pa
                     }
 
                     particle->associated_particle_emitter_index = particle_emitter_index;
-                    particle->position                          = current_emitter->position;
-                    particle->scale                             = v2f32(0.25, 0.25);
-                    particle->lifetime                          = 2;
-#endif
+
+                    {
+                        /* depends on spawn shape... */
+                        particle->position                          = current_emitter->position;
+                    }
+
+                    f32 scale = random_ranged_float(rng, current_emitter->scale_uniform - current_emitter->scale_variance_uniform, current_emitter->scale_uniform + current_emitter->scale_variance_uniform);
+                    particle->scale = v2f32(scale, scale);
+
+                    f32 lifetime =  random_ranged_float(rng, current_emitter->lifetime - current_emitter->lifetime_variance, current_emitter->lifetime_variance + current_emitter->lifetime_variance);
+                    particle->color          = current_emitter->color;
+                    particle->lifetime       = particle->lifetime_max = lifetime;
+                    particle->velocity.x     = random_ranged_float(rng, current_emitter->starting_velocity.x - current_emitter->starting_velocity_variance.x, current_emitter->starting_velocity.x + current_emitter->starting_velocity_variance.x);
+                    particle->velocity.y     = random_ranged_float(rng, current_emitter->starting_velocity.y - current_emitter->starting_velocity_variance.y, current_emitter->starting_velocity.y + current_emitter->starting_velocity_variance.y);
+                    particle->acceleration.x = random_ranged_float(rng, current_emitter->starting_acceleration.x - current_emitter->starting_acceleration_variance.x, current_emitter->starting_acceleration.x + current_emitter->starting_acceleration_variance.x);
+                    particle->acceleration.y = random_ranged_float(rng, current_emitter->starting_acceleration.y - current_emitter->starting_acceleration_variance.y, current_emitter->starting_acceleration.y + current_emitter->starting_acceleration_variance.y);
                 }
 
                 if (current_emitter->max_spawn_per_batch != -1) {
@@ -96,14 +107,12 @@ void entity_particle_emitter_list_update(struct entity_particle_emitter_list* pa
 }
 
 local void particle_list_cleanup_dead_particles(struct entity_particle_list* particle_list) {
-#if 0
     for (s32 particle_index = 0; particle_index < particle_list->capacity; ++particle_index) {
         struct entity_particle* current_particle = particle_list->particles + particle_index;
         if (current_particle->lifetime <= 0) {
             particle_list->particles[particle_index].flags = 0;
         }
     }
-#endif
 }
 
 local void particle_list_kill_all_particles(struct entity_particle_list* particle_list) {
@@ -114,21 +123,25 @@ local void particle_list_kill_all_particles(struct entity_particle_list* particl
 }
 
 local void particle_list_update_particles(struct entity_particle_list* particle_list, f32 dt) {
-#if 0
     for (s32 particle_index = 0; particle_index < particle_list->capacity; ++particle_index) {
         struct entity_particle* current_particle = particle_list->particles + particle_index;
-
         assertion(particle_index < particle_list->capacity && "WTF is happening?");
 
         if (!(current_particle->flags & ENTITY_PARTICLE_FLAG_ALIVE)) {
             continue;
         }
 
-        current_particle->position.x += dt;
-        current_particle->position.y += dt;
-        current_particle->lifetime   -= dt;
+        switch (current_particle->typeid) {
+            case ENTITY_PARTICLE_TYPE_GENERIC: {
+                current_particle->velocity.x += current_particle->acceleration.x * dt;
+                current_particle->velocity.y += current_particle->acceleration.y * dt;
+                current_particle->position.x += current_particle->velocity.x * dt;
+                current_particle->position.y += current_particle->velocity.y * dt;
+                current_particle->lifetime   -= dt;
+            } break;
+        }
+
     }
-#endif
 
     particle_list_cleanup_dead_particles(particle_list);
 }
@@ -578,6 +591,8 @@ void update_entities(struct game_state* state, f32 dt, struct entity_iterator it
                 emitter->position = current_entity->position;
                 emitter->position.x /= TILE_UNIT_SIZE;
                 emitter->position.y /= TILE_UNIT_SIZE;
+                emitter->position.x += 0.45;
+                emitter->position.y -= 0.4;
                 _debugprintf("HI! I'm NEW HERE: [%d]: %f, %f", current_entity->particle_attachment_TEST , emitter->position.x * TILE_UNIT_SIZE, emitter->position.y * TILE_UNIT_SIZE);
                 entity_particle_emitter_start_emitting(&game_state->permenant_particle_emitters, current_entity->particle_attachment_TEST);
             }
@@ -779,7 +794,8 @@ void sortable_draw_entities_push_chest(struct sortable_draw_entities* entities, 
     sortable_draw_entities_push(entities, SORTABLE_DRAW_ENTITY_CHEST, y_sort_key, ptr);
 }
 void sortable_draw_entities_push_particle(struct sortable_draw_entities* entities, f32 y_sort_key, void* ptr) {
-    sortable_draw_entities_push(entities, SORTABLE_DRAW_ENTITY_PARTICLE, y_sort_key, ptr);
+    /* this will allow particles to tend to be on top of entities */
+    sortable_draw_entities_push(entities, SORTABLE_DRAW_ENTITY_PARTICLE, y_sort_key+3, ptr);
 }
 
 void sortable_draw_entities_sort_keys(struct sortable_draw_entities* entities) {
@@ -996,8 +1012,18 @@ local void sortable_entity_draw_particle(struct render_commands* commands, struc
 
     /* good enough for now */
 
-    render_commands_push_quad(commands, rectangle_f32(draw_x, draw_y, draw_w, draw_h), color32u8_WHITE, BLEND_MODE_ALPHA);
-    render_commands_set_shader(commands, game_foreground_things_shader, NULL);
+    switch (it->typeid) {
+        case ENTITY_PARTICLE_TYPE_GENERIC: {
+            union color32f32 color = color32u8_to_color32f32(it->color);
+            f32 effective_t = (it->lifetime/it->lifetime_max);
+            if (effective_t < 0) effective_t = 0;
+            if (effective_t > 1) effective_t = 1;
+            color.a *= effective_t;
+            render_commands_push_quad(commands, rectangle_f32(draw_x, draw_y, draw_w, draw_h), color32f32_to_color32u8(color), BLEND_MODE_ALPHA);
+            render_commands_set_shader(commands, game_foreground_things_shader, NULL);
+        } break;
+            bad_case;
+    }
 }
 
 void sortable_draw_entities_submit(struct render_commands* commands, struct graphics_assets* graphics_assets, struct sortable_draw_entities* entities, f32 dt) {

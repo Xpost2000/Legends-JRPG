@@ -24,6 +24,7 @@ struct random_state {
 s32 random_state_next(struct random_state* state);
 void random_state_reset(struct random_state* state);
 f32 random_float(struct random_state* state);
+f32 random_ranged_float(struct random_state* state, f32 a, f32 b);
 s32 random_ranged_integer(struct random_state* state, s32 minimum, s32 maximum);
 s32 random_weighted_selection(struct random_state* random, f32* weights, u64 item_count);
 

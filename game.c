@@ -1235,23 +1235,6 @@ void game_initialize_game_world(void) {
     }
 
     {
-        s32 t = entity_particle_emitter_allocate(&game_state->permenant_particle_emitters);
-        struct entity_particle_emitter* emitter = entity_particle_emitter_dereference(&game_state->permenant_particle_emitters, t);
-        struct entity*                  player  = game_get_player(game_state);
-        {
-            /* I want this to be like a bleed effect... */
-            emitter->time_per_spawn = 0.2;
-            emitter->position = player->position;
-            emitter->position.x /= TILE_UNIT_SIZE;
-            emitter->position.y /= TILE_UNIT_SIZE;
-            emitter->burst_amount = 1;
-            emitter->max_spawn_per_batch = -1;
-            emitter->max_spawn_batches   = -1;
-            emitter->delay_time_per_batch = 1;
-            entity_particle_emitter_start_emitting(&game_state->permenant_particle_emitters, t);
-        }
-    }
-    {
         struct entity*                  player  = game_get_player(game_state);
         player->particle_attachment_TEST        = entity_particle_emitter_allocate(&game_state->permenant_particle_emitters);
         struct entity_particle_emitter* emitter = entity_particle_emitter_dereference(&game_state->permenant_particle_emitters, player->particle_attachment_TEST);
@@ -1261,10 +1244,18 @@ void game_initialize_game_world(void) {
             emitter->position = player->position;
             emitter->position.x /= TILE_UNIT_SIZE;
             emitter->position.y /= TILE_UNIT_SIZE;
-            emitter->burst_amount = 1;
-            emitter->max_spawn_per_batch = 16;
+            emitter->burst_amount = 6;
+            emitter->max_spawn_per_batch = 72;
             emitter->max_spawn_batches   = -1;
-            emitter->delay_time_per_batch = 0.2;
+            emitter->delay_time_per_batch = 1.2;
+            emitter->color = color32u8(255, 0, 0, 255);
+            emitter->starting_acceleration = v2f32(0, 9.8);
+            emitter->starting_velocity_variance = v2f32(1.3, 0);
+            emitter->lifetime = 1.1;
+            emitter->lifetime_variance = 0.35;
+
+            emitter->scale_uniform = 0.12;
+            emitter->scale_variance_uniform = 0.05;
         }
     }
 #if 0
@@ -2386,7 +2377,9 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                     render_particles_list(&global_particle_list, &draw_entities);
                     sortable_draw_entities_submit(&commands, &graphics_assets, &draw_entities, dt);
                     render_foreground_area(game_state, &commands, &game_state->loaded_area);
+                    #if 0 
                     DEBUG_render_particle_emitters(&commands, &game_state->permenant_particle_emitters);
+                    #endif
                 }
 
                 software_framebuffer_render_commands(framebuffer, &commands);

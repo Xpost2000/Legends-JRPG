@@ -143,11 +143,26 @@ struct entity_chest {
 /* might need to obey the simulated rules of a system but who cares? */
 /* reserved for in engine dynamic things, so burning and such. (or particle emitters that are dynamically spawned from other entities) */
 /* levels will still have their own particle emitters if they would like. */
-#define GAME_MAX_PERMENANT_PARTICLE_EMITTERS (2048) 
+
+/*
+  NOTE: This system allows you to spawn particles on your own for custom reasons,
+  so technically you don't need particle emitters as they are. They're just a formal
+  generic way to make quick particles. For better control I highly recommend honestly
+  just specifying the way you want particles to spawn and allocate them based on your own
+  objects...
+*/
+
+#define GAME_MAX_PERMENANT_PARTICLE_EMITTERS (4096) 
 #define PARTICLE_POOL_MAX_SIZE (16384) /* Seriously how much memory am I gobbling up? */
 /* NOTE(): these are point particle emitters to start with */
 enum entity_particle_type {
     ENTITY_PARTICLE_TYPE_GENERIC, /* will obey the properties */
+
+    /*
+      Ignores acceleration, and will tend to do it's own thing,
+
+      FULLBRIGHT draw. Uses custom sprite image...
+    */
     ENTITY_PARTICLE_TYPE_FIRE,
 };
 
@@ -161,9 +176,12 @@ struct entity_particle {
     v2f32           scale;
     u32             flags;
     s32             associated_particle_emitter_index;
-    s32             typeid;
+    s32             typeid; /* entity_particle_type */
     f32             lifetime;
+    f32             lifetime_max;
     union color32u8 color;
+    v2f32           velocity;
+    v2f32           acceleration;
 };
 struct entity_particle_list {
     s32 capacity;
@@ -200,7 +218,21 @@ struct entity_particle_emitter {
     /* get schema listing data elsewhere, for now hard code */
     /* this will determine general spawning traits */
 
-    s32 particle_type;
+    s32 particle_type; /* some particle types might override stuff... */
+
+    v2f32 starting_velocity;
+    v2f32 starting_velocity_variance;
+
+    v2f32 starting_acceleration;
+    v2f32 starting_acceleration_variance;
+
+    f32   lifetime;
+    f32   lifetime_variance;
+
+    f32   scale_uniform;
+    f32   scale_variance_uniform;
+
+    union color32u8 color;
 };
 struct entity_particle_emitter_list {
     s32 capacity;
