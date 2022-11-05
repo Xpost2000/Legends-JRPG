@@ -1950,6 +1950,39 @@ local void update_game_camera(struct game_state* state, f32 dt) {
     }
 }
 
+struct queued_load_level_data {
+    bool  use_default_spawn_location;
+    v2f32 spawn_location;
+    u8    new_facing_direction;
+    int   length_of_destination;
+    char  destination_string_buffer[80];
+};
+
+void load_level_queued_for_transition(void* callback_data) {
+    struct queued_load_level_data* data   = callback_data;
+
+    /* and maybe add friends later */
+    struct entity*                 player = game_get_player(game_state);
+    string assembled_string = string_from_cstring_length_counted(data->destination_string_buffer, data->length_of_destination);
+
+    load_level_from_file(game_state, assembled_string);
+    if (!data->use_default_spawn_location) {
+        player->position.x = data->spawn_location.x * TILE_UNIT_SIZE;
+        player->position.y = data->spawn_location.y * TILE_UNIT_SIZE;
+    }
+
+    if (data->new_facing_direction != DIRECTION_RETAINED) {
+        player->facing_direction = data->new_facing_direction;
+    }
+
+    if (!transition_fading()) {
+        if (transition_faded_in()) {
+            do_color_transition_out(color32f32(0, 0, 0, 1), 0.0, 0.45);
+            disable_game_input = false;
+        }
+    }
+}
+
 void handle_entity_level_trigger_interactions(struct game_state* state, struct entity* entity, s32 trigger_level_transition_count, struct trigger_level_transition* trigger_level_transitions, f32 dt) {
     if (!(entity->flags & ENTITY_FLAGS_PLAYER_CONTROLLED))
         return;
@@ -1961,17 +1994,24 @@ void handle_entity_level_trigger_interactions(struct game_state* state, struct e
         u8    new_facing_direction = current_trigger->new_facing_direction;
 
         if (rectangle_f32_intersect(current_trigger->bounds, entity_collision_bounds)) {
-            /* queue a level transition, animation (god animation sucks... For now instant transition) */
-            /* struct binary_serializer serializer = open_read_file_serializer(string_concatenate(&scratch_arena, string_literal("areas/"), string_from_cstring(current_trigger->target_level))); */
-            /* serialize_level_area(state, &serializer, &state->loaded_area, false); */
             string copy = format_temp_s("%s", current_trigger->target_level);
-            load_level_from_file(state, copy);
-            /* NOTE entity positions are in pixels still.... */
-            entity->position.x = spawn_location.x * TILE_UNIT_SIZE;
-            entity->position.y = spawn_location.y * TILE_UNIT_SIZE;
+            if (!transition_fading()) {
+                if (!transition_faded_in()) {
+                    struct queued_load_level_data data = (struct queued_load_level_data) {
+                        .use_default_spawn_location = false,
+                        .spawn_location             = spawn_location,
+                        .new_facing_direction       = new_facing_direction,
+                        .length_of_destination      = copy.length,
+                    };
+                    if (copy.length > 80) {
+                        copy.length = 80;   
+                    }
 
-            if (new_facing_direction != DIRECTION_RETAINED) {
-                entity->facing_direction  = new_facing_direction;
+                    cstring_copy(copy.data, data.destination_string_buffer, copy.length);
+                    do_color_transition_in(color32f32(0, 0, 0, 1), 0.0, 0.45);
+                    transition_register_on_finish(load_level_queued_for_transition, (u8*)&data, sizeof(data));
+                    disable_game_input = true;
+                }
             }
 
             return;

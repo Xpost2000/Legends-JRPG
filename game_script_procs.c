@@ -660,8 +660,8 @@ GAME_LISP_FUNCTION(GAME_DO_TRANSITION) {
         color.a = a;
     }
 
-    f32 delay;
-    f32 length;
+    f32 delay  = 0;
+    f32 length = 0;
     {
         Fatal_Script_Error(lisp_form_get_f32(*transition_delay, &delay) && "Could not read transition delay timer");
         Fatal_Script_Error(lisp_form_get_f32(*transition_length, &length) && "Could not read length timer");
