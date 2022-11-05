@@ -63,7 +63,7 @@ void entity_particle_emitter_list_update(struct entity_particle_emitter_list* pa
 
                 for (s32 emitted = 0; emitted < current_emitter->burst_amount; ++emitted) {
                     _debugprintf("[emit %d] would've spawned new particle!", particle_emitter_index);
-#if 0
+#if 1
                     /* new particle */
                     struct entity_particle* particle = particle_list_allocate_particle(&global_particle_list);
                     current_emitter->currently_spawned_batch_amount++;
