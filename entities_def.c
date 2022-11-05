@@ -158,12 +158,11 @@ enum entity_particle_flag {
 };
 struct entity_particle {
     v2f32           position;
-
+    v2f32           scale;
+    u32             flags;
     s32             associated_particle_emitter_index;
     s32             typeid;
-    v2f32           scale;
     f32             lifetime;
-    u32             flags;
     union color32u8 color;
 };
 struct entity_particle_list {
@@ -182,6 +181,8 @@ struct entity_particle_emitter {
 
     f32   time;
     f32   time_per_spawn;
+
+    u32 flags;
     /* 1or0 == normal... */
     s32   burst_amount;
 
@@ -200,7 +201,6 @@ struct entity_particle_emitter {
     /* this will determine general spawning traits */
 
     s32 particle_type;
-    u32 flags;
 };
 struct entity_particle_emitter_list {
     s32 capacity;
