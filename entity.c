@@ -2477,7 +2477,7 @@ void entity_award_experience(struct entity* entity, s32 xp_amount) {
 
 struct entity_particle_emitter_list entity_particle_emitter_list(struct memory_arena* arena, s32 capacity) {
     struct entity_particle_emitter_list result = {
-        .emitters   = memory_arena_push(arena, capacity),
+        .emitters   = memory_arena_push(arena, capacity * sizeof(*result.emitters)),
         .capacity   = capacity,
     };
     return result;
