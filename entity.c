@@ -33,6 +33,7 @@ local struct entity_particle* particle_list_allocate_particle(struct entity_part
 
         if (!(current_particle->flags & ENTITY_PARTICLE_FLAG_ALIVE)) {
             current_particle->flags |= ENTITY_PARTICLE_FLAG_ALIVE;
+            _debugprintf("Particle ID: %d", particle_index);
             return current_particle;
         }
     }
@@ -60,7 +61,7 @@ void entity_particle_emitter_list_update(struct entity_particle_emitter_list* pa
                     current_emitter->burst_amount = 1;
                 }
 
-                for (s32 emitted = 0; emitted < current_emitter->burst_amount; ++emitted)
+                /* for (s32 emitted = 0; emitted < current_emitter->burst_amount; ++emitted) */
                 {
                     _debugprintf("[emit %d] would've spawned new particle!", particle_emitter_index);
 #if 1
@@ -79,10 +80,12 @@ void entity_particle_emitter_list_update(struct entity_particle_emitter_list* pa
 #endif
                 }
 
-                if (current_emitter->currently_spawned_batch_amount > current_emitter->max_spawn_per_batch) {
-                    current_emitter->currently_spawned_batch_amount = 0; 
-                    current_emitter->spawned_batches++;
-                    current_emitter->delay_time = current_emitter->delay_time_per_batch;
+                if (current_emitter->max_spawn_per_batch != -1) {
+                    if (current_emitter->currently_spawned_batch_amount > current_emitter->max_spawn_per_batch) {
+                        current_emitter->currently_spawned_batch_amount = 0; 
+                        current_emitter->spawned_batches++;
+                        current_emitter->delay_time = current_emitter->delay_time_per_batch;
+                    }
                 }
             } else {
                 current_emitter->time -= dt;
@@ -313,6 +316,7 @@ entity_id entity_list_create_entity(struct entity_list* entities) {
         struct entity* current_entity = entities->entities + index;
 
         if (!(current_entity->flags & ENTITY_FLAGS_ACTIVE)) {
+            zero_memory(current_entity, sizeof(*current_entity));
             current_entity->flags |= ENTITY_FLAGS_ACTIVE;
             {
                 struct entity_stat_block* stats = &current_entity->stat_block;
@@ -565,11 +569,13 @@ void update_entities(struct game_state* state, f32 dt, struct entity_iterator it
 #if 1
         if (current_entity->particle_attachment_TEST != 0) {
             struct entity_particle_emitter* emitter = entity_particle_emitter_dereference(&game_state->permenant_particle_emitters, current_entity->particle_attachment_TEST);
-            emitter->position = current_entity->position;
-            emitter->position.x /= TILE_UNIT_SIZE;
-            emitter->position.y /= TILE_UNIT_SIZE;
-            _debugprintf("HI! I'm NEW HERE: [%d]: %f, %f", current_entity->particle_attachment_TEST , emitter->position.x * TILE_UNIT_SIZE, emitter->position.y * TILE_UNIT_SIZE);
-            entity_particle_emitter_start_emitting(&game_state->permenant_particle_emitters, current_entity->particle_attachment_TEST);
+            if (emitter) {
+                emitter->position = current_entity->position;
+                emitter->position.x /= TILE_UNIT_SIZE;
+                emitter->position.y /= TILE_UNIT_SIZE;
+                _debugprintf("HI! I'm NEW HERE: [%d]: %f, %f", current_entity->particle_attachment_TEST , emitter->position.x * TILE_UNIT_SIZE, emitter->position.y * TILE_UNIT_SIZE);
+                entity_particle_emitter_start_emitting(&game_state->permenant_particle_emitters, current_entity->particle_attachment_TEST);
+            }
         }
 #endif
         {
