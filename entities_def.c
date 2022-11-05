@@ -151,6 +151,7 @@ enum entity_particle_type {
     ENTITY_PARTICLE_TYPE_FIRE,
 };
 
+/* UNITS are TILE_UNITS! */
 struct entity_particle {
     s32             associated_particle_emitter_index;
     s32             typeid;
@@ -166,9 +167,10 @@ struct entity_particle_list {
     struct entity_particle* particles;
 };
 enum entity_particle_emitter_flags{
-    ENTITY_PARTICLE_EMITTER_OFF       = 0,
-    ENTITY_PARTICLE_EMITTER_ONCE_ONLY = BIT(1),
+    ENTITY_PARTICLE_EMITTER_INACTIVE  = 0,
     ENTITY_PARTICLE_EMITTER_ACTIVE    = BIT(0),
+    ENTITY_PARTICLE_EMITTER_ONCE_ONLY = BIT(1),
+    ENTITY_PARTICLE_EMITTER_ON        = BIT(2),
 };
 struct entity_particle_emitter {
     v2f32 position;
@@ -194,6 +196,15 @@ struct entity_particle_emitter_list entity_particle_emitter_list(struct memory_a
 void                                initialize_particle_pools(struct memory_arena* arena, s32 particles_total_count);
 void                                update_all_particles(f32 dt);
 void                                entity_particle_emitter_list_update(struct entity_particle_emitter_list* particle_emitters, f32 dt);
+void                                entity_particle_emitter_kill_all_particles(s32 particle_emitter_id);
+
+void                                entity_particle_emitter_kill(struct entity_particle_emitter_list* emitters, s32 particle_emitter_id);
+void                                entity_particle_emitter_kill_all(struct entity_particle_emitter_list* emitters);
+void                                entity_particle_emitter_start_emitting(struct entity_particle_emitter_list* emitters, s32 particle_emitter_id);
+void                                entity_particle_emitter_stop_emitting(struct entity_particle_emitter_list* emitters, s32 particle_emitter_id);
+s32                                 entity_particle_emitter_allocate(struct entity_particle_emitter_list* emitters);
+void                                entity_particle_emitter_retain(struct entity_particle_emitter_list* emitters, s32 particle_emitter_id);
+struct entity_particle_emitter*     entity_particle_emitter_dereference(struct entity_particle_emitter_list* emitters, s32 particle_emitter_id);
 
 /* needs more parameters */
 void entity_particle_emitter_spawn(struct entity_particle_emitter_list* particle_emitter);
@@ -595,7 +606,7 @@ struct sortable_draw_entities {
     struct sortable_draw_entity* entities;
 };
 
-local void sortable_entity_draw_entity(struct render_commands* commands, struct graphics_assets* assets, struct entity* entity, f32 dt);
+local void sortable_entity_draw_entity(struct render_commands* commands, struct graphics_assets* assets, entity_id id, f32 dt);
 local void sortable_entity_draw_chest(struct render_commands* commands, struct graphics_assets* assets, struct entity_chest* chest, f32 dt);
 local void sortable_entity_draw_particle(struct render_commands* commands, struct graphics_assets* assets, struct entity_particle* particle, f32 dt);
 

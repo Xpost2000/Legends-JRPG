@@ -32,7 +32,8 @@ void entity_particle_emitter_list_update(struct entity_particle_emitter_list* pa
     for (unsigned particle_emitter_index = 0; particle_emitter_index < particle_emitters->capacity; ++particle_emitter_index) {
         struct entity_particle_emitter* current_emitter = particle_emitters->emitters + particle_emitter_index;
 
-        if (!(current_emitter->flags & ENTITY_PARTICLE_EMITTER_ACTIVE)) {
+        if (!(current_emitter->flags & ENTITY_PARTICLE_EMITTER_ACTIVE) ||
+            !(current_emitter->flags & ENTITY_PARTICLE_EMITTER_ON)) {
             continue;
         }
     }
@@ -60,6 +61,67 @@ void render_particles_list(struct entity_particle_list* particle_list, struct so
         struct entity_particle* current_particle = particle_list->particles + particle_index;
         sortable_draw_entities_push_particle(draw_entities, current_particle->position.y, current_particle);
     }
+}
+
+void entity_particle_emitter_kill(struct entity_particle_emitter_list* emitters, s32 particle_emitter_id) {
+    struct entity_particle_emitter* emitter = emitters->emitters + particle_emitter_id;
+    emitter->flags &= ~(ENTITY_PARTICLE_EMITTER_ACTIVE);
+}
+
+void entity_particle_emitter_kill_all(struct entity_particle_emitter_list* emitters) {
+    for (s32 emitter_index = 0; emitter_index < emitters->capacity; ++emitter_index) {
+        entity_particle_emitter_kill(emitters, emitter_index);
+    }
+}
+
+s32 entity_particle_emitter_allocate(struct entity_particle_emitter_list* emitters) {
+    s32 id_result = -1;
+
+    for (s32 emitter_index = 0; emitter_index < emitters->capacity; ++emitter_index) {
+        struct entity_particle_emitter* current_emitter = emitters->emitters + emitter_index;
+        
+        if (!(current_emitter->flags & ENTITY_PARTICLE_EMITTER_ACTIVE)) {
+            id_result = emitter_index;
+            entity_particle_emitter_retain(emitters, id_result);
+            return id_result;
+        }
+    }
+
+    return id_result;
+}
+
+void entity_particle_emitter_kill_all_particles(s32 particle_emitter_id) {
+    for (s32 particle_index = 0; particle_index < global_particle_list.count; ++particle_index) {
+        struct entity_particle* current_particle = global_particle_list.particles + particle_index;
+
+        if (current_particle->associated_particle_emitter_index == particle_emitter_id) {
+            current_particle->lifetime = 0;
+        }
+    }
+}
+
+void entity_particle_emitter_start_emitting(struct entity_particle_emitter_list* emitters, s32 particle_emitter_id) {
+    struct entity_particle_emitter* emitter = emitters->emitters + particle_emitter_id;
+    emitter->flags |= ENTITY_PARTICLE_EMITTER_ON;
+}
+
+void entity_particle_emitter_stop_emitting(struct entity_particle_emitter_list* emitters, s32 particle_emitter_id) {
+    struct entity_particle_emitter* emitter = emitters->emitters + particle_emitter_id;
+    emitter->flags &= ~(ENTITY_PARTICLE_EMITTER_ON);
+}
+
+void entity_particle_emitter_retain(struct entity_particle_emitter_list* emitters, s32 particle_emitter_id) {
+    struct entity_particle_emitter* emitter = emitters->emitters + particle_emitter_id;
+    emitter->flags |= ENTITY_PARTICLE_EMITTER_ACTIVE;
+}
+
+struct entity_particle_emitter* entity_particle_emitter_dereference(struct entity_particle_emitter_list* emitters, s32 particle_emitter_id) {
+    struct entity_particle_emitter* result = &emitters->emitters[particle_emitter_id];
+    if (result->flags & ENTITY_PARTICLE_EMITTER_ACTIVE) {
+        return result;
+    }
+
+    return NULL;
 }
 /* PARTICLES END */
 
@@ -617,14 +679,15 @@ void sortable_draw_entities_sort_keys(struct sortable_draw_entities* entities) {
     }
 }
 
-local void sortable_entity_draw_entity(struct render_commands* commands, struct graphics_assets* assets, struct entity* entity, f32 dt) {
-    struct entity* current_entity = entity;
+local void sortable_entity_draw_entity(struct render_commands* commands, struct graphics_assets* assets, entity_id id, f32 dt) {
+    struct entity* current_entity = game_dereference_entity(game_state, id);
+
     {
         s32 facing_direction = current_entity->facing_direction;
         s32 model_index      = current_entity->model_index;
 
         if (!(current_entity->flags & ENTITY_FLAGS_ACTIVE)) {
-            continue;
+            return;
         }
 
         struct entity_animation* anim = find_animation_by_name(model_index, current_entity->animation.name);
@@ -688,7 +751,7 @@ local void sortable_entity_draw_entity(struct render_commands* commands, struct 
 
         if (!water_tile_submergence) {
             render_commands_push_image(commands,
-                                       graphics_assets_get_image_by_id(graphics_assets, drop_shadow),
+                                       graphics_assets_get_image_by_id(assets, drop_shadow),
                                        rectangle_f32(current_entity->position.x - alignment_offset.x + other_offsets.x,
                                                      current_entity->position.y - TILE_UNIT_SIZE*0.4 + other_offsets.y,
                                                      SHADOW_SPRITE_WIDTH,
@@ -702,7 +765,7 @@ local void sortable_entity_draw_entity(struct render_commands* commands, struct 
         union color32f32 modulation_color = color32f32_WHITE;
 
         {
-            bool me = is_entity_under_ability_selection(current_draw_entity->entity_id);
+            bool me = is_entity_under_ability_selection(id);
             if (me) {
                 /* red for now. We want better effects maybe? */
                 modulation_color.g = modulation_color.b = 0;
@@ -724,7 +787,7 @@ local void sortable_entity_draw_entity(struct render_commands* commands, struct 
         }
 
         render_commands_push_image(commands,
-                                   graphics_assets_get_image_by_id(graphics_assets, sprite_to_use),
+                                   graphics_assets_get_image_by_id(assets, sprite_to_use),
                                    rectangle_f32(current_entity->position.x - alignment_offset.x + other_offsets.x,
                                                  current_entity->position.y - alignment_offset.y + other_offsets.y,
                                                  real_dimensions.x,
@@ -743,7 +806,7 @@ local void sortable_entity_draw_entity(struct render_commands* commands, struct 
             draw_point       = camera_transform(&commands->camera, draw_point, SCREEN_WIDTH, SCREEN_HEIGHT);
             struct rectangle_f32 dest_rect = rectangle_f32(draw_point.x, draw_point.y, real_dimensions.x, real_dimensions.y*(1 - height_trim));
             lightmask_buffer_blit_image(&global_lightmask_buffer,
-                                        graphics_assets_get_image_by_id(graphics_assets, sprite_to_use),
+                                        graphics_assets_get_image_by_id(assets, sprite_to_use),
                                         dest_rect, 
                                         rectangle_f32(0, 0, sprite_dimensions.x, sprite_dimensions.y * (1 - height_trim)),
                                         NO_FLAGS, 0, v);
@@ -763,7 +826,7 @@ local void sortable_entity_draw_chest(struct render_commands* commands, struct g
 
     if (it->flags & ENTITY_CHEST_FLAGS_UNLOCKED) {
         render_commands_push_image(commands,
-                                   graphics_assets_get_image_by_id(graphics_assets, chest_open_top_img),
+                                   graphics_assets_get_image_by_id(assets, chest_open_top_img),
                                    rectangle_f32(it->position.x * TILE_UNIT_SIZE,
                                                  (it->position.y-0.5) * TILE_UNIT_SIZE,
                                                  it->scale.x * TILE_UNIT_SIZE,
@@ -772,7 +835,7 @@ local void sortable_entity_draw_chest(struct render_commands* commands, struct g
                                    color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
         render_commands_set_shader(commands, game_foreground_things_shader, NULL);
         render_commands_push_image(commands,
-                                   graphics_assets_get_image_by_id(graphics_assets, chest_open_bottom_img),
+                                   graphics_assets_get_image_by_id(assets, chest_open_bottom_img),
                                    rectangle_f32(it->position.x * TILE_UNIT_SIZE,
                                                  it->position.y * TILE_UNIT_SIZE,
                                                  it->scale.x * TILE_UNIT_SIZE,
@@ -782,7 +845,7 @@ local void sortable_entity_draw_chest(struct render_commands* commands, struct g
         render_commands_set_shader(commands, game_foreground_things_shader, NULL);
     } else {
         render_commands_push_image(commands,
-                                   graphics_assets_get_image_by_id(graphics_assets, chest_closed_img),
+                                   graphics_assets_get_image_by_id(assets, chest_closed_img),
                                    rectangle_f32(it->position.x * TILE_UNIT_SIZE,
                                                  it->position.y * TILE_UNIT_SIZE,
                                                  it->scale.x * TILE_UNIT_SIZE,
@@ -794,7 +857,17 @@ local void sortable_entity_draw_chest(struct render_commands* commands, struct g
 }
 
 local void sortable_entity_draw_particle(struct render_commands* commands, struct graphics_assets* assets, struct entity_particle* particle, f32 dt) {
-    struct entity_chest* it = particle;
+    struct entity_particle* it = particle;
+
+    f32 draw_x = it->position.x;
+    f32 draw_y = it->position.y;
+    f32 draw_w = it->scale.x;
+    f32 draw_h = it->scale.y;
+
+    /* good enough for now */
+
+    render_commands_push_quad(commands, rectangle_f32(draw_x, draw_y, draw_w, draw_h), color32u8_WHITE, BLEND_MODE_ALPHA);
+    render_commands_set_shader(commands, game_foreground_things_shader, NULL);
 }
 
 void sortable_draw_entities_submit(struct render_commands* commands, struct graphics_assets* graphics_assets, struct sortable_draw_entities* entities, f32 dt) {
@@ -805,8 +878,7 @@ void sortable_draw_entities_submit(struct render_commands* commands, struct grap
 
         switch (current_draw_entity->type) {
             case SORTABLE_DRAW_ENTITY_ENTITY: {
-                struct entity* current_entity = game_dereference_entity(game_state, current_draw_entity->entity_id);
-                sortable_entity_draw_entity(commands, graphics_assets, current_entity, dt);
+                sortable_entity_draw_entity(commands, graphics_assets, current_draw_entity->entity_id, dt);
             } break;
             case SORTABLE_DRAW_ENTITY_CHEST: {
                 struct entity_chest* it = current_draw_entity->pointer;
