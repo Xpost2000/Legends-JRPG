@@ -130,6 +130,7 @@ void DEBUG_render_particle_emitters(struct render_commands* commands, struct ent
                                                               TILE_UNIT_SIZE,
                                                               TILE_UNIT_SIZE),
                                       color32u8(255, 255, 255, 255), BLEND_MODE_ALPHA);
+            render_commands_set_shader(commands, game_foreground_things_shader, NULL);
         }
     }
 #endif
@@ -143,31 +144,31 @@ void render_particles_list(struct entity_particle_list* particle_list, struct so
 }
 
 void entity_particle_emitter_kill(struct entity_particle_emitter_list* emitters, s32 particle_emitter_id) {
-    struct entity_particle_emitter* emitter = emitters->emitters + particle_emitter_id;
+    if (particle_emitter_id == 0) {
+        return;
+    }
+    struct entity_particle_emitter* emitter = emitters->emitters + particle_emitter_id-1;
     emitter->flags &= ~(ENTITY_PARTICLE_EMITTER_ACTIVE);
 }
 
 void entity_particle_emitter_kill_all(struct entity_particle_emitter_list* emitters) {
     for (s32 emitter_index = 0; emitter_index < emitters->capacity; ++emitter_index) {
-        entity_particle_emitter_kill(emitters, emitter_index);
+        entity_particle_emitter_kill(emitters, emitter_index+1);
     }
 }
 
 s32 entity_particle_emitter_allocate(struct entity_particle_emitter_list* emitters) {
-    s32 id_result = -1;
-
     for (s32 emitter_index = 0; emitter_index < emitters->capacity; ++emitter_index) {
         struct entity_particle_emitter* current_emitter = emitters->emitters + emitter_index;
         
         if (!(current_emitter->flags & ENTITY_PARTICLE_EMITTER_ACTIVE)) {
-            id_result = emitter_index;
-            entity_particle_emitter_retain(emitters, id_result);
-            _debugprintf("Particle Emitter ID (%d)", id_result);
-            return id_result;
+            s32 result = emitter_index+1;
+            entity_particle_emitter_retain(emitters, result);
+            return result;
         }
     }
 
-    return id_result;
+    return 0;
 }
 
 void entity_particle_emitter_kill_all_particles(s32 particle_emitter_id) {
@@ -181,22 +182,35 @@ void entity_particle_emitter_kill_all_particles(s32 particle_emitter_id) {
 }
 
 void entity_particle_emitter_start_emitting(struct entity_particle_emitter_list* emitters, s32 particle_emitter_id) {
-    struct entity_particle_emitter* emitter = emitters->emitters + particle_emitter_id;
+    if (particle_emitter_id == 0) {
+        return;
+    }
+    struct entity_particle_emitter* emitter = emitters->emitters + particle_emitter_id-1;
     emitter->flags |= ENTITY_PARTICLE_EMITTER_ON;
 }
 
 void entity_particle_emitter_stop_emitting(struct entity_particle_emitter_list* emitters, s32 particle_emitter_id) {
-    struct entity_particle_emitter* emitter = emitters->emitters + particle_emitter_id;
+    if (particle_emitter_id == 0) {
+        return;
+    }
+    struct entity_particle_emitter* emitter = emitters->emitters + particle_emitter_id-1;
     emitter->flags &= ~(ENTITY_PARTICLE_EMITTER_ON);
 }
 
 void entity_particle_emitter_retain(struct entity_particle_emitter_list* emitters, s32 particle_emitter_id) {
-    struct entity_particle_emitter* emitter = emitters->emitters + particle_emitter_id;
+    if (particle_emitter_id == 0) {
+        return;
+    }
+    struct entity_particle_emitter* emitter = emitters->emitters + particle_emitter_id-1;
     emitter->flags |= ENTITY_PARTICLE_EMITTER_ACTIVE;
 }
 
 struct entity_particle_emitter* entity_particle_emitter_dereference(struct entity_particle_emitter_list* emitters, s32 particle_emitter_id) {
-    struct entity_particle_emitter* result = &emitters->emitters[particle_emitter_id];
+    if (particle_emitter_id == 0) {
+        return NULL;
+    }
+
+    struct entity_particle_emitter* result = &emitters->emitters[particle_emitter_id-1];
     if (result->flags & ENTITY_PARTICLE_EMITTER_ACTIVE) {
         return result;
     }
@@ -540,12 +554,12 @@ void update_entities(struct game_state* state, f32 dt, struct entity_iterator it
 
         /** PARTICLE SYSTEM TEST */
 #if 1
-        if (current_entity->particle_attachment_TEST != -1) {
+        if (current_entity->particle_attachment_TEST != 0) {
             struct entity_particle_emitter* emitter = entity_particle_emitter_dereference(&game_state->permenant_particle_emitters, current_entity->particle_attachment_TEST);
             emitter->position = current_entity->position;
             emitter->position.x /= TILE_UNIT_SIZE;
             emitter->position.y /= TILE_UNIT_SIZE;
-            _debugprintf("HI! I'm NEW HERE: [%d]: %f, %f", current_entity->particle_attachment_TEST , emitter->position.x * TILE_UNIT_SIZE, emitter->position.y * TILE_UNIT_SIZE);
+            /* _debugprintf("HI! I'm NEW HERE: [%d]: %f, %f", current_entity->particle_attachment_TEST , emitter->position.x * TILE_UNIT_SIZE, emitter->position.y * TILE_UNIT_SIZE); */
             entity_particle_emitter_start_emitting(&game_state->permenant_particle_emitters, current_entity->particle_attachment_TEST);
         }
 #endif
@@ -907,6 +921,7 @@ local void sortable_entity_draw_entity(struct render_commands* commands, struct 
 #ifndef RELEASE
         struct rectangle_f32 collision_bounds = entity_rectangle_collision_bounds(current_entity);
         render_commands_push_quad(commands, collision_bounds, color32u8(255, 0, 0, 64), BLEND_MODE_ALPHA);
+        render_commands_set_shader(commands, game_foreground_things_shader, NULL);
 #endif
     }
 }
