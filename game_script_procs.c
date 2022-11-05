@@ -725,6 +725,26 @@ GAME_LISP_FUNCTION(CAMERA_SET_CONSTANT_TRAUMA) {
     return LISP_nil;
 }
 
+GAME_LISP_FUNCTION(REPEAT) {
+    Required_Argument_Count(REPEAT, 2);
+    struct lisp_form* thing_to_repeat = &arguments[0];
+    struct lisp_form* times_to_repeat = &arguments[1];
+
+    s32 times_to_repeat_integer = 0;
+    lisp_form_get_s32(*times_to_repeat, &times_to_repeat_integer);
+
+    struct lisp_form new_form = {};
+    new_form.type             = LISP_FORM_LIST;
+    new_form.list.forms       = memory_arena_push(&scratch_arena, sizeof(new_form) * times_to_repeat_integer);
+    new_form.list.count       = times_to_repeat_integer;
+
+    for (s32 write_index = 0; write_index < times_to_repeat_integer; ++write_index) {
+        new_form.list.forms[write_index] = *thing_to_repeat;
+    }
+
+    return new_form;
+}
+
 #undef GAME_LISP_FUNCTION
 
 #define STRINGIFY(x) #x

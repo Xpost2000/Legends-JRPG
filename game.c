@@ -935,7 +935,7 @@ void load_level_from_file(struct game_state* state, string filename) {
     memory_arena_clear_top(state->arena);
     /* clear scripts to prevent resident memory from doing things */
 
-    state->level_area_on_enter_triggered = false;
+    state->loaded_area.on_enter_triggered = false;
 
     string fullpath = string_concatenate(&scratch_arena, string_literal("areas/"), filename);
     struct binary_serializer serializer = open_read_file_serializer(fullpath);
@@ -2187,26 +2187,20 @@ local void  do_ui_passive_speaking_dialogue(struct render_commands* commands, f3
 #include "game_demo_alert.c"
 #include "game_main_menu.c"
 
-local void execute_current_area_scripts(struct game_state* state, f32 dt) {
-    /* _debugprintf("START EXECUTING AREA SCRIPTS"); */
-    struct level_area_script_data* script_data = &state->loaded_area.script;
+local void execute_area_scripts(struct game_state* state, struct level_area* area, f32 dt) {
+    struct level_area_script_data* script_data = &area->script;
+
     if (script_data->present) {
         struct lisp_form* on_frame_script    = script_data->on_frame;
 
-        if (!state->level_area_on_enter_triggered) {
-            state->level_area_on_enter_triggered = true;
-            struct lisp_form* on_enter_script    = script_data->on_enter;
+        if (!state->loaded_area.on_enter_triggered) {
+            state->loaded_area.on_enter_triggered = true;
+            struct lisp_form* on_enter_script     = script_data->on_enter;
 
             if (on_enter_script) {
                 game_script_enqueue_form_to_execute(lisp_list_sliced(*on_enter_script, 1, -1));
             }
         } else {
-            /* 
-               Wait no onframe is a waste of time. 
-               
-               Events are best. For this anyways. I don't know what I was thinking
-               when I did this.
-            */
 #if 0
             if (on_frame_script) {
                 for (s32 index = 1; index < on_frame_script->list.count; ++index) {
@@ -2217,8 +2211,7 @@ local void execute_current_area_scripts(struct game_state* state, f32 dt) {
 #endif
         }
 
-        /* execute all routine scripts if they haven't already been queued. */
-        if (!cutscene_active() && !game_state->is_conversation_active) {
+        if (!game_state->is_conversation_active) {
             struct level_area_listener* routine_listeners = &script_data->listeners[LEVEL_AREA_LISTEN_EVENT_ROUTINE];
             for (s32 routine_script_index = 0; routine_script_index < routine_listeners->subscribers; ++routine_script_index) {
                 struct lisp_form* routine_forms = routine_listeners->subscriber_codes + routine_script_index;
@@ -2230,11 +2223,16 @@ local void execute_current_area_scripts(struct game_state* state, f32 dt) {
                 }
             } 
         }
+    }
+}
 
-
-        /* onframe is going to hurt but I'm not kidding about this. */
-        /* I could invoke multiple every-n-seconds blocks? */
-        /* _debugprintf("END EXECUTING AREA SCRIPTS"); */
+local void execute_current_area_scripts(struct game_state* state, f32 dt) {
+    if (!cutscene_active()) {
+        execute_area_scripts(state, &state->loaded_area, dt);
+    } else {
+        if (cutscene_viewing_separate_area()) {
+            execute_area_scripts(state, cutscene_view_area(), dt);
+        }
     }
 }
 

@@ -147,6 +147,7 @@ void synchronize_and_finish_thread_pool(void) {
        Considering I only have one mutex and one semaphore I'm surprised I can cause a deadlock with
        a situation that simple...
     */
+    thread_pool_synchronize_tasks();
     for (s32 thread_index = 0; thread_index < global_thread_count; ++thread_index) {
         _debugprintf("posting semaphore, and hoping a thread dies");
         SDL_SemPost(global_job_queue.notification);

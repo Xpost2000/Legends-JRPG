@@ -235,6 +235,8 @@ struct level_area {
     entity_id                        reported_entity_deaths[1024];
     /* used for displaying what tiles you can walk to. */
     u8*                              combat_movement_visibility_map;
+
+    bool   on_enter_triggered;
 };
 
 /* grid coordinate searches */

@@ -41,9 +41,10 @@ void cutscene_load_area(string path) {
         string fullpath = string_concatenate(&scratch_arena, string_literal("areas/"), path);
         struct binary_serializer serializer = open_read_file_serializer(fullpath);
         {
-            cutscene_state.viewing_loaded_area = true;
             _serialize_level_area(&cutscene_state.arena, &serializer, &cutscene_state.loaded_area, ENTITY_LIST_STORAGE_TYPE_PER_LEVEL_CUTSCENE);
             load_area_script(&cutscene_state.arena, &cutscene_state.loaded_area, string_concatenate(&scratch_arena, string_slice(fullpath, 0, (fullpath.length+1)-sizeof("area")), string_literal("area_script")));
+            cutscene_state.viewing_loaded_area            = true;
+            cutscene_state.loaded_area.on_enter_triggered = false;
         }
         special_effect_start_crossfade_scene(1, 1.4);
         serializer_finish(&serializer);
@@ -99,7 +100,8 @@ bool cutscene_viewing_separate_area(void) {
 
 void cutscene_stop(void) {
     _debugprintf("Bye bye cutscene");
-    cutscene_state.running             = false;
+    cutscene_state.running = false;
+    disable_game_input     = false;
     cutscene_unload_area();
     memory_arena_clear_top(&cutscene_state.arena);
     memory_arena_clear_bottom(&cutscene_state.arena);
