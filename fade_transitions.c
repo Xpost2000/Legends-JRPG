@@ -257,25 +257,6 @@ local void transitions_update_and_render(struct game_state* state, struct softwa
 
     f32 effective_t = clamp_f32((transition_state->time / transition_state->max_time), 0, 1);
 
-    if (transition_state->delay_time > 0) {
-        transition_state->delay_time -= dt;
-
-        if (transition_state->delay_time <= 0) {
-            transition_state->on_delay_finish(transition_state->callback_data_on_delay_finish);
-        }
-    } else {
-        if (transition_state->time < transition_state->max_time) {
-            transition_state->time += dt;
-
-            if (transition_state->time >= transition_state->max_time) {
-                last_global_transition_fader_state = global_transition_fader_state;
-                transition_state->on_finish(transition_state->callback_data_on_finish);
-            }
-        } else {
-            /* ? */
-        }
-    }
-
     switch (transition_state->type) {
         case TRANSITION_FADER_TYPE_COLOR: {
             update_and_render_color_fades(state, transition_state, framebuffer, effective_t);
@@ -294,6 +275,25 @@ local void transitions_update_and_render(struct game_state* state, struct softwa
         } break;
 
             bad_case;
+    }
+
+    if (transition_state->delay_time > 0) {
+        transition_state->delay_time -= dt;
+
+        if (transition_state->delay_time <= 0) {
+            transition_state->on_delay_finish(transition_state->callback_data_on_delay_finish);
+        }
+    } else {
+        if (transition_state->time < transition_state->max_time) {
+            transition_state->time += dt;
+
+            if (transition_state->time >= transition_state->max_time) {
+                last_global_transition_fader_state = global_transition_fader_state;
+                transition_state->on_finish(transition_state->callback_data_on_finish);
+            }
+        } else {
+            /* ? */
+        }
     }
 
 }

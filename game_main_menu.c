@@ -351,6 +351,17 @@ local s32 do_save_menu(struct software_framebuffer* framebuffer, f32 y_offset, f
     return -1;
 }
 
+local void _unlock_game_input_main_menu(void*) {
+    disable_game_input = false;
+}
+
+local void fade_into_game(void) {
+    game_initialize_game_world();
+    do_color_transition_out(color32f32(0, 0, 0, 1), 0.2, 0.35);
+    disable_game_input = true;
+    transition_register_on_finish(_unlock_game_input_main_menu, NULL, 0);
+}
+
 local void update_and_render_main_menu(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
     const f32 TITLE_FONT_SCALE  = 6.0;
     const f32 NORMAL_FONT_SCALE = 4.0;
@@ -436,7 +447,7 @@ local void update_and_render_main_menu(struct game_state* state, struct software
                 switch (choice) {
                     case 1: {
                         screen_mode = GAME_SCREEN_INGAME;
-                        game_initialize_game_world();
+                        fade_into_game();
                     } break;
                     case 2: {
                         main_menu.phase         = MAIN_MENU_SAVE_MENU_DROP_DOWN;
@@ -557,7 +568,7 @@ local void update_and_render_main_menu(struct game_state* state, struct software
             if (selected_slot != -1) {
                 /* load slot and start the game */
                 screen_mode = GAME_SCREEN_INGAME;
-                game_initialize_game_world();
+                fade_into_game();
                 game_load_from_save_slot(selected_slot);
             }
         } break;

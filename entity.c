@@ -220,6 +220,10 @@ void player_handle_radial_interactables(struct game_state* state, struct entity*
 void entity_handle_player_controlled(struct game_state* state, struct entity* entity, f32 dt) {
     /* all the input blockers. */
     {
+        if (game_command_console_enabled) {
+            return;
+        }
+
         if (disable_game_input) {
             return;
         }

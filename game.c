@@ -32,7 +32,6 @@ static struct memory_arena editor_arena = {};
 #endif
 
 /* Single line command console for gamescript. */
-bool       game_command_before_disabled_input                                   = false; /*weirdo*/
 local bool game_command_console_enabled                                         = false;
 local char game_command_console_line_input[GAME_COMMAND_CONSOLE_LINE_INPUT_MAX] = {};
 
@@ -929,6 +928,7 @@ local void level_area_clean_up(struct level_area* area) {
 
 /* this is a game level load, changes zone */
 void load_level_from_file(struct game_state* state, string filename) {
+    passive_speaking_dialogue_clear_all();
     game_script_clear_all_awaited_scripts();
     cutscene_stop();
     level_area_clean_up(&state->loaded_area);
@@ -1979,7 +1979,7 @@ void load_level_queued_for_transition(void* callback_data) {
 
     if (!transition_fading()) {
         if (transition_faded_in()) {
-            do_color_transition_out(color32f32(0, 0, 0, 1), 0.0, 0.45);
+            do_color_transition_out(color32f32(0, 0, 0, 1), 0.2, 0.35);
             disable_game_input = false;
         }
     }
@@ -2239,16 +2239,14 @@ local void execute_current_area_scripts(struct game_state* state, f32 dt) {
 }
 
 void update_and_render_game_console(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
+#if 1
     if (is_key_pressed(KEY_F2)) {
         game_command_console_enabled ^= 1;
-        if (game_command_console_enabled) {
-            game_command_before_disabled_input = disable_game_input;
-        }
     }
 
     if (game_command_console_enabled) {
         start_text_edit(game_command_console_line_input, cstring_length(game_command_console_line_input));
-        disable_game_input = false;
+        disable_game_input = true;
         /* single line of inputs */
         software_framebuffer_draw_quad(framebuffer, rectangle_f32(0, 0, framebuffer->width, 17), color32u8(0, 0, 25, 128), BLEND_MODE_ALPHA);
 
@@ -2268,10 +2266,8 @@ void update_and_render_game_console(struct game_state* state, struct software_fr
             game_script_evaluate_form(&scratch_arena, state, &code);
             zero_memory(game_command_console_line_input, GAME_COMMAND_CONSOLE_LINE_INPUT_MAX);
         }
-    } else {
-        disable_game_input                 = game_command_before_disabled_input;
-        game_command_before_disabled_input = disable_game_input;
     }
+#endif
 }
 
 void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {

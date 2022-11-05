@@ -392,6 +392,10 @@ struct passive_speaking_dialogue {
 local s32 passive_speaking_dialogue_count                          = 0;
 local struct passive_speaking_dialogue *passive_speaking_dialogues = 0;
 
+local void passive_speaking_dialogue_clear_all(void) {
+    passive_speaking_dialogue_count = 0;
+}
+
 local void passive_speaking_dialogue_cleanup(void) {
     for (s32 index = passive_speaking_dialogue_count-1; index >= 0; --index) {
         struct passive_speaking_dialogue* current_dialogue = (&passive_speaking_dialogues[index]);
