@@ -1230,8 +1230,8 @@ void game_initialize_game_world(void) {
     }
 
     {
-        struct entity* player            = game_get_player(game_state);
-        player->particle_attachment_TEST = entity_particle_emitter_allocate(&game_state->permenant_particle_emitters);
+        struct entity*                  player  = game_get_player(game_state);
+        player->particle_attachment_TEST        = entity_particle_emitter_allocate(&game_state->permenant_particle_emitters);
         struct entity_particle_emitter* emitter = entity_particle_emitter_dereference(&game_state->permenant_particle_emitters, player->particle_attachment_TEST);
         {
             /* I want this to be like a bleed effect... */

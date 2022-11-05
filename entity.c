@@ -62,7 +62,7 @@ void entity_particle_emitter_list_update(struct entity_particle_emitter_list* pa
 
                 for (s32 emitted = 0; emitted < current_emitter->burst_amount; ++emitted)
                 {
-                    /* _debugprintf("[emit %d] would've spawned new particle!", particle_emitter_index); */
+                    _debugprintf("[emit %d] would've spawned new particle!", particle_emitter_index);
 #if 1
                     /* new particle */
                     struct entity_particle* particle = particle_list_allocate_particle(&global_particle_list);
@@ -108,21 +108,21 @@ local void particle_list_kill_all_particles(struct entity_particle_list* particl
 }
 
 local void particle_list_update_particles(struct entity_particle_list* particle_list, f32 dt) {
-    /* for (s32 particle_index = 0; particle_index < particle_list->capacity; ++particle_index) { */
-    /*     struct entity_particle* current_particle = particle_list->particles + particle_index; */
+    for (s32 particle_index = 0; particle_index < particle_list->capacity; ++particle_index) {
+        struct entity_particle* current_particle = particle_list->particles + particle_index;
 
-    /*     assertion(particle_index < particle_list->capacity && "WTF is happening?"); */
+        assertion(particle_index < particle_list->capacity && "WTF is happening?");
 
-    /*     if (!(current_particle->flags & ENTITY_PARTICLE_FLAG_ALIVE)) { */
-    /*         continue; */
-    /*     } */
+        if (!(current_particle->flags & ENTITY_PARTICLE_FLAG_ALIVE)) {
+            continue;
+        }
 
-    /*     current_particle->position.x += dt; */
-    /*     current_particle->position.y += dt; */
-    /*     current_particle->lifetime   -= dt; */
-    /* } */
+        current_particle->position.x += dt;
+        current_particle->position.y += dt;
+        current_particle->lifetime   -= dt;
+    }
 
-    /* particle_list_cleanup_dead_particles(particle_list); */
+    particle_list_cleanup_dead_particles(particle_list);
 }
 
 void DEBUG_render_particle_emitters(struct render_commands* commands, struct entity_particle_emitter_list* emitters) {
@@ -568,7 +568,7 @@ void update_entities(struct game_state* state, f32 dt, struct entity_iterator it
             emitter->position = current_entity->position;
             emitter->position.x /= TILE_UNIT_SIZE;
             emitter->position.y /= TILE_UNIT_SIZE;
-            /* _debugprintf("HI! I'm NEW HERE: [%d]: %f, %f", current_entity->particle_attachment_TEST , emitter->position.x * TILE_UNIT_SIZE, emitter->position.y * TILE_UNIT_SIZE); */
+            _debugprintf("HI! I'm NEW HERE: [%d]: %f, %f", current_entity->particle_attachment_TEST , emitter->position.x * TILE_UNIT_SIZE, emitter->position.y * TILE_UNIT_SIZE);
             entity_particle_emitter_start_emitting(&game_state->permenant_particle_emitters, current_entity->particle_attachment_TEST);
         }
 #endif

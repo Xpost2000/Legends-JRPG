@@ -1089,7 +1089,9 @@ void software_framebuffer_kernel_convolution_ex(struct memory_arena* arena, stru
 
     struct postprocess_job_details* job_buffers = memory_arena_push(arena, sizeof(*job_buffers) * (JOBS_W*JOBS_H));
 
+#if 0
     _debugprintf("%d, %d (%d r, %d r)", framebuffer->width, framebuffer->height, REMAINDER_W, REMAINDER_H);
+#endif
     for (s32 y = 0; y < JOBS_H; ++y) {
         for (s32 x = 0; x < JOBS_W; ++x) {
             struct rectangle_f32            clip_rect      = (struct rectangle_f32){x * CLIP_W, y * CLIP_H, CLIP_W, CLIP_H};
