@@ -1069,10 +1069,12 @@ void software_framebuffer_kernel_convolution_ex(struct memory_arena* arena, stru
     software_framebuffer_copy_into(&unaltered_buffer, framebuffer);
 
     /* We don't handle un-even divisions, which is kind of bad. This is mostly a "proof of concept" */
-    s32 JOBS_W = 8;
-    s32 JOBS_H = 8;
-    s32 CLIP_W = (framebuffer->width)/JOBS_W;
-    s32 CLIP_H = (framebuffer->height)/JOBS_H;
+    s32 JOBS_W      = 4;
+    s32 JOBS_H      = 4;
+    s32 CLIP_W      = (framebuffer->width)/JOBS_W;
+    s32 CLIP_H      = (framebuffer->height)/JOBS_H;
+    s32 REMAINDER_W = (framebuffer->width) % JOBS_W;
+    s32 REMAINDER_H = (framebuffer->height) % JOBS_H;
 
     struct postprocess_job_shared shared_buffer =  (struct postprocess_job_shared) {
         .kernel                     = kernel,
@@ -1087,10 +1089,19 @@ void software_framebuffer_kernel_convolution_ex(struct memory_arena* arena, stru
 
     struct postprocess_job_details* job_buffers = memory_arena_push(arena, sizeof(*job_buffers) * (JOBS_W*JOBS_H));
 
+    _debugprintf("%d, %d (%d r, %d r)", framebuffer->width, framebuffer->height, REMAINDER_W, REMAINDER_H);
     for (s32 y = 0; y < JOBS_H; ++y) {
         for (s32 x = 0; x < JOBS_W; ++x) {
             struct rectangle_f32            clip_rect      = (struct rectangle_f32){x * CLIP_W, y * CLIP_H, CLIP_W, CLIP_H};
             struct postprocess_job_details* current_buffer = &job_buffers[y*JOBS_W+x];
+
+            if (x == JOBS_W-1) {
+                clip_rect.w += REMAINDER_W;
+            }
+
+            if (y == JOBS_H-1) {
+                clip_rect.h += REMAINDER_H;
+            }
 
             {
                 current_buffer->shared                     = &shared_buffer;
@@ -1268,10 +1279,12 @@ void software_framebuffer_run_shader(struct software_framebuffer* framebuffer, s
         }
     }
 #else
-    s32 JOBS_W = 4;
-    s32 JOBS_H = 4;
-    s32 CLIP_W = (framebuffer->width)/JOBS_W;
-    s32 CLIP_H = (framebuffer->height)/JOBS_H;
+    s32 JOBS_W      = 4;
+    s32 JOBS_H      = 4;
+    s32 CLIP_W      = (framebuffer->width)/JOBS_W;
+    s32 CLIP_H      = (framebuffer->height)/JOBS_H;
+    s32 REMAINDER_W = (framebuffer->width) % JOBS_W;
+    s32 REMAINDER_H = (framebuffer->height) % JOBS_H;
 
     struct run_shader_job_details_shared shared_buffer =  (struct run_shader_job_details_shared) {
         .framebuffer = framebuffer,
@@ -1285,6 +1298,14 @@ void software_framebuffer_run_shader(struct software_framebuffer* framebuffer, s
         for (s32 x = 0; x < JOBS_W; ++x) {
             struct rectangle_f32            clip_rect      = (struct rectangle_f32){x * CLIP_W, y * CLIP_H, CLIP_W, CLIP_H};
             struct run_shader_job_details*  current_buffer = &job_buffers[y*JOBS_W+x];
+
+            if (x == JOBS_W-1) {
+                clip_rect.w += REMAINDER_W;
+            }
+
+            if (y == JOBS_H-1) {
+                clip_rect.h += REMAINDER_H;
+            }
 
             {
                 current_buffer->shared                     = &shared_buffer;
