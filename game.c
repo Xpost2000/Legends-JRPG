@@ -1215,22 +1215,6 @@ void game_initialize_game_world(void) {
     entity_particle_emitter_kill_all(&game_state->permenant_particle_emitters);
     particle_list_kill_all_particles(&global_particle_list);
 
-    {
-        struct entity* player            = game_get_player(game_state);
-        player->particle_attachment_TEST = entity_particle_emitter_allocate(&game_state->permenant_particle_emitters);
-        struct entity_particle_emitter* emitter = entity_particle_emitter_dereference(&game_state->permenant_particle_emitters, player->particle_attachment_TEST);
-        {
-            /* I want this to be like a bleed effect... */
-            emitter->time_per_spawn = 0.5;
-            emitter->position = player->position;
-            emitter->position.x /= TILE_UNIT_SIZE;
-            emitter->position.y /= TILE_UNIT_SIZE;
-            emitter->burst_amount = 1;
-            emitter->max_spawn_per_batch = 16;
-            emitter->max_spawn_batches   = -1;
-            emitter->delay_time_per_batch = 0.2;
-        }
-    }
 
     if (file_exists(string_literal(GAME_DEFAULT_STARTUP_FILE))) {
         _debugprintf("Trying to execute game startup script!");
@@ -1245,6 +1229,22 @@ void game_initialize_game_world(void) {
         _debugprintf("no startup file!");
     }
 
+    {
+        struct entity* player            = game_get_player(game_state);
+        player->particle_attachment_TEST = entity_particle_emitter_allocate(&game_state->permenant_particle_emitters);
+        struct entity_particle_emitter* emitter = entity_particle_emitter_dereference(&game_state->permenant_particle_emitters, player->particle_attachment_TEST);
+        {
+            /* I want this to be like a bleed effect... */
+            emitter->time_per_spawn = 0.12;
+            emitter->position = player->position;
+            emitter->position.x /= TILE_UNIT_SIZE;
+            emitter->position.y /= TILE_UNIT_SIZE;
+            emitter->burst_amount = 1;
+            emitter->max_spawn_per_batch = 16;
+            emitter->max_spawn_batches   = -1;
+            emitter->delay_time_per_batch = 0.2;
+        }
+    }
 #if 0
     int _game_sandbox_testing(void);
     _game_sandbox_testing();

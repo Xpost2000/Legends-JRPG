@@ -157,9 +157,10 @@ enum entity_particle_flag {
     ENTITY_PARTICLE_FLAG_ALIVE = BIT(0),
 };
 struct entity_particle {
+    v2f32           position;
+
     s32             associated_particle_emitter_index;
     s32             typeid;
-    v2f32           position;
     v2f32           scale;
     f32             lifetime;
     u32             flags;

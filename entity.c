@@ -31,8 +31,7 @@ local struct entity_particle* particle_list_allocate_particle(struct entity_part
     for (s32 particle_index = 0; particle_index < particle_list->capacity; ++particle_index) {
         struct entity_particle* current_particle = particle_list->particles + particle_index;
 
-        if (!(current_particle->flags & ENTITY_PARTICLE_FLAG_ALIVE) &&
-            current_particle->lifetime <= 0) {
+        if (!(current_particle->flags & ENTITY_PARTICLE_FLAG_ALIVE)) {
             current_particle->flags |= ENTITY_PARTICLE_FLAG_ALIVE;
             return current_particle;
         }
@@ -61,7 +60,8 @@ void entity_particle_emitter_list_update(struct entity_particle_emitter_list* pa
                     current_emitter->burst_amount = 1;
                 }
 
-                for (s32 emitted = 0; emitted < current_emitter->burst_amount; ++emitted) {
+                for (s32 emitted = 0; emitted < current_emitter->burst_amount; ++emitted)
+                {
                     /* _debugprintf("[emit %d] would've spawned new particle!", particle_emitter_index); */
 #if 1
                     /* new particle */
@@ -69,7 +69,7 @@ void entity_particle_emitter_list_update(struct entity_particle_emitter_list* pa
                     current_emitter->currently_spawned_batch_amount++;
 
                     if (!particle) {
-                        continue;
+                        break;
                     }
 
                     particle->associated_particle_emitter_index = particle_emitter_index;
@@ -108,19 +108,21 @@ local void particle_list_kill_all_particles(struct entity_particle_list* particl
 }
 
 local void particle_list_update_particles(struct entity_particle_list* particle_list, f32 dt) {
-    for (unsigned particle_index = 0; particle_index < particle_list->capacity; ++particle_index) {
-        struct entity_particle* current_particle = particle_list->particles + particle_index;
+    /* for (s32 particle_index = 0; particle_index < particle_list->capacity; ++particle_index) { */
+    /*     struct entity_particle* current_particle = particle_list->particles + particle_index; */
 
-        if (!(current_particle->flags & ENTITY_PARTICLE_FLAG_ALIVE)) {
-            continue;
-        }
+    /*     assertion(particle_index < particle_list->capacity && "WTF is happening?"); */
 
-        current_particle->position.x += dt;
-        current_particle->position.y += dt;
-        current_particle->lifetime   -= dt;
-    }
+    /*     if (!(current_particle->flags & ENTITY_PARTICLE_FLAG_ALIVE)) { */
+    /*         continue; */
+    /*     } */
 
-    particle_list_cleanup_dead_particles(particle_list);
+    /*     current_particle->position.x += dt; */
+    /*     current_particle->position.y += dt; */
+    /*     current_particle->lifetime   -= dt; */
+    /* } */
+
+    /* particle_list_cleanup_dead_particles(particle_list); */
 }
 
 void DEBUG_render_particle_emitters(struct render_commands* commands, struct entity_particle_emitter_list* emitters) {
@@ -153,8 +155,8 @@ void entity_particle_emitter_kill(struct entity_particle_emitter_list* emitters,
     if (particle_emitter_id == 0) {
         return;
     }
-    struct entity_particle_emitter* emitter = emitters->emitters + particle_emitter_id-1;
-    emitter->flags &= ~(ENTITY_PARTICLE_EMITTER_ACTIVE);
+    struct entity_particle_emitter* emitter = emitters->emitters + (particle_emitter_id-1);
+    emitter->flags = 0;
 }
 
 void entity_particle_emitter_kill_all(struct entity_particle_emitter_list* emitters) {
@@ -170,6 +172,7 @@ s32 entity_particle_emitter_allocate(struct entity_particle_emitter_list* emitte
         if (!(current_emitter->flags & ENTITY_PARTICLE_EMITTER_ACTIVE)) {
             s32 result = emitter_index+1;
             entity_particle_emitter_retain(emitters, result);
+            _debugprintf("New particle emitter (%d)", result);
             return result;
         }
     }
@@ -191,7 +194,7 @@ void entity_particle_emitter_start_emitting(struct entity_particle_emitter_list*
     if (particle_emitter_id == 0) {
         return;
     }
-    struct entity_particle_emitter* emitter = emitters->emitters + particle_emitter_id-1;
+    struct entity_particle_emitter* emitter = emitters->emitters + (particle_emitter_id-1);
     emitter->flags |= ENTITY_PARTICLE_EMITTER_ON;
 }
 
@@ -199,7 +202,7 @@ void entity_particle_emitter_stop_emitting(struct entity_particle_emitter_list* 
     if (particle_emitter_id == 0) {
         return;
     }
-    struct entity_particle_emitter* emitter = emitters->emitters + particle_emitter_id-1;
+    struct entity_particle_emitter* emitter = emitters->emitters + (particle_emitter_id-1);
     emitter->flags &= ~(ENTITY_PARTICLE_EMITTER_ON);
 }
 
@@ -207,7 +210,7 @@ void entity_particle_emitter_retain(struct entity_particle_emitter_list* emitter
     if (particle_emitter_id == 0) {
         return;
     }
-    struct entity_particle_emitter* emitter = emitters->emitters + particle_emitter_id-1;
+    struct entity_particle_emitter* emitter = emitters->emitters + (particle_emitter_id-1);
     emitter->flags |= ENTITY_PARTICLE_EMITTER_ACTIVE;
 }
 
