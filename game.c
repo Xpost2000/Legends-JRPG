@@ -92,6 +92,18 @@ v2f32 nine_patch_estimate_extents(struct game_ui_nine_patch ui_skin, f32 scaling
     return result;
 }
 
+v2f32 nine_patch_estimate_fitting_extents(struct game_ui_nine_patch ui_skin, f32 scaling_factor, f32 width, f32 height) {
+    v2f32 result = {};
+
+    f32 tile_width  = ui_skin.tile_width * scaling_factor;
+    f32 tile_height = ui_skin.tile_height * scaling_factor;
+
+    result.x = ceilf(width/tile_width);
+    result.y = ceilf(height/tile_height);
+
+    return result;
+}
+
 void draw_nine_patch_ui(struct graphics_assets* graphics_assets, struct software_framebuffer* framebuffer, struct game_ui_nine_patch ui_skin, f32 scaling_factor, v2f32 xy, s32 tiles_width, s32 tiles_height, union color32f32 rgba) {
     struct image_buffer* imgs[9] = {};
     for (s32 index = 0; index < array_count(game_ui_nine_patch_id_strings); ++index) {
@@ -1340,12 +1352,13 @@ bool game_display_and_update_messages(struct software_framebuffer* framebuffer, 
         struct font_cache* font = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_YELLOW]);
         string message_str      = string_from_cstring(current_message->message_storage);
 
-        f32                  message_text_height = font_cache_calculate_height_of(font, message_str, framebuffer->width * 0.5, 2);
-        struct rectangle_f32 message_region      = rectangle_f32_centered(rectangle_f32(0, 0, framebuffer->width, framebuffer->height), framebuffer->width * 0.5, message_text_height*1.15);
+        f32                  message_text_height       = font_cache_calculate_height_of(font, message_str, framebuffer->width * 0.5, 2);
+        struct rectangle_f32 message_region            = rectangle_f32_centered(rectangle_f32(0, 0, framebuffer->width, framebuffer->height), framebuffer->width * 0.5, message_text_height*1.15);
+        v2f32                estimated_nine_patch_size = nine_patch_estimate_fitting_extents(ui_chunky, 2, message_region.w, message_region.h);
 
         {
-            software_framebuffer_draw_quad(framebuffer, message_region, color32u8(30, 30, 200, 255), BLEND_MODE_ALPHA);
-            software_framebuffer_draw_text_bounds(framebuffer, font, 2, v2f32(message_region.x+5, message_region.y+5), framebuffer->width * 0.5, message_str, color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+            draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 2, v2f32(message_region.x, message_region.y), (s32)estimated_nine_patch_size.x, (s32)estimated_nine_patch_size.y, UI_DEFAULT_COLOR);
+            software_framebuffer_draw_text_bounds(framebuffer, font, 2, v2f32(message_region.x+10, message_region.y+10), framebuffer->width * 0.5, message_str, color32f32(1,1,1,1), BLEND_MODE_ALPHA);
         }
 
         /* dismiss current message */
