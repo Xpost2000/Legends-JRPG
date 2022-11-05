@@ -123,9 +123,13 @@ void DEBUG_render_particle_emitters(struct render_commands* commands, struct ent
 #ifndef RELEASE
     for (unsigned emitter_index = 0; emitter_index < emitters->capacity; ++emitter_index) {
         struct entity_particle_emitter* current_emitter = emitters->emitters + emitter_index;
-        if ((current_emitter->flags & ENTITY_PARTICLE_EMITTER_ACTIVE) && (current_emitter->flags & ENTITY_PARTICLE_EMITTER_ON)) {
-            render_commands_push_quad(commands, rectangle_f32(current_emitter->position.x * TILE_UNIT_SIZE, current_emitter->position.y * TILE_UNIT_SIZE, TILE_UNIT_SIZE/2, TILE_UNIT_SIZE/2),
-                                      color32u8(255, 255, 255, 64), BLEND_MODE_ALPHA);
+        if ((current_emitter->flags & ENTITY_PARTICLE_EMITTER_ACTIVE) &&
+            (current_emitter->flags & ENTITY_PARTICLE_EMITTER_ON)) {
+            render_commands_push_quad(commands, rectangle_f32(current_emitter->position.x * TILE_UNIT_SIZE,
+                                                              current_emitter->position.y * TILE_UNIT_SIZE,
+                                                              TILE_UNIT_SIZE,
+                                                              TILE_UNIT_SIZE),
+                                      color32u8(255, 255, 255, 255), BLEND_MODE_ALPHA);
         }
     }
 #endif
@@ -158,6 +162,7 @@ s32 entity_particle_emitter_allocate(struct entity_particle_emitter_list* emitte
         if (!(current_emitter->flags & ENTITY_PARTICLE_EMITTER_ACTIVE)) {
             id_result = emitter_index;
             entity_particle_emitter_retain(emitters, id_result);
+            _debugprintf("Particle Emitter ID (%d)", id_result);
             return id_result;
         }
     }
@@ -540,6 +545,7 @@ void update_entities(struct game_state* state, f32 dt, struct entity_iterator it
             emitter->position = current_entity->position;
             emitter->position.x /= TILE_UNIT_SIZE;
             emitter->position.y /= TILE_UNIT_SIZE;
+            _debugprintf("HI! I'm NEW HERE: [%d]: %f, %f", current_entity->particle_attachment_TEST , emitter->position.x * TILE_UNIT_SIZE, emitter->position.y * TILE_UNIT_SIZE);
             entity_particle_emitter_start_emitting(&game_state->permenant_particle_emitters, current_entity->particle_attachment_TEST);
         }
 #endif
