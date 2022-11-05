@@ -583,6 +583,8 @@ struct entity_query_list find_entities_within_radius(struct memory_arena* arena,
 enum sortable_draw_entity_type {
     SORTABLE_DRAW_ENTITY_ENTITY,
     SORTABLE_DRAW_ENTITY_CHEST,
+    /* This is what's really going to hurt because particles are lots! */
+    SORTABLE_DRAW_ENTITY_PARTICLE,
 };
 struct sortable_draw_entity {
     u8    type;

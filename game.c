@@ -162,48 +162,6 @@ void draw_nine_patch_ui(struct graphics_assets* graphics_assets, struct software
 #endif
 }
 
-struct sortable_draw_entities sortable_draw_entities(struct memory_arena* arena, s32 capacity) {
-    struct sortable_draw_entities result;
-    result.count = 0;
-    result.entities = memory_arena_push(arena, sizeof(*result.entities) * capacity);
-    return result;
-}
-
-void sortable_draw_entities_push(struct sortable_draw_entities* entities, u8 type, f32 y_sort_key, void* ptr) {
-    struct sortable_draw_entity* current_draw_entity = &entities->entities[entities->count++];
-    current_draw_entity->type                        = type;
-    current_draw_entity->y_sort_key                  = y_sort_key;
-    current_draw_entity->pointer                     = ptr;
-}
-void sortable_draw_entities_push_entity(struct sortable_draw_entities* entities, f32 y_sort_key, entity_id id) {
-    struct sortable_draw_entity* current_draw_entity = &entities->entities[entities->count++];
-    current_draw_entity->type                        = SORTABLE_DRAW_ENTITY_ENTITY;
-    current_draw_entity->y_sort_key                  = y_sort_key;
-    current_draw_entity->entity_id                   = id;
-}
-
-void sortable_draw_entities_sort_keys(struct sortable_draw_entities* entities) {
-    /* insertion sort */
-    for (s32 draw_entity_index = 1; draw_entity_index < entities->count; ++draw_entity_index) {
-        s32 sorted_insertion_index = draw_entity_index;
-        struct sortable_draw_entity key_entity = entities->entities[draw_entity_index];
-
-        for (; sorted_insertion_index > 0; --sorted_insertion_index) {
-            struct sortable_draw_entity comparison_entity = entities->entities[sorted_insertion_index-1];
-
-            if (comparison_entity.y_sort_key < key_entity.y_sort_key) {
-                /* found insertion spot */
-                break;
-            } else {
-                /* push everything forward */
-                entities->entities[sorted_insertion_index] = entities->entities[sorted_insertion_index-1];
-            }
-        }
-
-        entities->entities[sorted_insertion_index] = key_entity;
-    }
-}
-
 /* only used in the render command system which is smart enough to apply this stuff */
 local struct tile_data_definition* tile_table_data;
 local struct autotile_table*       auto_tile_info;
@@ -2366,7 +2324,7 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                 }
 
                 struct render_commands        commands      = render_commands(&scratch_arena, 16384, game_state->camera);
-                struct sortable_draw_entities draw_entities = sortable_draw_entities(&scratch_arena, 8192);
+                struct sortable_draw_entities draw_entities = sortable_draw_entities(&scratch_arena, 8192*4);
                 commands.should_clear_buffer = true;
                 commands.clear_buffer_color  = color32u8(100, 128, 148, 255);
 

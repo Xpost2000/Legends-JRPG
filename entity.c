@@ -520,6 +520,48 @@ void entity_think_combat_actions(struct entity* entity, struct game_state* state
   order and the few things that genuinely need to be sorted can just be done... Where they need to be sorted here.
 */
 
+struct sortable_draw_entities sortable_draw_entities(struct memory_arena* arena, s32 capacity) {
+    struct sortable_draw_entities result;
+    result.count = 0;
+    result.entities = memory_arena_push(arena, sizeof(*result.entities) * capacity);
+    return result;
+}
+
+void sortable_draw_entities_push(struct sortable_draw_entities* entities, u8 type, f32 y_sort_key, void* ptr) {
+    struct sortable_draw_entity* current_draw_entity = &entities->entities[entities->count++];
+    current_draw_entity->type                        = type;
+    current_draw_entity->y_sort_key                  = y_sort_key;
+    current_draw_entity->pointer                     = ptr;
+}
+void sortable_draw_entities_push_entity(struct sortable_draw_entities* entities, f32 y_sort_key, entity_id id) {
+    struct sortable_draw_entity* current_draw_entity = &entities->entities[entities->count++];
+    current_draw_entity->type                        = SORTABLE_DRAW_ENTITY_ENTITY;
+    current_draw_entity->y_sort_key                  = y_sort_key;
+    current_draw_entity->entity_id                   = id;
+}
+
+void sortable_draw_entities_sort_keys(struct sortable_draw_entities* entities) {
+    /* insertion sort */
+    for (s32 draw_entity_index = 1; draw_entity_index < entities->count; ++draw_entity_index) {
+        s32 sorted_insertion_index = draw_entity_index;
+        struct sortable_draw_entity key_entity = entities->entities[draw_entity_index];
+
+        for (; sorted_insertion_index > 0; --sorted_insertion_index) {
+            struct sortable_draw_entity comparison_entity = entities->entities[sorted_insertion_index-1];
+
+            if (comparison_entity.y_sort_key < key_entity.y_sort_key) {
+                /* found insertion spot */
+                break;
+            } else {
+                /* push everything forward */
+                entities->entities[sorted_insertion_index] = entities->entities[sorted_insertion_index-1];
+            }
+        }
+
+        entities->entities[sorted_insertion_index] = key_entity;
+    }
+}
+
 void sortable_draw_entities_submit(struct render_commands* commands, struct graphics_assets* graphics_assets, struct sortable_draw_entities* entities, f32 dt) {
     sortable_draw_entities_sort_keys(entities);
 
