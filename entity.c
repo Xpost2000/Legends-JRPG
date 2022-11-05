@@ -1711,6 +1711,7 @@ local void entity_database_initialize_entities(struct entity_database* database)
             }
 
             {
+                _debugprintf("Ability list form count: %d", ability_block_form->list.count);
                 for (s32 ability_block_form_index = 0; ability_block_form_index < ability_block_form->list.count; ++ability_block_form_index) {
                     struct lisp_form* ability_form        = lisp_list_nth(ability_block_form, ability_block_form_index);
                     {
@@ -1718,12 +1719,12 @@ local void entity_database_initialize_entities(struct entity_database* database)
                         struct lisp_form* ability_level_form  = lisp_list_nth(ability_form, 1);
                         string            ability_string_name = {};
                         s32               ability_usage_level = 0;
-                        lisp_form_get_string(*ability_string_form, &ability_string_name);
-                        lisp_form_get_s32(*ability_level_form, &ability_usage_level);
-                        s32 new_ability                                            = entity_database_ability_find_id_by_name(&game_state->entity_database, ability_string_name);
+                        assertion(lisp_form_get_string(*ability_string_form, &ability_string_name) && "Ability string name not found?");
+                        assertion(lisp_form_get_s32(*ability_level_form, &ability_usage_level) && "Ability usage level not found?");
+                        s32                                   new_ability  = entity_database_ability_find_id_by_name(&game_state->entity_database, ability_string_name);
                         struct entity_base_data_ability_slot* current_slot = &current_entity->abilities[current_entity->ability_count++];
-                        current_slot->ability = new_ability;
-                        current_slot->level   = ability_usage_level;
+                        current_slot->ability                              = new_ability;
+                        current_slot->level                                = ability_usage_level;
                     }
                 }
             }

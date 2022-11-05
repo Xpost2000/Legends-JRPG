@@ -59,5 +59,6 @@ nil
 (intelligence 0)
 (luck 0))
 
-()
+(
+)
 )

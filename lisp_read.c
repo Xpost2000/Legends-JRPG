@@ -305,9 +305,12 @@ struct lisp_form {
     s32 type;
     s8  is_real;
     s8  quoted;
+
+    /* obese structure */
+    struct lisp_list  list;
+    string            string;
+
     union {
-        struct lisp_list  list;
-        string            string;
         f32               real;
         s32               integer;
     };
