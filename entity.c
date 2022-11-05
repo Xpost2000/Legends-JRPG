@@ -58,7 +58,7 @@ local void particle_list_update_particles(struct entity_particle_list* particle_
 void render_particles_list(struct entity_particle_list* particle_list, struct sortable_draw_entities* draw_entities) {
     for (unsigned particle_index = 0; particle_index < particle_list->count; ++particle_index) {
         struct entity_particle* current_particle = particle_list->particles + particle_index;
-
+        sortable_draw_entities_push_particle(draw_entities, current_particle->position.y, current_particle);
     }
 }
 /* PARTICLES END */
@@ -617,6 +617,186 @@ void sortable_draw_entities_sort_keys(struct sortable_draw_entities* entities) {
     }
 }
 
+local void sortable_entity_draw_entity(struct render_commands* commands, struct graphics_assets* assets, struct entity* entity, f32 dt) {
+    struct entity* current_entity = entity;
+    {
+        s32 facing_direction = current_entity->facing_direction;
+        s32 model_index      = current_entity->model_index;
+
+        if (!(current_entity->flags & ENTITY_FLAGS_ACTIVE)) {
+            continue;
+        }
+
+        struct entity_animation* anim = find_animation_by_name(model_index, current_entity->animation.name);
+
+        if (!anim) {
+            _debugprintf("cannot find anim: %.*s. Falling back to \"down direction\"", current_entity->animation.name.length, current_entity->animation.name.data);
+            entity_play_animation_with_direction(current_entity, string_literal("idle"));
+            anim = find_animation_by_name(model_index, current_entity->animation.name);
+            assertion(anim && "Okay, if this still failed something is really wrong...");
+        }
+
+        current_entity->animation.timer += dt;
+        if (current_entity->animation.timer >= anim->time_until_next_frame) {
+            current_entity->animation.current_frame_index++;
+            current_entity->animation.timer = 0;
+
+            if (current_entity->animation.current_frame_index >= anim->frame_count) {
+                current_entity->animation.current_frame_index = 0;
+                current_entity->animation.iterations         += 1;
+            }
+        }
+
+        image_id sprite_to_use  = entity_animation_get_sprite_frame(anim, current_entity->animation.current_frame_index);
+        v2f32 sprite_dimensions = entity_animation_get_frame_dimensions(anim, current_entity->animation.current_frame_index);
+
+        /*
+          Look no one said this was good, I think my brain is a little broken since I can't think of a proper way to scale up everything properly.
+
+          However all the art is expected to be relative to 16x16 tiles
+        */
+        f32 scale_x = 2;
+        
+        v2f32 real_dimensions  = v2f32(sprite_dimensions.x * scale_x, sprite_dimensions.y * scale_x);
+
+        bool should_shift_up = (real_dimensions.y / TILE_UNIT_SIZE) >= 1;
+
+        v2f32 alignment_offset = v2f32(0, real_dimensions.y * should_shift_up * 0.8);
+
+        v2f32 other_offsets;
+        other_offsets.x = current_entity->ai.hurt_animation_shake_offset.x;
+        other_offsets.y = current_entity->ai.hurt_animation_shake_offset.y;
+
+        f32 SHADOW_SPRITE_WIDTH  = TILE_UNIT_SIZE * roundf(real_dimensions.x/TILE_UNIT_SIZE);
+        f32 SHADOW_SPRITE_HEIGHT = TILE_UNIT_SIZE * max(roundf(real_dimensions.y/(TILE_UNIT_SIZE*2)), 1);
+
+        bool water_tile_submergence = false;
+
+        {
+            const f32 X_BIAS = 0;
+            const f32 Y_BIAS = 0.123;
+            struct tile* floor_tile = level_area_get_tile_at(&game_state->loaded_area,
+                                                             TILE_LAYER_GROUND, roundf((current_entity->position.x/TILE_UNIT_SIZE)-X_BIAS), roundf((current_entity->position.y/TILE_UNIT_SIZE)-Y_BIAS));
+            if (floor_tile) {
+                s32 get_tile_id_by_name(string);
+                if (floor_tile->id == get_tile_id_by_name(string_literal("water [solid]")) ||
+                    floor_tile->id == get_tile_id_by_name(string_literal("water"))) {
+                    water_tile_submergence = true;
+                }
+            }
+        }
+
+        if (!water_tile_submergence) {
+            render_commands_push_image(commands,
+                                       graphics_assets_get_image_by_id(graphics_assets, drop_shadow),
+                                       rectangle_f32(current_entity->position.x - alignment_offset.x + other_offsets.x,
+                                                     current_entity->position.y - TILE_UNIT_SIZE*0.4 + other_offsets.y,
+                                                     SHADOW_SPRITE_WIDTH,
+                                                     SHADOW_SPRITE_HEIGHT),
+                                       RECTANGLE_F32_NULL,
+                                       color32f32(1,1,1,0.72), NO_FLAGS, BLEND_MODE_ALPHA);
+            render_commands_set_shader(commands, game_background_things_shader, NULL);
+        }
+
+
+        union color32f32 modulation_color = color32f32_WHITE;
+
+        {
+            bool me = is_entity_under_ability_selection(current_draw_entity->entity_id);
+            if (me) {
+                /* red for now. We want better effects maybe? */
+                modulation_color.g = modulation_color.b = 0;
+            }
+        }
+
+        f32 height_trim = 0.0787;
+
+
+        { /*HACKME special alignment case for death animations, this is after shadows since the shadow should not move */
+            if (string_equal(current_entity->animation.name, string_literal("dead"))) {
+                other_offsets.y += TILE_UNIT_SIZE/2;
+                height_trim = 0.32;
+            }
+        }
+
+        if (!water_tile_submergence) {
+            height_trim = 0;
+        }
+
+        render_commands_push_image(commands,
+                                   graphics_assets_get_image_by_id(graphics_assets, sprite_to_use),
+                                   rectangle_f32(current_entity->position.x - alignment_offset.x + other_offsets.x,
+                                                 current_entity->position.y - alignment_offset.y + other_offsets.y,
+                                                 real_dimensions.x,
+                                                 real_dimensions.y*(1 - height_trim)),
+                                   rectangle_f32(0, 0, sprite_dimensions.x, sprite_dimensions.y * (1 - height_trim)),
+                                   modulation_color, NO_FLAGS, BLEND_MODE_ALPHA);
+        render_commands_set_shader(commands, game_foreground_things_shader, NULL);
+#if 0
+        /* test for fullbright */
+        {
+            u8 v = 0;
+            if (current_entity == game_get_player(game_state)) {
+                v = 255;
+            } 
+            v2f32 draw_point     = v2f32(current_entity->position.x - alignment_offset.x + other_offsets.x, current_entity->position.y - alignment_offset.y + other_offsets.y);
+            draw_point       = camera_transform(&commands->camera, draw_point, SCREEN_WIDTH, SCREEN_HEIGHT);
+            struct rectangle_f32 dest_rect = rectangle_f32(draw_point.x, draw_point.y, real_dimensions.x, real_dimensions.y*(1 - height_trim));
+            lightmask_buffer_blit_image(&global_lightmask_buffer,
+                                        graphics_assets_get_image_by_id(graphics_assets, sprite_to_use),
+                                        dest_rect, 
+                                        rectangle_f32(0, 0, sprite_dimensions.x, sprite_dimensions.y * (1 - height_trim)),
+                                        NO_FLAGS, 0, v);
+        }
+#endif
+
+#ifndef RELEASE
+        /* struct rectangle_f32 collision_bounds = entity_rectangle_collision_bounds(current_entity); */
+        
+        /* render_commands_push_quad(commands, collision_bounds, color32u8(255, 0, 0, 64), BLEND_MODE_ALPHA); */
+#endif
+    }
+}
+
+local void sortable_entity_draw_chest(struct render_commands* commands, struct graphics_assets* assets, struct entity_chest* chest, f32 dt) {
+    struct entity_chest* it = chest;
+
+    if (it->flags & ENTITY_CHEST_FLAGS_UNLOCKED) {
+        render_commands_push_image(commands,
+                                   graphics_assets_get_image_by_id(graphics_assets, chest_open_top_img),
+                                   rectangle_f32(it->position.x * TILE_UNIT_SIZE,
+                                                 (it->position.y-0.5) * TILE_UNIT_SIZE,
+                                                 it->scale.x * TILE_UNIT_SIZE,
+                                                 it->scale.y * TILE_UNIT_SIZE),
+                                   RECTANGLE_F32_NULL,
+                                   color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
+        render_commands_set_shader(commands, game_foreground_things_shader, NULL);
+        render_commands_push_image(commands,
+                                   graphics_assets_get_image_by_id(graphics_assets, chest_open_bottom_img),
+                                   rectangle_f32(it->position.x * TILE_UNIT_SIZE,
+                                                 it->position.y * TILE_UNIT_SIZE,
+                                                 it->scale.x * TILE_UNIT_SIZE,
+                                                 it->scale.y * TILE_UNIT_SIZE),
+                                   RECTANGLE_F32_NULL,
+                                   color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
+        render_commands_set_shader(commands, game_foreground_things_shader, NULL);
+    } else {
+        render_commands_push_image(commands,
+                                   graphics_assets_get_image_by_id(graphics_assets, chest_closed_img),
+                                   rectangle_f32(it->position.x * TILE_UNIT_SIZE,
+                                                 it->position.y * TILE_UNIT_SIZE,
+                                                 it->scale.x * TILE_UNIT_SIZE,
+                                                 it->scale.y * TILE_UNIT_SIZE),
+                                   RECTANGLE_F32_NULL,
+                                   color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
+        render_commands_set_shader(commands, game_foreground_things_shader, NULL);
+    }
+}
+
+local void sortable_entity_draw_particle(struct render_commands* commands, struct graphics_assets* assets, struct entity_particle* particle, f32 dt) {
+    struct entity_chest* it = particle;
+}
+
 void sortable_draw_entities_submit(struct render_commands* commands, struct graphics_assets* graphics_assets, struct sortable_draw_entities* entities, f32 dt) {
     sortable_draw_entities_sort_keys(entities);
 
@@ -626,177 +806,15 @@ void sortable_draw_entities_submit(struct render_commands* commands, struct grap
         switch (current_draw_entity->type) {
             case SORTABLE_DRAW_ENTITY_ENTITY: {
                 struct entity* current_entity = game_dereference_entity(game_state, current_draw_entity->entity_id);
-                {
-                    s32 facing_direction = current_entity->facing_direction;
-                    s32 model_index      = current_entity->model_index;
-
-                    if (!(current_entity->flags & ENTITY_FLAGS_ACTIVE)) {
-                        continue;
-                    }
-
-                    struct entity_animation* anim = find_animation_by_name(model_index, current_entity->animation.name);
-
-                    if (!anim) {
-                        _debugprintf("cannot find anim: %.*s. Falling back to \"down direction\"", current_entity->animation.name.length, current_entity->animation.name.data);
-                        entity_play_animation_with_direction(current_entity, string_literal("idle"));
-                        anim = find_animation_by_name(model_index, current_entity->animation.name);
-                        assertion(anim && "Okay, if this still failed something is really wrong...");
-                    }
-
-                    current_entity->animation.timer += dt;
-                    if (current_entity->animation.timer >= anim->time_until_next_frame) {
-                        current_entity->animation.current_frame_index++;
-                        current_entity->animation.timer = 0;
-
-                        if (current_entity->animation.current_frame_index >= anim->frame_count) {
-                            current_entity->animation.current_frame_index = 0;
-                            current_entity->animation.iterations         += 1;
-                        }
-                    }
-
-                    image_id sprite_to_use  = entity_animation_get_sprite_frame(anim, current_entity->animation.current_frame_index);
-                    v2f32 sprite_dimensions = entity_animation_get_frame_dimensions(anim, current_entity->animation.current_frame_index);
-
-                    /*
-                      Look no one said this was good, I think my brain is a little broken since I can't think of a proper way to scale up everything properly.
-
-                      However all the art is expected to be relative to 16x16 tiles
-                    */
-                    f32 scale_x = 2;
-        
-                    v2f32 real_dimensions  = v2f32(sprite_dimensions.x * scale_x, sprite_dimensions.y * scale_x);
-
-                    bool should_shift_up = (real_dimensions.y / TILE_UNIT_SIZE) >= 1;
-
-                    v2f32 alignment_offset = v2f32(0, real_dimensions.y * should_shift_up * 0.8);
-
-                    v2f32 other_offsets;
-                    other_offsets.x = current_entity->ai.hurt_animation_shake_offset.x;
-                    other_offsets.y = current_entity->ai.hurt_animation_shake_offset.y;
-
-                    f32 SHADOW_SPRITE_WIDTH  = TILE_UNIT_SIZE * roundf(real_dimensions.x/TILE_UNIT_SIZE);
-                    f32 SHADOW_SPRITE_HEIGHT = TILE_UNIT_SIZE * max(roundf(real_dimensions.y/(TILE_UNIT_SIZE*2)), 1);
-
-                    bool water_tile_submergence = false;
-
-                    {
-                        const f32 X_BIAS = 0;
-                        const f32 Y_BIAS = 0.123;
-                        struct tile* floor_tile = level_area_get_tile_at(&game_state->loaded_area,
-                                                                         TILE_LAYER_GROUND, roundf((current_entity->position.x/TILE_UNIT_SIZE)-X_BIAS), roundf((current_entity->position.y/TILE_UNIT_SIZE)-Y_BIAS));
-                        if (floor_tile) {
-                            s32 get_tile_id_by_name(string);
-                            if (floor_tile->id == get_tile_id_by_name(string_literal("water [solid]")) ||
-                                floor_tile->id == get_tile_id_by_name(string_literal("water"))) {
-                                water_tile_submergence = true;
-                            }
-                        }
-                    }
-
-                    if (!water_tile_submergence) {
-                        render_commands_push_image(commands,
-                                                   graphics_assets_get_image_by_id(graphics_assets, drop_shadow),
-                                                   rectangle_f32(current_entity->position.x - alignment_offset.x + other_offsets.x,
-                                                                 current_entity->position.y - TILE_UNIT_SIZE*0.4 + other_offsets.y,
-                                                                 SHADOW_SPRITE_WIDTH,
-                                                                 SHADOW_SPRITE_HEIGHT),
-                                                   RECTANGLE_F32_NULL,
-                                                   color32f32(1,1,1,0.72), NO_FLAGS, BLEND_MODE_ALPHA);
-                        render_commands_set_shader(commands, game_background_things_shader, NULL);
-                    }
-
-
-                    union color32f32 modulation_color = color32f32_WHITE;
-
-                    {
-                        bool me = is_entity_under_ability_selection(current_draw_entity->entity_id);
-                        if (me) {
-                            /* red for now. We want better effects maybe? */
-                            modulation_color.g = modulation_color.b = 0;
-                        }
-                    }
-
-                    f32 height_trim = 0.0787;
-
-
-                    { /*HACKME special alignment case for death animations, this is after shadows since the shadow should not move */
-                        if (string_equal(current_entity->animation.name, string_literal("dead"))) {
-                            other_offsets.y += TILE_UNIT_SIZE/2;
-                            height_trim = 0.32;
-                        }
-                    }
-
-                    if (!water_tile_submergence) {
-                        height_trim = 0;
-                    }
-
-                    render_commands_push_image(commands,
-                                               graphics_assets_get_image_by_id(graphics_assets, sprite_to_use),
-                                               rectangle_f32(current_entity->position.x - alignment_offset.x + other_offsets.x,
-                                                             current_entity->position.y - alignment_offset.y + other_offsets.y,
-                                                             real_dimensions.x,
-                                                             real_dimensions.y*(1 - height_trim)),
-                                               rectangle_f32(0, 0, sprite_dimensions.x, sprite_dimensions.y * (1 - height_trim)),
-                                               modulation_color, NO_FLAGS, BLEND_MODE_ALPHA);
-                    render_commands_set_shader(commands, game_foreground_things_shader, NULL);
-#if 0
-                    /* test for fullbright */
-                    {
-                        u8 v = 0;
-                        if (current_entity == game_get_player(game_state)) {
-                            v = 255;
-                        } 
-                        v2f32 draw_point     = v2f32(current_entity->position.x - alignment_offset.x + other_offsets.x, current_entity->position.y - alignment_offset.y + other_offsets.y);
-                        draw_point       = camera_transform(&commands->camera, draw_point, SCREEN_WIDTH, SCREEN_HEIGHT);
-                        struct rectangle_f32 dest_rect = rectangle_f32(draw_point.x, draw_point.y, real_dimensions.x, real_dimensions.y*(1 - height_trim));
-                        lightmask_buffer_blit_image(&global_lightmask_buffer,
-                                                    graphics_assets_get_image_by_id(graphics_assets, sprite_to_use),
-                                                    dest_rect, 
-                                                    rectangle_f32(0, 0, sprite_dimensions.x, sprite_dimensions.y * (1 - height_trim)),
-                                                    NO_FLAGS, 0, v);
-                    }
-#endif
-
-#ifndef RELEASE
-                    /* struct rectangle_f32 collision_bounds = entity_rectangle_collision_bounds(current_entity); */
-        
-                    /* render_commands_push_quad(commands, collision_bounds, color32u8(255, 0, 0, 64), BLEND_MODE_ALPHA); */
-#endif
-                }
+                sortable_entity_draw_entity(commands, graphics_assets, current_entity, dt);
             } break;
             case SORTABLE_DRAW_ENTITY_CHEST: {
                 struct entity_chest* it = current_draw_entity->pointer;
-
-                if (it->flags & ENTITY_CHEST_FLAGS_UNLOCKED) {
-                    render_commands_push_image(commands,
-                                               graphics_assets_get_image_by_id(graphics_assets, chest_open_top_img),
-                                               rectangle_f32(it->position.x * TILE_UNIT_SIZE,
-                                                             (it->position.y-0.5) * TILE_UNIT_SIZE,
-                                                             it->scale.x * TILE_UNIT_SIZE,
-                                                             it->scale.y * TILE_UNIT_SIZE),
-                                               RECTANGLE_F32_NULL,
-                                               color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
-                    render_commands_set_shader(commands, game_foreground_things_shader, NULL);
-                    render_commands_push_image(commands,
-                                               graphics_assets_get_image_by_id(graphics_assets, chest_open_bottom_img),
-                                               rectangle_f32(it->position.x * TILE_UNIT_SIZE,
-                                                             it->position.y * TILE_UNIT_SIZE,
-                                                             it->scale.x * TILE_UNIT_SIZE,
-                                                             it->scale.y * TILE_UNIT_SIZE),
-                                               RECTANGLE_F32_NULL,
-                                               color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
-                    render_commands_set_shader(commands, game_foreground_things_shader, NULL);
-                } else {
-                    render_commands_push_image(commands,
-                                               graphics_assets_get_image_by_id(graphics_assets, chest_closed_img),
-                                               rectangle_f32(it->position.x * TILE_UNIT_SIZE,
-                                                             it->position.y * TILE_UNIT_SIZE,
-                                                             it->scale.x * TILE_UNIT_SIZE,
-                                                             it->scale.y * TILE_UNIT_SIZE),
-                                               RECTANGLE_F32_NULL,
-                                               color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
-                    render_commands_set_shader(commands, game_foreground_things_shader, NULL);
-                }
+                sortable_entity_draw_chest(commands, graphics_assets, it, dt);
+            } break;
+            case SORTABLE_DRAW_ENTITY_PARTICLE: {
+                struct entity_particle* it = current_draw_entity->pointer;
+                sortable_entity_draw_particle(commands, graphics_assets, it, dt);
             } break;
                 bad_case;
         }

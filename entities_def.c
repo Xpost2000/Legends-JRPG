@@ -148,12 +148,6 @@ struct entity_chest {
 /* NOTE(): these are point particle emitters to start with */
 enum entity_particle_type {
     ENTITY_PARTICLE_TYPE_GENERIC, /* will obey the properties */
-
-    /*
-      Non-generic particles follow their own special case code
-      also they are considered "fullbright" entities so I have to draw them
-      on a separate pass. Sorry!
-     */
     ENTITY_PARTICLE_TYPE_FIRE,
 };
 
@@ -586,6 +580,7 @@ enum sortable_draw_entity_type {
     /* This is what's really going to hurt because particles are lots! */
     SORTABLE_DRAW_ENTITY_PARTICLE,
 };
+
 struct sortable_draw_entity {
     u8    type;
     /* must be in pixels */
@@ -599,6 +594,10 @@ struct sortable_draw_entities {
     s32 count;
     struct sortable_draw_entity* entities;
 };
+
+local void sortable_entity_draw_entity(struct render_commands* commands, struct graphics_assets* assets, struct entity* entity, f32 dt);
+local void sortable_entity_draw_chest(struct render_commands* commands, struct graphics_assets* assets, struct entity_chest* chest, f32 dt);
+local void sortable_entity_draw_particle(struct render_commands* commands, struct graphics_assets* assets, struct entity_particle* particle, f32 dt);
 
 struct sortable_draw_entities sortable_draw_entities(struct memory_arena* arena, s32 capacity);
 void sortable_draw_entities_push_entity(struct sortable_draw_entities* entities, f32 y_sort_key, entity_id id);
