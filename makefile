@@ -21,7 +21,8 @@ depack.exe: bigfilemaker/depacker.c bigfilemaker/bigfile_unpacker.c bigfilemaker
 	$(cc) bigfilemaker/depacker.c -o $@ -O2
 game.exe: metagen.exe $(wildcard *.c *.h)
 	./metagen.exe
-	$(CC) $(SOURCE_FILE_MODULES) -DUSE_EDITOR  -DRELEASE -o $@ $(CFLAGS) $(CLIBS) -O2 -mwindows
+	# $(CC) $(SOURCE_FILE_MODULES) -DUSE_EDITOR  -DRELEASE -o $@ $(CFLAGS) $(CLIBS) -O2 -mwindows
+	$(CC) $(SOURCE_FILE_MODULES) -DUSE_EDITOR  -o $@ $(CFLAGS) $(CLIBS) -O2 -mwindows
 game-debug.exe: metagen.exe $(wildcard *.c *.h)
 	./metagen.exe
 	$(CC) $(SOURCE_FILE_MODULES) -DUSE_EDITOR -o $@ $(CFLAGS) $(CLIBS) -ggdb3

@@ -30,7 +30,7 @@ typedef void (*transition_on_start_callback)(void* data);
 
 void ___transition_stubs(void* data){}
 
-#define TRANSITION_MAX_CALLBACK_DATA (Bytes(256))
+#define TRANSITION_MAX_CALLBACK_DATA (Kilobyte(1))
 struct transition_fader_state {
     u32                                 type;
     union color32f32                    color;

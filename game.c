@@ -1955,8 +1955,9 @@ struct queued_load_level_data {
     v2f32 spawn_location;
     u8    new_facing_direction;
     int   length_of_destination;
-    char  destination_string_buffer[80];
+    char  destination_string_buffer[256];
 };
+
 
 void load_level_queued_for_transition(void* callback_data) {
     struct queued_load_level_data* data   = callback_data;
@@ -1966,6 +1967,7 @@ void load_level_queued_for_transition(void* callback_data) {
     string assembled_string = string_from_cstring_length_counted(data->destination_string_buffer, data->length_of_destination);
 
     load_level_from_file(game_state, assembled_string);
+
     if (!data->use_default_spawn_location) {
         player->position.x = data->spawn_location.x * TILE_UNIT_SIZE;
         player->position.y = data->spawn_location.y * TILE_UNIT_SIZE;
@@ -1995,6 +1997,7 @@ void handle_entity_level_trigger_interactions(struct game_state* state, struct e
 
         if (rectangle_f32_intersect(current_trigger->bounds, entity_collision_bounds)) {
             string copy = format_temp_s("%s", current_trigger->target_level);
+
             if (!transition_fading()) {
                 if (!transition_faded_in()) {
                     struct queued_load_level_data data = (struct queued_load_level_data) {
@@ -2003,11 +2006,12 @@ void handle_entity_level_trigger_interactions(struct game_state* state, struct e
                         .new_facing_direction       = new_facing_direction,
                         .length_of_destination      = copy.length,
                     };
-                    if (copy.length > 80) {
-                        copy.length = 80;   
+                    if (copy.length > array_count(data.destination_string_buffer)) {
+                        copy.length = array_count(data.destination_string_buffer);
                     }
 
                     cstring_copy(copy.data, data.destination_string_buffer, copy.length);
+
                     do_color_transition_in(color32f32(0, 0, 0, 1), 0.0, 0.45);
                     transition_register_on_finish(load_level_queued_for_transition, (u8*)&data, sizeof(data));
                     disable_game_input = true;

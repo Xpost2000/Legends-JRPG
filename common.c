@@ -225,20 +225,35 @@ struct tracked_memory_allocation_header {
 
 /* Minorly faster implementations without stosb. */
 static inline void memory_copy64(void* source, void* destination, size_t amount) {
-    for (u64 index = 0; index < amount >> 3; ++index) {
+    u64 index = 0, real_index = 0;
+    for (index = 0; index < amount >> 3; ++index, real_index+=8) {
         ((u64*)destination)[index] = ((u64*)source)[index];
+    }
+
+    for (; real_index < amount; ++real_index) {
+        ((u8*)destination)[real_index] = ((u8*)source)[real_index];
     }
 }
 
 static inline void memory_copy32(void* source, void* destination, size_t amount) {
-    for (u64 index = 0; index < amount >> 2; ++index) {
+    u64 index = 0, real_index = 0;
+    for (index = 0; index < amount >> 2; ++index, real_index+=4) {
         ((u32*)destination)[index] = ((u32*)source)[index];
+    }
+
+    for (; real_index < amount; ++real_index) {
+        ((u8*)destination)[real_index] = ((u8*)source)[real_index];
     }
 }
 
 static inline void memory_copy16(void* source, void* destination, size_t amount) {
-    for (u64 index = 0; index < amount >> 1; ++index) {
+    u64 index = 0, real_index = 0;
+    for (index = 0; index < amount >> 1; real_index+=2,++index) {
         ((u16*)destination)[index] = ((u16*)source)[index];
+    }
+
+    for (; real_index < amount; ++real_index) {
+        ((u8*)destination)[real_index] = ((u8*)source)[real_index];
     }
 }
 
@@ -249,6 +264,7 @@ static inline void memory_copy8(void* source, void* destination, size_t amount) 
 }
 
 static inline void memory_copy(void* source, void* destination, size_t amount) {
+#if 1
     if (amount & ~(63)) {
         memory_copy64(source, destination, amount);
         /* _debugprintf("memory copy 64bit"); */
@@ -262,6 +278,9 @@ static inline void memory_copy(void* source, void* destination, size_t amount) {
         memory_copy8(source, destination, amount);
         /* _debugprintf("memory copy default"); */
     }
+#else
+    memcpy(destination, source, amount);
+#endif
 }
 
 static inline void zero_memory(void* memory, size_t amount) {

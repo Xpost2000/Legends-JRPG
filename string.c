@@ -58,6 +58,7 @@ void cstring_copy(cstring source, cstring destination, u64 destination_length) {
     for (u64 index = 0; index < destination_length && index < source_length; ++index, ++written) {
         destination[index] = source[index];
     }
+    _debugprintf("%d chars copied!", written);
     destination[written] = 0;
 }
 
