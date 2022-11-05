@@ -1204,6 +1204,7 @@ void game_initialize(void) {
      */
     game_state->permenant_entities          = entity_list_create(&game_arena, GAME_MAX_PERMENANT_ENTITIES, ENTITY_LIST_STORAGE_TYPE_PERMENANT_STORE);
     game_state->permenant_particle_emitters = entity_particle_emitter_list(&game_arena, GAME_MAX_PERMENANT_PARTICLE_EMITTERS);
+    initialize_particle_pools(&game_arena, PARTICLE_POOL_MAX_SIZE);
     /* entity_particles_initialize_pool(&game_arena, MAX_PARTICLES_IN_ENGINE); */
     player_id                               = entity_list_create_player(&game_state->permenant_entities, v2f32(70, 70));
     /* entity_list_create_niceguy(&game_state->permenant_entities, v2f32(9 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE)); */
@@ -2303,13 +2304,6 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                 struct entity* player_entity = game_get_player(game_state);
                 update_game_camera(game_state, dt);
 
-                /*
-                  Frankly the particle systems in this game are the expected killers unless I specific make
-                  a render particles command, which would make this simpler. I want to just stick with
-                  the flat render commands for now though...
-
-                  So this means
-                 */
                 execute_current_area_scripts(game_state, dt);
 
                 if (is_key_pressed(KEY_Y)) {

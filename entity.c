@@ -60,15 +60,6 @@ struct rectangle_f32 entity_rectangle_collision_bounds(struct entity* entity) {
                          entity->scale.y-10);
 }
 
-/* think about this a little further */
-struct entity_particle_emitter_list entity_particle_emitter_list(struct memory_arena* arena, s32 capacity) {
-    struct entity_particle_emitter_list result = {
-        .emitters = memory_arena_push(arena, capacity),
-        .count    = 0,
-    };
-    return result;
-}
-
 void entity_look_at(struct entity* entity, v2f32 position) {
     v2f32 position_delta = v2f32_direction(entity->position, position);
 
@@ -712,14 +703,6 @@ void sortable_draw_entities_submit(struct render_commands* commands, struct grap
             } break;
         }
     }
-}
-
-void entity_particle_emitter_spawn(struct entity_particle_emitter_list* particle_emitter) {
-    /* need to spawn random parameterized particle */ 
-}
-
-void entity_particle_emitter_list_update(struct entity_particle_emitter_list* particle_emitters, f32 dt) {
-    
 }
 
 void render_entities_from_area_and_iterator(struct sortable_draw_entities* draw_entities, struct entity_iterator it, struct level_area* area) {
@@ -2183,6 +2166,52 @@ void entity_award_experience(struct entity* entity, s32 xp_amount) {
         entity->stat_block.experience -= level_cutoff;
         level_cutoff = get_xp_level_cutoff(entity->stat_block.level);
     }
+}
+
+struct entity_particle_emitter_list entity_particle_emitter_list(struct memory_arena* arena, s32 capacity) {
+    struct entity_particle_emitter_list result = {
+        .emitters   = memory_arena_push(arena, capacity),
+        .capacity   = capacity,
+    };
+    return result;
+}
+
+/*
+  NOTE: Will move into game state when it is more stable.
+*/
+local struct entity_particle_list global_particle_list = {};
+
+void initialize_particle_pools(struct memory_arena* arena, s32 particles_total_count) {
+    global_particle_list.count     = 0;
+    global_particle_list.capacity  = particles_total_count;
+    global_particle_list.particles = memory_arena_push(arena, sizeof(*global_particle_list.particles) * particles_total_count);
+}
+
+void entity_particle_emitter_list_update(struct entity_particle_emitter_list* particle_emitters, f32 dt) {
+    for (unsigned particle_emitter_index = 0; particle_emitter_index < particle_emitters->capacity; ++particle_emitter_index) {
+        struct entity_particle_emitter* current_emitter = particle_emitters->emitters + particle_emitter_index;
+
+        if (!(current_emitter->flags & ENTITY_PARTICLE_EMITTER_ACTIVE)) {
+            continue;
+        }
+    }
+}
+
+local void cleanup_dead_particles(void) {
+    for (s32 particle_index = global_particle_list.count-1; particle_index >= 0; --particle_index) {
+        struct entity_particle* current_particle = global_particle_list.particles + particle_index;
+        if (current_particle->lifetime <= 0) {
+            global_particle_list.particles[particle_index] = global_particle_list.particles[--global_particle_list.count];
+        }
+    }
+}
+
+void update_all_particles(f32 dt) {
+    for (unsigned particle_index = 0; particle_index < global_particle_list.count; ++particle_index) {
+        struct entity_particle* current_particle = global_particle_list.particles + particle_index;
+    }
+
+    cleanup_dead_particles();
 }
 
 #include "entity_ability.c"

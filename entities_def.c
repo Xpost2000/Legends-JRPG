@@ -141,15 +141,10 @@ struct entity_chest {
 };
 
 /* might need to obey the simulated rules of a system but who cares? */
-/* reserved for in engine dynamic things, so burning and such. */
+/* reserved for in engine dynamic things, so burning and such. (or particle emitters that are dynamically spawned from other entities) */
 /* levels will still have their own particle emitters if they would like. */
-#define GAME_MAX_PERMENANT_PARTICLE_EMITTERS (512) 
-
-#define MAX_PARTICLES_IN_ENGINE (16384)
-/* Separating particles into two separate passes to make life easier */
-#define  FULLBRIGHT_PARTICLE_COUNT (MAX_PARTICLES_IN_ENGINE/2)
-#define NORMALLY_LIT_PARTICLE_COUNT (MAX_PARTICLES_IN_ENGINE/2)
-
+#define GAME_MAX_PERMENANT_PARTICLE_EMITTERS (2048) 
+#define PARTICLE_POOL_MAX_SIZE (8192) /* Seriously how much memory am I gobbling up? */
 /* NOTE(): these are point particle emitters to start with */
 enum entity_particle_type {
     ENTITY_PARTICLE_TYPE_GENERIC, /* will obey the properties */
@@ -163,14 +158,23 @@ enum entity_particle_type {
 };
 
 struct entity_particle {
-    s32   associated_particle_emitter_index;
-
-    v2f32 position;
-    v2f32 scale;
-    v2f32 target_scale;
-    f32   lifetime;
+    s32             associated_particle_emitter_index;
+    s32             typeid;
+    v2f32           position;
+    v2f32           scale;
+    f32             lifetime;
     union color32u8 color;
     union color32u8 target_color;
+};
+struct entity_particle_list {
+    s32 count;
+    s32 capacity;
+    struct entity_particle* particles;
+};
+enum entity_particle_emitter_flags{
+    ENTITY_PARTICLE_EMITTER_OFF       = 0,
+    ENTITY_PARTICLE_EMITTER_ONCE_ONLY = BIT(1),
+    ENTITY_PARTICLE_EMITTER_ACTIVE    = BIT(0),
 };
 struct entity_particle_emitter {
     v2f32 position;
@@ -185,16 +189,17 @@ struct entity_particle_emitter {
     /* this will determine general spawning traits */
 
     s32 particle_type;
+    u32 flags;
 };
 struct entity_particle_emitter_list {
-    s32 count;
+    s32 capacity;
     struct entity_particle_emitter* emitters;
 };
 struct entity_particle_emitter_list entity_particle_emitter_list(struct memory_arena* arena, s32 capacity);
+/* NOTE: Going  */
+void                                initialize_particle_pools(struct memory_arena* arena, s32 particles_total_count);
+void                                update_all_particles(f32 dt);
 void                                entity_particle_emitter_list_update(struct entity_particle_emitter_list* particle_emitters, f32 dt);
-void                                entity_update_all_particles(f32 dt);
-void                                entity_draw_fullbright_particles();
-void                                entity_draw_normal_particles();
 
 /* needs more parameters */
 void entity_particle_emitter_spawn(struct entity_particle_emitter_list* particle_emitter);
