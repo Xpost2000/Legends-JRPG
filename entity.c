@@ -48,6 +48,13 @@ local void particle_list_cleanup_dead_particles(struct entity_particle_list* par
     }
 }
 
+local void particle_list_kill_all_particles(struct entity_particle_list* particle_list) {
+    for (unsigned particle_index = 0; particle_index < particle_list->count; ++particle_index) {
+        struct entity_particle* current_particle = particle_list->particles + particle_index;
+        current_particle->lifetime = 0;
+    }
+}
+
 local void particle_list_update_particles(struct entity_particle_list* particle_list, f32 dt) {
     for (unsigned particle_index = 0; particle_index < particle_list->count; ++particle_index) {
         struct entity_particle* current_particle = particle_list->particles + particle_index;
@@ -458,6 +465,16 @@ void update_entities(struct game_state* state, f32 dt, struct entity_iterator it
             continue;
         }
 
+        /** PARTICLE SYSTEM TEST */
+#if 1
+        if (current_entity->particle_attachment_TEST != -1) {
+            struct entity_particle_emitter* emitter = entity_particle_emitter_dereference(&game_state->permenant_particle_emitters, current_entity->particle_attachment_TEST);
+            emitter->position = current_entity->position;
+            emitter->position.x /= TILE_UNIT_SIZE;
+            emitter->position.y /= TILE_UNIT_SIZE;
+            entity_particle_emitter_start_emitting(&game_state->permenant_particle_emitters, current_entity->particle_attachment_TEST);
+        }
+#endif
         {
             if (!(current_entity->flags & ENTITY_FLAGS_NOCLIP)) {
                 /* _debugprintf("cx: %f, %f\n", current_entity->velocity.x, current_entity->velocity.y); */
@@ -863,6 +880,11 @@ local void sortable_entity_draw_particle(struct render_commands* commands, struc
     f32 draw_y = it->position.y;
     f32 draw_w = it->scale.x;
     f32 draw_h = it->scale.y;
+
+    draw_x *= TILE_UNIT_SIZE;
+    draw_y *= TILE_UNIT_SIZE;
+    draw_w *= TILE_UNIT_SIZE;
+    draw_h *= TILE_UNIT_SIZE;
 
     /* good enough for now */
 

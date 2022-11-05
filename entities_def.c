@@ -144,7 +144,7 @@ struct entity_chest {
 /* reserved for in engine dynamic things, so burning and such. (or particle emitters that are dynamically spawned from other entities) */
 /* levels will still have their own particle emitters if they would like. */
 #define GAME_MAX_PERMENANT_PARTICLE_EMITTERS (2048) 
-#define PARTICLE_POOL_MAX_SIZE (8192) /* Seriously how much memory am I gobbling up? */
+#define PARTICLE_POOL_MAX_SIZE (16384) /* Seriously how much memory am I gobbling up? */
 /* NOTE(): these are point particle emitters to start with */
 enum entity_particle_type {
     ENTITY_PARTICLE_TYPE_GENERIC, /* will obey the properties */
@@ -172,14 +172,24 @@ enum entity_particle_emitter_flags{
     ENTITY_PARTICLE_EMITTER_ONCE_ONLY = BIT(1),
     ENTITY_PARTICLE_EMITTER_ON        = BIT(2),
 };
+/* POSITION UNITS IN TILE UNITS */
 struct entity_particle_emitter {
     v2f32 position;
-    s32   spawned;
-    f32   time;
-    f32   spawn_delay;
 
-    f32 time_until_death;
-    s32 max_spawn;
+    f32   time;
+    f32   time_per_spawn;
+    /* 1or0 == normal... */
+    s32   burst_amount;
+
+    f32   delay_time;
+    f32   delay_time_per_batch;
+
+    /* f32 time_until_death; // 0, means  */
+
+    s32 currently_spawned_batch_amount;
+    s32 max_spawn_per_batch; // cannot be -1
+
+    s32 max_spawn_batches; // -1 == forever!
 
     /* get schema listing data elsewhere, for now hard code */
     /* this will determine general spawning traits */
@@ -194,7 +204,6 @@ struct entity_particle_emitter_list {
 struct entity_particle_emitter_list entity_particle_emitter_list(struct memory_arena* arena, s32 capacity);
 /* NOTE: Going  */
 void                                initialize_particle_pools(struct memory_arena* arena, s32 particles_total_count);
-void                                update_all_particles(f32 dt);
 void                                entity_particle_emitter_list_update(struct entity_particle_emitter_list* particle_emitters, f32 dt);
 void                                entity_particle_emitter_kill_all_particles(s32 particle_emitter_id);
 
@@ -413,6 +422,8 @@ struct entity {
     /* this is just so I can zero out this thing and have expected behavior. */
     s32                           interacted_script_trigger_write_index;
     s32                           interacted_script_trigger_ids[32];
+
+    s32                           particle_attachment_TEST;
 };
 
 void entity_snap_to_grid_position(struct entity* entity) {
