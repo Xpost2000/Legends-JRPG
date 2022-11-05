@@ -487,30 +487,30 @@ int engine_main(int argc, char** argv) {
     
     /* feature testing */
     {
-        printf("%d byte sized cache line\n", SDL_GetCPUCacheLineSize());
-        printf("%d MB of ram\n", SDL_GetSystemRAM());
+        _debugprintf("%d byte sized cache line\n", SDL_GetCPUCacheLineSize());
+        _debugprintf("%d MB of ram\n", SDL_GetSystemRAM());
         if (SDL_HasMMX()) {
             printf("MMX Detected\n");
         }
 
         if (SDL_HasSSE()) {
-            printf("SSE Detected\n");
+           _debugprintf("SSE Detected\n");
         }
 
         if (SDL_HasAVX()) {
-            printf("AVX Detected\n");
+            _debugprintf("AVX Detected\n");
         }
 
         if (SDL_HasSSE2()) {
-            printf("SSE2 Detected\n");
+           _debugprintf("SSE2 Detected\n");
         }
 
         if (SDL_HasSSE3()) {
-            printf("SSE2 Detected\n");
+           _debugprintf("SSE2 Detected\n");
         }
 
         if (SDL_HasSSE41() || SDL_HasSSE42()) {
-            printf("SSE4 Detected\n");
+           _debugprintf("SSE4 Detected\n");
         }
     }
 

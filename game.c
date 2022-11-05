@@ -1161,8 +1161,13 @@ void game_initialize(void) {
       Game Base Files    (Use if there is no existing save record on that level...)
      */
     game_state->permenant_entities          = entity_list_create(&game_arena, GAME_MAX_PERMENANT_ENTITIES, ENTITY_LIST_STORAGE_TYPE_PERMENANT_STORE);
+
+    memory_arena_push(&game_arena, Kilobyte(8));
     game_state->permenant_particle_emitters = entity_particle_emitter_list(&game_arena, GAME_MAX_PERMENANT_PARTICLE_EMITTERS);
+    memory_arena_push(&game_arena, Kilobyte(8));
     initialize_particle_pools(&game_arena, PARTICLE_POOL_MAX_SIZE);
+    memory_arena_push(&game_arena, Kilobyte(8));
+
     player_id                               = entity_list_create_player(&game_state->permenant_entities, v2f32(70, 70));
     /* entity_list_create_niceguy(&game_state->permenant_entities, v2f32(9 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE)); */
     /* entity_list_create_badguy(&game_state->permenant_entities, v2f32(9 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE)); */
@@ -1248,19 +1253,19 @@ void game_initialize_game_world(void) {
     }
     {
         struct entity*                  player  = game_get_player(game_state);
-        /* player->particle_attachment_TEST        = entity_particle_emitter_allocate(&game_state->permenant_particle_emitters); */
-        /* struct entity_particle_emitter* emitter = entity_particle_emitter_dereference(&game_state->permenant_particle_emitters, player->particle_attachment_TEST); */
-        /* { */
-        /*     /\* I want this to be like a bleed effect... *\/ */
-        /*     emitter->time_per_spawn = 0.12; */
-        /*     emitter->position = player->position; */
-        /*     emitter->position.x /= TILE_UNIT_SIZE; */
-        /*     emitter->position.y /= TILE_UNIT_SIZE; */
-        /*     emitter->burst_amount = 1; */
-        /*     emitter->max_spawn_per_batch = 16; */
-        /*     emitter->max_spawn_batches   = -1; */
-        /*     emitter->delay_time_per_batch = 0.2; */
-        /* } */
+        player->particle_attachment_TEST        = entity_particle_emitter_allocate(&game_state->permenant_particle_emitters);
+        struct entity_particle_emitter* emitter = entity_particle_emitter_dereference(&game_state->permenant_particle_emitters, player->particle_attachment_TEST);
+        {
+            /* I want this to be like a bleed effect... */
+            emitter->time_per_spawn = 0.12;
+            emitter->position = player->position;
+            emitter->position.x /= TILE_UNIT_SIZE;
+            emitter->position.y /= TILE_UNIT_SIZE;
+            emitter->burst_amount = 1;
+            emitter->max_spawn_per_batch = 16;
+            emitter->max_spawn_batches   = -1;
+            emitter->delay_time_per_batch = 0.2;
+        }
     }
 #if 0
     int _game_sandbox_testing(void);
