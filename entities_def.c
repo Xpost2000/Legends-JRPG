@@ -444,6 +444,10 @@ struct entity_loot_table {
 /* temporary and copy somewhere. */
 struct item_instance* entity_loot_table_find_loot(struct memory_arena* arena, struct entity_loot_table* table, s32* out_count);
 
+struct entity_base_data_ability_slot {
+    s32 ability;
+    u8  level;
+};
 struct entity_base_data {
     string                        name;
     s32                           model_index;
@@ -454,6 +458,8 @@ struct entity_base_data {
     s32                           magic;
     s32                           loot_table_id_index; /* if -1, don't use loot table. Need to have override in level_area_entity */
     item_id                       equip_slots[ENTITY_EQUIP_SLOT_INDEX_COUNT];
+    s32                           ability_count;
+    struct entity_base_data_ability_slot abilities[ENTITY_MAX_ABILITIES];
     struct entity_actor_inventory inventory;
 };
 struct entity_database {

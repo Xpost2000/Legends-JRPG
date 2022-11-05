@@ -28,6 +28,8 @@
 (intelligence 100)
 (luck 100))
 
+(
+("ability_sword_rush" 0))
 )
 
 (
@@ -55,4 +57,7 @@ nil
 (agility 0)
 (speed 0)
 (intelligence 0)
-(luck 0)))
+(luck 0))
+
+()
+)

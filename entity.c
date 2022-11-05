@@ -1644,6 +1644,7 @@ local void entity_database_initialize_entities(struct entity_database* database)
             struct lisp_form* equip_slot_list_form  = lisp_list_nth(current_entity_form, 8); unused(equip_slot_list_form);
             struct lisp_form* entity_inventory_form = lisp_list_nth(current_entity_form, 9); unused(entity_inventory_form);
             struct lisp_form* stat_block_form       = lisp_list_nth(current_entity_form, 10);
+            struct lisp_form* ability_block_form    = lisp_list_nth(current_entity_form, 11);
 
             {
                 string key_name = {};
@@ -1705,6 +1706,24 @@ local void entity_database_initialize_entities(struct entity_database* database)
                         } else if (lisp_form_symbol_matching(*stat_name, string_literal("luck"))) {
                             lisp_form_get_s32(*param, &current_entity->stats.luck);
                         }
+                    }
+                }
+            }
+
+            {
+                for (s32 ability_block_form_index = 0; ability_block_form_index < ability_block_form->list.count; ++ability_block_form_index) {
+                    struct lisp_form* ability_form        = lisp_list_nth(ability_block_form, ability_block_form_index);
+                    {
+                        struct lisp_form* ability_string_form = lisp_list_nth(ability_form, 0);
+                        struct lisp_form* ability_level_form  = lisp_list_nth(ability_form, 1);
+                        string            ability_string_name = {};
+                        s32               ability_usage_level = 0;
+                        lisp_form_get_string(*ability_string_form, &ability_string_name);
+                        lisp_form_get_s32(*ability_level_form, &ability_usage_level);
+                        s32 new_ability                                            = entity_database_ability_find_id_by_name(&game_state->entity_database, ability_string_name);
+                        struct entity_base_data_ability_slot* current_slot = &current_entity->abilities[current_entity->ability_count++];
+                        current_slot->ability = new_ability;
+                        current_slot->level   = ability_usage_level;
                     }
                 }
             }
@@ -1824,8 +1843,8 @@ struct entity_database entity_database_create(struct memory_arena* arena) {
     result.arena = arena;
 
     entity_database_initialize_loot_tables(&result);
-    entity_database_initialize_entities(&result);
     entity_database_initialize_abilities(&result);
+    entity_database_initialize_entities(&result);
 
     return result;
 }
@@ -1872,6 +1891,14 @@ void entity_base_data_unpack(struct entity_database* entity_database, struct ent
 
     for (s32 index = 0; index < array_count(data->equip_slots); ++index) {
         destination->equip_slots[index] = data->equip_slots[index];
+    }
+
+    destination->ability_count = data->ability_count;
+    for (s32 ability_index = 0; ability_index < data->ability_count; ++ability_index) {
+        struct entity_ability_slot*           current_ability_slot      = destination->abilities + ability_index;
+        struct entity_base_data_ability_slot* current_base_ability_slot = data->abilities + ability_index;
+        current_ability_slot->usages                                    = current_base_ability_slot->level;
+        current_ability_slot->ability                                   = current_base_ability_slot->ability;
     }
 }
 
@@ -2109,7 +2136,7 @@ void entity_clear_all_abilities(struct entity* entity) {
 void entity_add_ability_by_name(struct entity* entity, string id) {
     if (entity->ability_count < ENTITY_MAX_ABILITIES) {
         struct entity_ability_slot* ability_slot = &entity->abilities[entity->ability_count++];
-        ability_slot->ability = entity_database_ability_find_id_by_name(&game_state->entity_database, id);
+        ability_slot->ability                    = entity_database_ability_find_id_by_name(&game_state->entity_database, id);
     }
 }
 
