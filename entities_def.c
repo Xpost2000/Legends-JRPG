@@ -603,6 +603,8 @@ struct sortable_draw_entities {
 struct sortable_draw_entities sortable_draw_entities(struct memory_arena* arena, s32 capacity);
 void sortable_draw_entities_push_entity(struct sortable_draw_entities* entities, f32 y_sort_key, entity_id id);
 void sortable_draw_entities_push(struct sortable_draw_entities* entities, u8 type, f32 y_sort_key, void* ptr);
+void sortable_draw_entities_push_chest(struct sortable_draw_entities* entities, f32 y_sort_key, void* ptr);
+void sortable_draw_entities_push_particle(struct sortable_draw_entities* entities, f32 y_sort_key, void* ptr);
 /* should not take dt, but just need something to work and there's animation timing code */
 void sortable_draw_entities_submit(struct render_commands* commands, struct graphics_assets* graphics_assets, struct sortable_draw_entities* entities, f32 dt);
 void sortable_draw_entities_sort_keys(struct sortable_draw_entities* entities);

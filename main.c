@@ -405,6 +405,9 @@ void deinitialize(void) {
     SDL_Quit();
     _memory_arena_peak_usages(&game_arena);
     _memory_arena_peak_usages(&scratch_arena);
+#ifdef USE_EDITOR
+    _memory_arena_peak_usages(&editor_arena);
+#endif
     _debugprintf("Peak allocations at: %s", memory_strings(system_heap_peak_allocated_amount()));
     if (system_heap_memory_leak_check())
         _debugprintf("no leaked memory");

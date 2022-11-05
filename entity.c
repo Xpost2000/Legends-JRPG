@@ -16,6 +16,53 @@ local void entity_advance_ability_sequence(struct entity* entity);
 
 bool entity_bad_ref(struct entity* e);
 
+/* PARTICLES START */
+/*
+  NOTE: Will move into game state when it is more stable.
+*/
+local struct entity_particle_list global_particle_list = {};
+
+void initialize_particle_pools(struct memory_arena* arena, s32 particles_total_count) {
+    global_particle_list.count     = 0;
+    global_particle_list.capacity  = particles_total_count;
+    global_particle_list.particles = memory_arena_push(arena, sizeof(*global_particle_list.particles) * particles_total_count);
+}
+
+void entity_particle_emitter_list_update(struct entity_particle_emitter_list* particle_emitters, f32 dt) {
+    for (unsigned particle_emitter_index = 0; particle_emitter_index < particle_emitters->capacity; ++particle_emitter_index) {
+        struct entity_particle_emitter* current_emitter = particle_emitters->emitters + particle_emitter_index;
+
+        if (!(current_emitter->flags & ENTITY_PARTICLE_EMITTER_ACTIVE)) {
+            continue;
+        }
+    }
+}
+
+local void particle_list_cleanup_dead_particles(struct entity_particle_list* particle_list) {
+    for (s32 particle_index = particle_list->count-1; particle_index >= 0; --particle_index) {
+        struct entity_particle* current_particle = particle_list->particles + particle_index;
+        if (current_particle->lifetime <= 0) {
+            particle_list->particles[particle_index] = particle_list->particles[--particle_list->count];
+        }
+    }
+}
+
+local void particle_list_update_particles(struct entity_particle_list* particle_list, f32 dt) {
+    for (unsigned particle_index = 0; particle_index < particle_list->count; ++particle_index) {
+        struct entity_particle* current_particle = particle_list->particles + particle_index;
+    }
+
+    particle_list_cleanup_dead_particles(particle_list);
+}
+
+void render_particles_list(struct entity_particle_list* particle_list, struct sortable_draw_entities* draw_entities) {
+    for (unsigned particle_index = 0; particle_index < particle_list->count; ++particle_index) {
+        struct entity_particle* current_particle = particle_list->particles + particle_index;
+
+    }
+}
+/* PARTICLES END */
+
 void battle_ui_stalk_entity_with_camera(struct entity*);
 void battle_ui_stop_stalk_entity_with_camera(void);
 void _debug_print_id(entity_id id) {
@@ -518,6 +565,9 @@ void entity_think_combat_actions(struct entity* entity, struct game_state* state
 /*
   NOTE: In terms of render commands, I don't seem to actually need to use them for sorting as I know most of the
   order and the few things that genuinely need to be sorted can just be done... Where they need to be sorted here.
+
+  (Honestly, in retrospect the best thing to do would just to be allowing the render_commands system sort it themselves. But that's
+  for a later date since this obviously works fine.)
 */
 
 struct sortable_draw_entities sortable_draw_entities(struct memory_arena* arena, s32 capacity) {
@@ -526,7 +576,6 @@ struct sortable_draw_entities sortable_draw_entities(struct memory_arena* arena,
     result.entities = memory_arena_push(arena, sizeof(*result.entities) * capacity);
     return result;
 }
-
 void sortable_draw_entities_push(struct sortable_draw_entities* entities, u8 type, f32 y_sort_key, void* ptr) {
     struct sortable_draw_entity* current_draw_entity = &entities->entities[entities->count++];
     current_draw_entity->type                        = type;
@@ -538,6 +587,12 @@ void sortable_draw_entities_push_entity(struct sortable_draw_entities* entities,
     current_draw_entity->type                        = SORTABLE_DRAW_ENTITY_ENTITY;
     current_draw_entity->y_sort_key                  = y_sort_key;
     current_draw_entity->entity_id                   = id;
+}
+void sortable_draw_entities_push_chest(struct sortable_draw_entities* entities, f32 y_sort_key, void* ptr) {
+    sortable_draw_entities_push(entities, SORTABLE_DRAW_ENTITY_CHEST, y_sort_key, ptr);
+}
+void sortable_draw_entities_push_particle(struct sortable_draw_entities* entities, f32 y_sort_key, void* ptr) {
+    sortable_draw_entities_push(entities, SORTABLE_DRAW_ENTITY_PARTICLE, y_sort_key, ptr);
 }
 
 void sortable_draw_entities_sort_keys(struct sortable_draw_entities* entities) {
@@ -743,6 +798,7 @@ void sortable_draw_entities_submit(struct render_commands* commands, struct grap
                     render_commands_set_shader(commands, game_foreground_things_shader, NULL);
                 }
             } break;
+                bad_case;
         }
     }
 }
@@ -759,7 +815,7 @@ void render_entities_from_area_and_iterator(struct sortable_draw_entities* draw_
 
     {
         Array_For_Each(it, struct entity_chest, area->chests, area->entity_chest_count) {
-            sortable_draw_entities_push(draw_entities, SORTABLE_DRAW_ENTITY_CHEST, it->position.y*TILE_UNIT_SIZE, it);
+            sortable_draw_entities_push_chest(draw_entities, it->position.y*TILE_UNIT_SIZE, it);
         }
     }
 }
@@ -2216,44 +2272,6 @@ struct entity_particle_emitter_list entity_particle_emitter_list(struct memory_a
         .capacity   = capacity,
     };
     return result;
-}
-
-/*
-  NOTE: Will move into game state when it is more stable.
-*/
-local struct entity_particle_list global_particle_list = {};
-
-void initialize_particle_pools(struct memory_arena* arena, s32 particles_total_count) {
-    global_particle_list.count     = 0;
-    global_particle_list.capacity  = particles_total_count;
-    global_particle_list.particles = memory_arena_push(arena, sizeof(*global_particle_list.particles) * particles_total_count);
-}
-
-void entity_particle_emitter_list_update(struct entity_particle_emitter_list* particle_emitters, f32 dt) {
-    for (unsigned particle_emitter_index = 0; particle_emitter_index < particle_emitters->capacity; ++particle_emitter_index) {
-        struct entity_particle_emitter* current_emitter = particle_emitters->emitters + particle_emitter_index;
-
-        if (!(current_emitter->flags & ENTITY_PARTICLE_EMITTER_ACTIVE)) {
-            continue;
-        }
-    }
-}
-
-local void cleanup_dead_particles(void) {
-    for (s32 particle_index = global_particle_list.count-1; particle_index >= 0; --particle_index) {
-        struct entity_particle* current_particle = global_particle_list.particles + particle_index;
-        if (current_particle->lifetime <= 0) {
-            global_particle_list.particles[particle_index] = global_particle_list.particles[--global_particle_list.count];
-        }
-    }
-}
-
-void update_all_particles(f32 dt) {
-    for (unsigned particle_index = 0; particle_index < global_particle_list.count; ++particle_index) {
-        struct entity_particle* current_particle = global_particle_list.particles + particle_index;
-    }
-
-    cleanup_dead_particles();
 }
 
 #include "entity_ability.c"

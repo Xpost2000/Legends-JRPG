@@ -1163,7 +1163,6 @@ void game_initialize(void) {
     game_state->permenant_entities          = entity_list_create(&game_arena, GAME_MAX_PERMENANT_ENTITIES, ENTITY_LIST_STORAGE_TYPE_PERMENANT_STORE);
     game_state->permenant_particle_emitters = entity_particle_emitter_list(&game_arena, GAME_MAX_PERMENANT_PARTICLE_EMITTERS);
     initialize_particle_pools(&game_arena, PARTICLE_POOL_MAX_SIZE);
-    /* entity_particles_initialize_pool(&game_arena, MAX_PARTICLES_IN_ENGINE); */
     player_id                               = entity_list_create_player(&game_state->permenant_entities, v2f32(70, 70));
     /* entity_list_create_niceguy(&game_state->permenant_entities, v2f32(9 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE)); */
     /* entity_list_create_badguy(&game_state->permenant_entities, v2f32(9 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE)); */
@@ -2306,6 +2305,7 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                     if (!storyboard_active && !game_state->is_conversation_active) {
                         update_entities(game_state, dt, game_entity_iterator(game_state), &game_state->loaded_area);
                         entity_particle_emitter_list_update(&game_state->permenant_particle_emitters, dt);
+                        particle_list_update_particles(&global_particle_list, dt);
 
                         game_script_execute_awaiting_scripts(&scratch_arena, game_state, dt);
                         game_script_run_all_timers(dt);
@@ -2330,6 +2330,7 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
 
                 if (cutscene_viewing_separate_area()) {
                     /* might need to rethink this a little... */
+                    /* TODO: NO PARTICLES HERE */
                     update_entities(game_state, dt, game_cutscene_entity_iterator(), cutscene_view_area());
                     render_ground_area(game_state, &commands, cutscene_view_area());
                     render_cutscene_entities(&draw_entities);
@@ -2338,6 +2339,7 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                 } else {
                     render_ground_area(game_state, &commands, &game_state->loaded_area);
                     render_entities(game_state, &draw_entities);
+                    render_particles_list(&global_particle_list, &draw_entities);
                     sortable_draw_entities_submit(&commands, &graphics_assets, &draw_entities, dt);
                     render_foreground_area(game_state, &commands, &game_state->loaded_area);
                 }
