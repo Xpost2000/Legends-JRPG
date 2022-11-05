@@ -62,6 +62,8 @@ void entity_particle_emitter_list_update(struct entity_particle_emitter_list* pa
                 }
 
                 for (s32 emitted = 0; emitted < current_emitter->burst_amount; ++emitted) {
+                    _debugprintf("[emit %d] would've spawned new particle!", particle_emitter_index);
+#if 0
                     /* new particle */
                     struct entity_particle* particle = particle_list_allocate_particle(&global_particle_list);
                     current_emitter->currently_spawned_batch_amount++;
@@ -74,6 +76,7 @@ void entity_particle_emitter_list_update(struct entity_particle_emitter_list* pa
                     particle->position                          = current_emitter->position;
                     particle->scale                             = v2f32(0.25, 0.25);
                     particle->lifetime                          = 2;
+#endif
                 }
 
                 if (current_emitter->currently_spawned_batch_amount > current_emitter->max_spawn_per_batch) {
@@ -114,6 +117,18 @@ local void particle_list_update_particles(struct entity_particle_list* particle_
     }
 
     particle_list_cleanup_dead_particles(particle_list);
+}
+
+void DEBUG_render_particle_emitters(struct render_commands* commands, struct entity_particle_emitter_list* emitters) {
+#ifndef RELEASE
+    for (unsigned emitter_index = 0; emitter_index < emitters->capacity; ++emitter_index) {
+        struct entity_particle_emitter* current_emitter = emitters->emitters + emitter_index;
+        if ((current_emitter->flags & ENTITY_PARTICLE_EMITTER_ACTIVE) && (current_emitter->flags & ENTITY_PARTICLE_EMITTER_ON)) {
+            render_commands_push_quad(commands, rectangle_f32(current_emitter->position.x * TILE_UNIT_SIZE, current_emitter->position.y * TILE_UNIT_SIZE, TILE_UNIT_SIZE/2, TILE_UNIT_SIZE/2),
+                                      color32u8(255, 255, 255, 64), BLEND_MODE_ALPHA);
+        }
+    }
+#endif
 }
 
 void render_particles_list(struct entity_particle_list* particle_list, struct sortable_draw_entities* draw_entities) {
@@ -884,9 +899,8 @@ local void sortable_entity_draw_entity(struct render_commands* commands, struct 
 #endif
 
 #ifndef RELEASE
-        /* struct rectangle_f32 collision_bounds = entity_rectangle_collision_bounds(current_entity); */
-        
-        /* render_commands_push_quad(commands, collision_bounds, color32u8(255, 0, 0, 64), BLEND_MODE_ALPHA); */
+        struct rectangle_f32 collision_bounds = entity_rectangle_collision_bounds(current_entity);
+        render_commands_push_quad(commands, collision_bounds, color32u8(255, 0, 0, 64), BLEND_MODE_ALPHA);
 #endif
     }
 }

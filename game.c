@@ -2362,6 +2362,7 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                     render_ground_area(game_state, &commands, &game_state->loaded_area);
                     render_entities(game_state, &draw_entities);
                     render_particles_list(&global_particle_list, &draw_entities);
+                    DEBUG_render_particle_emitters(&commands, &game_state->permenant_particle_emitters);
                     sortable_draw_entities_submit(&commands, &graphics_assets, &draw_entities, dt);
                     render_foreground_area(game_state, &commands, &game_state->loaded_area);
                 }
