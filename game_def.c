@@ -563,6 +563,9 @@ struct game_state {
 
         /* animation state... hahahahahaha */
     } interactable_state;
+
+    bool constantly_traumatizing_camera;
+    f32  constant_camera_trauma_value;
 };
 
 void game_write_save_slot(s32 save_slot_id);

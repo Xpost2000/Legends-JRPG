@@ -618,6 +618,113 @@ GAME_LISP_FUNCTION(ENTITY_GET_ITEM_COUNT) {
     return lisp_form_integer(entity_inventory_count_instances_of(inventory_target, object_name));
 }
 
+/* TODO: This should be a blocking function! But I haven't really used it so who's to say it should be? */
+GAME_LISP_FUNCTION(GAME_DO_TRANSITION) {
+    /* ID, DIR, COLOR, DELAY, LENGTH */
+    Required_Argument_Count(GAME_DO_TRANSITION, 5);
+    struct lisp_form* transition_id        = &arguments[0];
+    struct lisp_form* transition_direction = &arguments[1];
+    struct lisp_form* transition_color     = &arguments[2];
+    struct lisp_form* transition_delay     = &arguments[3];
+    struct lisp_form* transition_length    = &arguments[4];
+
+    u8 fade_in = 1;
+
+    if (lisp_form_symbol_matching(*transition_direction, string_literal("out"))) {
+        fade_in = 0;
+    } else if (lisp_form_symbol_matching(*transition_direction, string_literal("in"))) {
+        fade_in = 1;
+    }
+
+    union color32f32 color;
+    {
+        Fatal_Script_Error(transition_color->type != LISP_FORM_LIST && "color needs to be a list? (4 or 3 elems)");
+        Fatal_Script_Error(transition_color->list.count < 3 && "less than 3 colors?");
+
+        f32 r = 0;
+        f32 g = 0;
+        f32 b = 0;
+        f32 a = 1;
+
+        Fatal_Script_Error(lisp_form_get_f32(transition_color->list.forms[0], &r) && "Could not read color value (r)");
+        Fatal_Script_Error(lisp_form_get_f32(transition_color->list.forms[1], &g) && "Could not read color value (g)");
+        Fatal_Script_Error(lisp_form_get_f32(transition_color->list.forms[2], &b) && "Could not read color value (b)");
+
+        if (transition_color->list.count == 4) {
+            Fatal_Script_Error(lisp_form_get_f32(transition_color->list.forms[3], &a) && "Could not read color value (a)");
+        }
+
+        color.r = r;
+        color.g = g;
+        color.b = b;
+        color.a = a;
+    }
+
+    f32 delay;
+    f32 length;
+    {
+        Fatal_Script_Error(lisp_form_get_f32(*transition_delay, &delay) && "Could not read transition delay timer");
+        Fatal_Script_Error(lisp_form_get_f32(*transition_length, &length) && "Could not read length timer");
+    }
+
+    if (lisp_form_symbol_matching(*transition_id, string_literal("color"))) {
+        if (fade_in) {
+            do_color_transition_in(color, delay, length);
+        } else {
+            do_color_transition_out(color, delay, length);
+        }
+    } else if (lisp_form_symbol_matching(*transition_id, string_literal("horizontal_slide"))) {
+        if (fade_in) {
+            do_horizontal_slide_in(color, delay, length);
+        } else {
+            do_horizontal_slide_out(color, delay, length);
+        }
+    } else if (lisp_form_symbol_matching(*transition_id, string_literal("vertical_slide"))) {
+        if (fade_in) {
+            do_vertical_slide_in(color, delay, length);
+        } else {
+            do_vertical_slide_out(color, delay, length);
+        }
+    } else if (lisp_form_symbol_matching(*transition_id, string_literal("shuteye"))) {
+        if (fade_in) {
+            do_shuteye_in(color, delay, length);
+        } else {
+            do_shuteye_out(color, delay, length);
+        }
+    } else if (lisp_form_symbol_matching(*transition_id, string_literal("curtainclose"))) {
+        if (fade_in) {
+            do_curtainclose_in(color, delay, length);
+        } else {
+            do_curtainclose_out(color, delay, length);
+        }
+    }
+
+    return LISP_nil;
+}
+
+GAME_LISP_FUNCTION(CAMERA_TRAUMATIZE) {
+    Required_Argument_Count(CAMERA_TRAUMATIZE, 1);
+
+    f32 trauma_value = 0;
+    Fatal_Script_Error(lisp_form_get_f32(arguments[0], &trauma_value));
+
+    camera_traumatize(&game_state->camera, trauma_value);
+    return LISP_nil;
+}
+
+GAME_LISP_FUNCTION(CAMERA_SET_CONSTANT_TRAUMA) {
+    Required_Argument_Count(CAMERA_SET_CONSTANT_TRAUMA, 1);
+
+    if (lisp_form_symbol_matching(arguments[0], string_literal("stop"))) {
+        game_stop_constantly_traumatizing_camera();
+    } else {
+        f32 trauma_value = 0;
+        Fatal_Script_Error(lisp_form_get_f32(arguments[0], &trauma_value));
+        game_apply_constant_camera_trauma_as(trauma_value);
+    }
+    return LISP_nil;
+}
+
 #undef GAME_LISP_FUNCTION
 
 #define STRINGIFY(x) #x

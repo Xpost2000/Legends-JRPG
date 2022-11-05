@@ -1813,6 +1813,16 @@ local void recalculate_camera_shifting_bounds(struct software_framebuffer* frame
     }
 }
 
+local void game_stop_constantly_traumatizing_camera(void) {
+    game_state->constantly_traumatizing_camera = false;
+    game_state->constant_camera_trauma_value   = 0;
+}
+
+local void game_apply_constant_camera_trauma_as(f32 amount) {
+    game_state->constantly_traumatizing_camera = true;
+    game_state->constant_camera_trauma_value   = amount;
+}
+
 local void update_game_camera_exploration_mode(struct game_state* state, f32 dt) {
     struct camera* camera = &state->camera;
 
@@ -1882,6 +1892,10 @@ local void update_game_camera(struct game_state* state, f32 dt) {
             camera->xy.y        = camera->tracking_xy.y + 32;
             camera_init         = true;
         }
+    }
+
+    if (state->constantly_traumatizing_camera) {
+        camera_set_trauma(camera, state->constant_camera_trauma_value);
     }
 
     {
