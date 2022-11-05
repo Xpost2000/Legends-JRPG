@@ -2323,8 +2323,11 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                 if (game_state->ui_state != UI_STATE_PAUSE) {
                     if (!storyboard_active && !game_state->is_conversation_active) {
                         update_entities(game_state, dt, game_entity_iterator(game_state), &game_state->loaded_area);
-                        entity_particle_emitter_list_update(&game_state->permenant_particle_emitters, dt);
+
+                        /*...*/
                         particle_list_update_particles(&global_particle_list, dt);
+                        entity_particle_emitter_list_update(&game_state->permenant_particle_emitters, dt);
+                        /*...*/
 
                         game_script_execute_awaiting_scripts(&scratch_arena, game_state, dt);
                         game_script_run_all_timers(dt);

@@ -159,7 +159,6 @@ struct entity_particle {
     v2f32           scale;
     f32             lifetime;
     union color32u8 color;
-    union color32u8 target_color;
 };
 struct entity_particle_list {
     s32 count;
@@ -189,6 +188,7 @@ struct entity_particle_emitter {
     s32 currently_spawned_batch_amount;
     s32 max_spawn_per_batch; // cannot be -1
 
+    s32 spawned_batches;
     s32 max_spawn_batches; // -1 == forever!
 
     /* get schema listing data elsewhere, for now hard code */

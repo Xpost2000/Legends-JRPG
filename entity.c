@@ -28,13 +28,62 @@ void initialize_particle_pools(struct memory_arena* arena, s32 particles_total_c
     global_particle_list.particles = memory_arena_push(arena, sizeof(*global_particle_list.particles) * particles_total_count);
 }
 
+local struct entity_particle* particle_list_allocate_particle(struct entity_particle_list* particle_list) {
+    for (s32 particle_index = 0; particle_index < particle_list->capacity; ++particle_index) {
+        struct entity_particle* current_particle = particle_list->particles + particle_index;
+
+        if (current_particle->lifetime <= 0) {
+            particle_list->count++;
+            return current_particle;
+        }
+    }
+
+    return NULL;
+}
+
 void entity_particle_emitter_list_update(struct entity_particle_emitter_list* particle_emitters, f32 dt) {
+    /* TODO: Does not have dying particle emitters yet! */
     for (unsigned particle_emitter_index = 0; particle_emitter_index < particle_emitters->capacity; ++particle_emitter_index) {
         struct entity_particle_emitter* current_emitter = particle_emitters->emitters + particle_emitter_index;
 
         if (!(current_emitter->flags & ENTITY_PARTICLE_EMITTER_ACTIVE) ||
             !(current_emitter->flags & ENTITY_PARTICLE_EMITTER_ON)) {
             continue;
+        }
+
+        if (current_emitter->delay_time > 0) {
+            current_emitter->delay_time -= dt;
+        } else {
+            if (current_emitter->time <= 0) {
+                current_emitter->time = current_emitter->time_per_spawn; 
+
+                if (current_emitter->burst_amount == 0) {
+                    current_emitter->burst_amount = 1;
+                }
+
+                for (s32 emitted = 0; emitted < current_emitter->burst_amount; ++emitted) {
+                    /* new particle */
+                    struct entity_particle* particle = particle_list_allocate_particle(&global_particle_list);
+                    current_emitter->currently_spawned_batch_amount++;
+
+                    if (!particle) {
+                        continue;
+                    }
+
+                    particle->associated_particle_emitter_index = particle_emitter_index;
+                    particle->position                          = current_emitter->position;
+                    particle->scale                             = v2f32(0.25, 0.25);
+                    particle->lifetime                          = 2;
+                }
+
+                if (current_emitter->currently_spawned_batch_amount > current_emitter->max_spawn_per_batch) {
+                    current_emitter->currently_spawned_batch_amount = 0; 
+                    current_emitter->spawned_batches++;
+                    current_emitter->delay_time = current_emitter->delay_time_per_batch;
+                }
+            } else {
+                current_emitter->time -= dt;
+            }
         }
     }
 }
@@ -58,6 +107,10 @@ local void particle_list_kill_all_particles(struct entity_particle_list* particl
 local void particle_list_update_particles(struct entity_particle_list* particle_list, f32 dt) {
     for (unsigned particle_index = 0; particle_index < particle_list->count; ++particle_index) {
         struct entity_particle* current_particle = particle_list->particles + particle_index;
+
+        current_particle->position.x += dt;
+        current_particle->position.y += dt;
+        current_particle->lifetime   -= dt;
     }
 
     particle_list_cleanup_dead_particles(particle_list);
