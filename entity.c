@@ -129,7 +129,11 @@ local v2f32 entity_particle_emitter_spawn_shape_find_position(v2f32 offset, stru
 
             f32 random_angle = random_ranged_float(rng, 0, 360);
             f32 cosine = cos(random_angle);
+#ifdef EXPERIMENTAL_PARTICLES_TEST_ELLIPSOID_PERSPECTIVE
+            f32 sine = sin(random_angle) * 0.65;
+#else
             f32 sine = sin(random_angle);
+#endif
 
             if (spawn_shape->outline) {
                 f32 x = random_ranged_float(rng, circle.center.x+circle.radius*cosine-circle.thickness, circle.center.x+circle.radius*cosine+circle.thickness);
@@ -706,6 +710,8 @@ void update_entities(struct game_state* state, f32 dt, struct entity_iterator it
                 emitter->position.y -= 0.4;
                 _debugprintf("HI! I'm NEW HERE: [%d]: %f, %f", current_entity->particle_attachment_TEST , emitter->position.x * TILE_UNIT_SIZE, emitter->position.y * TILE_UNIT_SIZE);
                 entity_particle_emitter_start_emitting(&game_state->permenant_particle_emitters, current_entity->particle_attachment_TEST);
+
+                emitter->spawn_shape = emitter_spawn_shape_circle(v2f32(0,0), normalized_sinf(global_elapsed_time*3) + 1.4, 0.2, true);
             }
         }
 

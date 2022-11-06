@@ -1286,11 +1286,12 @@ void game_initialize_game_world(void) {
             emitter->position                        = player->position;
             emitter->position.x                     /= TILE_UNIT_SIZE;
             emitter->position.y                     /= TILE_UNIT_SIZE;
-            emitter->burst_amount                    = 64;
+            emitter->burst_amount                    = 128;
             emitter->max_spawn_per_batch             = 1024;
             emitter->max_spawn_batches               = -1;
-            emitter->color                           = color32u8(226, 88, 34, 255);
-            /* emitter->target_color                    = color32u8(255, 0, 0, 127); */
+            /* emitter->color                           = color32u8(226, 88, 34, 255); */
+            /* emitter->target_color                    = color32u8(59, 59, 56, 127); */
+            emitter->color                           = color32u8(24, 226, 88, 255);
             emitter->target_color                    = color32u8(59, 59, 56, 127);
             emitter->starting_acceleration           = v2f32(0, -15.6);
             emitter->starting_acceleration_variance  = v2f32(1.2, 1.2);
@@ -1303,7 +1304,7 @@ void game_initialize_game_world(void) {
 
             emitter->scale_uniform = 0.2;
             emitter->scale_variance_uniform = 0.12;
-            emitter->spawn_shape = emitter_spawn_shape_circle(v2f32(0,0), 0.6, 0.0, false);
+            emitter->spawn_shape = emitter_spawn_shape_circle(v2f32(0,0), 2.4, 0.2, true);
         }
     }
 #if 0
