@@ -213,6 +213,12 @@ void entity_particle_emitter_list_update(struct entity_particle_emitter_list* pa
                         current_emitter->delay_time = current_emitter->delay_time_per_batch;
                     }
                 }
+
+                if (current_emitter->max_spawn_batches != -1) {
+                    if (current_emitter->spawned_batches >= current_emitter->max_spawn_batches) {
+                        current_emitter->flags = 0;
+                    }
+                }
             } else {
                 current_emitter->time -= dt;
             }
@@ -923,6 +929,11 @@ void sortable_draw_entities_push_particle(struct sortable_draw_entities* entitie
     if (((struct entity_particle*)ptr)->feature_flags & ENTITY_PARTICLE_FEATURE_FLAG_HIGHERSORTBIAS) {
         y_sort_key += 2.56;
     }
+
+    if (((struct entity_particle*)ptr)->feature_flags & ENTITY_PARTICLE_FEATURE_FLAG_ALWAYSFRONT) {
+        y_sort_key += 10; 
+    }
+
     sortable_draw_entities_push(entities, SORTABLE_DRAW_ENTITY_PARTICLE, y_sort_key, ptr);
 }
 

@@ -1894,8 +1894,8 @@ local void update_game_camera_exploration_mode(struct game_state* state, f32 dt)
         struct rectangle_f32 projected_rectangle          = rectangle_f32(projected_rectangle_position.x, projected_rectangle_position.y, camera->travel_bounds.w / camera->zoom, camera->travel_bounds.h / camera->zoom);
         struct rectangle_f32 player_rectangle             = entity_rectangle_collision_bounds(player);
 
-        f32 new_w = projected_rectangle.w * 0.8;
-        f32 new_h = projected_rectangle.h * 0.8;
+        f32 new_w = projected_rectangle.w * 0.73;
+        f32 new_h = projected_rectangle.h * 0.7;
         f32 delta_w = projected_rectangle.w - new_w;
         f32 delta_h = projected_rectangle.w - new_h;
 
@@ -2438,7 +2438,7 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                     }
                     software_framebuffer_run_shader(framebuffer, rectangle_f32(0, 0, framebuffer->width, framebuffer->height), lighting_shader, area);
                 }
-                game_postprocess_blur_ingame(framebuffer, 2, 0.62, BLEND_MODE_ALPHA);
+                game_postprocess_blur_ingame(framebuffer, 2, 0.63, BLEND_MODE_ALPHA);
 
                 {
                     struct render_commands commands = render_commands(&scratch_arena, 1024, game_state->camera);
