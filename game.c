@@ -1877,9 +1877,7 @@ local void update_and_render_pause_game_menu_ui(struct game_state* state, struct
     }
 }
 
-local void update_and_render_gameover_game_menu_ui(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
-    
-}
+#include "game_gameover_ui.c"
 
 void update_and_render_game_menu_ui(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
     /* fader/transitions is rendered under the game ui */
