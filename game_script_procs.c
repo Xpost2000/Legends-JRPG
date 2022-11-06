@@ -745,6 +745,70 @@ GAME_LISP_FUNCTION(REPEAT) {
     return new_form;
 }
 
+/* These prototypes are here so that will metagen.c will catch it*/
+#if 1
+GAME_LISP_FUNCTION(VIGOR);
+GAME_LISP_FUNCTION(STRENGTH);
+GAME_LISP_FUNCTION(CONSTITUTION);
+GAME_LISP_FUNCTION(WILLPOWER);
+GAME_LISP_FUNCTION(AGILITY);
+GAME_LISP_FUNCTION(SPEED);
+GAME_LISP_FUNCTION(INTELLIGENCE);
+GAME_LISP_FUNCTION(LUCK);
+GAME_LISP_FUNCTION(SET_VIGOR);
+GAME_LISP_FUNCTION(SET_STRENGTH);
+GAME_LISP_FUNCTION(SET_CONSTITUTION);
+GAME_LISP_FUNCTION(SET_WILLPOWER);
+GAME_LISP_FUNCTION(SET_AGILITY);
+GAME_LISP_FUNCTION(SET_SPEED);
+GAME_LISP_FUNCTION(SET_INTELLIGENCE);
+GAME_LISP_FUNCTION(SET_LUCK);
+#endif
+
+#define Define_Stat_Accessors(STAT_NAME, STAT_FIELD)                    \
+    GAME_LISP_FUNCTION(STAT_NAME) {                                     \
+        Required_Argument_Count(STAT_NAME, 1);  \
+        struct game_script_typed_ptr ptr    = game_script_object_handle_decode(arguments[0]); \
+        struct entity*               entity = game_dereference_entity(state, ptr.entity_id); \
+        s32                          value  = entity->stat_block.STAT_FIELD ; \
+        return lisp_form_integer(value);        \
+    }                                           \
+    GAME_LISP_FUNCTION(SET_ ## STAT_NAME) {     \
+        Required_Argument_Count(SET_ ## STAT_NAME, 2); \
+        struct game_script_typed_ptr ptr    = game_script_object_handle_decode(arguments[0]); \
+        struct entity*               entity = game_dereference_entity(state, ptr.entity_id); \
+        s32                          value  = 0; \
+        Fatal_Script_Error(lisp_form_get_s32(arguments[1], &value) && "Stat accessor set needs to be a number"); \
+        entity->stat_block.STAT_FIELD       = value; \
+        return lisp_form_integer(value);        \
+    }
+
+Define_Stat_Accessors(VIGOR,        vigor);
+Define_Stat_Accessors(STRENGTH,     strength);
+Define_Stat_Accessors(CONSTITUTION, constitution);
+Define_Stat_Accessors(WILLPOWER,    willpower);
+Define_Stat_Accessors(AGILITY,      agility);
+Define_Stat_Accessors(SPEED,        speed);
+Define_Stat_Accessors(INTELLIGENCE, intelligence);
+Define_Stat_Accessors(LUCK,         luck);
+
+GAME_LISP_FUNCTION(HEALTH) {
+    Required_Argument_Count(SET_HEALTH, 1);
+    struct game_script_typed_ptr ptr    = game_script_object_handle_decode(arguments[0]);
+    struct entity*               entity = game_dereference_entity(state, ptr.entity_id);
+    s32                          value  = entity->health.value;
+    return lisp_form_integer(value);
+}
+GAME_LISP_FUNCTION(SET_HEALTH) {
+    Required_Argument_Count(SET_HEALTH, 2);
+    struct game_script_typed_ptr ptr    = game_script_object_handle_decode(arguments[0]);
+    struct entity*               entity = game_dereference_entity(state, ptr.entity_id);
+    s32                          value  = 0;
+    Fatal_Script_Error(lisp_form_get_s32(arguments[1], &value) && "Stat accessor set needs to be a number");
+    entity->health.value = value;
+    return lisp_form_integer(value);
+}
+
 #undef GAME_LISP_FUNCTION
 
 #define STRINGIFY(x) #x
