@@ -496,8 +496,24 @@ local void game_begin_shopping(string storename) {
     }
 }
 
+struct entity* game_any_entity_at_tile_point(v2f32 xy);
+
 /* This is just going to start as a breadth first search */
 /* NOTE: add a version with obstacle parameters, since the AI doesn't obey those rules! */
+/* NOTE: this can fail if BFS doesn't find a finished path...  */
+s32 level_area_navigation_map_tile_type_at(struct level_area* area, s32 x, s32 y) {
+    struct level_area_navigation_map* navigation_map = &area->navigation_data;
+
+    if (level_area_navigation_map_is_point_in_bounds(navigation_map, v2f32(x, y))) {
+        s32                               map_width               = navigation_map->width;
+        s32                               map_height              = navigation_map->height;
+        s32                               total_elements          = (map_width * map_height);
+        struct level_area_navigation_map_tile* tile = &navigation_map->tiles[((s32)y - navigation_map->min_y) * map_width + ((s32)x - navigation_map->min_x)];
+        return tile->type;
+    }
+
+    return 0;
+}
 struct navigation_path navigation_path_find(struct memory_arena* arena, struct level_area* area, v2f32 start, v2f32 end) {
     struct level_area_navigation_map* navigation_map          = &area->navigation_data;
     struct navigation_path            results                 = {};
@@ -548,13 +564,20 @@ struct navigation_path navigation_path_find(struct memory_arena* arena, struct l
                         new_point->x = x1;
                         new_point->y = y1;
 
-                        struct level_area_navigation_map_tile* tile = &navigation_map->tiles[((s32)new_point->y - navigation_map->min_y) * map_width + ((s32)new_point->x - navigation_map->min_x)];
-                        if (tile->type != 0) {
+                        s32 tile_type = level_area_navigation_map_tile_type_at(area, new_point->x, new_point->y);
+                        if (tile_type != 0) {
+                            can_bresenham_trace = false;
+                        }
+
+                        if (game_any_entity_at_tile_point(*new_point)) {
                             can_bresenham_trace = false;
                         }
                     }
 
-                    if (x1 == x2 && y1 == y2) done_tracing = true;
+                    if (x1 == x2 && y1 == y2) {
+                        done_tracing = true;  
+                        results.success = true;
+                    } 
 
                     s32 old_error_x2 = 2 * error_accumulator;
 
@@ -626,9 +649,9 @@ struct navigation_path navigation_path_find(struct memory_arena* arena, struct l
 
                         /* _debugprintf("neighbor <%d, %d> (origin as: <%d, %d>) (%d, %d offset) proposed", (s32)proposed_point.x, (s32)proposed_point.y, (s32)current_point.x, (s32)current_point.y, x_cursor, y_cursor); */
                         if (level_area_navigation_map_is_point_in_bounds(navigation_map, proposed_point)) {
-                            struct level_area_navigation_map_tile* tile = &navigation_map->tiles[((s32)proposed_point.y - navigation_map->min_y) * map_width + ((s32)proposed_point.x - navigation_map->min_x)];
+                            s32 tile_type = level_area_navigation_map_tile_type_at(area, proposed_point.x, proposed_point.y);
 
-                            if (tile->type == 0) {
+                            if (tile_type == 0 && !game_any_entity_at_tile_point(proposed_point)) {
                                 if (!(explored_points[((s32)proposed_point.y - navigation_map->min_y) * map_width + ((s32)proposed_point.x - navigation_map->min_x)])) {
                                     origin_paths     [((s32)proposed_point.y - navigation_map->min_y) * map_width + ((s32)proposed_point.x - navigation_map->min_x)] = current_point;
                                     explored_points  [((s32)proposed_point.y - navigation_map->min_y) * map_width + ((s32)proposed_point.x - navigation_map->min_x)] = true;
@@ -680,6 +703,7 @@ struct navigation_path navigation_path_find(struct memory_arena* arena, struct l
                         }
                     }
                     results.points[index++] = start;
+                    results.success          = true;
                     Reverse_Array_Inplace(results.points, path_length, v2f32);
                 }
             }
@@ -760,7 +784,7 @@ void _serialize_level_area(struct memory_arena* arena, struct binary_serializer*
             /*
               NOTE: While this is more explicit since it simply requires an unpacking step,
               it also helps since the entity holder may change formats...
-             */
+            */
             level->entities = entity_list_create(arena, (entity_count+1), level_type);
 
             for (s32 entity_index = 0; entity_index < entity_count; ++entity_index) {
@@ -1206,7 +1230,7 @@ void game_initialize(void) {
       Game Active Memory (play zone, and maybe one adjacent level?),
       Save Record        (Saves some delta about entities and map state),
       Game Base Files    (Use if there is no existing save record on that level...)
-     */
+    */
     game_state->permenant_entities          = entity_list_create(&game_arena, GAME_MAX_PERMENANT_ENTITIES, ENTITY_LIST_STORAGE_TYPE_PERMENANT_STORE);
 
     memory_arena_push(&game_arena, Kilobyte(8));
@@ -1460,7 +1484,7 @@ local void dialogue_try_to_execute_script_actions(struct game_state* state, stru
        scratch arena is okay for evaluation
        
        we can keep game/vm game state elsewhere.
-     */
+    */
     if (node->script_code.length) {
         _debugprintf("dialogue script present");
         _debugprintf("dialogue script-code: %.*s", node->script_code.length, node->script_code.data);
@@ -1755,11 +1779,11 @@ local void update_and_render_pause_game_menu_ui(struct game_state* state, struct
                             menu_state->transition_t = 0;
                         } break;
                         case 1: {
-                                menu_state->animation_state     = UI_PAUSE_MENU_TRANSITION_CLOSING;
-                                menu_state->last_sub_menu_state = UI_PAUSE_MENU_SUB_MENU_STATE_NONE;
-                                menu_state->sub_menu_state      = UI_PAUSE_MENU_SUB_MENU_STATE_EQUIPMENT;
-                                menu_state->transition_t        = 0;
-                                open_equipment_screen(player_id);
+                            menu_state->animation_state     = UI_PAUSE_MENU_TRANSITION_CLOSING;
+                            menu_state->last_sub_menu_state = UI_PAUSE_MENU_SUB_MENU_STATE_NONE;
+                            menu_state->sub_menu_state      = UI_PAUSE_MENU_SUB_MENU_STATE_EQUIPMENT;
+                            menu_state->transition_t        = 0;
+                            open_equipment_screen(player_id);
                         } break;
                         case 2: {
                             {
@@ -2431,9 +2455,9 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                     render_particles_list(&global_particle_list, &draw_entities);
                     sortable_draw_entities_submit(&commands, &graphics_assets, &draw_entities, dt);
                     render_foreground_area(game_state, &commands, &game_state->loaded_area);
-                    #if 0 
+#if 0 
                     DEBUG_render_particle_emitters(&commands, &game_state->permenant_particle_emitters);
-                    #endif
+#endif
                 }
 
                 software_framebuffer_render_commands(framebuffer, &commands);
@@ -2557,6 +2581,29 @@ void game_variable_set(string name, s32 value) {
 s32 game_variable_get(string name) {
     struct game_variable* to_set = lookup_game_variable(name, true);
     return to_set->value;
+}
+
+struct entity* game_any_entity_at_tile_point(v2f32 xy) {
+    struct entity_iterator iterator = game_entity_iterator(game_state);
+    for (struct entity* current_entity = entity_iterator_begin(&iterator); !entity_iterator_finished(&iterator); current_entity = entity_iterator_advance(&iterator)) {
+        v2f32 position = current_entity->position;
+        position.x /= TILE_UNIT_SIZE;
+        position.y /= TILE_UNIT_SIZE;
+
+        position.x = roundf(position.x);
+        position.y = roundf(position.y);
+
+        if (!(current_entity->flags & ENTITY_FLAGS_ALIVE)) {
+            continue;
+        }
+        
+        if (fabs(position.x - xy.x) <= 0.1 &&
+            fabs(position.y - xy.y) <= 0.1) {
+            return current_entity;
+        }
+    }
+
+    return NULL;
 }
 
 #include "game_script.c"

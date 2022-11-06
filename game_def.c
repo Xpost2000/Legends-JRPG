@@ -258,6 +258,7 @@ struct entity* game_dereference_entity(struct game_state* state, entity_id id);
 struct navigation_path {
     s32           count;
     v2f32*        points;
+    bool          success;
 };
 
 void _debug_print_navigation_path(struct navigation_path* path) {

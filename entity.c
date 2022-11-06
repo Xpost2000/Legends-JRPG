@@ -2761,11 +2761,42 @@ local void entity_think_basic_zombie_combat_actions(struct entity* entity, struc
         entity_combat_submit_attack_action(entity, closest_valid_entity);
     } else {
         /* TODO LIMIT SIZE OF PATH */
+        v2f32 target_entity_position_next_best = v2f32(floorf(target_entity->position.x / TILE_UNIT_SIZE),
+                                                       floorf(target_entity->position.y / TILE_UNIT_SIZE));
+
+        /* Find a end point that isn't obstructed... */
+        local v2f32 neighbor_offsets[] = {
+            v2f32(1, 0),
+            v2f32(0, 1),
+            v2f32(-1, 0),
+            v2f32(0, -1),
+            v2f32(1, 1),
+            v2f32(1, -1),
+            v2f32(-1, 1),
+            v2f32(-1, -1),
+        };
+
+        for (s32 neighbor_offset_index = 0; neighbor_offset_index < array_count(neighbor_offsets); ++neighbor_offset_index) {
+            v2f32 offset = neighbor_offsets[neighbor_offset_index];
+            if (level_area_navigation_map_tile_type_at(&game_state->loaded_area, target_entity_position_next_best.x+offset.x, target_entity_position_next_best.y+offset.y) == 0 &&
+                !game_any_entity_at_tile_point(v2f32(target_entity_position_next_best.x+offset.x, target_entity_position_next_best.y+offset.y))) {
+                target_entity_position_next_best.x += offset.x;
+                target_entity_position_next_best.y += offset.y;
+
+                break;
+            } 
+        }
+
         struct navigation_path new_path = navigation_path_find(&scratch_arena,
                                                                &state->loaded_area,
                                                                v2f32(entity->position.x / TILE_UNIT_SIZE, entity->position.y / TILE_UNIT_SIZE),
-                                                               v2f32(target_entity->position.x / TILE_UNIT_SIZE, target_entity->position.y / TILE_UNIT_SIZE));
-        entity_combat_submit_movement_action(entity, new_path.points, new_path.count);
+                                                               target_entity_position_next_best);
+        if (new_path.success) {
+            entity_combat_submit_movement_action(entity, new_path.points, new_path.count);
+        } else {
+            entity->waiting_on_turn = false;
+            return;
+        }
     }
 }
 
