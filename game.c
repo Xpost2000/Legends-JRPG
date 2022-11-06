@@ -58,6 +58,11 @@ void game_free_dynamic_light(s32 light_id) {
     game_state->dynamic_lights[light_id] = game_state->dynamic_lights[--game_state->dynamic_light_count];
 }
 
+local void game_focus_camera_to_entity(struct entity* entity) {
+    v2f32 focus_point = entity->position;
+    camera_set_point_to_interpolate(&game_state->camera, focus_point);
+}
+
 static string menu_font_variation_string_names[] = {
     string_literal("res/fonts/gnsh-bitmapfont-colour1.png"),
     string_literal("res/fonts/gnsh-bitmapfont-colour2.png"),
@@ -1602,8 +1607,8 @@ local void update_and_render_ingame_game_menu_ui(struct game_state* state, struc
                 if (is_action_pressed(INPUT_ACTION_CONFIRMATION)) {
                     string conversation_path = format_temp_s(GAME_DEFAULT_DIALOGUE_PATH "/%s.txt", to_speak->dialogue_file);
                     game_open_conversation_file(state, conversation_path);
-                    v2f32 focus_point = to_speak->position;
-                    camera_set_point_to_interpolate(&state->camera, focus_point);
+
+                    game_focus_camera_to_entity(to_speak);
                 }
             } break;
             default: {

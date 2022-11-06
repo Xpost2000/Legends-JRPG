@@ -112,6 +112,11 @@ void update_combat(struct game_state* state, f32 dt) {
 
         if (global_battle_ui_state.phase == BATTLE_UI_IDLE) {
             if (combatant->waiting_on_turn) {
+                if (combatant->flags & ENTITY_FLAGS_PLAYER_CONTROLLED) {
+                    battle_ui_stop_stalk_entity_with_camera();
+                } else {
+                    battle_ui_stalk_entity_with_camera(combatant);
+                }
                 entity_think_combat_actions(combatant, state, dt);
             } else {
                 if (!combatant->ai.current_action) {
