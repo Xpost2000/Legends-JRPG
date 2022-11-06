@@ -1282,22 +1282,24 @@ void game_initialize_game_world(void) {
         struct entity_particle_emitter* emitter = entity_particle_emitter_dereference(&game_state->permenant_particle_emitters, player->particle_attachment_TEST);
         {
             /* I want this to be like a bleed effect... */
-            emitter->time_per_spawn = 0.05;
-            emitter->position = player->position;
-            emitter->position.x /= TILE_UNIT_SIZE;
-            emitter->position.y /= TILE_UNIT_SIZE;
-            emitter->burst_amount = 64;
-            emitter->max_spawn_per_batch = 1024;
-            emitter->max_spawn_batches   = -1;
-            /* emitter->color = color32u8(255, 108, 112, 255); */
-            emitter->color = color32u8(226, 88, 34, 255);
-            emitter->starting_acceleration = v2f32(0, -15.6);
-            emitter->starting_acceleration_variance = v2f32(1.2, 1.2);
-            emitter->starting_velocity_variance = v2f32(1.3, 0);
-            emitter->lifetime = 0.6;
-            emitter->lifetime_variance = 0.35;
+            emitter->time_per_spawn                  = 0.05;
+            emitter->position                        = player->position;
+            emitter->position.x                     /= TILE_UNIT_SIZE;
+            emitter->position.y                     /= TILE_UNIT_SIZE;
+            emitter->burst_amount                    = 64;
+            emitter->max_spawn_per_batch             = 1024;
+            emitter->max_spawn_batches               = -1;
+            emitter->color                           = color32u8(226, 88, 34, 255);
+            /* emitter->target_color                    = color32u8(255, 0, 0, 127); */
+            emitter->target_color                    = color32u8(59, 59, 56, 127);
+            emitter->starting_acceleration           = v2f32(0, -15.6);
+            emitter->starting_acceleration_variance  = v2f32(1.2, 1.2);
+            emitter->starting_velocity_variance      = v2f32(1.3, 0);
+            emitter->lifetime                        = 0.6;
+            emitter->lifetime_variance               = 0.35;
 
-            emitter->particle_type = ENTITY_PARTICLE_TYPE_FIRE;
+            /* emitter->particle_type = ENTITY_PARTICLE_TYPE_FIRE; */
+            emitter->particle_feature_flags = ENTITY_PARTICLE_FEATURE_FLAG_FLAMES;
 
             emitter->scale_uniform = 0.2;
             emitter->scale_variance_uniform = 0.12;
@@ -2280,7 +2282,6 @@ void update_and_render_game_console(struct game_state* state, struct software_fr
 
     if (game_command_console_enabled) {
         start_text_edit(game_command_console_line_input, cstring_length(game_command_console_line_input));
-        disable_game_input = true;
         /* single line of inputs */
         software_framebuffer_draw_quad(framebuffer, rectangle_f32(0, 0, framebuffer->width, 17), color32u8(0, 0, 25, 128), BLEND_MODE_ALPHA);
 

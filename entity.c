@@ -191,9 +191,10 @@ void entity_particle_emitter_list_update(struct entity_particle_emitter_list* pa
                     f32 scale = random_ranged_float(rng, current_emitter->scale_uniform - current_emitter->scale_variance_uniform, current_emitter->scale_uniform + current_emitter->scale_variance_uniform);
                     particle->scale = v2f32(scale, scale);
 
-                    f32 lifetime =  random_ranged_float(rng, current_emitter->lifetime - current_emitter->lifetime_variance, current_emitter->lifetime_variance + current_emitter->lifetime_variance);
+                    f32 lifetime             = random_ranged_float(rng, current_emitter->lifetime - current_emitter->lifetime_variance, current_emitter->lifetime_variance + current_emitter->lifetime_variance);
                     particle->color          = current_emitter->color;
-                    particle->typeid         = current_emitter->particle_type;
+                    particle->target_color   = current_emitter->target_color;
+                    particle->feature_flags  = current_emitter->particle_feature_flags;
                     particle->lifetime       = particle->lifetime_max = lifetime;
                     particle->velocity.x     = random_ranged_float(rng, current_emitter->starting_velocity.x - current_emitter->starting_velocity_variance.x, current_emitter->starting_velocity.x + current_emitter->starting_velocity_variance.x);
                     particle->velocity.y     = random_ranged_float(rng, current_emitter->starting_velocity.y - current_emitter->starting_velocity_variance.y, current_emitter->starting_velocity.y + current_emitter->starting_velocity_variance.y);
@@ -240,26 +241,17 @@ local void particle_list_update_particles(struct entity_particle_list* particle_
             continue;
         }
 
-        switch (current_particle->typeid) {
-            case ENTITY_PARTICLE_TYPE_FIRE: {
-                current_particle->velocity.x += current_particle->acceleration.x * dt;
-                current_particle->velocity.y += current_particle->acceleration.y * dt;
-                current_particle->position.x += current_particle->velocity.x * dt;
-                current_particle->position.y += current_particle->velocity.y * dt;
-            } break;
-            default:
-            case ENTITY_PARTICLE_TYPE_GENERIC: {
-                if (current_particle->typeid != ENTITY_PARTICLE_TYPE_GENERIC) {
-                    _debugprintf("Proper type not implemented for : %d", current_particle->typeid);
-                }
-                current_particle->velocity.x += current_particle->acceleration.x * dt;
-                current_particle->velocity.y += current_particle->acceleration.y * dt;
-                current_particle->position.x += current_particle->velocity.x * dt;
-                current_particle->position.y += current_particle->velocity.y * dt;
-            } break;
+        if (current_particle->feature_flags & ENTITY_PARTICLE_FEATURE_FLAG_ACCELERATION) {
+            current_particle->velocity.x += current_particle->acceleration.x * dt;
+            current_particle->velocity.y += current_particle->acceleration.y * dt;
         }
-        current_particle->lifetime   -= dt;
 
+        if (current_particle->feature_flags & ENTITY_PARTICLE_FEATURE_FLAG_VELOCITY) {
+            current_particle->position.x += current_particle->velocity.x * dt;
+            current_particle->position.y += current_particle->velocity.y * dt;
+        }
+
+        current_particle->lifetime   -= dt;
     }
 
     particle_list_cleanup_dead_particles(particle_list);
@@ -922,6 +914,9 @@ void sortable_draw_entities_push_chest(struct sortable_draw_entities* entities, 
 }
 void sortable_draw_entities_push_particle(struct sortable_draw_entities* entities, f32 y_sort_key, void* ptr) {
     /* this will allow particles to tend to be on top of entities */
+    if (((struct entity_particle*)ptr)->feature_flags & ENTITY_PARTICLE_FEATURE_FLAG_HIGHERSORTBIAS) {
+        y_sort_key += 2.56;
+    }
     sortable_draw_entities_push(entities, SORTABLE_DRAW_ENTITY_PARTICLE, y_sort_key, ptr);
 }
 
@@ -1140,33 +1135,42 @@ local void sortable_entity_draw_particle(struct render_commands* commands, struc
     draw_h *= TILE_UNIT_SIZE;
 
     /* good enough for now */
+    union color32f32 color = color32u8_to_color32f32(it->color);
+    f32 effective_t = (it->lifetime/it->lifetime_max);
+    if (effective_t < 0) effective_t = 0;
+    if (effective_t > 1) effective_t = 1;
 
-    switch (it->typeid) {
-        case ENTITY_PARTICLE_TYPE_FIRE: {
-            union color32f32 color = color32u8_to_color32f32(it->color);
-            f32 effective_t = (it->lifetime/it->lifetime_max);
-            if (effective_t < 0) effective_t = 0;
-            if (effective_t > 1) effective_t = 1;
-            color.a *= effective_t+0.1;
-            render_commands_push_quad(commands, rectangle_f32(draw_x, draw_y, draw_w, draw_h), color32f32_to_color32u8(color), BLEND_MODE_ALPHA);
-            render_commands_set_shader(commands, game_foreground_things_shader, NULL);
+    if (it->feature_flags & ENTITY_PARTICLE_FEATURE_FLAG_COLORFADE) {
+        union color32f32 target_color = color32u8_to_color32f32(it->target_color);
+        color.r = lerp_f32(color.r, target_color.r, 1-effective_t);
+        color.g = lerp_f32(color.g, target_color.g, 1-effective_t);
+        color.b = lerp_f32(color.b, target_color.b, 1-effective_t);
+        color.a = lerp_f32(color.a, target_color.a, 1-effective_t);
+    }
+
+    if (it->feature_flags & ENTITY_PARTICLE_FEATURE_FLAG_ALPHAFADE) {
+        color.a *= effective_t;
+    }
+
+    if (it->feature_flags & ENTITY_PARTICLE_FEATURE_FLAG_FLAMELIKE) {
+        render_commands_push_quad(commands, rectangle_f32(draw_x, draw_y, draw_w, draw_h), color32f32_to_color32u8(color), BLEND_MODE_ALPHA);
+        render_commands_set_shader(commands, game_foreground_things_shader, NULL);
+        render_commands_push_quad(commands, rectangle_f32(draw_x, draw_y, draw_w, draw_h), color32f32_to_color32u8(color), BLEND_MODE_ADDITIVE);
+        render_commands_set_shader(commands, game_foreground_things_shader, NULL);
+    } else {
+        if (it->feature_flags & ENTITY_PARTICLE_FEATURE_FLAG_ADDITIVEBLEND) {
             render_commands_push_quad(commands, rectangle_f32(draw_x, draw_y, draw_w, draw_h), color32f32_to_color32u8(color), BLEND_MODE_ADDITIVE);
             render_commands_set_shader(commands, game_foreground_things_shader, NULL);
-
-            v2f32 draw_point = v2f32(draw_x, draw_y);
-            draw_point       = camera_transform(&commands->camera, draw_point, SCREEN_WIDTH, SCREEN_HEIGHT);
-            lightmask_buffer_blit_rectangle(&global_lightmask_buffer, rectangle_f32(draw_point.x, draw_point.y, draw_w, draw_h), LIGHTMASK_BLEND_OR, 255);
-        } break;
-        case ENTITY_PARTICLE_TYPE_GENERIC: {
-            union color32f32 color = color32u8_to_color32f32(it->color);
-            f32 effective_t = (it->lifetime/it->lifetime_max);
-            if (effective_t < 0) effective_t = 0;
-            if (effective_t > 1) effective_t = 1;
-            color.a *= effective_t;
+        } else {
             render_commands_push_quad(commands, rectangle_f32(draw_x, draw_y, draw_w, draw_h), color32f32_to_color32u8(color), BLEND_MODE_ALPHA);
             render_commands_set_shader(commands, game_foreground_things_shader, NULL);
-        } break;
-            bad_case;
+        }
+    }
+
+    if (it->feature_flags & ENTITY_PARTICLE_FEATURE_FLAG_FULLBRIGHT) {
+        v2f32 draw_point = v2f32(draw_x, draw_y);
+        draw_point       = camera_transform(&commands->camera, draw_point, SCREEN_WIDTH, SCREEN_HEIGHT);
+        lightmask_buffer_blit_rectangle(&global_lightmask_buffer, rectangle_f32(draw_point.x, draw_point.y, draw_w, draw_h), LIGHTMASK_BLEND_OR, 255);
     }
 }
 

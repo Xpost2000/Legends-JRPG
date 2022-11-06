@@ -155,15 +155,23 @@ struct entity_chest {
 #define GAME_MAX_PERMENANT_PARTICLE_EMITTERS (4096) 
 #define PARTICLE_POOL_MAX_SIZE (16384) /* Seriously how much memory am I gobbling up? */
 /* NOTE(): these are point particle emitters to start with */
-enum entity_particle_type {
-    ENTITY_PARTICLE_TYPE_GENERIC, /* will obey the properties */
+enum entity_particle_feature_flags {
+    ENTITY_PARTICLE_FEATURE_FLAG_VELOCITY       = BIT(0),
+    ENTITY_PARTICLE_FEATURE_FLAG_ACCELERATION   = BIT(1),
+    ENTITY_PARTICLE_FEATURE_FLAG_FULLBRIGHT     = BIT(2),
+    ENTITY_PARTICLE_FEATURE_FLAG_ADDITIVEBLEND  = BIT(3),
+    /* Draw the same thing again but under alpha blending */
+    /* hope it looks generally pretty good for flamelike effects */
+    ENTITY_PARTICLE_FEATURE_FLAG_FLAMELIKE      = BIT(4),
+    ENTITY_PARTICLE_FEATURE_FLAG_ALPHAFADE      = BIT(5),
+    ENTITY_PARTICLE_FEATURE_FLAG_HIGHERSORTBIAS = BIT(6),
+    ENTITY_PARTICLE_FEATURE_FLAG_COLORFADE      = BIT(7),
 
-    /*
-      Ignores acceleration, and will tend to do it's own thing,
 
-      FULLBRIGHT draw. Uses custom sprite image...
-    */
-    ENTITY_PARTICLE_TYPE_FIRE,
+    /* PARTICLE PROFILE FLAGS */
+    ENTITY_PARTICLE_FEATURE_FLAG_GENERIC = ENTITY_PARTICLE_FEATURE_FLAG_VELOCITY | ENTITY_PARTICLE_FEATURE_FLAG_ACCELERATION | ENTITY_PARTICLE_FEATURE_FLAG_ALPHAFADE,
+    ENTITY_PARTICLE_FEATURE_FLAG_GLOWING = ENTITY_PARTICLE_FEATURE_FLAG_GENERIC | ENTITY_PARTICLE_FEATURE_FLAG_FULLBRIGHT | ENTITY_PARTICLE_FEATURE_FLAG_ADDITIVEBLEND,
+    ENTITY_PARTICLE_FEATURE_FLAG_FLAMES  = (ENTITY_PARTICLE_FEATURE_FLAG_GLOWING | ENTITY_PARTICLE_FEATURE_FLAG_FLAMELIKE | ENTITY_PARTICLE_FEATURE_FLAG_HIGHERSORTBIAS | ENTITY_PARTICLE_FEATURE_FLAG_COLORFADE) & ~ENTITY_PARTICLE_FEATURE_FLAG_ALPHAFADE,
 };
 
 /* UNITS are TILE_UNITS! */
@@ -175,11 +183,12 @@ struct entity_particle {
     v2f32           position;
     v2f32           scale;
     u32             flags;
+    u32             feature_flags;
     s32             associated_particle_emitter_index;
-    s32             typeid; /* entity_particle_type */
     f32             lifetime;
     f32             lifetime_max;
     union color32u8 color;
+    union color32u8 target_color;
     v2f32           velocity;
     v2f32           acceleration;
 };
@@ -299,7 +308,7 @@ struct entity_particle_emitter {
     /* get schema listing data elsewhere, for now hard code */
     /* this will determine general spawning traits */
 
-    s32 particle_type; /* some particle types might override stuff... */
+    u32 particle_feature_flags; /* some particle types might override stuff... */
 
     v2f32 starting_velocity;
     v2f32 starting_velocity_variance;
@@ -314,6 +323,7 @@ struct entity_particle_emitter {
     f32   scale_variance_uniform;
 
     union color32u8 color;
+    union color32u8 target_color;
 };
 struct entity_particle_emitter_list {
     s32 capacity;
