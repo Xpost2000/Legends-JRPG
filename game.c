@@ -497,6 +497,7 @@ local void game_begin_shopping(string storename) {
 }
 
 /* This is just going to start as a breadth first search */
+/* NOTE: add a version with obstacle parameters, since the AI doesn't obey those rules! */
 struct navigation_path navigation_path_find(struct memory_arena* arena, struct level_area* area, v2f32 start, v2f32 end) {
     struct level_area_navigation_map* navigation_map          = &area->navigation_data;
     struct navigation_path            results                 = {};

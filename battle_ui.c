@@ -415,7 +415,7 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
             bool disabled_actions[array_count(battle_menu_main_options)] = {};
             /* disable selecting attack if we don't have anyone within attack range */
             {
-                f32 attack_radius = 3;
+                f32 attack_radius = DEFAULT_ENTITY_ATTACK_RADIUS;
                 struct entity_query_list nearby_potential_targets = find_entities_within_radius(&scratch_arena, state, game_get_player(state)->position, attack_radius * TILE_UNIT_SIZE);
 
                 s32 living_targets = 0;

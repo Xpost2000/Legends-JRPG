@@ -881,6 +881,7 @@ void update_entities(struct game_state* state, f32 dt, struct entity_iterator it
     }
 }
 
+local void entity_think_basic_zombie_combat_actions(struct entity* entity, struct game_state* state);
 void entity_think_combat_actions(struct entity* entity, struct game_state* state, f32 dt) {
     /* This should only think about submitting actions... Oh well */
     if (entity->flags & ENTITY_FLAGS_PLAYER_CONTROLLED) {
@@ -892,7 +893,8 @@ void entity_think_combat_actions(struct entity* entity, struct game_state* state
             return;
         }
 
-        entity->waiting_on_turn = false;
+        {entity_think_basic_zombie_combat_actions(entity, state);}
+
         entity->ai.wait_timer = 0;
     }
 }
@@ -1430,6 +1432,15 @@ local void entity_copy_path_array_into_navigation_data(struct entity* entity, v2
     }
 }
 
+/*
+  NOTE: Game Design notes,
+
+  I want to follow the system set by Disgaea more than FFT, since if the game wasn't focused on stat
+  grinding, it would actually be a good tactics game...
+
+  Movement can be undone/redone, but attacks/abilities are permenant actions.
+*/
+
 void entity_combat_submit_movement_action(struct entity* entity, v2f32* path_points, s32 path_count) {
     if (entity->ai.current_action != ENTITY_ACTION_NONE) {
         _debugprintf("%.*s shant walk!", entity->name.length, entity->name.data);
@@ -1439,6 +1450,7 @@ void entity_combat_submit_movement_action(struct entity* entity, v2f32* path_poi
     entity_copy_path_array_into_navigation_data(entity, path_points, path_count);
     entity->ai.following_path = true;
     entity->ai.current_action  = ENTITY_ACTION_MOVEMENT;
+    entity->waiting_on_turn                     = 0;
     _debugprintf("Okay... %.*s should walk!", entity->name.length, entity->name.data);
 }
 
@@ -2685,6 +2697,76 @@ struct entity_particle_emitter_list entity_particle_emitter_list(struct memory_a
         .capacity   = capacity,
     };
     return result;
+}
+
+/* ENTITY THINK BRAINS */
+
+/*
+  This entity just tries to walk as close as possible to an opponent and attacks them.
+
+  This thing doesn't know how to use abilities at all, and is basically just zombie horde attacking
+*/
+
+/* copy of battle_ui.c relevant targetting code, need more usage examples before factoring out. */
+local void entity_think_basic_zombie_combat_actions(struct entity* entity, struct game_state* state) {
+    f32 attack_radius = DEFAULT_ENTITY_ATTACK_RADIUS;
+    struct entity_query_list nearby_potential_targets = find_entities_within_radius(&scratch_arena, state, game_get_player(state)->position, attack_radius * TILE_UNIT_SIZE);
+
+    entity_id closest_valid_entity = {};
+    f32 closest_distance           = INFINITY;
+    bool found_any_valid_entity    = false;
+
+    for (unsigned target_index = 0; target_index < nearby_potential_targets.count; ++target_index) {
+        entity_id      current_target_id = nearby_potential_targets.ids[target_index];
+        struct entity* target_entity     = game_dereference_entity(state, current_target_id);
+
+#if 0 /* ideally, but I don't have this done yet and I want to test npc AI first... */
+        /* check team */
+        if (target_entity == entity) {
+            continue;
+        }
+
+        /* cannot target entities with some matching team flags. */
+        if (target_entity->team_flags & entity->team_flags) {
+            continue;
+        }
+#else
+        if (target_entity != game_get_player(state)) {
+            continue;
+        }
+#endif
+
+        if (!(target_entity->flags & ENTITY_FLAGS_ALIVE)) {
+            continue;
+        }
+       
+        f32 distance = (v2f32_distance(entity->position, target_entity->position));
+
+        if (distance < closest_distance) {
+            closest_distance     = distance;
+            closest_valid_entity = current_target_id;
+            found_any_valid_entity = true;
+        }
+    }
+
+    if (!found_any_valid_entity) {
+        entity->waiting_on_turn = false;
+        return;
+    }
+
+    attack_radius *= TILE_UNIT_SIZE;
+    struct entity* target_entity = game_dereference_entity(state, closest_valid_entity);
+
+    if (v2f32_distance(entity->position, target_entity->position) < attack_radius) {
+        entity_combat_submit_attack_action(entity, closest_valid_entity);
+    } else {
+        /* TODO LIMIT SIZE OF PATH */
+        struct navigation_path new_path = navigation_path_find(&scratch_arena,
+                                                               &state->loaded_area,
+                                                               v2f32(entity->position.x / TILE_UNIT_SIZE, entity->position.y / TILE_UNIT_SIZE),
+                                                               v2f32(target_entity->position.x / TILE_UNIT_SIZE, target_entity->position.y / TILE_UNIT_SIZE));
+        entity_combat_submit_movement_action(entity, new_path.points, new_path.count);
+    }
 }
 
 #include "entity_ability.c"

@@ -4,6 +4,8 @@
   Not lights apparently. Those don't count for some reason!
 */
 
+#define DEFAULT_ENTITY_ATTACK_RADIUS (2.5)
+
 #ifndef ENTITY_DEF_C
 #define ENTITY_DEF_C
 
@@ -603,6 +605,8 @@ struct entity_base_data {
     s32                           model_index;
     u32                           flags;
     u32                           ai_flags;
+    /* TODO: unused 32 possible entity teams... I really doubt I'll run out */
+    u32                           team_flags;
     struct entity_stat_block      stats;
     s32                           health;
     s32                           magic;
