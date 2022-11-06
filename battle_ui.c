@@ -12,6 +12,8 @@
 
 enum battle_ui_animation_phase {
     BATTLE_UI_FADE_IN_DARK,
+    BATTLE_UI_FADE_IN_DARK_END_TURN,
+
     BATTLE_UI_FLASH_IN_BATTLE_TEXT,
     BATTLE_UI_FADE_OUT,
     BATTLE_UI_MOVE_IN_DETAILS,
@@ -20,6 +22,7 @@ enum battle_ui_animation_phase {
     BATTLE_UI_IDLE,
 
     BATTLE_UI_FADE_OUT_DETAILS_AFTER_BATTLE_COMPLETION,
+    BATTLE_UI_FADE_OUT_DETAILS_AFTER_TURN_COMPLETION,
     /* 
        I would add more animation phases but I don't have infinite time or patience right now,
        I've mostly done nothing but UI code, and while some of it is kind of cool, it's also a bit
@@ -61,6 +64,7 @@ struct battle_ui_state {
     v2f32 prelooking_mode_camera_position;
 
     /* for ability's focus camera */
+    /* or when watching enemy entities do stuff */
     bool stalk_entity_with_camera;
     struct entity* entity_to_stalk; /* pointer is stable */
 
@@ -1087,6 +1091,54 @@ local void draw_battle_tooltips(struct game_state* state, struct software_frameb
     if (!player_turn) return;
 }
 
+local void battle_ui_banner_fade_text(struct software_framebuffer* framebuffer, struct font_cache* font, f32 dt, string text, f32 text_scale, s32 next_phase, bool inverse) {
+    const f32 max_t = 0.45;
+    f32 t = global_battle_ui_state.timer / max_t;
+    if (t > 1.0) t = 1.0;
+
+    if (inverse) {
+        software_framebuffer_draw_quad(framebuffer, rectangle_f32(0,0,SCREEN_WIDTH,SCREEN_HEIGHT), color32u8(0,0,0, 128 * (1.0 - t)), BLEND_MODE_ALPHA);
+        software_framebuffer_draw_text_bounds_centered(framebuffer,
+                                                       font,
+                                                       4,
+                                                       rectangle_f32(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT),
+                                                       text,
+                                                       color32f32(1,1,1, (1.0 - t)), BLEND_MODE_ALPHA);
+    } else {
+        software_framebuffer_draw_quad(framebuffer, rectangle_f32(0,0,SCREEN_WIDTH,SCREEN_HEIGHT), color32u8(0,0,0, 128), BLEND_MODE_ALPHA);
+
+        f32 x_cursor = lerp_f32(-300, 0, t);
+        software_framebuffer_draw_text_bounds_centered(framebuffer,
+                                                       font,
+                                                       4,
+                                                       rectangle_f32(x_cursor, 0, SCREEN_WIDTH, SCREEN_HEIGHT),
+                                                       text,
+                                                       color32f32(1,1,1,1),
+                                                       BLEND_MODE_ALPHA);
+    }
+    /* while this happens we should also snap all entities to grid points */
+
+    global_battle_ui_state.timer += dt;
+
+    if (global_battle_ui_state.timer >= (max_t+0.85)) {
+        global_battle_ui_state.timer = 0;
+        global_battle_ui_state.phase = next_phase;
+    }
+}
+
+local void battle_ui_banner_fade_text_in(struct software_framebuffer* framebuffer, struct font_cache* font, f32 dt, string text, f32 text_scale, s32 next_phase) {
+    battle_ui_banner_fade_text(framebuffer, font, dt, text, text_scale, next_phase, false);
+}
+
+local void battle_ui_banner_fade_text_out(struct software_framebuffer* framebuffer, struct font_cache* font, f32 dt, string text, f32 text_scale, s32 next_phase) {
+    battle_ui_banner_fade_text(framebuffer, font, dt, text, text_scale, next_phase, true);
+}
+
+local void battle_ui_trigger_end_turn(void) {
+    global_battle_ui_state.phase = BATTLE_UI_FADE_OUT_DETAILS_AFTER_TURN_COMPLETION;
+}
+
+
 local void update_and_render_battle_ui(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
     struct font_cache*              font         = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_STEEL]);
     struct game_state_combat_state* combat_state = &state->combat_state;
@@ -1095,6 +1147,7 @@ local void update_and_render_battle_ui(struct game_state* state, struct software
     const f32 BATTLE_SELECTIONS_WIDTH = 16 * 2 * 5;
 
     switch (global_battle_ui_state.phase) {
+        case BATTLE_UI_FADE_IN_DARK_END_TURN:
         case BATTLE_UI_FADE_IN_DARK: {
             const f32 max_t = 0.75;
             f32 t = global_battle_ui_state.timer / max_t;
@@ -1106,44 +1159,35 @@ local void update_and_render_battle_ui(struct game_state* state, struct software
 
             if (global_battle_ui_state.timer >= max_t) {
                 global_battle_ui_state.timer = 0;
-                global_battle_ui_state.phase = BATTLE_UI_FLASH_IN_BATTLE_TEXT;
+
+                if (global_battle_ui_state.phase == BATTLE_UI_FADE_IN_DARK) {
+                    global_battle_ui_state.phase = BATTLE_UI_FLASH_IN_BATTLE_TEXT;
+                } else if (global_battle_ui_state.phase == BATTLE_UI_FADE_IN_DARK_END_TURN) {
+                    global_battle_ui_state.phase = BATTLE_UI_FLASH_IN_END_TURN_TEXT;
+                }
             }
         } break;
 
         case BATTLE_UI_FLASH_IN_BATTLE_TEXT: {
-            const f32 max_t = 0.45;
-            f32 t = global_battle_ui_state.timer / max_t;
-            if (t > 1.0) t = 1.0;
-
-            software_framebuffer_draw_quad(framebuffer, rectangle_f32(0,0,SCREEN_WIDTH,SCREEN_HEIGHT), color32u8(0,0,0, 128), BLEND_MODE_ALPHA);
-
-            f32 x_cursor = lerp_f32(-300, 0, t);
-            software_framebuffer_draw_text_bounds_centered(framebuffer, font, 4, rectangle_f32(x_cursor, 0, SCREEN_WIDTH, SCREEN_HEIGHT), string_literal("BATTLE ENGAGED!"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
-
-            /* while this happens we should also snap all entities to grid points */
-
-            global_battle_ui_state.timer += dt;
-
-            if (global_battle_ui_state.timer >= (max_t+0.85)) {
-                global_battle_ui_state.timer = 0;
-                global_battle_ui_state.phase = BATTLE_UI_FADE_OUT;
-            }
+            battle_ui_banner_fade_text_in(
+                framebuffer,
+                font,
+                dt,
+                string_literal("ROUND START!"),
+                4,
+                BATTLE_UI_FADE_OUT
+            );
         } break;
 
         case BATTLE_UI_FADE_OUT: {
-            const f32 max_t = 1;
-            f32 t = global_battle_ui_state.timer / max_t;
-            if (t > 1.0) t = 1.0;
-
-            software_framebuffer_draw_quad(framebuffer, rectangle_f32(0,0,SCREEN_WIDTH,SCREEN_HEIGHT), color32u8(0,0,0, 128 * (1.0 - t)), BLEND_MODE_ALPHA);
-            software_framebuffer_draw_text_bounds_centered(framebuffer, font, 4, rectangle_f32(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT), string_literal("BATTLE ENGAGED!"), color32f32(1,1,1, (1.0 - t)), BLEND_MODE_ALPHA);
-
-            global_battle_ui_state.timer += dt;
-
-            if (global_battle_ui_state.timer >= (max_t)) {
-                global_battle_ui_state.timer = 0;
-                global_battle_ui_state.phase = BATTLE_UI_MOVE_IN_DETAILS;
-            }
+            battle_ui_banner_fade_text_out(
+                framebuffer,
+                font,
+                dt,
+                string_literal("ROUND START!"),
+                4,
+                BATTLE_UI_MOVE_IN_DETAILS
+            );
         } break;
 
         case BATTLE_UI_MOVE_IN_DETAILS: {
@@ -1172,13 +1216,36 @@ local void update_and_render_battle_ui(struct game_state* state, struct software
         } break;
 
         case BATTLE_UI_IDLE: {
-            draw_turn_panel(state, framebuffer, 10, 100);
             bool is_player_turn = is_player_combat_turn(state);
 
+            draw_turn_panel(state, framebuffer, 10, 100);
             do_battle_selection_menu(state, framebuffer, framebuffer->width - BATTLE_SELECTIONS_WIDTH + 15, 100, is_player_turn);
             draw_battle_tooltips(state, framebuffer, dt, framebuffer->height, is_player_turn);
         } break;
 
+        case BATTLE_UI_FLASH_IN_END_TURN_TEXT: {
+            battle_ui_banner_fade_text_in(
+                framebuffer,
+                font,
+                dt,
+                string_literal("ROUND END!"),
+                4,
+                BATTLE_UI_FADE_OUT_END_TURN_TEXT
+            );
+        } break;
+
+        case BATTLE_UI_FADE_OUT_END_TURN_TEXT: {
+            battle_ui_banner_fade_text_out(
+                framebuffer,
+                font,
+                dt,
+                string_literal("ROUND END!"),
+                4,
+                BATTLE_UI_IDLE
+            );
+        } break;
+
+        case BATTLE_UI_FADE_OUT_DETAILS_AFTER_TURN_COMPLETION:
         case BATTLE_UI_FADE_OUT_DETAILS_AFTER_BATTLE_COMPLETION: {
             const f32 linger_t = 0.1;
             const f32 max_t = 0.4;
@@ -1186,16 +1253,21 @@ local void update_and_render_battle_ui(struct game_state* state, struct software
             if (t <= 0.0) t = 0.0;
             if (t >= 1.0) t = 1.0;
 
-            if (global_battle_ui_state.timer > max_t+linger_t) {
-                global_battle_ui_state.phase = BATTLE_UI_AFTER_ACTION_REPORT_IDLE;
-            }
-
             draw_turn_panel(state, framebuffer, lerp_f32(10, -300, t), 100);
 
             do_battle_selection_menu(state, framebuffer, lerp_f32(framebuffer->width - BATTLE_SELECTIONS_WIDTH + 15, framebuffer->width + 300, t), 100, false);
             draw_battle_tooltips(state, framebuffer, dt, lerp_f32(framebuffer->height, framebuffer->height + 300, t), false);
 
             global_battle_ui_state.timer += dt;
+
+            if (global_battle_ui_state.timer > max_t+linger_t) {
+                if (global_battle_ui_state.phase == BATTLE_UI_FADE_OUT_DETAILS_AFTER_TURN_COMPLETION) {
+                    global_battle_ui_state.phase = BATTLE_UI_FADE_IN_DARK_END_TURN;
+                } else if (global_battle_ui_state.phase == BATTLE_UI_FADE_OUT_DETAILS_AFTER_BATTLE_COMPLETION) {
+                    global_battle_ui_state.phase = BATTLE_UI_AFTER_ACTION_REPORT_IDLE;
+                }
+                global_battle_ui_state.timer = 0;
+            }
         } break;
 
         case BATTLE_UI_AFTER_ACTION_REPORT_IDLE: {

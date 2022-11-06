@@ -117,8 +117,11 @@ void update_combat(struct game_state* state, f32 dt) {
                 if (!combatant->ai.current_action) {
                     combat_state->active_combatant += 1;
 
+                    /* I would also love to animate this, but I don't have to animate */
+                    /* *everything* */
                     if (combat_state->active_combatant >= combat_state->count) {
                         add_all_combat_participants(state);
+                        battle_ui_trigger_end_turn();
                     }
                 }
             }
