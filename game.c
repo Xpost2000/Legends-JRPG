@@ -35,6 +35,10 @@ static struct memory_arena editor_arena = {};
 local bool game_command_console_enabled                                         = false;
 local char game_command_console_line_input[GAME_COMMAND_CONSOLE_LINE_INPUT_MAX] = {};
 
+local void update_and_render_pause_game_menu_ui(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt);
+local void update_and_render_gameover_game_menu_ui(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt);
+local void update_and_render_ingame_game_menu_ui(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt);
+
 /* defined in battle_ui.c */
 local bool is_entity_under_ability_selection(entity_id who);
 
@@ -1653,13 +1657,17 @@ local void update_and_render_ingame_game_menu_ui(struct game_state* state, struc
     /* TODO Region zone change does not prevent pausing right now! */
     {
         if (is_action_pressed(INPUT_ACTION_PAUSE)) {
-            game_state_set_ui_state(state, UI_STATE_PAUSE);
-            /* ready pause menu */
-            {
-                game_state->ui_pause.animation_state = 0;
-                game_state->ui_pause.transition_t    = 0;
-                game_state->ui_pause.selection       = 0;
-                zero_array(game_state->ui_pause.shift_t);
+            if (!(game_get_player(state)->flags & ENTITY_FLAGS_ALIVE)) {
+                /* do nothing if dead */
+            } else {
+                game_state_set_ui_state(state, UI_STATE_PAUSE);
+                /* ready pause menu */
+                {
+                    game_state->ui_pause.animation_state = 0;
+                    game_state->ui_pause.transition_t    = 0;
+                    game_state->ui_pause.selection       = 0;
+                    zero_array(game_state->ui_pause.shift_t);
+                }
             }
         }
     }
@@ -1869,6 +1877,10 @@ local void update_and_render_pause_game_menu_ui(struct game_state* state, struct
     }
 }
 
+local void update_and_render_gameover_game_menu_ui(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
+    
+}
+
 void update_and_render_game_menu_ui(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
     /* fader/transitions is rendered under the game ui */
     {
@@ -1878,6 +1890,9 @@ void update_and_render_game_menu_ui(struct game_state* state, struct software_fr
     switch (state->ui_state) {
         case UI_STATE_INGAME: {
             update_and_render_ingame_game_menu_ui(state, framebuffer, dt);
+        } break;
+        case UI_STATE_GAMEOVER: {
+            update_and_render_gameover_game_menu_ui(state, framebuffer, dt);
         } break;
         case UI_STATE_PAUSE: {
             update_and_render_pause_game_menu_ui(state, framebuffer, dt);
@@ -2423,11 +2438,14 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                         game_script_execute_awaiting_scripts(&scratch_arena, game_state, dt);
                         game_script_run_all_timers(dt);
 
-                        if (!cutscene_active()) {
-                            if (!game_state->combat_state.active_combat) {
-                                determine_if_combat_should_begin(game_state);
-                            } else {
-                                update_combat(game_state, dt);
+                        if (!(game_get_player(state)->flags & ENTITY_FLAGS_ALIVE)) {
+                        } else {
+                            if (!cutscene_active()) {
+                                if (!game_state->combat_state.active_combat) {
+                                    determine_if_combat_should_begin(game_state);
+                                } else {
+                                    update_combat(game_state, dt);
+                                }
                             }
                         }
                     }

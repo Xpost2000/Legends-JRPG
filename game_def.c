@@ -91,6 +91,7 @@ local string activation_type_strings[] = {
 enum ui_state {
     UI_STATE_INGAME,
     UI_STATE_PAUSE,
+    UI_STATE_GAMEOVER,
     UI_STATE_COUNT,
 };
 static string ui_state_strings[] = {

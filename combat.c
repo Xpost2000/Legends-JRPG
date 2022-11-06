@@ -102,6 +102,12 @@ void update_combat(struct game_state* state, f32 dt) {
 
     bool should_end_combat = !should_be_in_combat(state);
 
+    { /* TODO: Check for all player KO, for now only one party member so far */
+        if (!(game_get_player(state)->flags & ENTITY_FLAGS_ALIVE)) {
+            should_end_combat = true;
+        }
+    }
+
     if (should_end_combat) {
         end_combat_ui();
         /* Notify the Battle UI to display the after action report. */
