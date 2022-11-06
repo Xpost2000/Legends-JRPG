@@ -1,3 +1,29 @@
+local void sort_combat_participants(void) {
+    /* also an insertion sort, there's a very small amount of entities and this happens once per round */
+    struct game_state_combat_state* combat_state = &game_state->combat_state;
+
+    for (s32 participant_index = 1; participant_index < combat_state->count; ++participant_index) {
+        s32       insertion_index = participant_index;
+
+        entity_id key_entity      = combat_state->participants[participant_index];
+        s32       key_priority    = combat_state->participant_priorities[participant_index];
+
+        for (; insertion_index > 0; --insertion_index) {
+            s32 compared_priority = combat_state->participant_priorities[insertion_index-1];
+
+            if (compared_priority > key_priority) {
+                break;
+            } else {
+                combat_state->participants[insertion_index]           = combat_state->participants[insertion_index-1];
+                combat_state->participant_priorities[insertion_index] = combat_state->participant_priorities[insertion_index-1];
+            }
+        }
+
+        combat_state->participants[insertion_index]           = key_entity;
+        combat_state->participant_priorities[insertion_index] = key_priority;
+    }
+}
+
 local void add_all_combat_participants(struct game_state* state) {
     /* TODO for now we don't have initiative so we'll just add in the same order */  
     struct game_state_combat_state* combat_state = &state->combat_state;
@@ -6,15 +32,25 @@ local void add_all_combat_participants(struct game_state* state) {
 
     struct entity_iterator it = game_entity_iterator(state);
 
+    s32 index = 0;
     for (struct entity* current_entity = entity_iterator_begin(&it); !entity_iterator_finished(&it); current_entity = entity_iterator_advance(&it)) {
         /* snap everyone to the combat grid (might be a bit jarring, which is okay for the demo.) */
         if (current_entity->flags & ENTITY_FLAGS_ALIVE) {
             entity_snap_to_grid_position(current_entity);
             current_entity->waiting_on_turn                   = true;
             current_entity->ai.attack_animation_timer         = 0;
-            combat_state->participants[combat_state->count++] = it.current_id;
+
+            s32 priority = index;
+            {
+                combat_state->participants[combat_state->count]           = it.current_id;
+                combat_state->participant_priorities[combat_state->count] = priority;
+                combat_state->count++;
+            }
         }
+        index++;
     }
+
+    sort_combat_participants();
 }
 
 /* check for any nearby conflicts for any reason */

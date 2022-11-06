@@ -438,11 +438,13 @@ static string interactable_type_strings[] = {
     string_literal("(count)"),
 };
 
+#define MAX_STORED_COMBAT_PARTICIPANTS (512)
 struct game_state_combat_state {
     bool      active_combat;
     s32       count;
     /* sorted by initiative */
-    entity_id participants[512];
+    entity_id participants[MAX_STORED_COMBAT_PARTICIPANTS];
+    s32       participant_priorities[MAX_STORED_COMBAT_PARTICIPANTS];
 
     /* crying for all the animation state */
     s32       active_combatant;
