@@ -193,9 +193,40 @@ enum entity_particle_emitter_flags{
     ENTITY_PARTICLE_EMITTER_ONCE_ONLY = BIT(1),
     ENTITY_PARTICLE_EMITTER_ON        = BIT(2),
 };
+
 /* POSITION UNITS IN TILE UNITS */
+#define ENTITY_PARTCLE_EMITTER_SPAWN_SHAPE_MAX_NGON_TRACES (32)
+
+enum entity_particle_emitter_spawn_shape_type {
+    ENTITY_PARTICLE_EMITTER_SPAWN_SHAPE_POINT,
+
+    ENTITY_PARTICLE_EMITTER_SPAWN_SHAPE_LINE,
+
+    ENTITY_PARTICLE_EMITTER_SPAWN_SHAPE_SQUARE,
+    ENTITY_PARTICLE_EMITTER_SPAWN_SHAPE_SQUARE_OUTLINE,
+
+    ENTITY_PARTICLE_EMITTER_SPAWN_SHAPE_CIRCLE,
+    ENTITY_PARTICLE_EMITTER_SPAWN_SHAPE_CIRCLE_OUTLINE,
+
+    ENTITY_PARTICLE_EMITTER_SPAWN_SHAPE_NGON_OUTLINE,
+};
+
+struct entity_particle_emitter_spawn_shape {
+    s32 type;
+
+    union {
+        struct entity_particle_emitter_spawn_shape_point   point;
+        struct entity_particle_emitter_spawn_shape_line    line;
+        struct entity_particle_emitter_spawn_shape_square  square;
+        struct entity_particle_emitter_spawn_shape_circle  circle;
+        struct entity_particle_emitter_spawn_shape_ngon    ngon;
+    };
+};
+
 struct entity_particle_emitter {
     v2f32 position;
+
+    struct entity_particle_emitter_spawn_shape spawn_shape;
 
     f32   time;
     f32   time_per_spawn;

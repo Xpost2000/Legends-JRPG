@@ -85,6 +85,7 @@ void entity_particle_emitter_list_update(struct entity_particle_emitter_list* pa
 
                     f32 lifetime =  random_ranged_float(rng, current_emitter->lifetime - current_emitter->lifetime_variance, current_emitter->lifetime_variance + current_emitter->lifetime_variance);
                     particle->color          = current_emitter->color;
+                    particle->typeid         = current_emitter->particle_type;
                     particle->lifetime       = particle->lifetime_max = lifetime;
                     particle->velocity.x     = random_ranged_float(rng, current_emitter->starting_velocity.x - current_emitter->starting_velocity_variance.x, current_emitter->starting_velocity.x + current_emitter->starting_velocity_variance.x);
                     particle->velocity.y     = random_ranged_float(rng, current_emitter->starting_velocity.y - current_emitter->starting_velocity_variance.y, current_emitter->starting_velocity.y + current_emitter->starting_velocity_variance.y);
@@ -132,14 +133,24 @@ local void particle_list_update_particles(struct entity_particle_list* particle_
         }
 
         switch (current_particle->typeid) {
-            case ENTITY_PARTICLE_TYPE_GENERIC: {
+            case ENTITY_PARTICLE_TYPE_FIRE: {
                 current_particle->velocity.x += current_particle->acceleration.x * dt;
                 current_particle->velocity.y += current_particle->acceleration.y * dt;
                 current_particle->position.x += current_particle->velocity.x * dt;
                 current_particle->position.y += current_particle->velocity.y * dt;
-                current_particle->lifetime   -= dt;
+            } break;
+            default:
+            case ENTITY_PARTICLE_TYPE_GENERIC: {
+                if (current_particle->typeid != ENTITY_PARTICLE_TYPE_GENERIC) {
+                    _debugprintf("Proper type not implemented for : %d", current_particle->typeid);
+                }
+                current_particle->velocity.x += current_particle->acceleration.x * dt;
+                current_particle->velocity.y += current_particle->acceleration.y * dt;
+                current_particle->position.x += current_particle->velocity.x * dt;
+                current_particle->position.y += current_particle->velocity.y * dt;
             } break;
         }
+        current_particle->lifetime   -= dt;
 
     }
 
@@ -1013,6 +1024,19 @@ local void sortable_entity_draw_particle(struct render_commands* commands, struc
     /* good enough for now */
 
     switch (it->typeid) {
+        case ENTITY_PARTICLE_TYPE_FIRE: {
+            union color32f32 color = color32u8_to_color32f32(it->color);
+            f32 effective_t = (it->lifetime/it->lifetime_max);
+            if (effective_t < 0) effective_t = 0;
+            if (effective_t > 1) effective_t = 1;
+            color.a *= effective_t;
+            render_commands_push_quad(commands, rectangle_f32(draw_x, draw_y, draw_w, draw_h), color32f32_to_color32u8(color), BLEND_MODE_ADDITIVE);
+            render_commands_set_shader(commands, game_foreground_things_shader, NULL);
+
+            v2f32 draw_point = v2f32(draw_x, draw_y);
+            draw_point       = camera_transform(&commands->camera, draw_point, SCREEN_WIDTH, SCREEN_HEIGHT);
+            lightmask_buffer_blit_rectangle(&global_lightmask_buffer, rectangle_f32(draw_point.x, draw_point.y, draw_w, draw_h), LIGHTMASK_BLEND_OR, 255);
+        } break;
         case ENTITY_PARTICLE_TYPE_GENERIC: {
             union color32f32 color = color32u8_to_color32f32(it->color);
             f32 effective_t = (it->lifetime/it->lifetime_max);
