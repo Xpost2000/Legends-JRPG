@@ -202,24 +202,40 @@ enum entity_particle_emitter_spawn_shape_type {
 
     ENTITY_PARTICLE_EMITTER_SPAWN_SHAPE_LINE,
 
-    ENTITY_PARTICLE_EMITTER_SPAWN_SHAPE_SQUARE,
-    ENTITY_PARTICLE_EMITTER_SPAWN_SHAPE_SQUARE_OUTLINE,
+    ENTITY_PARTICLE_EMITTER_SPAWN_SHAPE_RECTANGLE,
+    ENTITY_PARTICLE_EMITTER_SPAWN_SHAPE_RECTANGLE_OUTLINE,
 
     ENTITY_PARTICLE_EMITTER_SPAWN_SHAPE_CIRCLE,
     ENTITY_PARTICLE_EMITTER_SPAWN_SHAPE_CIRCLE_OUTLINE,
-
-    ENTITY_PARTICLE_EMITTER_SPAWN_SHAPE_NGON_OUTLINE,
+};
+struct entity_particle_emitter_spawn_shape_point {
+    v2f32 center;
+};
+struct entity_particle_emitter_spawn_shape_line {
+    v2f32 start;
+    v2f32 end;
+    f32 thickness;
+};
+struct entity_particle_emitter_spawn_shape_rectangle {
+    v2f32 center;
+    f32 side_length;
+    f32 thickness;
+};
+struct entity_particle_emitter_spawn_shape_circle {
+    v2f32 center;
+    f32 radius;
+    f32 thickness;
 };
 
 struct entity_particle_emitter_spawn_shape {
     s32 type;
 
+    bool  outline;
     union {
         struct entity_particle_emitter_spawn_shape_point   point;
         struct entity_particle_emitter_spawn_shape_line    line;
-        struct entity_particle_emitter_spawn_shape_square  square;
+        struct entity_particle_emitter_spawn_shape_rectangle  rectangle;
         struct entity_particle_emitter_spawn_shape_circle  circle;
-        struct entity_particle_emitter_spawn_shape_ngon    ngon;
     };
 };
 
