@@ -123,14 +123,14 @@ local v2f32 entity_particle_emitter_spawn_shape_find_position(v2f32 offset, stru
             f32 sine = sin(random_angle);
 
             if (spawn_shape->outline) {
-                f32 x = random_ranged_float(rng, circle.center.x+circle.radius*cosine-circle.thickness, circle.center.y+circle.radius*cosine+circle.thickness);
-                f32 y = random_ranged_float(rng, circle.center.x+circle.radius*sine-circle.thickness, circle.center.y+circle.radius*sine+circle.thickness);
+                f32 x = random_ranged_float(rng, circle.center.x+circle.radius*cosine-circle.thickness, circle.center.x+circle.radius*cosine+circle.thickness);
+                f32 y = random_ranged_float(rng, circle.center.y+circle.radius*sine-circle.thickness, circle.center.y+circle.radius*sine+circle.thickness);
                 return v2f32(x, y);
             } else {
                 /* NOTE: this method is technically not correct due to distribution or something but it might look good enough. */
                 f32 radius = random_ranged_float(rng, 0, circle.radius);
-                f32 x = random_ranged_float(rng, circle.center.x+radius*cosine-circle.thickness, circle.center.y+radius*cosine+circle.thickness);
-                f32 y = random_ranged_float(rng, circle.center.x+radius*sine-circle.thickness, circle.center.y+radius*sine+circle.thickness);
+                f32 x = random_ranged_float(rng, circle.center.x+radius*cosine-circle.thickness, circle.center.x+radius*cosine+circle.thickness);
+                f32 y = random_ranged_float(rng, circle.center.y+radius*sine-circle.thickness, circle.center.y+radius*sine+circle.thickness);
                 return v2f32(x, y);
             }
         } break;
@@ -276,7 +276,7 @@ void render_particles_list(struct entity_particle_list* particle_list, struct so
     for (unsigned particle_index = 0; particle_index < particle_list->capacity; ++particle_index) {
         struct entity_particle* current_particle = particle_list->particles + particle_index;
         if (current_particle->flags & ENTITY_PARTICLE_FLAG_ALIVE) {
-            sortable_draw_entities_push_particle(draw_entities, current_particle->position.y, current_particle);
+            sortable_draw_entities_push_particle(draw_entities, current_particle->position.y*TILE_UNIT_SIZE, current_particle);
         }
     }
 }
@@ -905,7 +905,7 @@ void sortable_draw_entities_push_chest(struct sortable_draw_entities* entities, 
 }
 void sortable_draw_entities_push_particle(struct sortable_draw_entities* entities, f32 y_sort_key, void* ptr) {
     /* this will allow particles to tend to be on top of entities */
-    sortable_draw_entities_push(entities, SORTABLE_DRAW_ENTITY_PARTICLE, y_sort_key+3, ptr);
+    sortable_draw_entities_push(entities, SORTABLE_DRAW_ENTITY_PARTICLE, y_sort_key, ptr);
 }
 
 void sortable_draw_entities_sort_keys(struct sortable_draw_entities* entities) {
@@ -1130,6 +1130,7 @@ local void sortable_entity_draw_particle(struct render_commands* commands, struc
             if (effective_t > 1) effective_t = 1;
             color.a *= effective_t;
             render_commands_push_quad(commands, rectangle_f32(draw_x, draw_y, draw_w, draw_h), color32f32_to_color32u8(color), BLEND_MODE_ADDITIVE);
+            /* render_commands_push_quad(commands, rectangle_f32(draw_x, draw_y, draw_w, draw_h), color32f32_to_color32u8(color), BLEND_MODE_ADDITIVE); */
             render_commands_set_shader(commands, game_foreground_things_shader, NULL);
 
             v2f32 draw_point = v2f32(draw_x, draw_y);
