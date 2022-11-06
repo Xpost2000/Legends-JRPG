@@ -455,15 +455,19 @@ void apply_save_data(struct game_state* state) {
     }
 }
 
+local void apply_save_record_chest_entry(struct save_record_entity_chest* chest_record, struct game_state* state) {
+    struct level_area* area = &state->loaded_area;
+    area->chests[chest_record->target_entity].flags |= ENTITY_CHEST_FLAGS_UNLOCKED;
+    _debugprintf("opening chest: %d\n", chest_record->target_entity);
+}
+
 void try_to_apply_record_entry(struct save_record* record, struct game_state* state) {
     _debugprintf("RECORD TYPE: %.*s", save_record_type_strings[record->type].length, save_record_type_strings[record->type].data);
-    struct level_area* area = &state->loaded_area;
 
     switch (record->type) {
         case SAVE_RECORD_TYPE_ENTITY_CHEST: {
             struct save_record_entity_chest* chest_record = &record->chest_record;
-            area->chests[chest_record->target_entity].flags |= ENTITY_CHEST_FLAGS_UNLOCKED;
-            _debugprintf("opening chest: %d\n", chest_record->target_entity);
+            apply_save_record_chest_entry(chest_record, state);
         } break;
         default: {
             _debugprintf("UNHANDLED RECORD TYPE: %.*s", save_record_type_strings[record->type].length, save_record_type_strings[record->type].data);

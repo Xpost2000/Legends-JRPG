@@ -1,4 +1,13 @@
 #include "entities_def.c"
+
+/*
+  NOTE:
+
+  Quads are not shaded with shaders, which causes particles to look weird right now since they are just quads.
+
+  To be fair particles should be round and this will fix itself soon enough when I draw a round blob.
+ */
+
 /*
  CLEANUP/TODO: As models are now the source of truth for entity collision sizes,
  and thus arbitrary scales are not needed (entities can just be represented as points with an implied rectangle),
@@ -1138,9 +1147,10 @@ local void sortable_entity_draw_particle(struct render_commands* commands, struc
             f32 effective_t = (it->lifetime/it->lifetime_max);
             if (effective_t < 0) effective_t = 0;
             if (effective_t > 1) effective_t = 1;
-            color.a *= effective_t;
+            color.a *= effective_t+0.1;
+            render_commands_push_quad(commands, rectangle_f32(draw_x, draw_y, draw_w, draw_h), color32f32_to_color32u8(color), BLEND_MODE_ALPHA);
+            render_commands_set_shader(commands, game_foreground_things_shader, NULL);
             render_commands_push_quad(commands, rectangle_f32(draw_x, draw_y, draw_w, draw_h), color32f32_to_color32u8(color), BLEND_MODE_ADDITIVE);
-            /* render_commands_push_quad(commands, rectangle_f32(draw_x, draw_y, draw_w, draw_h), color32f32_to_color32u8(color), BLEND_MODE_ADDITIVE); */
             render_commands_set_shader(commands, game_foreground_things_shader, NULL);
 
             v2f32 draw_point = v2f32(draw_x, draw_y);

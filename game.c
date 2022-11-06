@@ -1286,21 +1286,22 @@ void game_initialize_game_world(void) {
             emitter->position = player->position;
             emitter->position.x /= TILE_UNIT_SIZE;
             emitter->position.y /= TILE_UNIT_SIZE;
-            emitter->burst_amount = 32;
+            emitter->burst_amount = 64;
             emitter->max_spawn_per_batch = 1024;
             emitter->max_spawn_batches   = -1;
-            emitter->delay_time_per_batch = 0.3;
-            emitter->color = color32u8(251, 148, 112, 255);
-            emitter->starting_acceleration = v2f32(0, -9.8);
+            /* emitter->color = color32u8(255, 108, 112, 255); */
+            emitter->color = color32u8(226, 88, 34, 255);
+            emitter->starting_acceleration = v2f32(0, -15.6);
+            emitter->starting_acceleration_variance = v2f32(1.2, 1.2);
             emitter->starting_velocity_variance = v2f32(1.3, 0);
-            emitter->lifetime = 1.4;
-            emitter->lifetime_variance = 0.55;
+            emitter->lifetime = 0.6;
+            emitter->lifetime_variance = 0.35;
 
             emitter->particle_type = ENTITY_PARTICLE_TYPE_FIRE;
 
-            emitter->scale_uniform = 0.17;
+            emitter->scale_uniform = 0.2;
             emitter->scale_variance_uniform = 0.12;
-            emitter->spawn_shape = emitter_spawn_shape_circle(v2f32(0,0), 0.4, 0.0, false);
+            emitter->spawn_shape = emitter_spawn_shape_circle(v2f32(0,0), 0.6, 0.0, false);
         }
     }
 #if 0
