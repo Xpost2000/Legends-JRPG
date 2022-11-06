@@ -1258,6 +1258,7 @@ void game_initialize_game_world(void) {
 
             emitter->scale_uniform = 0.2;
             emitter->scale_variance_uniform = 0.05;
+            emitter->spawn_shape = emitter_spawn_shape_circle(v2f32(0,0), 0.3, 0.4, false);
         }
     }
 #if 0

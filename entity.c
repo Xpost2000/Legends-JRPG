@@ -42,6 +42,105 @@ local struct entity_particle* particle_list_allocate_particle(struct entity_part
     return NULL;
 }
 
+local v2f32 entity_particle_emitter_spawn_shape_find_position(v2f32 offset, struct random_state* rng, struct entity_particle_emitter_spawn_shape* spawn_shape) {
+    switch (spawn_shape->type) {
+        case ENTITY_PARTICLE_EMITTER_SPAWN_SHAPE_POINT: {
+            struct entity_particle_emitter_spawn_shape_point point = spawn_shape->point;
+
+            point.center.x += offset.x;
+            point.center.y += offset.y;
+
+            f32 x = random_ranged_float(rng, point.center.x - point.thickness, point.center.x + point.thickness);
+            f32 y = random_ranged_float(rng, point.center.y - point.thickness, point.center.y + point.thickness);
+
+            return v2f32(x, y);
+        } break;
+        case ENTITY_PARTICLE_EMITTER_SPAWN_SHAPE_LINE: {
+            struct entity_particle_emitter_spawn_shape_line line = spawn_shape->line;
+
+            line.start.x += offset.x;
+            line.start.y += offset.y;
+            line.end.x   += offset.x;
+            line.end.y   += offset.y;
+
+            f32 x = random_ranged_float(rng, line.start.x, line.end.x);
+            x += random_ranged_float(rng, -line.thickness, line.thickness);
+            f32 y = random_ranged_float(rng, line.start.y, line.end.y);
+            y += random_ranged_float(rng, -line.thickness, line.thickness);
+
+            return v2f32(x, y);
+        } break;
+        case ENTITY_PARTICLE_EMITTER_SPAWN_SHAPE_RECTANGLE: {
+            struct entity_particle_emitter_spawn_shape_rectangle rectangle = spawn_shape->rectangle;
+
+            rectangle.center.x += offset.x;
+            rectangle.center.y += offset.y;
+
+            if (spawn_shape->outline) {
+                s32 side = random_ranged_integer(rng, 0, 3);
+
+                f32 x = 0;
+                f32 y = 0;
+                switch (side) {
+                    case 0: { /* left */
+                        x  = random_ranged_float(rng, rectangle.center.x - rectangle.half_widths.x - rectangle.thickness, rectangle.center.x - rectangle.half_widths.x + rectangle.thickness);
+                        y  = random_ranged_float(rng, rectangle.center.y - rectangle.half_widths.y, rectangle.center.y + rectangle.half_widths.y);
+                        y += random_ranged_float(rng, -rectangle.thickness, rectangle.thickness);
+                    } break;
+                    case 1: { /* top */
+                        y  = random_ranged_float(rng, rectangle.center.y + rectangle.half_widths.y - rectangle.thickness, rectangle.center.y + rectangle.half_widths.y + rectangle.thickness);
+                        x  = random_ranged_float(rng, rectangle.center.x - rectangle.half_widths.x, rectangle.center.x + rectangle.half_widths.x);
+                        x += random_ranged_float(rng, -rectangle.thickness, rectangle.thickness);
+                    } break;
+                    case 2: { /* right */
+                        x  = random_ranged_float(rng, rectangle.center.x + rectangle.half_widths.x - rectangle.thickness, rectangle.center.x + rectangle.half_widths.x + rectangle.thickness);
+                        y  = random_ranged_float(rng, rectangle.center.y - rectangle.half_widths.y, rectangle.center.y + rectangle.half_widths.y);
+                        y += random_ranged_float(rng, -rectangle.thickness, rectangle.thickness);
+                    } break;
+                    case 3: { /* bottom */
+                        y  = random_ranged_float(rng, rectangle.center.y + rectangle.half_widths.y - rectangle.thickness, rectangle.center.y + rectangle.half_widths.y + rectangle.thickness);
+                        x  = random_ranged_float(rng, rectangle.center.x - rectangle.half_widths.x, rectangle.center.x + rectangle.half_widths.x);
+                        x += random_ranged_float(rng, -rectangle.thickness, rectangle.thickness);
+                    } break;
+                }
+
+                return v2f32(x, y);
+            } else {
+                f32 x = random_ranged_float(rng, rectangle.center.x - rectangle.half_widths.x, rectangle.center.x + rectangle.half_widths.x);
+                f32 y = random_ranged_float(rng, rectangle.center.y - rectangle.half_widths.y, rectangle.center.y + rectangle.half_widths.y);
+
+                return v2f32(x, y);
+            }
+        } break;
+        case ENTITY_PARTICLE_EMITTER_SPAWN_SHAPE_CIRCLE: {
+            struct entity_particle_emitter_spawn_shape_circle circle = spawn_shape->circle;
+
+            circle.center.x += offset.x;
+            circle.center.y += offset.y;
+
+            f32 random_angle = random_ranged_float(rng, 0, 360);
+            f32 cosine = cos(random_angle);
+            f32 sine = sin(random_angle);
+
+            if (spawn_shape->outline) {
+                f32 x = random_ranged_float(rng, circle.center.x+circle.radius*cosine-circle.thickness, circle.center.y+circle.radius*cosine+circle.thickness);
+                f32 y = random_ranged_float(rng, circle.center.x+circle.radius*sine-circle.thickness, circle.center.y+circle.radius*sine+circle.thickness);
+                return v2f32(x, y);
+            } else {
+                /* NOTE: this method is technically not correct due to distribution or something but it might look good enough. */
+                f32 radius = random_ranged_float(rng, 0, circle.radius);
+                f32 x = random_ranged_float(rng, circle.center.x+radius*cosine-circle.thickness, circle.center.y+radius*cosine+circle.thickness);
+                f32 y = random_ranged_float(rng, circle.center.x+radius*sine-circle.thickness, circle.center.y+radius*sine+circle.thickness);
+                return v2f32(x, y);
+            }
+        } break;
+        bad_case;
+    }
+
+    return offset;
+}
+
+
 void entity_particle_emitter_list_update(struct entity_particle_emitter_list* particle_emitters, f32 dt) {
     struct random_state* rng = &game_state->rng;
     /* TODO: Does not have dying particle emitters yet! */
@@ -77,7 +176,7 @@ void entity_particle_emitter_list_update(struct entity_particle_emitter_list* pa
 
                     {
                         /* depends on spawn shape... */
-                        particle->position                          = current_emitter->position;
+                        particle->position = entity_particle_emitter_spawn_shape_find_position(current_emitter->position, rng, &current_emitter->spawn_shape);
                     }
 
                     f32 scale = random_ranged_float(rng, current_emitter->scale_uniform - current_emitter->scale_variance_uniform, current_emitter->scale_uniform + current_emitter->scale_variance_uniform);
