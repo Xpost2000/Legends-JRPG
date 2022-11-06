@@ -38,6 +38,26 @@ local char game_command_console_line_input[GAME_COMMAND_CONSOLE_LINE_INPUT_MAX] 
 /* defined in battle_ui.c */
 local bool is_entity_under_ability_selection(entity_id who);
 
+local struct light_def* game_dereference_dynamic_light(s32 light_id) {
+    if (light_id == 0) {
+        return NULL;
+    }
+
+    return (&game_state->dynamic_lights[light_id-1]);
+}
+
+local s32 game_allocate_dynamic_light(void) {
+    if (game_state->dynamic_light_count < MAX_GAME_DYNAMIC_LIGHT_POOL) {
+        return (game_state->dynamic_light_count++) + 1;
+    }
+
+    return 0;
+}
+
+void game_free_dynamic_light(s32 light_id) {
+    game_state->dynamic_lights[light_id] = game_state->dynamic_lights[--game_state->dynamic_light_count];
+}
+
 static string menu_font_variation_string_names[] = {
     string_literal("res/fonts/gnsh-bitmapfont-colour1.png"),
     string_literal("res/fonts/gnsh-bitmapfont-colour2.png"),
@@ -1005,6 +1025,27 @@ union color32f32 lighting_shader(struct software_framebuffer* framebuffer, union
         }
     }
 
+    for (s32 light_index = 0; light_index < game_state->dynamic_light_count; ++light_index) {
+        struct light_def* current_light = game_state->dynamic_lights + light_index;
+        v2f32 light_screenspace_position = current_light->position;
+        /* recentering lights */
+        light_screenspace_position.x += 0.5;
+        light_screenspace_position.y += 0.5;
+        light_screenspace_position.x *= TILE_UNIT_SIZE;
+        light_screenspace_position.y *= TILE_UNIT_SIZE;
+
+        light_screenspace_position = camera_transform(&game_state->camera, light_screenspace_position, SCREEN_WIDTH, SCREEN_HEIGHT);
+        {
+            f32 distance_squared = v2f32_magnitude_sq(v2f32_sub(pixel_position, light_screenspace_position));
+            f32 attenuation      = 1/(distance_squared+1 + (sqrtf(distance_squared)/1.5));
+
+            f32 power = current_light->power * game_state->camera.zoom;
+            r_accumulation += attenuation * power * TILE_UNIT_SIZE * current_light->color.r/255.0f;
+            g_accumulation += attenuation * power * TILE_UNIT_SIZE * current_light->color.g/255.0f;
+            b_accumulation += attenuation * power * TILE_UNIT_SIZE * current_light->color.b/255.0f;
+        }
+    }
+
     f32 overbright_r = source_pixel.r * 2.0;
     f32 overbright_g = source_pixel.g * 2.0;
     f32 overbright_b = source_pixel.b * 2.0;
@@ -1237,6 +1278,7 @@ void game_initialize_game_world(void) {
     {
         struct entity*                  player  = game_get_player(game_state);
         player->particle_attachment_TEST        = entity_particle_emitter_allocate(&game_state->permenant_particle_emitters);
+        player->light_attachment_TEST           = game_allocate_dynamic_light();
         struct entity_particle_emitter* emitter = entity_particle_emitter_dereference(&game_state->permenant_particle_emitters, player->particle_attachment_TEST);
         {
             /* I want this to be like a bleed effect... */

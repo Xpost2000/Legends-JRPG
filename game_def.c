@@ -486,6 +486,7 @@ s32  game_variables_count_all(void);
 
 #include "shop_def.c"
 
+#define MAX_GAME_DYNAMIC_LIGHT_POOL (1024)
 struct game_state {
     struct memory_arena* arena;
 
@@ -513,13 +514,6 @@ struct game_state {
     bool                 shopping;
     struct shop_instance active_shop;
 
-    /* 
-       TODO:
-
-       for sanity's sake, have a list of "permenant" and "level" entities again...
-       
-       It's simpler to handle rather than doing some more complicated sparse storage...
-    */
     struct entity_database entity_database;
 
     /* player and their companions, or familiars or something like that. */
@@ -567,6 +561,10 @@ struct game_state {
 
         /* animation state... hahahahahaha */
     } interactable_state;
+
+    /* Needs to be replicated for cutscenes */
+    s32              dynamic_light_count;
+    struct light_def dynamic_lights[MAX_GAME_DYNAMIC_LIGHT_POOL];
 
     bool constantly_traumatizing_camera;
     f32  constant_camera_trauma_value;

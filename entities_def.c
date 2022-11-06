@@ -542,6 +542,7 @@ struct entity {
     s32                           interacted_script_trigger_ids[32];
 
     s32                           particle_attachment_TEST;
+    s32                           light_attachment_TEST;
 };
 
 void entity_snap_to_grid_position(struct entity* entity) {

@@ -707,6 +707,14 @@ void update_entities(struct game_state* state, f32 dt, struct entity_iterator it
                 entity_particle_emitter_start_emitting(&game_state->permenant_particle_emitters, current_entity->particle_attachment_TEST);
             }
         }
+
+        if (current_entity->light_attachment_TEST != 0) {
+            struct light_def* light = game_dereference_dynamic_light(current_entity->light_attachment_TEST);
+            light->position.x = current_entity->position.x/TILE_UNIT_SIZE;
+            light->position.y = current_entity->position.y/TILE_UNIT_SIZE;
+            light->power = normalized_sinf(global_elapsed_time*8)*10 + 10;
+            light->color = color32u8(255,255,255,255);
+        }
 #endif
         {
             if (!(current_entity->flags & ENTITY_FLAGS_NOCLIP)) {
@@ -1065,9 +1073,11 @@ local void sortable_entity_draw_entity(struct render_commands* commands, struct 
 #endif
 
 #ifndef RELEASE
+#if 0
         struct rectangle_f32 collision_bounds = entity_rectangle_collision_bounds(current_entity);
         render_commands_push_quad(commands, collision_bounds, color32u8(255, 0, 0, 64), BLEND_MODE_ALPHA);
         render_commands_set_shader(commands, game_foreground_things_shader, NULL);
+#endif
 #endif
     }
 }
