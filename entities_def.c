@@ -203,10 +203,7 @@ enum entity_particle_emitter_spawn_shape_type {
     ENTITY_PARTICLE_EMITTER_SPAWN_SHAPE_LINE,
 
     ENTITY_PARTICLE_EMITTER_SPAWN_SHAPE_RECTANGLE,
-    ENTITY_PARTICLE_EMITTER_SPAWN_SHAPE_RECTANGLE_OUTLINE,
-
     ENTITY_PARTICLE_EMITTER_SPAWN_SHAPE_CIRCLE,
-    ENTITY_PARTICLE_EMITTER_SPAWN_SHAPE_CIRCLE_OUTLINE,
 };
 struct entity_particle_emitter_spawn_shape_point {
     v2f32 center;
@@ -218,7 +215,7 @@ struct entity_particle_emitter_spawn_shape_line {
 };
 struct entity_particle_emitter_spawn_shape_rectangle {
     v2f32 center;
-    f32 side_length;
+    v2f32 half_widths;
     f32 thickness;
 };
 struct entity_particle_emitter_spawn_shape_circle {
@@ -232,12 +229,47 @@ struct entity_particle_emitter_spawn_shape {
 
     bool  outline;
     union {
-        struct entity_particle_emitter_spawn_shape_point   point;
-        struct entity_particle_emitter_spawn_shape_line    line;
-        struct entity_particle_emitter_spawn_shape_rectangle  rectangle;
-        struct entity_particle_emitter_spawn_shape_circle  circle;
+        struct entity_particle_emitter_spawn_shape_point     point;
+        struct entity_particle_emitter_spawn_shape_line      line;
+        struct entity_particle_emitter_spawn_shape_rectangle rectangle;
+        struct entity_particle_emitter_spawn_shape_circle    circle;
     };
 };
+
+local struct entity_particle_emitter_spawn_shape emitter_spawn_shape_point(v2f32 xy) {
+    return (struct entity_particle_emitter_spawn_shape) {
+        .type         = ENTITY_PARTICLE_EMITTER_SPAWN_SHAPE_POINT,
+        .point.center = xy
+    };
+}
+
+local struct entity_particle_emitter_spawn_shape emitter_spawn_shape_line(v2f32 start, v2f32 end, f32 thickness) {
+    return (struct entity_particle_emitter_spawn_shape) {
+        .type       = ENTITY_PARTICLE_EMITTER_SPAWN_SHAPE_LINE,
+        .line.start = start,
+        .line.end   = end,
+    };
+}
+
+local struct entity_particle_emitter_spawn_shape emitter_spawn_shape_rectangle(v2f32 center, v2f32 half_widths, f32 thickness, bool outline) {
+    return (struct entity_particle_emitter_spawn_shape) {
+        .type                  = ENTITY_PARTICLE_EMITTER_SPAWN_SHAPE_RECTANGLE,
+        .outline               = outline,
+        .rectangle.center      = center,
+        .rectangle.half_widths = half_widths,
+        .rectangle.thickness   = thickness,
+    };
+}
+
+local struct entity_particle_emitter_spawn_shape emitter_spawn_shape_circle(v2f32 center, f32 radius, f32 thickness, bool outline) {
+    return (struct entity_particle_emitter_spawn_shape) {
+        .type             = ENTITY_PARTICLE_EMITTER_SPAWN_SHAPE_CIRCLE,
+        .outline          = outline,
+        .circle.center    = center,
+        .circle.radius    = radius,
+        .circle.thickness = thickness,
+    };
+}
 
 struct entity_particle_emitter {
     v2f32 position;
