@@ -2436,14 +2436,11 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                         game_script_execute_awaiting_scripts(&scratch_arena, game_state, dt);
                         game_script_run_all_timers(dt);
 
-                        if (!(game_get_player(state)->flags & ENTITY_FLAGS_ALIVE)) {
-                        } else {
-                            if (!cutscene_active()) {
-                                if (!game_state->combat_state.active_combat) {
-                                    determine_if_combat_should_begin(game_state);
-                                } else {
-                                    update_combat(game_state, dt);
-                                }
+                        if (!cutscene_active()) {
+                            if (!game_state->combat_state.active_combat) {
+                                determine_if_combat_should_begin(game_state);
+                            } else {
+                                update_combat(game_state, dt);
                             }
                         }
                     }

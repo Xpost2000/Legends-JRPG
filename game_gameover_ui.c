@@ -23,7 +23,7 @@ struct game_over_ui_state {
     s32 characters_shown_in_text;
     s32 currently_selected_option;
 
-    bool selectable_options[array_count(game_over_optionss)];
+    bool selectable_options[array_count(game_over_options)];
 } global_game_over_ui_state;
 
 local void update_and_render_gameover_game_menu_ui(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {

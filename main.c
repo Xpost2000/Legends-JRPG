@@ -47,8 +47,10 @@ local bool SCREEN_IS_FULLSCREEN = false;
 /* real res */
 /* consider a better way to decouple this from the editor logic. */
 /* game logic is okay because we don't use the mouse for UI. (I mean I probably should allow it, but whatever.) */
-local u32 REAL_SCREEN_WIDTH  = 640*2;
-local u32 REAL_SCREEN_HEIGHT = 480*2;
+/* local u32 REAL_SCREEN_WIDTH  = 640*2; */
+/* local u32 REAL_SCREEN_HEIGHT = 480*2; */
+local u32 REAL_SCREEN_WIDTH  = 640;
+local u32 REAL_SCREEN_HEIGHT = 480;
 /* local u32 REAL_SCREEN_WIDTH  = 1280; */
 /* local u32 REAL_SCREEN_HEIGHT = 720; */
 
@@ -380,6 +382,7 @@ local void initialize(void) {
                                                    REAL_SCREEN_HEIGHT,
                                                    SDL_WINDOW_HIDDEN | SDL_WINDOW_ALLOW_HIGHDPI);
     global_game_sdl_renderer    = SDL_CreateRenderer(global_game_window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+    /* global_game_sdl_renderer    = SDL_CreateRenderer(global_game_window, -1, SDL_RENDERER_ACCELERATED); */
 
     initialize_thread_pool();
 

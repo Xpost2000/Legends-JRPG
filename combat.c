@@ -60,8 +60,10 @@ local void add_all_combat_participants(struct game_state* state) {
    want the quickest way of doing stuff) */
 local bool should_be_in_combat(struct game_state* state) {
     struct entity* player = game_get_player(state);
-
     bool should_be_in_combat = false;
+    if (!(player->flags & ENTITY_FLAGS_ALIVE)) {
+        return false;
+    }
 
     struct entity_iterator it = game_entity_iterator(state);
 
@@ -101,12 +103,6 @@ void update_combat(struct game_state* state, f32 dt) {
     struct entity* combatant = find_current_combatant(state);
 
     bool should_end_combat = !should_be_in_combat(state);
-
-    { /* TODO: Check for all player KO, for now only one party member so far */
-        if (!(game_get_player(state)->flags & ENTITY_FLAGS_ALIVE)) {
-            should_end_combat = true;
-        }
-    }
 
     if (should_end_combat) {
         end_combat_ui();

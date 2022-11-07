@@ -1268,18 +1268,19 @@ local void update_and_render_battle_ui(struct game_state* state, struct software
                 {
                     if (!(game_get_player(state)->flags & ENTITY_FLAGS_ALIVE)) {
                         state->combat_state.active_combat = false;
+                        global_battle_ui_state.phase      = 0;
                         {
                             do_color_transition_in(color32f32(0,0,0,1), 0.45, 1.5);
                             transition_register_on_finish(_transition_callback_game_over, 0, 0);
                         }
                         /* game_state_set_ui_state(game_state, UI_STATE_GAMEOVER); */
+                    } else {
+                        if (global_battle_ui_state.phase == BATTLE_UI_FADE_OUT_DETAILS_AFTER_TURN_COMPLETION) {
+                            global_battle_ui_state.phase = BATTLE_UI_FADE_IN_DARK_END_TURN;
+                        } else if (global_battle_ui_state.phase == BATTLE_UI_FADE_OUT_DETAILS_AFTER_BATTLE_COMPLETION) {
+                            global_battle_ui_state.phase = BATTLE_UI_AFTER_ACTION_REPORT_IDLE;
+                        }
                     }
-                }
-
-                if (global_battle_ui_state.phase == BATTLE_UI_FADE_OUT_DETAILS_AFTER_TURN_COMPLETION) {
-                    global_battle_ui_state.phase = BATTLE_UI_FADE_IN_DARK_END_TURN;
-                } else if (global_battle_ui_state.phase == BATTLE_UI_FADE_OUT_DETAILS_AFTER_BATTLE_COMPLETION) {
-                    global_battle_ui_state.phase = BATTLE_UI_AFTER_ACTION_REPORT_IDLE;
                 }
                 global_battle_ui_state.timer = 0;
             }
