@@ -806,7 +806,14 @@ GAME_LISP_FUNCTION(SET_HEALTH) {
     s32                          value  = 0;
     Fatal_Script_Error(lisp_form_get_s32(arguments[1], &value) && "Stat accessor set needs to be a number");
     entity->health.value = value;
+    (entity_validate_death(entity));
     return lisp_form_integer(value);
+}
+
+GAME_LISP_FUNCTION(SUICIDE) {
+    Required_Argument_Count(SUICIDE, 0);
+    entity_do_physical_hurt(game_get_player(game_state), 99999);
+    return LISP_nil;
 }
 
 #undef GAME_LISP_FUNCTION

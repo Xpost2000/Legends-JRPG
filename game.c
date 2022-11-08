@@ -971,6 +971,12 @@ bool game_state_set_ui_state(struct game_state* state, u32 new_ui_state) {
     return false;
 }
 
+local void _transition_callback_game_over(void*) {
+    game_state_set_ui_state(game_state, UI_STATE_GAMEOVER);
+}
+
+local bool global_game_initiated_death_ui = false;
+
 #include "entity.c"
 
 void game_postprocess_blur(struct software_framebuffer* framebuffer, s32 quality_scale, f32 t, u32 blend_mode) {
@@ -1581,9 +1587,25 @@ local void dialogue_choice_try_to_execute_script_actions(struct game_state* stat
     }
 }
 
+local void game_setup_death_ui(void);
 #include "battle_ui.c"
 #include "conversation_ui.c"
 #include "shopping_ui.c"
+
+local void game_setup_death_ui(void) {
+    if (!global_game_initiated_death_ui) {
+        game_state->combat_state.active_combat = false;
+        game_focus_camera_to_entity(game_get_player(game_state));
+        global_battle_ui_state.phase      = 0;
+
+        {
+            do_color_transition_in(color32f32(0,0,0,1), 1.5, 3.12345);
+            transition_register_on_finish(_transition_callback_game_over, 0, 0);
+        }
+
+        global_game_initiated_death_ui = true;
+    }
+}
 
 local void update_and_render_ingame_game_menu_ui(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
     game_display_and_update_damage_notifications(framebuffer, dt);
@@ -2341,8 +2363,7 @@ void update_and_render_game_console(struct game_state* state, struct software_fr
             end_text_edit(game_command_console_line_input, GAME_COMMAND_CONSOLE_LINE_INPUT_MAX-1);
 
             struct lisp_form code = lisp_read_form(&scratch_arena, string_from_cstring(game_command_console_line_input));
-            /* Since the console doesn't really need to wait ever. We can just evaluate forms straight up like this. */
-            game_script_evaluate_form(&scratch_arena, state, &code);
+            /* Since the console doesn't really need to wait ever. We can just evaluate forms straight up like this. */ game_script_evaluate_form(&scratch_arena, state, &code);
             zero_memory(game_command_console_line_input, GAME_COMMAND_CONSOLE_LINE_INPUT_MAX);
         }
     }
@@ -2435,6 +2456,10 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
 
                         game_script_execute_awaiting_scripts(&scratch_arena, game_state, dt);
                         game_script_run_all_timers(dt);
+
+                        if (!(game_get_player(game_state)->flags & ENTITY_FLAGS_ALIVE)) {
+                            game_setup_death_ui();
+                        }
 
                         if (!cutscene_active()) {
                             if (!game_state->combat_state.active_combat) {

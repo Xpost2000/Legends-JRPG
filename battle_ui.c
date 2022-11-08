@@ -1138,10 +1138,6 @@ local void battle_ui_trigger_end_turn(void) {
     global_battle_ui_state.phase = BATTLE_UI_FADE_OUT_DETAILS_AFTER_TURN_COMPLETION;
 }
 
-local void _transition_callback_game_over(void*) {
-    game_state_set_ui_state(game_state, UI_STATE_GAMEOVER);
-}
-
 local void update_and_render_battle_ui(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
     struct font_cache*              font         = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_STEEL]);
     struct game_state_combat_state* combat_state = &state->combat_state;
@@ -1267,13 +1263,7 @@ local void update_and_render_battle_ui(struct game_state* state, struct software
                 /* TODO: More robust player death conditions */
                 {
                     if (!(game_get_player(state)->flags & ENTITY_FLAGS_ALIVE)) {
-                        state->combat_state.active_combat = false;
-                        global_battle_ui_state.phase      = 0;
-                        {
-                            do_color_transition_in(color32f32(0,0,0,1), 0.45, 1.5);
-                            transition_register_on_finish(_transition_callback_game_over, 0, 0);
-                        }
-                        /* game_state_set_ui_state(game_state, UI_STATE_GAMEOVER); */
+                        game_setup_death_ui();
                     } else {
                         if (global_battle_ui_state.phase == BATTLE_UI_FADE_OUT_DETAILS_AFTER_TURN_COMPLETION) {
                             global_battle_ui_state.phase = BATTLE_UI_FADE_IN_DARK_END_TURN;
@@ -1405,56 +1395,59 @@ local void render_combat_area_information(struct game_state* state, struct rende
 
                         bool reject = false;
 
-                        if (found_first_collision && ability->requires_no_obstructions) {
-                            switch (user_direction) {
-                                case DIRECTION_DOWN: {
-                                    if (y_index <= first_collision_relative_y) {
-                                        if (y_index != first_collision_relative_y) {
-                                        } else {
-                                            if (ability->selection_type == ABILITY_SELECTION_TYPE_FIELD) {
-                                                color = color32u8(255, 0, 0, 128);
+                        /* Obstruction rendering for ability path */
+                        {
+                            if (found_first_collision && ability->requires_no_obstructions) {
+                                switch (user_direction) {
+                                    case DIRECTION_DOWN: {
+                                        if (y_index <= first_collision_relative_y) {
+                                            if (y_index != first_collision_relative_y) {
+                                            } else {
+                                                if (ability->selection_type == ABILITY_SELECTION_TYPE_FIELD) {
+                                                    color = color32u8(255, 0, 0, 128);
+                                                }
                                             }
-                                        }
-                                    } else {
-                                        reject = true;
-                                    }
-                                } break;
-                                case DIRECTION_RIGHT: {
-                                    if (x_index <= first_collision_relative_x) {
-                                        if (x_index != first_collision_relative_x) {
                                         } else {
-                                            if (ability->selection_type == ABILITY_SELECTION_TYPE_FIELD) {
-                                                color = color32u8(255, 0, 0, 128);
-                                            }
+                                            reject = true;
                                         }
-                                    } else {
-                                        reject = true;
-                                    }
-                                } break;
-                                case DIRECTION_UP: {
-                                    if (y_index >= first_collision_relative_y) {
-                                        if (y_index != first_collision_relative_y) {
+                                    } break;
+                                    case DIRECTION_RIGHT: {
+                                        if (x_index <= first_collision_relative_x) {
+                                            if (x_index != first_collision_relative_x) {
+                                            } else {
+                                                if (ability->selection_type == ABILITY_SELECTION_TYPE_FIELD) {
+                                                    color = color32u8(255, 0, 0, 128);
+                                                }
+                                            }
                                         } else {
-                                            if (ability->selection_type == ABILITY_SELECTION_TYPE_FIELD) {
-                                                color = color32u8(255, 0, 0, 128);
-                                            }
+                                            reject = true;
                                         }
-                                    } else {
-                                        reject = true;
-                                    }
-                                } break;
-                                case DIRECTION_LEFT: {
-                                    if (x_index >= first_collision_relative_x) {
-                                        if (x_index != first_collision_relative_x) {
+                                    } break;
+                                    case DIRECTION_UP: {
+                                        if (y_index >= first_collision_relative_y) {
+                                            if (y_index != first_collision_relative_y) {
+                                            } else {
+                                                if (ability->selection_type == ABILITY_SELECTION_TYPE_FIELD) {
+                                                    color = color32u8(255, 0, 0, 128);
+                                                }
+                                            }
                                         } else {
-                                            if (ability->selection_type == ABILITY_SELECTION_TYPE_FIELD) {
-                                                color = color32u8(255, 0, 0, 128);
-                                            }
+                                            reject = true;
                                         }
-                                    } else {
-                                        reject = true;
-                                    }
-                                } break;
+                                    } break;
+                                    case DIRECTION_LEFT: {
+                                        if (x_index >= first_collision_relative_x) {
+                                            if (x_index != first_collision_relative_x) {
+                                            } else {
+                                                if (ability->selection_type == ABILITY_SELECTION_TYPE_FIELD) {
+                                                    color = color32u8(255, 0, 0, 128);
+                                                }
+                                            }
+                                        } else {
+                                            reject = true;
+                                        }
+                                    } break;
+                                }
                             }
                         }
 
