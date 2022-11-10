@@ -207,7 +207,7 @@ local void update_and_render_gameover_game_menu_ui(struct game_state* state, str
                 font, FONT_SCALE,
                 string_slice(game_over_text, 0, global_game_over_ui_state.characters_shown_in_text),
                 SEED_DISPLACEMENT, color32f32_WHITE);
-            do_game_over_options(framebuffer, dt, 1, false);
+            do_game_over_options(framebuffer, dt, 1, true);
 
         } break;
         case GAME_OVER_UI_PHASE_BYE: {
