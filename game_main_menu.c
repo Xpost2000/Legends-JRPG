@@ -1,4 +1,13 @@
 /* global main menu code */
+/*
+  Honestly, I really dislike this UI, (except for the save menu which could
+  use a little bit of polishing, but is otherwise good in my opinion...)
+
+  I can't think of anything too original right now though.
+
+  I sort of like the polish from the pause menu, and might try to emulate that...
+  Although the pause menu looks very out of place with the rest of the game.
+*/
 
 /*
   NOTE: there is a major disadvantage and that is the fact most of the UI code is not reusable right now,
@@ -144,8 +153,11 @@ local void main_menu_next_lightning_time(void) {
     }
 }
 local void initialize_main_menu(void) {
-    main_menu.rnd                   = random_state();
+    main_menu.rnd                              = random_state();
     main_menu_next_lightning_time();
+    main_menu.timer                            = 0;
+    main_menu.phase                            = MAIN_MENU_LIGHTNING_FLASHES;
+    main_menu.currently_selected_option_choice = 0;
     return;
 }
 
@@ -349,17 +361,6 @@ local s32 do_save_menu(struct software_framebuffer* framebuffer, f32 y_offset, f
     }
 
     return -1;
-}
-
-local void _unlock_game_input_main_menu(void*) {
-    disable_game_input = false;
-}
-
-local void fade_into_game(void) {
-    game_initialize_game_world();
-    do_color_transition_out(color32f32(0, 0, 0, 1), 0.2, 0.35);
-    disable_game_input = true;
-    transition_register_on_finish(_unlock_game_input_main_menu, NULL, 0);
 }
 
 local void update_and_render_main_menu(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {

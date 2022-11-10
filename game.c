@@ -1226,6 +1226,15 @@ void editor_initialize(struct editor_state* state);
 #include "tile_data.c"
 
 local void initialize_main_menu(void);
+local void _unlock_game_input(void*) {
+    disable_game_input = false;
+}
+local void fade_into_game(void) {
+    game_initialize_game_world();
+    do_color_transition_out(color32f32(0, 0, 0, 1), 0.2, 0.35);
+    disable_game_input = true;
+    transition_register_on_finish(_unlock_game_input, NULL, 0);
+}
 void game_initialize(void) {
     game_arena   = memory_arena_create_from_heap("Game Memory", Megabyte(32));
     scratch_arena = memory_arena_create_from_heap("Scratch Buffer", Megabyte(8));
@@ -1988,6 +1997,10 @@ local void update_game_camera_exploration_mode(struct game_state* state, f32 dt)
     struct entity* player = entity_list_dereference_entity(&state->permenant_entities, player_id);
 
     /* NOTE/TODO/FINISHLATER hacky death camera */
+    /*
+      In reality, I want to do more with the camera, but right now I'm just going to leave this hacky code in
+      here so I can do stuff later.
+     */
     if (!(game_get_player(state)->flags & ENTITY_FLAGS_ALIVE)) {
         camera->xy.y -= dt * 25;
         return;
