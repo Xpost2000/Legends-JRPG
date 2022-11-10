@@ -13,9 +13,11 @@
 
 #include "fade_transitions.c"
 
+/* assorted random function prototype forward declarations */
 void render_cutscene_entities(struct sortable_draw_entities* draw_entities);
 void game_initialize_game_world(void);
 void game_report_entity_death(entity_id id);
+local void game_over_ui_setup(void);
 
 struct game_state* game_state         = 0;
 local bool         disable_game_input = false;
@@ -973,6 +975,7 @@ bool game_state_set_ui_state(struct game_state* state, u32 new_ui_state) {
 
 local void _transition_callback_game_over(void*) {
     game_state_set_ui_state(game_state, UI_STATE_GAMEOVER);
+    game_over_ui_setup();
 }
 
 local bool global_game_initiated_death_ui = false;
@@ -1161,8 +1164,47 @@ local void draw_ui_breathing_text_word_wrapped(struct software_framebuffer* fram
         string word = string_slice(text, current_word_start, current_word_end);
         f32 word_width = font_cache_text_width(font, word, scale);
 
-        if ((x_cursor-where.x) + word_width >= wrap_width) {
+        if ((x_cursor-where.x) + word_width >= wrap_width || text.data[character_index] == '\n') {
             x_cursor  = where.x;
+            y_cursor += font_height;
+        }
+
+        f32 character_displacement_y = sinf((global_elapsed_time*2) + ((character_index+seed_displacement) * 2381.2318)) * 3;
+
+        v2f32 glyph_position = v2f32(x_cursor, y_cursor + character_displacement_y);
+        x_cursor += font->tile_width * scale;
+
+        software_framebuffer_draw_text(framebuffer, font, scale, glyph_position, string_slice(text, character_index, character_index+1), modulation, BLEND_MODE_ALPHA);
+    }
+}
+
+local void draw_ui_breathing_text_word_wrapped_centered(struct software_framebuffer* framebuffer, struct rectangle_f32 bounds, f32 wrap_width, struct font_cache* font, f32 scale, string text, s32 seed_displacement, union color32f32 modulation) {
+    f32 text_width  = font_cache_text_width(font, text, scale);
+    f32 text_height = font_cache_calculate_height_of(font, text, wrap_width, scale);
+    f32 font_height = font_cache_text_height(font) * scale;
+
+
+    v2f32 centered_starting_position = v2f32(0,0);
+
+    centered_starting_position.x = bounds.x + (bounds.w/2) - (wrap_width/2);
+    centered_starting_position.y = bounds.y + (bounds.h/2) - (text_height/2);
+
+    f32 x_cursor = centered_starting_position.x;
+    f32 y_cursor = centered_starting_position.y;
+
+    for (unsigned character_index = 0; character_index < text.length; ++character_index) {
+        s32 current_word_start = character_index;
+        s32 current_word_end   = current_word_start;
+        {
+            while (current_word_end < text.length && text.data[current_word_end] != ' ') {
+                current_word_end++;
+            }
+        }
+        string word = string_slice(text, current_word_start, current_word_end);
+        f32 word_width = font_cache_text_width(font, word, scale);
+
+        if ((x_cursor-centered_starting_position.x) + word_width >= wrap_width || text.data[character_index] == '\n') {
+            x_cursor  = centered_starting_position.x;
             y_cursor += font_height;
         }
 
@@ -1945,8 +1987,15 @@ local void update_game_camera_exploration_mode(struct game_state* state, f32 dt)
 
     struct entity* player = entity_list_dereference_entity(&state->permenant_entities, player_id);
 
-    if (!cutscene_active())
+    /* NOTE/TODO/FINISHLATER hacky death camera */
+    if (!(game_get_player(state)->flags & ENTITY_FLAGS_ALIVE)) {
+        camera->xy.y -= dt * 25;
+        return;
+    }
+
+    if (!cutscene_active()) {
         camera->tracking_xy = player->position;
+    }
 
     /*
       NOTE(jerry):
