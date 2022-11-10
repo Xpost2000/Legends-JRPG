@@ -41,20 +41,37 @@ local void game_over_ui_state_advance_text_length(f32 dt) {
 }
 
 local void update_and_render_gameover_game_menu_ui(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
+    struct font_cache* font              = game_get_font(MENU_FONT_COLOR_STEEL);
+    const f32          FONT_SCALE        = 4;
+    s32                SEED_DISPLACEMENT = 54;
+
     switch (global_game_over_ui_state.phase) {
         case GAME_OVER_UI_PHASE_POP_IN_TEXT: {
             game_over_ui_state_advance_text_length(dt);
+            draw_ui_breathing_text_centered(
+                framebuffer,
+                rectangle_f32(0, 100, SCREEN_WIDTH, SCREEN_HEIGHT*0.5),
+                font, FONT_SCALE,
+                string_slice(game_over_text, 0, global_game_over_ui_state.characters_shown_in_text),
+                SEED_DISPLACEMENT, color32f32_WHITE);
         } break;
 
         case GAME_OVER_UI_PHASE_SHOW_OPTIONS: {
             game_over_ui_state_advance_text_length(dt);
+            draw_ui_breathing_text_centered(
+                framebuffer,
+                rectangle_f32(0, 100, SCREEN_WIDTH, SCREEN_HEIGHT*0.5),
+                font, FONT_SCALE,
+                string_slice(game_over_text, 0, global_game_over_ui_state.characters_shown_in_text),
+                SEED_DISPLACEMENT, color32f32_WHITE);
+            do_game_over_options(false);
         } break;
 
         case GAME_OVER_UI_PHASE_IDLE: {
-            
+            do_game_over_options(true);
         } break;
         case GAME_OVER_UI_PHASE_BYE: {
-            
+            do_game_over_options(false);
         } break;
     }
 }

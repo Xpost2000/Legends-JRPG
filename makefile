@@ -21,11 +21,16 @@ depack.exe: bigfilemaker/depacker.c bigfilemaker/bigfile_unpacker.c bigfilemaker
 	$(cc) bigfilemaker/depacker.c -o $@ -O2
 game.exe: metagen.exe $(wildcard *.c *.h)
 	./metagen.exe
-	$(CC) $(SOURCE_FILE_MODULES) -DUSE_EDITOR  -DRELEASE -o $@ $(CFLAGS) $(CLIBS) -O2 -mwindows
-	# $(CC) $(SOURCE_FILE_MODULES) -DUSE_EDITOR  -o $@ $(CFLAGS) $(CLIBS) -O2 -mwindows
+	$(CC) $(SOURCE_FILE_MODULES) -DUSE_EDITOR  -DRELEASE -o $@ $(CFLAGS) $(CLIBS) -m64 -O2 -mwindows
 game-debug.exe: metagen.exe $(wildcard *.c *.h)
 	./metagen.exe
-	$(CC) $(SOURCE_FILE_MODULES) -DUSE_EDITOR -o $@ $(CFLAGS) $(CLIBS) -ggdb3
+	$(CC) $(SOURCE_FILE_MODULES) -DUSE_EDITOR -o $@ $(CFLAGS) $(CLIBS) -m64 -ggdb3
+gamex86.exe: metagen.exe $(wildcard *.c *.h)
+	./metagen.exe
+	$(CC) $(SOURCE_FILE_MODULES) -DUSE_EDITOR  -DRELEASE -o $@ $(CFLAGS) $(CLIBS) -m32 -O2 -mwindows
+gamex86-debug.exe: metagen.exe $(wildcard *.c *.h)
+	./metagen.exe
+	$(CC) $(SOURCE_FILE_MODULES) -DUSE_EDITOR -o $@ $(CFLAGS) $(CLIBS) -m32 -ggdb3
 web-experimental: $(wildcard *.c *.h)
 	$(EMCC) $(SOURCE_FILE_MODULES) -DRELEASE -s USE_SDL=2 -s USE_WEBGL2=1 -o game.html $(CFLAGS) $(CLIBS) -s INITIAL_MEMORY=127MB --preload-file res --preload-file scenes --preload-file areas
 run: game.exe
