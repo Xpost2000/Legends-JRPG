@@ -218,7 +218,7 @@ local void update_all_controller_inputs(void) {
                 f32 axis_x = (f32)SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_LEFTX) / (32767.0f);
                 f32 axis_y = (f32)SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_LEFTY) / (32767.0f);
 
-                const f32 DEADZONE_X = 0.01;
+                const f32 DEADZONE_X = 0.03;
                 const f32 DEADZONE_Y = 0.03;
                 if (fabs(axis_x) < DEADZONE_X) axis_x = 0;
                 if (fabs(axis_y) < DEADZONE_Y) axis_y = 0;
@@ -231,7 +231,7 @@ local void update_all_controller_inputs(void) {
                 f32 axis_x = (f32)SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_RIGHTX) / (32767.0f);
                 f32 axis_y = (f32)SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_RIGHTY) / (32767.0f);
 
-                const f32 DEADZONE_X = 0.01;
+                const f32 DEADZONE_X = 0.03;
                 const f32 DEADZONE_Y = 0.03;
                 if (fabs(axis_x) < DEADZONE_X) axis_x = 0;
                 if (fabs(axis_y) < DEADZONE_Y) axis_y = 0;

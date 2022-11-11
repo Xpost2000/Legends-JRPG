@@ -567,8 +567,8 @@ struct entity {
 
 void entity_snap_to_grid_position(struct entity* entity) {
     v2f32 position   = entity->position;
-    position.x       = floorf(position.x / TILE_UNIT_SIZE) * TILE_UNIT_SIZE;
-    position.y       = floorf(position.y / TILE_UNIT_SIZE) * TILE_UNIT_SIZE;
+    position.x       = (position.x / TILE_UNIT_SIZE) * TILE_UNIT_SIZE;
+    position.y       = (position.y / TILE_UNIT_SIZE) * TILE_UNIT_SIZE;
     entity->position = position;
 }
 

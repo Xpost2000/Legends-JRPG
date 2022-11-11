@@ -623,10 +623,36 @@ void entity_handle_player_controlled(struct game_state* state, struct entity* en
         }
     }
 
-    bool move_up    = is_action_down(INPUT_ACTION_MOVE_UP);
-    bool move_down  = is_action_down(INPUT_ACTION_MOVE_DOWN);
-    bool move_left  = is_action_down(INPUT_ACTION_MOVE_LEFT);
-    bool move_right = is_action_down(INPUT_ACTION_MOVE_RIGHT);
+    f32 move_up    = is_action_down(INPUT_ACTION_MOVE_UP);
+    f32 move_down  = is_action_down(INPUT_ACTION_MOVE_DOWN);
+    f32 move_left  = is_action_down(INPUT_ACTION_MOVE_LEFT);
+    f32 move_right = is_action_down(INPUT_ACTION_MOVE_RIGHT);
+
+    /* some hacky bullshit to fix out later */
+    
+    struct game_controller* gamepad = get_gamepad(0);
+    f32 analog_move_vertically   = 0;
+    f32 analog_move_horizontally = 0;
+
+    /* ?? */
+    if (gamepad) {
+        analog_move_horizontally = gamepad->left_stick.axes[0];
+        analog_move_vertically   = gamepad->left_stick.axes[1];
+
+        const f32 MOVE_THRESHOLD = 0.4;
+
+        if (analog_move_vertically > MOVE_THRESHOLD) {
+            move_down = true;
+        } else if (analog_move_vertically < -MOVE_THRESHOLD) {
+            move_up   = true;
+        }
+
+        if (analog_move_horizontally > MOVE_THRESHOLD) {
+            move_right = true;
+        } else if (analog_move_horizontally < -MOVE_THRESHOLD) {
+            move_left   = true;
+        }
+    }
 
     entity->velocity.x = 0;
     entity->velocity.y = 0;
@@ -2006,6 +2032,7 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
 
                     if (target_entity->ai.attack_animation_timer >= MAX_T) {
                         target_entity->ai.current_action = 0;
+                        /* TODO snap to grid valid position to make sure no bugs happen */
                     }
                     
                     target_entity->position.x = lerp_f32(target_entity->ai.attack_animation_interpolation_start_position.x, target_entity->ai.attack_animation_interpolation_end_position.x, effective_t);
