@@ -106,6 +106,7 @@ static string ui_pause_menu_strings[] = {
     string_literal("ITEMS"),
     string_literal("OPTIONS"),
     string_literal("QUIT"),
+    string_literal("RETURN TO DESKTOP"),
 };
 static string ui_pause_editor_menu_strings[] = {
     string_literal("RESUME"),

@@ -49,10 +49,42 @@ local bool SCREEN_IS_FULLSCREEN = false;
 /* game logic is okay because we don't use the mouse for UI. (I mean I probably should allow it, but whatever.) */
 /* local u32 REAL_SCREEN_WIDTH  = 640*2; */
 /* local u32 REAL_SCREEN_HEIGHT = 480*2; */
-local u32 REAL_SCREEN_WIDTH  = 640;
-local u32 REAL_SCREEN_HEIGHT = 480;
-/* local u32 REAL_SCREEN_WIDTH  = 1280; */
-/* local u32 REAL_SCREEN_HEIGHT = 720; */
+/* local u32 REAL_SCREEN_WIDTH  = 640; */
+/* local u32 REAL_SCREEN_HEIGHT = 480; */
+local u32 REAL_SCREEN_WIDTH  = 1280;
+local u32 REAL_SCREEN_HEIGHT = 720;
+
+local const f32 16by9Ratio = 16/9.0f;
+local const f32 16by10Ratio = 16/10.0f;
+local const f32 4by3Ratio = 4/3.0f;
+
+local bool close_enough_f32(f32 a, f32 b) {
+    const f32 EPISILON = 0.001f;
+
+    if ((a - b) <= EPISILON) {
+        return true;
+    }
+
+    return false;
+}
+
+local bool aspect_ratio(void) {
+    return SCREEN_WIDTH / SCREEN_HEIGHT;
+}
+
+local bool is_16by9(void) {
+    return close_enough_f32(16by9Ratio, aspect_ratio());
+}
+local bool is_16by10(void) {
+    return close_enough_f32(16by10Ratio, aspect_ratio());
+}
+local bool is_4by3(void) {
+    return close_enough_f32(4by3ratio, aspect_ratio());
+}
+
+local bool is_widescreen_resolution(void) {
+    return is_16by10() || is_16by9();
+}
 
 #include "thread_pool.c"
 #include "serializer.c"
@@ -116,7 +148,7 @@ local void poll_and_register_controllers(void) {
     }
 }
 
-void register_controller_down(s32 which, s32 button) {
+local void register_controller_down(s32 which, s32 button) {
     SDL_GameController* controller = global_controller_devices[which];
 
     if (controller) {
@@ -127,6 +159,13 @@ void register_controller_down(s32 which, s32 button) {
             }
         }
     }
+}
+
+local void controller_rumble(struct game_controller* controller, f32 x_magnitude, f32 y_magnitude, u32 ms) {
+    SDL_GameController* sdl_controller = controller->_internal_controller_handle;
+    x_magnitude                        = clamp_f32(x_magnitude, 0, 1);
+    y_magnitude                        = clamp_f32(y_magnitude, 0, 1);
+    SDL_GameControllerRumble(sdl_controller, (0xFFFF * x_magnitude), (0xFFFF * y_magnitude), ms);
 }
 
 local void update_all_controller_inputs(void) {

@@ -147,13 +147,6 @@ local void update_and_render_gameover_game_menu_ui(struct game_state* state, str
     const f32          BOUNDS_H                 = SCREEN_HEIGHT*0.35;
     const f32          MAX_FADE_IN_OPTIONS_TIME = 1.3f;
 
-    if (any_key_down() || controller_any_button_down(get_gamepad(0))) {
-        if (global_game_over_ui_state.phase < GAME_OVER_UI_PHASE_SHOW_OPTIONS) {
-            global_game_over_ui_state.phase = GAME_OVER_UI_PHASE_SHOW_OPTIONS;
-            global_game_over_ui_state.timer = 0;
-        }
-    }
-
     switch (global_game_over_ui_state.phase) {
         case GAME_OVER_UI_PHASE_POP_IN_TEXT: {
             bool text_status = game_over_ui_state_advance_text_length(dt);
@@ -234,5 +227,12 @@ local void update_and_render_gameover_game_menu_ui(struct game_state* state, str
                 screen_mode = GAME_SCREEN_MAIN_MENU;
             }
         } break;
+    }
+
+    if (any_key_down() || controller_any_button_down(get_gamepad(0))) {
+        if (global_game_over_ui_state.phase < GAME_OVER_UI_PHASE_SHOW_OPTIONS) {
+            global_game_over_ui_state.phase = GAME_OVER_UI_PHASE_SHOW_OPTIONS;
+            global_game_over_ui_state.timer = 0;
+        }
     }
 }

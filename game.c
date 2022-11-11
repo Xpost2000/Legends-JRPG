@@ -1230,6 +1230,7 @@ local void _unlock_game_input(void*) {
     disable_game_input = false;
 }
 local void fade_into_game(void) {
+    game_state->ui_state = UI_STATE_INGAME;
     game_initialize_game_world();
     do_color_transition_out(color32f32(0, 0, 0, 1), 0.2, 0.35);
     disable_game_input = true;
@@ -1736,6 +1737,7 @@ local void update_and_render_ingame_game_menu_ui(struct game_state* state, struc
                 game_state_set_ui_state(state, UI_STATE_PAUSE);
                 /* ready pause menu */
                 {
+                    game_state->ui_pause.last_sub_menu_state = UI_PAUSE_MENU_SUB_MENU_STATE_NONE;
                     game_state->ui_pause.animation_state = 0;
                     game_state->ui_pause.transition_t    = 0;
                     game_state->ui_pause.selection       = 0;
@@ -1884,6 +1886,10 @@ local void update_and_render_pause_game_menu_ui(struct game_state* state, struct
                             }
                         } break;
                         case 4: {
+                            initialize_main_menu();
+                            screen_mode = GAME_SCREEN_MAIN_MENU;
+                        } break;
+                        case 5: {
                             global_game_running = false;
                         } break;
                     }
@@ -1938,7 +1944,7 @@ local void update_and_render_pause_game_menu_ui(struct game_state* state, struct
         for (unsigned index = 0; index < array_count(item_positions); ++index) {
             v2f32 draw_position = item_positions[index];
             draw_position.x += lerp_f32(0, 20, menu_state->shift_t[index]);
-            draw_position.y += 255;
+            draw_position.y += 220;
             /* custom string drawing routine */
             struct font_cache* font = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_STEEL]);
             if (index == menu_state->selection) {

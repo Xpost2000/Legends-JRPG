@@ -241,6 +241,16 @@ local s32 main_menu_do_menu_ui(v2f32 where, struct software_framebuffer* framebu
     return -1;
 }
 
+local f32 estimate_save_menu_height(void) {
+    s32 BOX_WIDTH  = 20;
+    s32 BOX_HEIGHT = 8;
+
+    v2f32 nine_patch_extents = nine_patch_estimate_extents(ui_chunky, 1, BOX_WIDTH, BOX_HEIGHT);
+    f32 y_cursor = 0;
+    y_cursor += nine_patch_extents.y * 1.5 * (array_count(main_menu.save_slot_widgets)+1);
+    return y_cursor;
+}
+
 local s32 do_save_menu(struct software_framebuffer* framebuffer, f32 y_offset, f32 dt, bool allow_input) {
     union color32f32 ui_color = UI_DEFAULT_COLOR;
     f32 alpha = 1;
@@ -372,12 +382,6 @@ local void update_and_render_main_menu(struct game_state* state, struct software
 
     software_framebuffer_clear_buffer(framebuffer, color32u8(0,0,0,255));
 
-    if (any_key_down() || controller_any_button_down(get_gamepad(0))) {
-        if (main_menu.phase < MAIN_MENU_IDLE) {
-            main_menu.phase = MAIN_MENU_IDLE;
-        }
-    }
-
     f32 font_height = font_cache_text_height(font1);
     switch (main_menu.phase) {
         case MAIN_MENU_LIGHTNING_FLASHES: {
@@ -396,6 +400,7 @@ local void update_and_render_main_menu(struct game_state* state, struct software
                 software_framebuffer_draw_quad(framebuffer, rectangle_f32(0,0,framebuffer->width,framebuffer->height), color32u8(255,255,255,255), BLEND_MODE_NONE);
             }
 
+            main_menu.timer += dt;
             if (main_menu.lightning_flash_count > 4) {
                 main_menu.phase = MAIN_MENU_TITLE_APPEAR;
                 main_menu.timer = 0;
@@ -403,7 +408,7 @@ local void update_and_render_main_menu(struct game_state* state, struct software
         } break;
 
         case MAIN_MENU_TITLE_APPEAR: {
-            f32 t        = main_menu.timer / 4.0f;
+            f32 t        = main_menu.timer / 2.0f;
 
             if (t >= 1.0) t = 1.0;
             f32 y_cursor = lerp_f32(-999, 100, t);
@@ -411,14 +416,15 @@ local void update_and_render_main_menu(struct game_state* state, struct software
             software_framebuffer_draw_text_bounds_centered(framebuffer, font, TITLE_FONT_SCALE, rectangle_f32(0, y_cursor, framebuffer->width, framebuffer->height*0.1),
                                                            game_title, color32f32(1,1,1,1), BLEND_MODE_ALPHA);
 
-            if (main_menu.timer >= 4.3f) {
+            main_menu.timer += dt;
+            if (main_menu.timer >= 2.2) {
                 main_menu.phase = MAIN_MENU_OPTIONS_APPEAR;
                 main_menu.timer = 0;
             }
         } break;
 
         case MAIN_MENU_OPTIONS_APPEAR: {
-            f32 t = main_menu.timer / 3.5f;
+            f32 t = main_menu.timer / 1.5f;
             if (t >= 1.0) t = 1.0;
 
             f32 y_cursor = 200;
@@ -430,7 +436,8 @@ local void update_and_render_main_menu(struct game_state* state, struct software
             s32 index = 0;
             main_menu_do_menu_ui(v2f32(x_cursor, y_cursor), framebuffer, main_menu_first_page_options, array_count(main_menu_first_page_options), &main_menu.currently_selected_option_choice, false);
 
-            if (main_menu.timer >= 3.8f) {
+            main_menu.timer += dt;
+            if (main_menu.timer >= 1.8f) {
                 main_menu.phase = MAIN_MENU_IDLE;
             }
         } break;
@@ -478,6 +485,7 @@ local void update_and_render_main_menu(struct game_state* state, struct software
 
             main_menu_do_menu_ui(v2f32(x_cursor, y_cursor), framebuffer, main_menu_first_page_options, array_count(main_menu_first_page_options), &main_menu.currently_selected_option_choice, false);
 
+            main_menu.timer += dt;
             if (main_menu.timer >= 3.8f) {
                 main_menu.phase = MAIN_MENU_SHOW_OPTIONS_PAGE_MOVE_IN_OPTIONS;
                 main_menu.timer = 0;
@@ -495,6 +503,7 @@ local void update_and_render_main_menu(struct game_state* state, struct software
 
             main_menu_do_menu_ui(v2f32(x_cursor, y_cursor), framebuffer, main_menu_options_page_options, array_count(main_menu_options_page_options), &main_menu.currently_selected_option_choice, false);
 
+            main_menu.timer += dt;
             if (main_menu.timer >= 3.8f) {
                 main_menu.phase = MAIN_MENU_OPTIONS_PAGE_IDLE;
                 main_menu.timer = 0;
@@ -512,6 +521,7 @@ local void update_and_render_main_menu(struct game_state* state, struct software
 
             main_menu_do_menu_ui(v2f32(x_cursor, y_cursor), framebuffer, main_menu_options_page_options, array_count(main_menu_options_page_options), &main_menu.currently_selected_option_choice, false);
 
+            main_menu.timer += dt;
             if (main_menu.timer >= 3.8f) {
                 main_menu.phase = MAIN_MENU_OPTIONS_APPEAR;
                 main_menu.timer = 0;
@@ -547,13 +557,14 @@ local void update_and_render_main_menu(struct game_state* state, struct software
         } break;
 
         case MAIN_MENU_SAVE_MENU_DROP_DOWN: {
-            const f32 MAX_T = 3.f;
-            f32 effective_t = main_menu.timer/MAX_T;
+            const f32 MAX_T = 1.25f;
+            f32 effective_t = main_menu.timer/(MAX_T-0.1);
 
             if (effective_t > 1)      effective_t = 1;
             else if (effective_t < 0) effective_t = 0;
 
-            f32 y_offset = lerp_f32(-999, 0, effective_t);
+            f32 height_of_saves = estimate_save_menu_height();
+            f32 y_offset = lerp_f32(-height_of_saves, 0, effective_t);
             do_save_menu(framebuffer, y_offset, dt, false);
 
             if (main_menu.timer >= MAX_T) {
@@ -574,13 +585,14 @@ local void update_and_render_main_menu(struct game_state* state, struct software
             }
         } break;
         case MAIN_MENU_SAVE_MENU_CANCEL: {
-            const f32 MAX_T = 3.f;
-            f32 effective_t = main_menu.timer/MAX_T;
+            const f32 MAX_T = 1.25;
+            f32 effective_t = main_menu.timer/(MAX_T-0.1);
 
             if (effective_t > 1)      effective_t = 1;
             else if (effective_t < 0) effective_t = 0;
 
-            f32 y_offset = lerp_f32(0, -999, effective_t);
+            f32 height_of_saves = estimate_save_menu_height();
+            f32 y_offset = lerp_f32(main_menu.scroll_seek_y, -height_of_saves, effective_t);
             do_save_menu(framebuffer, y_offset, dt, false);
 
             if (main_menu.timer >= MAX_T) {
@@ -592,5 +604,10 @@ local void update_and_render_main_menu(struct game_state* state, struct software
         } break;
     } 
 
-    main_menu.timer += dt * 2.41; 
+    if (any_key_down() || controller_any_button_down(get_gamepad(0))) {
+        if (main_menu.phase < MAIN_MENU_IDLE) {
+            main_menu.phase = MAIN_MENU_IDLE;
+            return;
+        }
+    }
 }
