@@ -31,8 +31,8 @@ local s32 entity_get_physical_damage_raw(struct entity* entity) {
 
     s32 result = (strength * 0.50 + agility * 0.4);
 
-    if (result < 5) {
-        result = 5;
+    if (result < 0) {
+        result = 0;
     }
 
     return result;

@@ -8,7 +8,7 @@
 () # FLAGS
 () # AI FLAGS
 
-50 # health
+75 # health
 0  # magic
 
 "bandit_loot0"# loot table name, can be nil
@@ -20,7 +20,7 @@
 (level 1)
 (xp 150)
 (vigor 100)
-(strength 100)
+(strength 125)
 (constitution 100)
 (willpower 100)
 (agility 100)

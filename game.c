@@ -1578,7 +1578,7 @@ bool game_display_and_update_messages(struct software_framebuffer* framebuffer, 
     return false;
 }
 
-void game_display_and_update_damage_notifications(struct software_framebuffer* framebuffer, f32 dt) {
+void game_display_and_update_damage_notifications(struct render_commands* commands, f32 dt) {
     struct font_cache* font       = game_get_font(MENU_FONT_COLOR_STEEL);
     struct font_cache* other_font = game_get_font(MENU_FONT_COLOR_ORANGE);
 
@@ -1607,11 +1607,12 @@ void game_display_and_update_damage_notifications(struct software_framebuffer* f
         }
 
         v2f32 draw_position = notifier->position;
-        draw_position       = camera_project(camera, draw_position, framebuffer->width, framebuffer->height);
+        /* draw_position       = camera_transform(camera, draw_position, framebuffer->width, framebuffer->height); */
 
-        _debugprintf("%f, %f", draw_position.x, draw_position.y);
-
-        draw_ui_breathing_text(framebuffer, notifier->position, painting_font, 3, string_from_cstring(format_temp("%d!", notifier->amount)), index, color32f32_WHITE);
+        /* draw_ui_breathing_text(framebuffer, notifier->position, painting_font, 3, string_from_cstring(format_temp("%d!", notifier->amount)), index, color32f32_WHITE); */
+        string tmp = format_temp_s("%d!", notifier->amount);
+        string tmp2 = memory_arena_push_string(&scratch_arena, tmp);
+        render_commands_push_text(commands, painting_font, 4, draw_position, tmp2, color32f32_WHITE, BLEND_MODE_ALPHA);
     }
 }
 
@@ -1734,7 +1735,6 @@ local void game_setup_death_ui(void) {
 }
 
 local void update_and_render_ingame_game_menu_ui(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
-    game_display_and_update_damage_notifications(framebuffer, dt);
 
     /* I seem to have a pretty inconsistent UI priority state thing. */
 
@@ -2653,6 +2653,7 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                 {
                     struct render_commands commands = render_commands(&scratch_arena, 1024, game_state->camera);
                     do_ui_passive_speaking_dialogue(&commands, dt);
+                    game_display_and_update_damage_notifications(&commands, dt);
                     software_framebuffer_render_commands(framebuffer, &commands);
                 }
 

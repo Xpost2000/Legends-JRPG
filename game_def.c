@@ -330,8 +330,7 @@ void notify_damage(/* u8 type, */v2f32 position, s32 amount) {
     notifier->amount                 = amount;
 }
 
-/* NOTE: does not render through render commands. Manually does camera projection (no scaling though) */
-void game_display_and_update_damage_notifications(struct software_framebuffer* framebuffer, f32 dt);
+void game_display_and_update_damage_notifications(struct render_commands* framebuffer, f32 dt);
 
 struct ui_popup_state global_popup_state = {};
 void game_message_queue(string message);
