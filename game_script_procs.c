@@ -809,10 +809,56 @@ GAME_LISP_FUNCTION(SET_HEALTH) {
     (entity_validate_death(entity));
     return lisp_form_integer(value);
 }
+/* return position as a tile grid unit */
+GAME_LISP_FUNCTION(GET_POSITION) {
+    Required_Argument_Count(GET_POSITION, 1);
+    struct game_script_typed_ptr ptr    = game_script_object_handle_decode(arguments[0]);
+    struct entity*               entity = game_dereference_entity(state, ptr.entity_id);
+
+    struct lisp_form result = {};
+    result.type = LISP_FORM_LIST;
+    result.list.count = 2;
+    result.list.forms = memory_arena_push(&scratch_arena, sizeof(struct lisp_form) * 2);
+
+    result.list.forms[0] = lisp_form_real(entity->position.x / TILE_UNIT_SIZE);
+    result.list.forms[1] = lisp_form_real(entity->position.y / TILE_UNIT_SIZE);
+
+    return result;
+}
 
 GAME_LISP_FUNCTION(SUICIDE) {
     Required_Argument_Count(SUICIDE, 0);
     entity_do_physical_hurt(game_get_player(game_state), 99999);
+    return LISP_nil;
+}
+
+GAME_LISP_FUNCTION(DO_EXPLOSION) {
+    Required_Minimum_Argument_Count(DO_EXPLOSION, 4);
+    v2f32 where               = v2f32(0,0);
+    f32   radius              = 0;
+    s32   effect_explosion_id = 0;
+    s32   damage_amount       = 0;
+    s32   team_origin         = 0;
+    u32   explosion_flags     = 0;
+
+    struct lisp_form* where_form     = &arguments[0];
+    struct lisp_form* radius_form    = &arguments[1];
+    struct lisp_form* effect_id_form = &arguments[2];
+    struct lisp_form* damage_form    = &arguments[2];
+
+    Fatal_Script_Error(lisp_form_get_v2f32(*where_form,   &where) && "Bad where form! (v2f32)");
+    Fatal_Script_Error(lisp_form_get_f32(*radius_form,    &radius) && "Bad radius form! (f32)");
+    Fatal_Script_Error(lisp_form_get_s32(*effect_id_form, &effect_explosion_id) && "Bad explosion form id!");
+    Fatal_Script_Error(lisp_form_get_s32(*damage_form,    &damage_amount) && "Bad damage form amount (s32)");
+
+
+    game_produce_damaging_explosion(where,
+                                    radius,
+                                    effect_explosion_id,
+                                    damage_amount,
+                                    team_origin,
+                                    explosion_flags);
+
     return LISP_nil;
 }
 

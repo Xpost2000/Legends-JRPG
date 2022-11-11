@@ -1123,8 +1123,7 @@ enum damaging_explosion_flags {
     DAMAGING_EXPLOSION_FLAGS_NOHURT_PLAYER = BIT(0),
 };
 
-local void game_produce_damaging_explosion(v2f32 where, f32 radius, u32 effect_explosion_id, u32 damage_amount,
-                                           s32 team_origin, u32 explosion_flags) {
+local void game_produce_damaging_explosion(v2f32 where, f32 radius, s32 effect_explosion_id, s32 damage_amount, s32 team_origin, u32 explosion_flags) {
     s32                             explosion_particle_emitter = game_allocate_particle_emitter_one_shot(where);
     struct entity_particle_emitter* emitter                    = entity_particle_emitter_dereference(&game_state->permenant_particle_emitters, explosion_particle_emitter);
 
