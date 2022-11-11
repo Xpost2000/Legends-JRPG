@@ -17,6 +17,7 @@
 void render_cutscene_entities(struct sortable_draw_entities* draw_entities);
 void game_initialize_game_world(void);
 void game_report_entity_death(entity_id id);
+local f32 GLOBAL_GAME_TIMESTEP_MODIFIER = 1;
 local void game_over_ui_setup(void);
 local void game_produce_damaging_explosion(v2f32 where, f32 radius, s32 effect_explosion_id, s32 damage_amount, s32 team_origin, u32 explosion_flags);
 
@@ -1301,8 +1302,9 @@ local void fade_into_game(void) {
     game_state->ui_state = UI_STATE_INGAME;
     game_initialize_game_world();
     do_color_transition_out(color32f32(0, 0, 0, 1), 0.2, 0.35);
-    disable_game_input = true;
+    disable_game_input             = true;
     transition_register_on_finish(_unlock_game_input, NULL, 0);
+    global_game_initiated_death_ui = false;
 }
 void game_initialize(void) {
     game_arena   = memory_arena_create_from_heap("Game Memory", Megabyte(32));
@@ -2526,6 +2528,8 @@ void update_and_render_game_console(struct game_state* state, struct software_fr
 }
 
 void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
+    dt *= GLOBAL_GAME_TIMESTEP_MODIFIER;
+
     if (is_key_pressed(KEY_F12)) {
         image_buffer_write_to_disk((struct image_buffer*)framebuffer, string_literal("scr"));
     }

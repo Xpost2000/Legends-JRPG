@@ -8,6 +8,8 @@
 
   NOTE: last target is incorrect for certain directions, which makes sense. they should be sorted by distance,
   but chances are I know what order they'll be added so I can just reverse them in select cases.
+
+  TODO: Round Start / Round End transition is broken and I didn't notice until now, but it's a really minor bug so I'll fix it later.
 */
 
 enum battle_ui_animation_phase {
@@ -178,30 +180,32 @@ enum battle_options{
     BATTLE_ABILITY,
     BATTLE_ITEM,
     BATTLE_DEFEND,
+    BATTLE_THROW_OR_PICKUP,
     BATTLE_WAIT,
 };
 local string battle_menu_main_options[] = {
-    string_literal("LOOK"),
-    string_literal("MOVE"),
-    string_literal("ATTACK"),
-    string_literal("ABILITY"),
-    string_literal("ITEM"),
-    string_literal("DEFEND"),
-    string_literal("END TURN"),
+    [BATTLE_LOOK]            = string_literal("LOOK"),
+    [BATTLE_MOVE]            = string_literal("MOVE"),
+    [BATTLE_ATTACK]          = string_literal("ATTACK"),
+    [BATTLE_ABILITY]         = string_literal("ABILITY"),
+    [BATTLE_ITEM]            = string_literal("ITEM"),
+    [BATTLE_DEFEND]          = string_literal("DEFEND"),
+    [BATTLE_THROW_OR_PICKUP] = string_literal("PICKUP/THROW"),
+    [BATTLE_WAIT]            = string_literal("END TURN"),
 };
 local string battle_menu_main_option_descriptions[] = {
-    string_literal("scout the battle field."),
-    string_literal("pick a space to move to."),
-    string_literal("use your weapons' basic attack."),
-    string_literal("use an ability from your list."),
-    string_literal("use an item from your party inventory."),
-    string_literal("finish turn, lose AP on next turn for higher DEF."),
-    string_literal("finish turn, conserving AP."),
+    [BATTLE_LOOK]            = string_literal("scout the battle field."),
+    [BATTLE_MOVE]            = string_literal("pick a space to move to."),
+    [BATTLE_ATTACK]          = string_literal("use your weapons' basic attack."),
+    [BATTLE_ABILITY]         = string_literal("use an ability from your list."),
+    [BATTLE_ITEM]            = string_literal("use an item from your party inventory."),
+    [BATTLE_DEFEND]          = string_literal("finish turn, lose AP on next turn for higher DEF."),
+    [BATTLE_THROW_OR_PICKUP] = string_literal("Pickup an object and toss it around for tactical advantage."),
+    [BATTLE_WAIT]            = string_literal("finish turn, conserving AP."),
 };
 
 local void start_combat_ui(void) {
-    global_battle_ui_state.phase = 0;
-    global_battle_ui_state.timer = 0;
+    zero_memory(&global_battle_ui_state, sizeof(global_battle_ui_state));
     battle_clear_all_killed_entities();
     battle_clear_loot_results();
 }
@@ -426,7 +430,7 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                 ui_color.a = 0.5;
             }
 
-            draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, v2f32(x, y), 8, 14, ui_color);
+            draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, v2f32(x, y), 8, 16, ui_color);
 
             bool disabled_actions[array_count(battle_menu_main_options)] = {};
             /* disable selecting attack if we don't have anyone within attack range */
@@ -480,7 +484,7 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                     }
                 }
 
-                draw_ui_breathing_text(framebuffer, v2f32(x + 20, y + 15 + index * 32), painting_font,
+                draw_ui_breathing_text(framebuffer, v2f32(x + 14, y + 15 + index * 32), painting_font,
                                        2, battle_menu_main_options[index], index, modulation_color);
             }
 

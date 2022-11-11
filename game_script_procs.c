@@ -878,6 +878,18 @@ GAME_LISP_FUNCTION(DO_EXPLOSION) {
     return LISP_nil;
 }
 
+GAME_LISP_FUNCTION(RESET_TIMESTEP_SCALE) {
+    Required_Argument_Count(RESET_TIMESTEP_SCALE, 0);
+    GLOBAL_GAME_TIMESTEP_MODIFIER = 1;
+    return LISP_nil;
+}
+
+GAME_LISP_FUNCTION(SET_TIMESTEP_SCALE) {
+    Required_Argument_Count(SET_TIMESTEP_SCALE, 1);
+    lisp_form_get_f32(arguments[0], &GLOBAL_GAME_TIMESTEP_MODIFIER);
+    return LISP_nil;
+}
+
 #undef GAME_LISP_FUNCTION
 
 #define STRINGIFY(x) #x
