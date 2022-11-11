@@ -484,6 +484,7 @@ struct game_variables {
 struct game_variables game_variables(struct memory_arena* arena);
 struct game_variable* lookup_game_variable(string name, bool create_when_not_found);
 void game_variable_set(string name, s32 value);
+void game_variables_clear_all_state(void); /* does not deallocate memory */
 s32  game_variable_get(string name);
 s32  game_variables_count_all(void);
 

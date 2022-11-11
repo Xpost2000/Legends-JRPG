@@ -1418,9 +1418,22 @@ local void game_clear_party_inventory(void) {
 void game_initialize_game_world(void) {
     game_clear_party_inventory();
     game_kill_all_dynamic_lights();
+    game_variables_clear_all_state();
     entity_clear_all_abilities(game_get_player(game_state));
     entity_particle_emitter_kill_all(&game_state->permenant_particle_emitters);
     particle_list_kill_all_particles(&global_particle_list);
+
+    /* NOTE: if we had party members this is where we would also affect them */
+    {
+        struct entity* player = game_get_player(game_state);
+        player->health.value = player->health.max;
+        player->interacted_script_trigger_write_index = 0;
+    }
+
+    /* clear all game variable state */
+    {
+        
+    }
 
 
     if (file_exists(string_literal(GAME_DEFAULT_STARTUP_FILE))) {
@@ -2709,12 +2722,26 @@ local struct game_variable* game_variables_allocate_next(void) {
     }
 
     /* overflowing current count? */
-    if (variables->last->variable_count >= MAX_GAME_VARIABLES_PER_CHUNK) {
-        struct game_variable_chunk* next_chunk = memory_arena_push(variables->arena, sizeof(*variables->first));
-        next_chunk->next                       = NULL;
-        next_chunk->variable_count             = 0;
-        variables->last->next                  = next_chunk;
-        variables->last                        = next_chunk;
+    {
+        struct game_variable_chunk* chunk_with_avaliable_slots = variables->first;
+
+        while (chunk_with_avaliable_slots) {
+            if (chunk_with_avaliable_slots->variable_count < MAX_GAME_VARIABLES_PER_CHUNK) {
+                return &chunk_with_avaliable_slots->variables[chunk_with_avaliable_slots->variable_count++];
+            } else {
+                chunk_with_avaliable_slots = chunk_with_avaliable_slots->next;
+            }
+        }
+    }
+
+    {
+        if (variables->last->variable_count >= MAX_GAME_VARIABLES_PER_CHUNK) {
+            struct game_variable_chunk* next_chunk = memory_arena_push(variables->arena, sizeof(*variables->first));
+            next_chunk->next                       = NULL;
+            next_chunk->variable_count             = 0;
+            variables->last->next                  = next_chunk;
+            variables->last                        = next_chunk;
+        }
     }
 
     struct game_variable_chunk* current_chunk = variables->last;
@@ -2762,6 +2789,15 @@ void game_variable_set(string name, s32 value) {
 s32 game_variable_get(string name) {
     struct game_variable* to_set = lookup_game_variable(name, true);
     return to_set->value;
+}
+
+void game_variables_clear_all_state(void) {
+    struct game_variable_chunk* cursor = game_state->variables.first;
+
+    while (cursor) {
+        cursor->variable_count = 0;
+        cursor = cursor->next;
+    }
 }
 
 struct entity* game_any_entity_at_tile_point(v2f32 xy) {
