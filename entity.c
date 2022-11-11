@@ -25,6 +25,30 @@ local void entity_advance_ability_sequence(struct entity* entity);
 
 bool entity_bad_ref(struct entity* e);
 
+local s32 entity_get_physical_damage_raw(struct entity* entity) {
+    s32 strength = entity->stat_block.strength;
+    s32 agility  = entity->stat_block.agility;
+
+    s32 result = (strength * 0.50 + agility * 0.4);
+
+    if (result < 5) {
+        result = 5;
+    }
+
+    return result;
+}
+local s32 entity_get_physical_damage(struct entity* entity) {
+    /* TODO special effects for critical */
+    s32 raw  = entity_get_physical_damage_raw(entity);
+
+    f32 random_percentage = random_ranged_integer(&game_state->rng, 0.3, 0.5);
+    s32 raw2 = entity_get_physical_damage_raw(entity)*random_percentage;
+
+    s32 variance_random = random_ranged_integer(&game_state->rng, -raw2, raw2);
+
+    return raw + variance_random;
+}
+
 /* PARTICLES START */
 /*
   NOTE: Will move into game state when it is more stable.
@@ -1507,6 +1531,10 @@ bool entity_validate_death(struct entity* entity) {
 
 void entity_do_physical_hurt(struct entity* entity, s32 damage) {
     /* maybe do a funny animation */
+    s32 damage_reduction = entity->stat_block.constitution * 0.43 + entity->stat_block.vigor * 0.26;
+
+    damage -= damage_reduction;
+
     entity->health.value -= damage;
 
     entity->ai.hurt_animation_timer              = 0;
@@ -1950,7 +1978,8 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
 
                         {
                             /* TODO: REPLACE */
-                            entity_do_physical_hurt(attacked_entity, 9999);
+                            s32 damage = entity_get_physical_damage(target_entity);
+                            entity_do_physical_hurt(attacked_entity, damage);
 
                             {
                                 if (attacked_entity->health.value <= 0) {
