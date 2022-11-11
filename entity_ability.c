@@ -206,6 +206,15 @@ void entity_ability_compile_animation_sequence(struct memory_arena* arena, struc
                                 decode_sequence_action_target_entity(focus_target, &action_data->hurt.targets[action_data->hurt.target_count++]);
                             }
                         }
+                    } else if (lisp_form_symbol_matching(*action_form_header, string_literal("explosion"))) {
+                        action_data->type = SEQUENCE_ACTION_EXPLOSION;
+                        struct sequence_action_explosion* explosion = &action_data->explosion;
+
+                        decode_sequence_action_target_entity(lisp_list_nth(&action_form_rest_arguments, 0), &explosion->where_to_explode);
+                        lisp_form_get_s32(*lisp_list_nth(&action_form_rest_arguments, 1), &explosion->explosion_effect_id);
+                        lisp_form_get_f32(*lisp_list_nth(&action_form_rest_arguments, 2), &explosion->explosion_radius);
+                        lisp_form_get_s32(*lisp_list_nth(&action_form_rest_arguments, 3), &explosion->explosion_damage);
+                        /* should be okay, but this needs some more work */
                     } else if (lisp_form_symbol_matching(*action_form_header, string_literal("start-special-effects"))) {
                         action_data->type = SEQUENCE_ACTION_START_SPECIAL_FX;
                         struct lisp_form* effect_id = lisp_list_nth(&action_form_rest_arguments, 0);

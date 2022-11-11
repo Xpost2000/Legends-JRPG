@@ -48,6 +48,7 @@ enum sequence_action_type {
     SEQUENCE_ACTION_START_SPECIAL_FX,
     SEQUENCE_ACTION_STOP_SPECIAL_FX,
     SEQUENCE_ACTION_WAIT_SPECIAL_FX_TO_FINISH,
+    SEQUENCE_ACTION_EXPLOSION,
 };
 
 /* does not allow ally targetting */
@@ -100,6 +101,19 @@ struct sequence_action_move_to {
     } move_target;
 };
 
+struct sequence_action_explosion {
+    struct sequence_action_target_entity where_to_explode;
+
+    f32 explosion_radius;
+    /*
+      NOTE:
+      I want this to be scalable by a formula later, or have some way to
+      adjust this, since it's something that might happen a lot.
+    */
+    s32 explosion_damage;
+    s32 explosion_effect_id;
+};
+
 /* HURT should be given some scaling modifiers */
 /* for now it just does 9999 dmg */
 enum hurt_target_flags {
@@ -136,6 +150,7 @@ struct entity_ability_sequence_action {
         struct sequence_action_focus_camera        focus_camera;
         struct sequence_action_special_fx          special_fx;
         struct sequence_action_hardcoded_animation hardcoded_anim;
+        struct sequence_action_explosion           explosion;
     };
 };
 struct entity_ability_sequence {

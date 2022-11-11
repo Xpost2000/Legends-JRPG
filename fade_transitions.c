@@ -279,7 +279,7 @@ local void transitions_update_and_render(struct game_state* state, struct softwa
 
     {
         /* transition blockers */
-        if (game_state->is_conversation_active) {
+        if (state->is_conversation_active) {
             return;
         }
     }

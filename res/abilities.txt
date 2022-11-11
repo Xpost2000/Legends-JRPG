@@ -1,4 +1,6 @@
 # lmao blam
+
+
 (
 "ability_shock"
 "Shock"
@@ -49,5 +51,19 @@
 (hurt all-selected) # uses damage formula
 (stop-special-effects)
 (move-to user start linear-ease 1)
+)
+)
+
+(
+"ability_detonate_self"
+"Martyrdom"
+"Die for a cause you believe in!"
+0
+('field 0)
+('all-filled)
+
+(
+(focus-camera user)
+(explosion user 0 3.5 999)
 )
 )

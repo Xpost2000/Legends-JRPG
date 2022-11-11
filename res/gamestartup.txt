@@ -8,6 +8,7 @@
 
 (entity_add_ability '(entity player) "ability_shock")
 (entity_add_ability '(entity player) "ability_sword_rush")
+(entity_add_ability '(entity player) "ability_detonate_self")
 
 (entity_add_item '(entity player) "item_gold" 450)
 (entity_add_item '(entity player) "item_armor_loincloth")

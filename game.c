@@ -18,6 +18,7 @@ void render_cutscene_entities(struct sortable_draw_entities* draw_entities);
 void game_initialize_game_world(void);
 void game_report_entity_death(entity_id id);
 local void game_over_ui_setup(void);
+local void game_produce_damaging_explosion(v2f32 where, f32 radius, s32 effect_explosion_id, s32 damage_amount, s32 team_origin, u32 explosion_flags);
 
 struct game_state* game_state         = 0;
 local bool         disable_game_input = false;

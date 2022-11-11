@@ -1871,6 +1871,16 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
                         entity_advance_ability_sequence(target_entity);
                     }
                 } break;
+                case SEQUENCE_ACTION_EXPLOSION: {
+                    struct sequence_action_explosion* explosion = &sequence_action->explosion;
+                    struct entity* start_explosion_at           = decode_sequence_action_target_entity_into_entity(game_state, target_entity, &explosion->where_to_explode);
+                    f32 explosion_radius                        = explosion->explosion_radius;
+                    s32 explosion_damage                        = explosion->explosion_damage;
+                    s32 explosion_effect_id                     = explosion->explosion_effect_id;
+
+                    game_produce_damaging_explosion(v2f32_scale(start_explosion_at->position, 1.0/TILE_UNIT_SIZE), explosion_radius, explosion_effect_id, explosion_damage, 0, 0);
+                    entity_advance_ability_sequence(target_entity);
+                } break;
                 default: {
                     entity_advance_ability_sequence(target_entity);
                 } break;
@@ -1974,6 +1984,8 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
                 } break;
             }
         } break;
+
+            bad_case;
     }
 }
 
