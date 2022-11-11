@@ -229,12 +229,16 @@ local void draw_turn_panel(struct game_state* state, struct software_framebuffer
     struct entity* active_combatant_entity = game_dereference_entity(state, combat_state->participants[combat_state->active_combatant]);
     bool player_turn = is_player_combat_turn(state);
 
+    struct entity_database* entities_database        = &game_state->entity_database;
     for (s32 index = combat_state->active_combatant; index < combat_state->count; ++index) {
         union color32u8 color = color32u8(128, 128, 128, 255);
 
+        struct entity* entity = game_dereference_entity(state, combat_state->participants[index]);
+        struct entity_base_data* data                    = entity_database_find_by_index(entities_database, entity->base_id_index);
+        string                   facing_direction_string = facing_direction_strings_normal[0];
+        struct entity_animation* anim                    = find_animation_by_name(data->model_index, format_temp_s("idle_%.*s", facing_direction_string.length, facing_direction_string.data));
+        image_id sprite_to_use = anim->sprites[0];
         {
-            struct entity* entity = game_dereference_entity(state, combat_state->participants[index]);
-
             if (entity->flags & ENTITY_FLAGS_PLAYER_CONTROLLED) {
                 color = color32u8(0, 255, 0, 255);
             } else {
@@ -252,6 +256,12 @@ local void draw_turn_panel(struct game_state* state, struct software_framebuffer
 
         const s32 square_size = 32;
         software_framebuffer_draw_quad(framebuffer, rectangle_f32(x, y + (index - combat_state->active_combatant) * square_size * 1.3, square_size, square_size), color, BLEND_MODE_ALPHA);
+        software_framebuffer_draw_image_ex(framebuffer,
+                                           graphics_assets_get_image_by_id(&graphics_assets, sprite_to_use),
+                                           rectangle_f32(x, y + (index - combat_state->active_combatant) * square_size * 1.3, square_size, square_size),
+                                           rectangle_f32(0, 0, 16, 16), /* This should be a little more generic but whatever for now */
+                                           color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
+
     }
 }
 

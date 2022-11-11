@@ -60,6 +60,10 @@ local s32 game_allocate_dynamic_light(void) {
     return 0;
 }
 
+local void game_kill_all_dynamic_lights(void) {
+    game_state->dynamic_light_count = 0;
+}
+
 void game_free_dynamic_light(s32 light_id) {
     game_state->dynamic_lights[light_id] = game_state->dynamic_lights[--game_state->dynamic_light_count];
 }
@@ -1349,6 +1353,7 @@ local void game_clear_party_inventory(void) {
 
 void game_initialize_game_world(void) {
     game_clear_party_inventory();
+    game_kill_all_dynamic_lights();
     entity_clear_all_abilities(game_get_player(game_state));
     entity_particle_emitter_kill_all(&game_state->permenant_particle_emitters);
     particle_list_kill_all_particles(&global_particle_list);
@@ -1369,6 +1374,11 @@ void game_initialize_game_world(void) {
 
     {
         struct entity*                  player  = game_get_player(game_state);
+        player->flags    |= ENTITY_FLAGS_ALIVE;
+        player->flags    |= ENTITY_FLAGS_PLAYER_CONTROLLED;
+        player->health.value = 100;
+        player->health.min = 100;
+        player->health.max = 100;
         player->particle_attachment_TEST        = entity_particle_emitter_allocate(&game_state->permenant_particle_emitters);
         player->light_attachment_TEST           = game_allocate_dynamic_light();
         struct entity_particle_emitter* emitter = entity_particle_emitter_dereference(&game_state->permenant_particle_emitters, player->particle_attachment_TEST);

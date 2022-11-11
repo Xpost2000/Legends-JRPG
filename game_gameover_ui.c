@@ -143,7 +143,14 @@ local void update_and_render_gameover_game_menu_ui(struct game_state* state, str
     struct font_cache* font                     = game_get_font(MENU_FONT_COLOR_WHITE);
     const f32          FONT_SCALE               = 4;
     const s32          SEED_DISPLACEMENT        = 54;
-    const f32          WRAP_BOUNDS_W            = SCREEN_WIDTH * 0.8;
+
+    /* WARP_BOUNDS_W need to be adjusted based off of aspect ratio */
+    f32          WRAP_BOUNDS_W            = SCREEN_WIDTH * 0.8;
+
+    if (!is_4by3()) {
+        WRAP_BOUNDS_W = SCREEN_WIDTH * 0.6;
+    }
+
     const f32          BOUNDS_H                 = SCREEN_HEIGHT*0.35;
     const f32          MAX_FADE_IN_OPTIONS_TIME = 1.3f;
 

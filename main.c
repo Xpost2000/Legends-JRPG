@@ -54,9 +54,9 @@ local bool SCREEN_IS_FULLSCREEN = false;
 local u32 REAL_SCREEN_WIDTH  = 1280;
 local u32 REAL_SCREEN_HEIGHT = 720;
 
-local const f32 16by9Ratio = 16/9.0f;
-local const f32 16by10Ratio = 16/10.0f;
-local const f32 4by3Ratio = 4/3.0f;
+local const f32 r16by9Ratio  = 16/9.0f;
+local const f32 r16by10Ratio = 16/10.0f;
+local const f32 r4by3Ratio   = 4/3.0f;
 
 local bool close_enough_f32(f32 a, f32 b) {
     const f32 EPISILON = 0.001f;
@@ -73,13 +73,13 @@ local bool aspect_ratio(void) {
 }
 
 local bool is_16by9(void) {
-    return close_enough_f32(16by9Ratio, aspect_ratio());
+    return close_enough_f32(r16by9Ratio, aspect_ratio());
 }
 local bool is_16by10(void) {
-    return close_enough_f32(16by10Ratio, aspect_ratio());
+    return close_enough_f32(r16by10Ratio, aspect_ratio());
 }
 local bool is_4by3(void) {
-    return close_enough_f32(4by3ratio, aspect_ratio());
+    return close_enough_f32(r4by3Ratio, aspect_ratio());
 }
 
 local bool is_widescreen_resolution(void) {
@@ -148,7 +148,7 @@ local void poll_and_register_controllers(void) {
     }
 }
 
-local void register_controller_down(s32 which, s32 button) {
+void register_controller_down(s32 which, s32 button) {
     SDL_GameController* controller = global_controller_devices[which];
 
     if (controller) {
@@ -161,7 +161,7 @@ local void register_controller_down(s32 which, s32 button) {
     }
 }
 
-local void controller_rumble(struct game_controller* controller, f32 x_magnitude, f32 y_magnitude, u32 ms) {
+void controller_rumble(struct game_controller* controller, f32 x_magnitude, f32 y_magnitude, u32 ms) {
     SDL_GameController* sdl_controller = controller->_internal_controller_handle;
     x_magnitude                        = clamp_f32(x_magnitude, 0, 1);
     y_magnitude                        = clamp_f32(y_magnitude, 0, 1);
@@ -241,13 +241,6 @@ local void update_all_controller_inputs(void) {
             }
         }
     }
-}
-
-void controller_rumble(struct game_controller* controller, f32 x_magnitude, f32 y_magnitude, uint32_t ms) {
-    SDL_GameController* sdl_controller = controller->_internal_controller_handle;
-    x_magnitude = clamp_f32(x_magnitude, 0, 1);
-    y_magnitude = clamp_f32(y_magnitude, 0, 1);
-    SDL_GameControllerRumble(sdl_controller, (0xFFFF * x_magnitude), (0xFFFF * y_magnitude), ms);
 }
 
 void swap_framebuffers_onto_screen(void) {
