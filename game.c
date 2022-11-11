@@ -1129,25 +1129,25 @@ local void game_produce_damaging_explosion(v2f32 where, f32 radius, s32 effect_e
 
     switch (effect_explosion_id) {
         default: {
-            /* I want this to be like a bleed effect... */
-            emitter->time_per_spawn                  = 0.05;
+            emitter->time_per_spawn                  = 0.02;
             emitter->position                        = where;
-            emitter->burst_amount                    = 128;
+            emitter->burst_amount                    = 512;
             emitter->max_spawn_per_batch             = 1024;
             emitter->color                           = color32u8(226, 88, 34, 255);
             emitter->target_color                    = color32u8(59, 59, 56, 127);
             emitter->starting_acceleration           = v2f32(0, -15.6);
-            emitter->starting_acceleration_variance  = v2f32(1.2, 1.2);
-            emitter->starting_velocity_variance      = v2f32(4,4);
-            emitter->lifetime                        = 0.4;
+            emitter->starting_acceleration_variance  = v2f32(4, 4);
+            emitter->starting_velocity_variance      = v2f32(10,10);
+            emitter->lifetime                        = 0.2;
             emitter->lifetime_variance               = 0.15;
 
             /* emitter->particle_type = ENTITY_PARTICLE_TYPE_FIRE; */
             emitter->particle_feature_flags = ENTITY_PARTICLE_FEATURE_FLAG_FLAMES;
 
-            emitter->scale_uniform = 0.2;
+            emitter->scale_uniform = 0.35;
             emitter->scale_variance_uniform = 0.12;
             emitter->spawn_shape = emitter_spawn_shape_circle(v2f32(0,0), radius, 0.0, false);
+            entity_particle_emitter_start_emitting(&game_state->permenant_particle_emitters, explosion_particle_emitter);
         } break;
     }
 
@@ -1166,7 +1166,8 @@ local void game_produce_damaging_explosion(v2f32 where, f32 radius, s32 effect_e
             entity_do_physical_hurt(current_entity, damage_amount);
         }
 
-        camera_traumatize(&game_state->camera, 0.15);
+        camera_traumatize(&game_state->camera, 0.35);
+        controller_rumble(get_gamepad(0), 1, 1, 500);
     }
 }
 
