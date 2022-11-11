@@ -1450,7 +1450,9 @@ void entity_combat_submit_movement_action(struct entity* entity, v2f32* path_poi
     entity_copy_path_array_into_navigation_data(entity, path_points, path_count);
     entity->ai.following_path = true;
     entity->ai.current_action  = ENTITY_ACTION_MOVEMENT;
-    entity->waiting_on_turn                     = 0;
+    /* entity->waiting_on_turn                     = 0; */
+    entity->used_up_movement_action                = true;
+    entity->last_movement_position                 = entity->position;
     _debugprintf("Okay... %.*s should walk!", entity->name.length, entity->name.data);
 }
 
@@ -2769,9 +2771,12 @@ local void entity_think_basic_zombie_combat_actions(struct entity* entity, struc
     attack_radius *= TILE_UNIT_SIZE;
     struct entity* target_entity = game_dereference_entity(state, closest_valid_entity);
 
-    if (v2f32_distance(entity->position, target_entity->position) < attack_radius) {
-        entity_combat_submit_attack_action(entity, closest_valid_entity);
-    } else {
+    /* try to move closer. */
+    if (v2f32_distance(entity->position, target_entity->position) > attack_radius) {
+        if (entity->used_up_movement_action) {
+            entity->waiting_on_turn = false;
+            return;
+        }
         /* TODO LIMIT SIZE OF PATH */
         v2f32 target_entity_position_next_best = v2f32(floorf(target_entity->position.x / TILE_UNIT_SIZE),
                                                        floorf(target_entity->position.y / TILE_UNIT_SIZE));
@@ -2809,6 +2814,11 @@ local void entity_think_basic_zombie_combat_actions(struct entity* entity, struc
             entity->waiting_on_turn = false;
             return;
         }
+    }
+
+    /* attack if in range */
+    if (v2f32_distance(entity->position, target_entity->position) < attack_radius) {
+        entity_combat_submit_attack_action(entity, closest_valid_entity);
     }
 }
 

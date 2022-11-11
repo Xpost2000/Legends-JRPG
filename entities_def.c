@@ -545,7 +545,15 @@ struct entity {
     char                          dialogue_file[64];
     /* mostly runtime data. */
     struct entity_ai_data         ai;
+
+    /* This is a "main" turn action. Attacking / Using Items / Defending */
     bool                          waiting_on_turn;
+
+    /* Movement is not counted as "main turn action" */
+    /* I would add throwing/pickup like Disgaea here, but right now one at a time */
+    /* for undoing the action alla Disgaea style. */
+    bool                          used_up_movement_action;
+    v2f32                         last_movement_position; /* This is in the entity pixel coordinates, which is kind of stupid. I made a mistake really early on in this engine with the coordinate conversion... */
 
     /* to avoid double fires */
     /* NOTE: ids are internally (index+1), it's a bit confusing as the editor and engine otherwise have id as 0 indices */

@@ -11,7 +11,7 @@ local void sort_combat_participants(void) {
         for (; insertion_index > 0; --insertion_index) {
             s32 compared_priority = combat_state->participant_priorities[insertion_index-1];
 
-            if (compared_priority > key_priority) {
+            if (compared_priority < key_priority) {
                 break;
             } else {
                 combat_state->participants[insertion_index]           = combat_state->participants[insertion_index-1];
@@ -38,9 +38,13 @@ local void add_all_combat_participants(struct game_state* state) {
         if (current_entity->flags & ENTITY_FLAGS_ALIVE) {
             entity_snap_to_grid_position(current_entity);
             current_entity->waiting_on_turn                   = true;
+            current_entity->used_up_movement_action           = false;
             current_entity->ai.attack_animation_timer         = 0;
 
             s32 priority = index;
+            if (current_entity->flags & ENTITY_FLAGS_PLAYER_CONTROLLED) {
+                priority *= 10;
+            }
             {
                 combat_state->participants[combat_state->count]           = it.current_id;
                 combat_state->participant_priorities[combat_state->count] = priority;
