@@ -8,7 +8,7 @@
 () # FLAGS
 () # AI FLAGS
 
-15 # health
+50 # health
 0  # magic
 
 "bandit_loot0"# loot table name, can be nil

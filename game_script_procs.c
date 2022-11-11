@@ -793,10 +793,23 @@ Define_Stat_Accessors(INTELLIGENCE, intelligence);
 Define_Stat_Accessors(LUCK,         luck);
 
 GAME_LISP_FUNCTION(HEALTH) {
-    Required_Argument_Count(SET_HEALTH, 1);
+    Required_Argument_Count(HEALTH, 1);
     struct game_script_typed_ptr ptr    = game_script_object_handle_decode(arguments[0]);
     struct entity*               entity = game_dereference_entity(state, ptr.entity_id);
     s32                          value  = entity->health.value;
+    return lisp_form_integer(value);
+}
+GAME_LISP_FUNCTION(SET_HEALTH_LIMIT) {
+    Required_Argument_Count(SET_HEALTH, 2);
+    struct game_script_typed_ptr ptr    = game_script_object_handle_decode(arguments[0]);
+    struct entity*               entity = game_dereference_entity(state, ptr.entity_id);
+    s32                          value  = 0;
+    Fatal_Script_Error(lisp_form_get_s32(arguments[1], &value) && "Stat accessor set needs to be a number");
+    entity->health.value = value;
+    if (entity->health.value > entity->health.max) {
+        entity->health.max = entity->health.value;
+    }
+    (entity_validate_death(entity));
     return lisp_form_integer(value);
 }
 GAME_LISP_FUNCTION(SET_HEALTH) {
@@ -806,6 +819,9 @@ GAME_LISP_FUNCTION(SET_HEALTH) {
     s32                          value  = 0;
     Fatal_Script_Error(lisp_form_get_s32(arguments[1], &value) && "Stat accessor set needs to be a number");
     entity->health.value = value;
+    if (entity->health.value > entity->health.max) {
+        entity->health.value = entity->health.max;
+    }
     (entity_validate_death(entity));
     return lisp_form_integer(value);
 }

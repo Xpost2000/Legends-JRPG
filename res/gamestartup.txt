@@ -6,6 +6,16 @@
 
 (game_load_area "bforest1.area" 'retained)
 
+(set_health_limit '(entity player) 100)
+(set_vigor '(entity player) 120)
+(set_strength '(entity player) 120)
+(set_constitution '(entity player) 120)
+(set_willpower '(entity player) 120)
+(set_agility '(entity player) 120)
+(set_speed '(entity player) 120)
+(set_intellgience '(entity player) 120)
+(set_luck '(entity player) 120)
+
 (entity_add_ability '(entity player) "ability_shock")
 (entity_add_ability '(entity player) "ability_sword_rush")
 (entity_add_ability '(entity player) "ability_detonate_self")
