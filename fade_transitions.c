@@ -277,6 +277,13 @@ local void transitions_update_and_render(struct game_state* state, struct softwa
             bad_case;
     }
 
+    {
+        /* transition blockers */
+        if (game_state->is_conversation_active) {
+            return;
+        }
+    }
+
     if (transition_state->delay_time > 0) {
         transition_state->delay_time -= dt;
 
