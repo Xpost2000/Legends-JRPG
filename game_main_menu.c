@@ -26,10 +26,6 @@ enum main_menu_animation_phase {
     MAIN_MENU_OPTIONS_PAGE_IDLE,
 
     MAIN_MENU_SAVE_MENU,
-
-    MAIN_MENU_SAVE_MENU_DROP_DOWN,
-    MAIN_MENU_SAVE_MENU_CANCEL,
-    MAIN_MENU_SAVE_MENU_IDLE,
 };
 
 /* All option menu code is also placed here. Along with the special *IMGUI* code lol */
@@ -280,6 +276,7 @@ local void update_and_render_main_menu(struct game_state* state, struct software
                     } break;
                     case 2: {
                         save_menu_open_for_loading();
+                        main_menu.phase = MAIN_MENU_SAVE_MENU;
                     } break;
                     case 3: {
                         main_menu.timer = 0;
@@ -371,6 +368,22 @@ local void update_and_render_main_menu(struct game_state* state, struct software
                         main_menu.timer = 0;
                     } break;
                 }
+            }
+        } break;
+
+        case MAIN_MENU_SAVE_MENU: {
+            s32 save_menu_result = do_save_menu(framebuffer, dt);
+            switch (save_menu_result) {
+                case SAVE_MENU_PROCESS_ID_EXIT: {
+                    main_menu.phase                            = MAIN_MENU_TITLE_APPEAR;
+                    main_menu.timer                            = 0;
+                    main_menu.currently_selected_option_choice = 0;
+                } break;
+                case SAVE_MENU_PROCESS_ID_LOADED_EXIT: {
+                    
+                } break;
+                case SAVE_MENU_PROCESS_ID_SAVED_EXIT: {
+                } break;
             }
         } break;
     } 

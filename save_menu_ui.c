@@ -93,6 +93,11 @@ void save_menu_open_for_saving(void) {
     global_save_menu_state.intent = SAVE_MENU_INTENT_SAVING;
 }
 
+void save_menu_close(void) {
+    global_save_menu_state.phase = SAVE_MENU_CANCEL;
+    global_save_menu_state.timer = 0;
+}
+
 local s32 _do_save_menu_core(struct software_framebuffer* framebuffer, f32 y_offset, f32 dt, bool allow_input) {
     union color32f32 ui_color = UI_DEFAULT_COLOR;
     f32              alpha    = 1;
@@ -208,8 +213,7 @@ local s32 _do_save_menu_core(struct software_framebuffer* framebuffer, f32 y_off
     }
 
     if (selection_cancel) {
-        global_save_menu_state.phase = SAVE_MENU_CANCEL;
-        global_save_menu_state.timer = 0;
+        save_menu_close();
     }
 
     return -1;
@@ -222,7 +226,7 @@ s32 do_save_menu(struct software_framebuffer* framebuffer, f32 dt) {
         } break;
 
         case SAVE_MENU_DROP_DOWN: {
-            const f32 MAX_T = 1.25f;
+            const f32 MAX_T = 2.15f;
             f32 effective_t = global_save_menu_state.timer/(MAX_T-0.1);
 
             if (effective_t > 1)      effective_t = 1;
@@ -251,8 +255,7 @@ s32 do_save_menu(struct software_framebuffer* framebuffer, f32 dt) {
             _do_save_menu_core(framebuffer, y_offset, dt, false);
 
             if (global_save_menu_state.timer >= MAX_T) {
-                global_save_menu_state.phase = SAVE_MENU_OFF;
-                global_save_menu_state.timer = 0;
+                save_menu_close();
             }
 
             global_save_menu_state.timer += dt;
@@ -265,12 +268,14 @@ s32 do_save_menu(struct software_framebuffer* framebuffer, f32 dt) {
                     case SAVE_MENU_INTENT_SAVING: {
                         game_load_from_save_slot(selected_slot);
                         /* TODO: Need to have more fancy UI regarding saving! */
+                        return SAVE_MENU_PROCESS_ID_SAVED_EXIT;
                     } break;
                     case SAVE_MENU_INTENT_LOADING: {
                         /* load slot and start the game */
                         screen_mode = GAME_SCREEN_INGAME;
                         fade_into_game();
                         game_load_from_save_slot(selected_slot);
+                        return SAVE_MENU_PROCESS_ID_LOADED_EXIT;
                     } break;
                 }
             }
