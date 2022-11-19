@@ -8,8 +8,9 @@
 #include "game_def.c"
 #include "save_data_def.c"
 #include "game_script_def.c"
+#include "save_menu_ui_def.c"
 #include "dialogue_script_parse.c"
-#include "storyboard_presentation_def.c"
+#include "storyboard_presentation_def.c" /* need to check the rot on this... */
 
 #include "fade_transitions.c"
 
@@ -825,6 +826,7 @@ void _serialize_level_area(struct memory_arena* arena, struct binary_serializer*
             level->savepoints = memory_arena_push(arena, sizeof(*level->savepoints) * level->entity_savepoint_count);
 
             struct level_area_savepoint packed_entity = {};
+            _debugprintf("Will need to unpack %d savepoints!", level->entity_savepoint_count);
 
             for (s32 entity_savepoint_index = 0; entity_savepoint_index < level->entity_savepoint_count; ++entity_savepoint_index) {
                 struct entity_savepoint* current_savepoint = level->savepoints + entity_savepoint_index;
@@ -1318,12 +1320,13 @@ local void _unlock_game_input(void*) {
     disable_game_input = false;
 }
 local void fade_into_game(void) {
+    /* TODO: This has to vary a bit depending on when this is called! */
     game_state->ui_state = UI_STATE_INGAME;
     game_initialize_game_world();
-    do_color_transition_out(color32f32(0, 0, 0, 1), 0.2, 0.35);
     disable_game_input             = true;
-    transition_register_on_finish(_unlock_game_input, NULL, 0);
     global_game_initiated_death_ui = false;
+    do_color_transition_out(color32f32(0, 0, 0, 1), 0.2, 0.35);
+    transition_register_on_finish(_unlock_game_input, NULL, 0);
 }
 void game_initialize(void) {
     game_arena   = memory_arena_create_from_heap("Game Memory", Megabyte(32));
@@ -2464,6 +2467,7 @@ local void  do_ui_passive_speaking_dialogue(struct render_commands* commands, f3
 #include "combat.c"
 
 #include "game_demo_alert.c"
+#include "save_menu_ui.c"
 #include "game_main_menu.c"
 
 local void execute_area_scripts(struct game_state* state, struct level_area* area, f32 dt) {

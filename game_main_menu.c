@@ -13,7 +13,6 @@
   NOTE: there is a major disadvantage and that is the fact most of the UI code is not reusable right now,
   (IE: the options menu isn't usable in the main game pause menu yet. That can change soon though.)
 */
-#define GAME_MAX_SAVE_SLOTS (16)
 
 enum main_menu_animation_phase {
     MAIN_MENU_LIGHTNING_FLASHES,
@@ -26,31 +25,14 @@ enum main_menu_animation_phase {
     MAIN_MENU_OPTIONS_PAGE_MOVE_OUT,
     MAIN_MENU_OPTIONS_PAGE_IDLE,
 
+    MAIN_MENU_SAVE_MENU,
+
     MAIN_MENU_SAVE_MENU_DROP_DOWN,
     MAIN_MENU_SAVE_MENU_CANCEL,
     MAIN_MENU_SAVE_MENU_IDLE,
 };
 
 /* All option menu code is also placed here. Along with the special *IMGUI* code lol */
-#define SAVE_SLOT_WIDGET_SAVE_NAME_LENGTH  (32)
-#define SAVE_SLOT_WIDGET_DESCRIPTOR_LENGTH (64)
-struct save_slot_widget {
-    /* should have some save info */
-    /* maybe a bitmap? */
-    char name[SAVE_SLOT_WIDGET_SAVE_NAME_LENGTH];
-    /*
-      mostly Act description probably, this is manually encoded when you make the save game,
-      determined elsewhere.
-    */
-    char descriptor[SAVE_SLOT_WIDGET_DESCRIPTOR_LENGTH];
-    /* game timestamp??? */
-    s64 unix_timestamp;
-
-    /* same system used for the other stuff */
-    f32 lean_in_t;
-
-    /* smoothly seek over to the current save slot to view */
-};
 struct {
     s32 phase;
 
@@ -59,38 +41,9 @@ struct {
     s32 lightning_flashing   ;
 
     f32 timer;
-    struct random_state rnd;
-
     s32 currently_selected_option_choice;
-    struct save_slot_widget save_slot_widgets[GAME_MAX_SAVE_SLOTS];
-    f32 scroll_seek_y;
+    struct random_state rnd;
 } main_menu;
-
-local void fill_all_save_slots(void) {
-    /* should be loading from save files, right now don't have that tho */
-    /* the save header should be filled with this information so we can just quickly read and copy the display information */
-    /* without having to hold on to it in memory. */
-
-    for (s32 save_slot_index = 0; save_slot_index < array_count(main_menu.save_slot_widgets); ++save_slot_index) {
-        string filename_path = filename_from_saveslot_id(save_slot_index);
-
-        struct save_slot_widget* current_save_slot = &main_menu.save_slot_widgets[save_slot_index];
-        if (file_exists(filename_path)) {
-            struct save_data_description save_description = get_save_data_description(save_slot_index);
-
-            assertion(save_description.good && "Hmm, corrupted save file? Or doesn't exist?");
-            cstring_copy(save_description.name, current_save_slot->name, array_count(current_save_slot->name));
-            cstring_copy(save_description.descriptor, current_save_slot->descriptor, array_count(current_save_slot->descriptor));
-            current_save_slot->unix_timestamp = save_description.timestamp;
-            _debugprintf("Timestamp is %lld", save_description.timestamp);
-        } else {
-            cstring_copy("NO SAVE", current_save_slot->name, array_count(current_save_slot->name));
-            cstring_copy("-------", current_save_slot->descriptor, array_count(current_save_slot->descriptor));
-        }
-
-        current_save_slot->lean_in_t = 0;
-    }
-}
 
 enum {
     MAIN_MENU_OPTION_CHOICE,
@@ -241,138 +194,6 @@ local s32 main_menu_do_menu_ui(v2f32 where, struct software_framebuffer* framebu
     return -1;
 }
 
-local f32 estimate_save_menu_height(void) {
-    s32 BOX_WIDTH  = 20;
-    s32 BOX_HEIGHT = 8;
-
-    v2f32 nine_patch_extents = nine_patch_estimate_extents(ui_chunky, 1, BOX_WIDTH, BOX_HEIGHT);
-    f32 y_cursor = 0;
-    y_cursor += nine_patch_extents.y * 1.5 * (array_count(main_menu.save_slot_widgets)+1);
-    return y_cursor;
-}
-
-local s32 do_save_menu(struct software_framebuffer* framebuffer, f32 y_offset, f32 dt, bool allow_input) {
-    union color32f32 ui_color = UI_DEFAULT_COLOR;
-    f32 alpha = 1;
-
-    if (!allow_input) alpha = 0.5;
-    ui_color.a              = alpha;
-
-    bool selection_move_up   = is_action_down_with_repeat(INPUT_ACTION_MOVE_UP);
-    bool selection_move_down = is_action_down_with_repeat(INPUT_ACTION_MOVE_DOWN);
-    bool selection_cancel    = is_action_pressed(INPUT_ACTION_CANCEL);
-    bool selection_confirm   = is_action_pressed(INPUT_ACTION_CONFIRMATION);
-
-    f32 y_cursor = y_offset+25;
-
-    if (!allow_input) {
-        selection_confirm = selection_cancel = selection_move_down = selection_move_up = false;
-    }
-
-    /* I
-       DEALLY we don't have to scroll for any save slots, they should all fit on one screen, but I might as well
-       allow scrolling so we'll have lots of saveslots just so I know how to do it for the inventory since that
-       doesn't happen yet if you can believe it.
-    */
-    const f32 MAX_T_FOR_SLOT_LEAN = 0.10;
-
-    struct font_cache* title_font = game_get_font(MENU_FONT_COLOR_STEEL);
-    struct font_cache* body_font  = game_get_font(MENU_FONT_COLOR_WHITE);
-
-    f32 start_y_cursor = y_cursor;
-
-    s32 BOX_WIDTH  = 20;
-    s32 BOX_HEIGHT = 8;
-
-    v2f32 nine_patch_extents = nine_patch_estimate_extents(ui_chunky, 1, BOX_WIDTH, BOX_HEIGHT);
-
-    for (s32 save_slot_index = 0; save_slot_index < array_count(main_menu.save_slot_widgets); ++save_slot_index) {
-        struct save_slot_widget* current_slot = main_menu.save_slot_widgets + save_slot_index;
-
-        f32 effective_slot_t = current_slot->lean_in_t / MAX_T_FOR_SLOT_LEAN;
-
-        if (effective_slot_t > 1) effective_slot_t      = 1;
-        else if (effective_slot_t < 0) effective_slot_t = 0;
-
-        if (selection_confirm) {
-            return save_slot_index;
-        }
-
-        if (main_menu.currently_selected_option_choice == save_slot_index) {
-            if (allow_input) {
-                current_slot->lean_in_t += dt;
-                if (current_slot->lean_in_t > MAX_T_FOR_SLOT_LEAN) current_slot->lean_in_t = MAX_T_FOR_SLOT_LEAN;
-            }
-
-            { /* seek smoothly */
-                f32 relative_target = (start_y_cursor - y_cursor) + (SCREEN_HEIGHT/2-nine_patch_extents.y);
-                f32 relative_distance = fabs(main_menu.scroll_seek_y - (relative_target));
-
-                if (relative_distance > 1.512838f) {
-                    /* smoothen out */
-                    const s32 STEPS = 10;
-                    for (s32 iters = 0; iters < STEPS; ++iters) {
-                        f32 sign_direction = 0;
-                        if (main_menu.scroll_seek_y < relative_target) sign_direction = 1;
-                        else                                           sign_direction = -1;
-
-                        relative_distance = fabs(main_menu.scroll_seek_y - (relative_target));
-
-                        if (relative_distance > 1.512838f) {
-                            main_menu.scroll_seek_y += dt * 100 * sign_direction;
-                        } else {
-                            break;
-                        }
-                    }
-                }
-            }
-        } else {
-            current_slot->lean_in_t -= dt;
-            if (current_slot->lean_in_t < 0) current_slot->lean_in_t = 0;
-        }
-
-
-        f32 x_cursor = 50 + lerp_f32(0, 50, effective_slot_t);
-
-
-        f32 adjusted_scroll_offset = main_menu.scroll_seek_y;
-
-        draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, v2f32(x_cursor, y_cursor + adjusted_scroll_offset), BOX_WIDTH, BOX_HEIGHT, ui_color);
-        draw_ui_breathing_text(framebuffer, v2f32(x_cursor + 15, y_cursor + 15 + adjusted_scroll_offset), title_font, 2, format_temp_s("%s (%02d)", current_slot->name, save_slot_index), save_slot_index*22, color32f32(1, 1, 1, alpha));
-
-        if (current_slot->unix_timestamp != 0) {
-            struct calendar_time calendar_time_info =
-                calendar_time_from(current_slot->unix_timestamp);    
-            software_framebuffer_draw_text(framebuffer, body_font, 2, v2f32(x_cursor + 20, y_cursor + 15+32 + adjusted_scroll_offset), format_temp_s("%s-%d-%d", month_strings[calendar_time_info.month], calendar_time_info.day, calendar_time_info.year), color32f32(1, 1, 1, alpha), BLEND_MODE_ALPHA);
-        }
-
-        /* need to have good word wrap */
-        software_framebuffer_draw_text(framebuffer, body_font, 2, v2f32(x_cursor + 20, y_cursor + 24+15+32 + adjusted_scroll_offset), string_from_cstring(current_slot->descriptor), color32f32(1, 1, 1, alpha), BLEND_MODE_ALPHA);
-
-        y_cursor += nine_patch_extents.y * 1.5;
-    }
-
-    if (selection_move_down) {
-        main_menu.currently_selected_option_choice += 1;
-        if (main_menu.currently_selected_option_choice >= array_count(main_menu.save_slot_widgets)) {
-            main_menu.currently_selected_option_choice = 0;
-        }
-    }
-    if (selection_move_up) {
-        main_menu.currently_selected_option_choice -= 1;
-        if (main_menu.currently_selected_option_choice < 0) {
-            main_menu.currently_selected_option_choice = array_count(main_menu.save_slot_widgets) - 1;
-        }
-    }
-
-    if (selection_cancel) {
-        main_menu.phase = MAIN_MENU_SAVE_MENU_CANCEL;
-        main_menu.timer = 0;
-    }
-
-    return -1;
-}
-
 local void update_and_render_main_menu(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
     const f32 TITLE_FONT_SCALE  = 6.0;
     const f32 NORMAL_FONT_SCALE = 4.0;
@@ -458,10 +279,7 @@ local void update_and_render_main_menu(struct game_state* state, struct software
                         fade_into_game();
                     } break;
                     case 2: {
-                        main_menu.phase         = MAIN_MENU_SAVE_MENU_DROP_DOWN;
-                        main_menu.timer         = 0;
-                        main_menu.scroll_seek_y = 0;
-                        fill_all_save_slots();
+                        save_menu_open_for_loading();
                     } break;
                     case 3: {
                         main_menu.timer = 0;
@@ -554,53 +372,6 @@ local void update_and_render_main_menu(struct game_state* state, struct software
                     } break;
                 }
             }
-        } break;
-
-        case MAIN_MENU_SAVE_MENU_DROP_DOWN: {
-            const f32 MAX_T = 1.25f;
-            f32 effective_t = main_menu.timer/(MAX_T-0.1);
-
-            if (effective_t > 1)      effective_t = 1;
-            else if (effective_t < 0) effective_t = 0;
-
-            f32 height_of_saves = estimate_save_menu_height();
-            f32 y_offset = lerp_f32(-height_of_saves, 0, effective_t);
-            do_save_menu(framebuffer, y_offset, dt, false);
-
-            if (main_menu.timer >= MAX_T) {
-                main_menu.phase = MAIN_MENU_SAVE_MENU_IDLE;
-            }
-
-            main_menu.timer += dt;
-        } break;
-
-        case MAIN_MENU_SAVE_MENU_IDLE: {
-            s32 selected_slot = do_save_menu(framebuffer, 0, dt, true);
-
-            if (selected_slot != -1) {
-                /* load slot and start the game */
-                screen_mode = GAME_SCREEN_INGAME;
-                fade_into_game();
-                game_load_from_save_slot(selected_slot);
-            }
-        } break;
-        case MAIN_MENU_SAVE_MENU_CANCEL: {
-            const f32 MAX_T = 1.25;
-            f32 effective_t = main_menu.timer/(MAX_T-0.1);
-
-            if (effective_t > 1)      effective_t = 1;
-            else if (effective_t < 0) effective_t = 0;
-
-            f32 height_of_saves = estimate_save_menu_height();
-            f32 y_offset = lerp_f32(main_menu.scroll_seek_y, -height_of_saves, effective_t);
-            do_save_menu(framebuffer, y_offset, dt, false);
-
-            if (main_menu.timer >= MAX_T) {
-                main_menu.phase = MAIN_MENU_TITLE_APPEAR;
-                main_menu.timer = 0;
-            }
-
-            main_menu.timer += dt;
         } break;
     } 
 

@@ -1312,6 +1312,10 @@ void sortable_draw_entities_submit(struct render_commands* commands, struct grap
                 struct entity_particle* it = current_draw_entity->pointer;
                 sortable_entity_draw_particle(commands, graphics_assets, it, dt);
             } break;
+            case SORTABLE_DRAW_ENTITY_SAVEPOINT: {
+                struct entity_savepoint* it = current_draw_entity->pointer;
+                sortable_entity_draw_savepoint(commands, graphics_assets, it, dt);
+            } break;
                 bad_case;
         }
     }
@@ -2764,6 +2768,7 @@ void serialize_level_area_entity(struct binary_serializer* serializer, s32 versi
                 for (int i = 0; i < 128; ++i){u8 unused[128]; serialize_u8(serializer, unused);}
             }
         } break;
+        case 8:
         case CURRENT_LEVEL_AREA_VERSION: {
             Serialize_Structure(serializer, *entity);
         } break;
