@@ -15,6 +15,7 @@ enum save_menu_process_id {
 void save_menu_open_for_loading(void);
 void save_menu_open_for_saving(void);
 void save_menu_close(void);
+void save_menu_off(void);
 s32  do_save_menu(struct software_framebuffer* framebuffer, f32 dt);
 
 #endif

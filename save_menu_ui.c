@@ -93,6 +93,10 @@ void save_menu_open_for_saving(void) {
     global_save_menu_state.intent = SAVE_MENU_INTENT_SAVING;
 }
 
+void save_menu_off(void) {
+    global_save_menu_state.phase = SAVE_MENU_OFF;
+    global_save_menu_state.timer = 0;
+}
 void save_menu_close(void) {
     global_save_menu_state.phase = SAVE_MENU_CANCEL;
     global_save_menu_state.timer = 0;
@@ -255,7 +259,7 @@ s32 do_save_menu(struct software_framebuffer* framebuffer, f32 dt) {
             _do_save_menu_core(framebuffer, y_offset, dt, false);
 
             if (global_save_menu_state.timer >= MAX_T) {
-                save_menu_close();
+                save_menu_off();
             }
 
             global_save_menu_state.timer += dt;
