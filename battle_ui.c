@@ -305,6 +305,7 @@ local void recalculate_targeted_entities_by_ability(struct entity_ability* abili
             {
                 _debugprintf("Okay... Looking at %p", potential_target);
 
+                /* TODO: This is fucking broken right now */
                 for (s32 selection_grid_y = 0; selection_grid_y < ENTITY_ABILITY_SELECTION_FIELD_MAX_Y && !should_add_to_targets_list; ++selection_grid_y) {
                     for (s32 selection_grid_x = 0; selection_grid_x < ENTITY_ABILITY_SELECTION_FIELD_MAX_X && !should_add_to_targets_list; ++selection_grid_x) {
                         if (global_battle_ui_state.selection_field[selection_grid_y][selection_grid_x]) {

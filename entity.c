@@ -767,7 +767,7 @@ void update_entities(struct game_state* state, f32 dt, struct entity_iterator it
                 _debugprintf("HI! I'm NEW HERE: [%d]: %f, %f", current_entity->particle_attachment_TEST , emitter->position.x * TILE_UNIT_SIZE, emitter->position.y * TILE_UNIT_SIZE);
                 entity_particle_emitter_start_emitting(&game_state->permenant_particle_emitters, current_entity->particle_attachment_TEST);
 
-                emitter->spawn_shape = emitter_spawn_shape_circle(v2f32(0,0), normalized_sinf(global_elapsed_time*3) + 1.4, 0.2, true);
+                emitter->spawn_shape = emitter_spawn_shape_circle(v2f32(0,0), normalized_sinf(global_elapsed_time*3) + 1.4, 0.2, false);
             }
         }
 
@@ -989,6 +989,9 @@ void sortable_draw_entities_push_particle(struct sortable_draw_entities* entitie
     }
 
     sortable_draw_entities_push(entities, SORTABLE_DRAW_ENTITY_PARTICLE, y_sort_key, ptr);
+}
+void sortable_draw_entities_push_savepoint(struct sortable_draw_entities* entities, f32 y_sort_key, void* ptr) {
+    sortable_draw_entities_push(entities, SORTABLE_DRAW_ENTITY_SAVEPOINT, y_sort_key, ptr);
 }
 
 void sortable_draw_entities_sort_keys(struct sortable_draw_entities* entities) {
@@ -1245,6 +1248,16 @@ local void sortable_entity_draw_particle(struct render_commands* commands, struc
     }
 }
 
+local void sortable_entity_draw_savepoint(struct render_commands* commands, struct graphics_assets* assets, struct entity_savepoint* savepoint, f32 dt) {
+    /*
+      Savepoints are mainly powered by their particle systems.
+      So there's no drawing method per say.
+
+      But I'm putting it here just in case I ever decide to "draw them"
+    */
+    return;
+}
+
 void sortable_draw_entities_submit(struct render_commands* commands, struct graphics_assets* graphics_assets, struct sortable_draw_entities* entities, f32 dt) {
     sortable_draw_entities_sort_keys(entities);
 
@@ -1281,6 +1294,10 @@ void render_entities_from_area_and_iterator(struct sortable_draw_entities* draw_
     {
         Array_For_Each(it, struct entity_chest, area->chests, area->entity_chest_count) {
             sortable_draw_entities_push_chest(draw_entities, it->position.y*TILE_UNIT_SIZE, it);
+        }
+
+        Array_For_Each(it, struct entity_savepoint, area->savepoints, area->entity_savepoint_count) {
+            sortable_draw_entities_push_savepoint(draw_entities, it->position.y*TILE_UNIT_SIZE, it);
         }
     }
 }

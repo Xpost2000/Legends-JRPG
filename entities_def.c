@@ -142,6 +142,16 @@ struct entity_chest {
     item_id                       key_item;
 };
 
+enum entity_savepoint_flags {
+    ENTITY_SAVEPOINT_FLAGS_NONE     = 0,
+    ENTITY_SAVEPOINT_FLAGS_DISABLED = BIT(0),
+};
+struct entity_savepoint {
+    v2f32 position;
+    u32   flags;
+    s32   particle_emitter_id;
+};
+
 /* might need to obey the simulated rules of a system but who cares? */
 /* reserved for in engine dynamic things, so burning and such. (or particle emitters that are dynamically spawned from other entities) */
 /* levels will still have their own particle emitters if they would like. */
@@ -567,8 +577,8 @@ struct entity {
 
 void entity_snap_to_grid_position(struct entity* entity) {
     v2f32 position   = entity->position;
-    position.x       = (position.x / TILE_UNIT_SIZE) * TILE_UNIT_SIZE;
-    position.y       = (position.y / TILE_UNIT_SIZE) * TILE_UNIT_SIZE;
+    position.x       = roundf(position.x / TILE_UNIT_SIZE) * TILE_UNIT_SIZE;
+    position.y       = roundf(position.y / TILE_UNIT_SIZE) * TILE_UNIT_SIZE;
     entity->position = position;
 }
 
@@ -742,6 +752,7 @@ enum sortable_draw_entity_type {
     SORTABLE_DRAW_ENTITY_CHEST,
     /* This is what's really going to hurt because particles are lots! */
     SORTABLE_DRAW_ENTITY_PARTICLE,
+    SORTABLE_DRAW_ENTITY_SAVEPOINT,
 };
 
 struct sortable_draw_entity {
@@ -760,6 +771,7 @@ struct sortable_draw_entities {
 
 local void sortable_entity_draw_entity(struct render_commands* commands, struct graphics_assets* assets, entity_id id, f32 dt);
 local void sortable_entity_draw_chest(struct render_commands* commands, struct graphics_assets* assets, struct entity_chest* chest, f32 dt);
+local void sortable_entity_draw_savepoint(struct render_commands* commands, struct graphics_assets* assets, struct entity_savepoint* savepoint, f32 dt);
 local void sortable_entity_draw_particle(struct render_commands* commands, struct graphics_assets* assets, struct entity_particle* particle, f32 dt);
 
 struct sortable_draw_entities sortable_draw_entities(struct memory_arena* arena, s32 capacity);
@@ -767,6 +779,7 @@ void sortable_draw_entities_push_entity(struct sortable_draw_entities* entities,
 void sortable_draw_entities_push(struct sortable_draw_entities* entities, u8 type, f32 y_sort_key, void* ptr);
 void sortable_draw_entities_push_chest(struct sortable_draw_entities* entities, f32 y_sort_key, void* ptr);
 void sortable_draw_entities_push_particle(struct sortable_draw_entities* entities, f32 y_sort_key, void* ptr);
+void sortable_draw_entities_push_savepoint(struct sortable_draw_entities* entities, f32 y_sort_key, void* ptr);
 /* should not take dt, but just need something to work and there's animation timing code */
 void sortable_draw_entities_submit(struct render_commands* commands, struct graphics_assets* graphics_assets, struct sortable_draw_entities* entities, f32 dt);
 void sortable_draw_entities_sort_keys(struct sortable_draw_entities* entities);

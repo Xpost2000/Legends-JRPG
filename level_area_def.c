@@ -74,6 +74,11 @@ struct level_area_navigation_map {
     struct level_area_navigation_map_tile* tiles;
 };
 
+struct level_area_savepoint {
+    v2f32 position;
+    v2f32 scale;
+};
+
 /* need to determine how to make an accurate id system for this */
 #define ENTITY_BASENAME_LENGTH_MAX (64)
 
@@ -212,20 +217,20 @@ struct level_area {
     s32          tile_counts[TILE_LAYER_COUNT];
     struct tile* tile_layers[TILE_LAYER_COUNT];
 
-    s32               light_count;
-    struct light_def* lights;
-
-    s32 trigger_level_transition_count;
-    struct trigger_level_transition* trigger_level_transitions;
-
     /*
       Address in script file as (trigger (id) or (name-string?(when supported.)))
      */
-    s32 script_trigger_count;
-    struct trigger* script_triggers;
 
-    s32 entity_chest_count;
-    struct entity_chest* chests;
+    s32                              light_count;
+    struct light_def*                lights;
+    s32                              trigger_level_transition_count;
+    struct trigger_level_transition* trigger_level_transitions;
+    s32                              script_trigger_count;
+    struct trigger*                  script_triggers;
+    s32                              entity_chest_count;
+    struct entity_chest*             chests;
+    s32                              entity_savepoint_count;
+    struct entity_savepoint*         savepoints;
 
     /* runtime data */
     struct entity_list               entities;
