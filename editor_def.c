@@ -9,11 +9,11 @@ enum editor_tool_mode {
     EDITOR_TOOL_COUNT,
 };
 static string editor_tool_mode_strings[]=  {
-    string_literal("Tile mode"),
-    string_literal("Place default spawn mode"),
-    string_literal("Entity mode"),
-    string_literal("Trigger"),
-    string_literal("(count)")
+    [EDITOR_TOOL_TILE_PAINTING]     = string_literal("Tile mode"),
+    [EDITOR_TOOL_SPAWN_PLACEMENT]   = string_literal("Place default spawn mode"),
+    [EDITOR_TOOL_ENTITY_PLACEMENT]  = string_literal("Entity mode"),
+    [EDITOR_TOOL_TRIGGER_PLACEMENT] = string_literal("Trigger"),
+    [EDITOR_TOOL_COUNT]             = string_literal("(count)")
 };
 enum trigger_placement_type {
     TRIGGER_PLACEMENT_TYPE_LEVEL_TRANSITION,
@@ -21,21 +21,27 @@ enum trigger_placement_type {
     TRIGGER_PLACEMENT_TYPE_COUNT
 };
 static string trigger_placement_type_strings[] = {
-    string_literal("Level Transition"),
-    string_literal("Scriptable Triggers"),
-    string_literal("(count)")
+    [TRIGGER_PLACEMENT_TYPE_LEVEL_TRANSITION]   = string_literal("Level Transition"),
+    [TRIGGER_PLACEMENT_TYPE_SCRIPTABLE_TRIGGER] = string_literal("Scriptable Triggers"),
+    [TRIGGER_PLACEMENT_TYPE_COUNT]              = string_literal("(count)")
 };
-enum entity_placement_type {
-    ENTITY_PLACEMENT_TYPE_ACTOR,
-    ENTITY_PLACEMENT_TYPE_CHEST,
-    ENTITY_PLACEMENT_TYPE_LIGHT,
-    ENTITY_PLACEMENT_TYPE_COUNT,
+enum entity_placement_type { 
+    /*
+      NOTE: contrasts with remaining styles but this code is like this to allow a simple
+      macro in the editor code.
+     */
+    ENTITY_PLACEMENT_TYPE_actor,
+    ENTITY_PLACEMENT_TYPE_chest,
+    ENTITY_PLACEMENT_TYPE_light,
+    ENTITY_PLACEMENT_TYPE_savepoint,
+    ENTITY_PLACEMENT_TYPE_count,
 };
 static string entity_placement_type_strings[] = {
-    string_literal("Actor"),
-    string_literal("Chest"),
-    string_literal("Light"),
-    string_literal("(count)"),
+    [ENTITY_PLACEMENT_TYPE_actor]     = string_literal("Actor"),
+    [ENTITY_PLACEMENT_TYPE_chest]     = string_literal("Chest"),
+    [ENTITY_PLACEMENT_TYPE_light]     = string_literal("Light"),
+    [ENTITY_PLACEMENT_TYPE_savepoint] = string_literal("Savepoint"),
+    [ENTITY_PLACEMENT_TYPE_count]     = string_literal("(count)"),
 };
 struct entity_chest_placement_property_menu {
     /* bool item_edit_open; */

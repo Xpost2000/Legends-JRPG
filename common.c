@@ -53,6 +53,9 @@
 
 #define unused(x) (void)(x)
 
+#define Fixed_Array_Push(array, counter) &array[counter++]
+#define Fixed_Array_Remove_And_Swap(array, where, counter) array[where] = array[--counter]
+
 #define min(a, b) (((a) < (b)) ? (a) : (b))
 #define max(a, b) (((a) > (b)) ? (a) : (b))
 
