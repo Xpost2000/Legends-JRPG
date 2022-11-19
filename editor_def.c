@@ -103,6 +103,9 @@ struct editor_state {
     struct level_area_entity*        entities;
     s32                              light_capacity;
     s32                              light_count;
+    s32                              entity_savepoint_count;
+    s32                              entity_savepoint_capacity;
+    struct level_area_savepoint*     entity_savepoints;
     struct light_def*                lights;
 
     bool fullbright;

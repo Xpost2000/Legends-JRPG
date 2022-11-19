@@ -1,6 +1,12 @@
 #ifndef LEVEL_AREA_DEF_C
 #define LEVEL_AREA_DEF_C
 
+/*
+  NOTE: I don't think there's a good manual way to do something like
+  this, but metaprogramming this would be a pita, so I'm just manually
+  updating everything which is kind of dumb...
+*/
+
 /* NOTE: 
    Change incoming from version >= 4
    
@@ -11,8 +17,9 @@
    Version 5: Add entities
    Version 6: Add light entities
    Version 7: Change to the level area entity struct.
+   Version 9: Added savepoint entities
 */
-#define CURRENT_LEVEL_AREA_VERSION (8)
+#define CURRENT_LEVEL_AREA_VERSION (9)
 
 enum tile_layers {
     TILE_LAYER_GROUND,            /* render below all. dark color? */
@@ -77,6 +84,7 @@ struct level_area_navigation_map {
 struct level_area_savepoint {
     v2f32 position;
     v2f32 scale;
+    u32   flags;
 };
 
 /* need to determine how to make an accurate id system for this */
@@ -143,7 +151,9 @@ struct level_area_entity {
     s32 loot_table_id_index;
 };
 
+void serialize_level_area_entity_savepoint(struct binary_serializer* serializer, s32 version, struct level_area_savepoint* entity);
 void serialize_level_area_entity(struct binary_serializer* serializer, s32 version, struct level_area_entity* entity);
+
 void level_area_entity_set_base_id(struct level_area_entity* entity, string name) {
     s32 copy_amount = name.length;
     if (copy_amount > array_count(entity->base_name)) {

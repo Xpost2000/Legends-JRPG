@@ -97,6 +97,7 @@ void editor_clear_all_allocations(struct editor_state* state) {
     state->generic_trigger_count          = 0;
     state->entity_count                   = 0;
     state->light_count                    = 0;
+    state->entity_savepoint_count         = 0;
 }
 
 void editor_clear_all(struct editor_state* state) {
@@ -116,6 +117,7 @@ void editor_initialize(struct editor_state* state) {
     state->trigger_level_transition_capacity = 1024*2;
     state->entity_chest_capacity             = 1024*2;
     state->generic_trigger_capacity          = 1024*2;
+    state->entity_savepoint_capacity         = 128;
     state->entity_capacity                   = 512*2;
     state->light_capacity                    = 256*2;
 
@@ -126,6 +128,7 @@ void editor_initialize(struct editor_state* state) {
     state->entity_chests                            = memory_arena_push(state->arena, state->entity_chest_capacity             * sizeof(*state->entity_chests));
     state->generic_triggers                         = memory_arena_push(state->arena, state->generic_trigger_capacity          * sizeof(*state->generic_triggers));
     state->entities                                 = memory_arena_push(state->arena, state->entity_capacity                   * sizeof(*state->entities));
+    state->entity_savepoints                        = memory_arena_push(state->arena, state->entity_capacity                   * sizeof(*state->entity_savepoints));
     state->lights                                   = memory_arena_push(state->arena, state->light_capacity                    * sizeof(*state->lights));
     editor_clear_all(state);
 }
@@ -187,6 +190,12 @@ void editor_serialize_area(struct binary_serializer* serializer) {
         serialize_s32(serializer, &editor_state->light_count);
         for (s32 light_index = 0; light_index < editor_state->light_count; ++light_index) {
             Serialize_Structure(serializer, editor_state->lights[light_index]);
+        }
+    }
+    if (version_id >= 9) {
+        serialize_s32(serializer, &editor_state->entity_savepoint_count);
+        for (s32 entity_savepoint_index = 0; entity_savepoint_index < editor_state->entity_savepoint_count; ++entity_savepoint_index) {
+            serialize_level_area_entity_savepoint(serializer, version_id, &editor_state->entity_savepoints[entity_savepoint_index]);
         }
     }
 }

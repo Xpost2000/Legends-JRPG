@@ -394,6 +394,33 @@ struct entity_particle_emitter* entity_particle_emitter_dereference(struct entit
 }
 /* PARTICLES END */
 
+void entity_savepoint_initialize(struct entity_savepoint* savepoint) {
+    /* initialize particle systems here */
+    savepoint->particle_emitter_id          = entity_particle_emitter_allocate(&game_state->permenant_particle_emitters);
+    struct entity_particle_emitter* emitter = entity_particle_emitter_dereference(&game_state->permenant_particle_emitters, savepoint->particle_emitter_id);
+    /* ideally I'd like a more advanced effect but this will do for now. I'll tweak it once I can get it to work. */
+    {
+        emitter->time_per_spawn                  = 0.05;
+        emitter->position                        = savepoint->position;
+        emitter->burst_amount                    = 128;
+        emitter->max_spawn_per_batch             = 1024;
+        emitter->max_spawn_batches               = -1;
+        emitter->color                           = color32u8(34, 88, 226, 255);
+        emitter->target_color                    = color32u8(59, 59, 56, 127);
+        emitter->starting_acceleration           = v2f32(0, -15.6);
+        emitter->starting_acceleration_variance  = v2f32(1.2, 1.2);
+        emitter->starting_velocity_variance      = v2f32(1.3, 0);
+        emitter->lifetime                        = 0.6;
+        emitter->lifetime_variance               = 0.35;
+
+        /* emitter->particle_type = ENTITY_PARTICLE_TYPE_FIRE; */
+        emitter->particle_feature_flags = ENTITY_PARTICLE_FEATURE_FLAG_FLAMES;
+
+        emitter->scale_uniform = 0.2;
+        emitter->scale_variance_uniform = 0.12;
+    }
+}
+
 void battle_ui_stalk_entity_with_camera(struct entity*);
 void battle_ui_stop_stalk_entity_with_camera(void);
 void _debug_print_id(entity_id id) {
@@ -755,7 +782,7 @@ void update_entities(struct game_state* state, f32 dt, struct entity_iterator it
         }
 
         /** PARTICLE SYSTEM TEST */
-#if 1
+#if 0
         if (current_entity->particle_attachment_TEST != 0) {
             struct entity_particle_emitter* emitter = entity_particle_emitter_dereference(&game_state->permenant_particle_emitters, current_entity->particle_attachment_TEST);
             if (emitter) {
@@ -927,6 +954,14 @@ void update_entities(struct game_state* state, f32 dt, struct entity_iterator it
                 }
             } else {
             }
+        }
+    }
+
+    {
+        Array_For_Each(it, struct entity_savepoint, area->savepoints, area->entity_savepoint_count) {
+            struct entity_particle_emitter* emitter_object = entity_particle_emitter_dereference(&game_state->permenant_particle_emitters, it->particle_emitter_id);
+            emitter_object->position                       = it->position;
+            entity_particle_emitter_start_emitting(&game_state->permenant_particle_emitters, it->particle_emitter_id);
         }
     }
 }
@@ -1101,6 +1136,7 @@ local void sortable_entity_draw_entity(struct render_commands* commands, struct 
 
         union color32f32 modulation_color = color32f32_WHITE;
 
+        /* Highlighted for target selection */
         {
             bool me = is_entity_under_ability_selection(id);
             if (me) {
@@ -2443,6 +2479,11 @@ struct entity_database entity_database_create(struct memory_arena* arena) {
     return result;
 }
 
+void level_area_entity_savepoint_unpack(struct level_area_savepoint* savepoint, struct entity_savepoint* unpack_target) {
+    unpack_target->position = savepoint->position;
+    unpack_target->flags   |= savepoint->flags;
+}
+
 void level_area_entity_unpack(struct level_area_entity* entity, struct entity* unpack_target) {
     unpack_target->flags               |= entity->flags;
     unpack_target->ai.flags            |= entity->ai_flags;
@@ -2686,6 +2727,15 @@ struct entity_loot_table* entity_lookup_loot_table(struct entity_database* entit
     }
 
     return entity_database->loot_tables + loot_table_id_index;
+}
+
+void serialize_level_area_entity_savepoint(struct binary_serializer* serializer, s32 version, struct level_area_savepoint* entity) {
+    switch (version) {
+        default:
+        case CURRENT_LEVEL_AREA_VERSION: {
+            Serialize_Structure(serializer, *entity);
+        } break;
+    }
 }
 
 void serialize_level_area_entity(struct binary_serializer* serializer, s32 version, struct level_area_entity* entity) {

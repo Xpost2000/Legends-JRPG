@@ -152,6 +152,8 @@ struct entity_savepoint {
     s32   particle_emitter_id;
 };
 
+void entity_savepoint_initialize(struct entity_savepoint* savepoint);
+
 /* might need to obey the simulated rules of a system but who cares? */
 /* reserved for in engine dynamic things, so burning and such. (or particle emitters that are dynamically spawned from other entities) */
 /* levels will still have their own particle emitters if they would like. */

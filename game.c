@@ -13,6 +13,9 @@
 
 #include "fade_transitions.c"
 
+void level_area_entity_unpack(struct level_area_entity* entity, struct entity* unpack_target);
+void level_area_entity_savepoint_unpack(struct level_area_savepoint* entity, struct entity_savepoint* unpack_target);
+
 /* assorted random function prototype forward declarations */
 void render_cutscene_entities(struct sortable_draw_entities* draw_entities);
 void game_initialize_game_world(void);
@@ -727,7 +730,6 @@ struct navigation_path navigation_path_find(struct memory_arena* arena, struct l
     return results;
 }
 
-void level_area_entity_unpack(struct level_area_entity* entity, struct entity* unpack_target);
 void _serialize_level_area(struct memory_arena* arena, struct binary_serializer* serializer, struct level_area* level, s32 level_type) {
     memory_arena_set_allocation_region_top(arena); {
         _debugprintf("%llu memory used", arena->used + arena->used_top);
@@ -740,6 +742,7 @@ void _serialize_level_area(struct memory_arena* arena, struct binary_serializer*
         serialize_f32(serializer, &level->default_player_spawn.y);
         _debugprintf("reading tiles");
 
+        /* I should try to move this into one spot since it's a little annoying */
         if (level->version >= 4) {
             if (level->version < CURRENT_LEVEL_AREA_VERSION) {
                 /* for older versions I have to know what the tile layers were and assign them like this. */
@@ -815,6 +818,22 @@ void _serialize_level_area(struct memory_arena* arena, struct binary_serializer*
         if (level->version >= 6) {
             _debugprintf("loading lights");
             Serialize_Fixed_Array_And_Allocate_From_Arena(serializer, arena, s32, level->light_count, level->lights);
+        }
+
+        if (level->version >= 9) {
+            serialize_s32(serializer, &level->entity_savepoint_count);
+            level->savepoints = memory_arena_push(arena, sizeof(*level->savepoints) * level->entity_savepoint_count);
+
+            struct level_area_savepoint packed_entity = {};
+
+            for (s32 entity_savepoint_index = 0; entity_savepoint_index < level->entity_savepoint_count; ++entity_savepoint_index) {
+                struct entity_savepoint* current_savepoint = level->savepoints + entity_savepoint_index;
+
+                serialize_level_area_entity_savepoint(serializer, level->version, &packed_entity);
+                level_area_entity_savepoint_unpack(&packed_entity, current_savepoint);
+
+                entity_savepoint_initialize(current_savepoint);
+            }
         }
 
         build_navigation_map_for_level_area(arena, level);
