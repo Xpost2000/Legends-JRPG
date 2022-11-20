@@ -9,8 +9,8 @@
 /* NOTE Does not allow conditional dialogue yet. */
 /* NOTE Does not allow anything to happen other than dialogue... */
 #define CONVERSATION_CURRENT_VERSION (0)
-#define MAX_CONVERSATION_CHOICES (16)
-#define MAX_CONVERSATION_NODES   (256)
+#define MAX_CONVERSATION_CHOICES (8)
+#define MAX_CONVERSATION_NODES   (128)
 struct conversation_choice {
     string text;
     /* does not count bartering */

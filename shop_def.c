@@ -30,7 +30,7 @@ struct shop_item {
     s32     price;
 };
 
-#define SHOP_BUYBACK_MAX (128)
+#define SHOP_BUYBACK_MAX (32)
 /* This is kind of a sparse set, not an array. TODO: There is breaking behavior, but I can fix it later. */
 struct shop_instance {
     struct shop_item* items;

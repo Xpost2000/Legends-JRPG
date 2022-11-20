@@ -2,6 +2,13 @@
 /* #define RELEASE */
 /* #define NO_FANCY_FADEIN_INTRO */
 
+/*
+  NOTE: Software is always the primary target,
+
+  the hardware render path is really a "hybrid" path. The main game world is hardware accelerated as well
+  as the post processing(since that's the slowest part), however any UI will always be composited on top of the game world.
+*/
+
 #ifdef STRETCHYBUFFER_C
 #error "Avoid the temptation of easy dynamically allocated arrays! I want to avoid this during runtime!"
 #error "Unless I have a genuinely good reason, this will stay here forever!"
@@ -309,7 +316,6 @@ local void initialize_framebuffer(void) {
 
     global_game_texture_surface = SDL_CreateTexture(global_game_sdl_renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STREAMING, global_default_framebuffer.width, global_default_framebuffer.height);
 }
-
 
 void handle_sdl_events(void) {
     {

@@ -26,7 +26,7 @@
  */
 
 #include "game_config_defines.c"
-#define GAME_MAX_PERMENANT_ENTITIES (64)
+#define GAME_MAX_PERMENANT_ENTITIES (128)
 
 /* TODO */
 /*
@@ -375,7 +375,7 @@ struct ui_pause_menu {
 };
 
 /* Non-pausing text you can read. */
-#define MAX_PASSIVE_SPEAKING_DIALOGUES (512)
+#define MAX_PASSIVE_SPEAKING_DIALOGUES (256)
 /* seconds */
 #define PASSIVE_SPEAKING_DIALOGUE_TYPING_SPEED (0.054)
 #define PASSIVE_SPEAKING_DIALOGUE_FADE_TIME    (0.765)
@@ -443,7 +443,7 @@ static string interactable_type_strings[] = {
     [INTERACTABLE_TYPE_COUNT] = string_literal("(count)"),
 };
 
-#define MAX_STORED_COMBAT_PARTICIPANTS (512)
+#define MAX_STORED_COMBAT_PARTICIPANTS (256)
 struct game_state_combat_state {
     bool      active_combat;
     s32       count;
@@ -467,7 +467,7 @@ s32 screen_mode = GAME_SCREEN_MAIN_MENU;
 /* sized fixed chunks, but still dynamic */
 /* this isn't a hashmap FYI, just linear lookups. That's okay too. Since lookup is not frequent. */
 /* I can change this to a chunked hashmap I guess, not a big deal... */
-#define MAX_GAME_VARIABLES_PER_CHUNK (32)
+#define MAX_GAME_VARIABLES_PER_CHUNK (16)
 #define MAX_GAME_VARIABLE_NAME_LENGTH (32)
 struct game_variable {
     // big names ****************
@@ -493,7 +493,7 @@ s32  game_variables_count_all(void);
 
 #include "shop_def.c"
 
-#define MAX_GAME_DYNAMIC_LIGHT_POOL (1024)
+#define MAX_GAME_DYNAMIC_LIGHT_POOL (128)
 enum ui_save_menu_phase {
     UI_SAVE_MENU_PHASE_FADEIN,
     UI_SAVE_MENU_PHASE_IDLE,
