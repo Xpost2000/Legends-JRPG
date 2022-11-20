@@ -511,10 +511,7 @@ local void do_shopping_menu(struct software_framebuffer* framebuffer, f32 x, boo
             shopping_ui_clear_cart();
             shopping_ui.shopping_item_index = 0;
 
-            /* This is a bit nasty, but I'd rather handle it here. */
-            if (shop_mode != SHOPPING_MODE_VIEWING) {
-                shop_ui_set_phase(SHOPPING_UI_ANIMATION_PHASE_SLIDE_OUT_SHOPPING);
-            }
+            shop_ui_set_phase(SHOPPING_UI_ANIMATION_PHASE_SLIDE_OUT_SHOPPING);
         }
     }
 }
