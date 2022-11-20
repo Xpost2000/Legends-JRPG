@@ -24,7 +24,6 @@ void game_report_entity_death(entity_id id);
 local f32 GLOBAL_GAME_TIMESTEP_MODIFIER = 1;
 local void game_over_ui_setup(void);
 local void game_produce_damaging_explosion(v2f32 where, f32 radius, s32 effect_explosion_id, s32 damage_amount, s32 team_origin, u32 explosion_flags);
-
 struct game_state* game_state         = 0;
 local bool         disable_game_input = false;
 
@@ -45,6 +44,7 @@ local char game_command_console_line_input[GAME_COMMAND_CONSOLE_LINE_INPUT_MAX] 
 
 local void update_and_render_pause_game_menu_ui(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt);
 local void update_and_render_gameover_game_menu_ui(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt);
+local void update_and_render_save_game_menu_ui(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt);
 local void update_and_render_ingame_game_menu_ui(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt);
 
 /* defined in battle_ui.c */
@@ -967,10 +967,14 @@ local void level_area_clean_up(struct level_area* area) {
     }
 }
 
+#include "entity.c"
+
 /* this is a game level load, changes zone */
 void load_level_from_file(struct game_state* state, string filename) {
     passive_speaking_dialogue_clear_all();
     game_script_clear_all_awaited_scripts();
+    entity_particle_emitter_kill_all(&game_state->permenant_particle_emitters);
+    particle_list_kill_all_particles(&global_particle_list);
     cutscene_stop();
     level_area_clean_up(&state->loaded_area);
     memory_arena_clear_top(state->arena);
@@ -1000,14 +1004,20 @@ bool game_state_set_ui_state(struct game_state* state, u32 new_ui_state) {
     return false;
 }
 
+local void game_open_save_menu(void) {
+    save_menu_open_for_saving();
+    game_state_set_ui_state(game_state, UI_STATE_SAVEGAME);
+    game_state->ui_save.effects_timer = 0;
+    game_state->ui_save.phase         = UI_SAVE_MENU_PHASE_FADEIN;
+}
+
+
 local void _transition_callback_game_over(void*) {
     game_state_set_ui_state(game_state, UI_STATE_GAMEOVER);
     game_over_ui_setup();
 }
 
 local bool global_game_initiated_death_ui = false;
-
-#include "entity.c"
 
 void game_postprocess_blur(struct software_framebuffer* framebuffer, s32 quality_scale, f32 t, u32 blend_mode) {
 #ifdef NO_POSTPROCESSING
@@ -1473,42 +1483,6 @@ void game_initialize_game_world(void) {
         _debugprintf("no startup file!");
     }
 
-    {
-        struct entity*                  player  = game_get_player(game_state);
-        player->flags    |= ENTITY_FLAGS_ALIVE;
-        player->flags    |= ENTITY_FLAGS_PLAYER_CONTROLLED;
-        player->health.value = 100;
-        player->health.min = 100;
-        player->health.max = 100;
-        player->particle_attachment_TEST        = entity_particle_emitter_allocate(&game_state->permenant_particle_emitters);
-        player->light_attachment_TEST           = game_allocate_dynamic_light();
-        struct entity_particle_emitter* emitter = entity_particle_emitter_dereference(&game_state->permenant_particle_emitters, player->particle_attachment_TEST);
-        {
-            /* I want this to be like a bleed effect... */
-            emitter->time_per_spawn                  = 0.05;
-            emitter->position                        = player->position;
-            emitter->position.x                     /= TILE_UNIT_SIZE;
-            emitter->position.y                     /= TILE_UNIT_SIZE;
-            emitter->burst_amount                    = 128;
-            emitter->max_spawn_per_batch             = 1024;
-            emitter->max_spawn_batches               = -1;
-            emitter->color                           = color32u8(226, 88, 34, 255);
-            emitter->target_color                    = color32u8(59, 59, 56, 127);
-            /* emitter->color                           = color32u8(24, 226, 88, 255); */
-            /* emitter->target_color                    = color32u8(59, 59, 56, 127); */
-            emitter->starting_acceleration           = v2f32(0, -15.6);
-            emitter->starting_acceleration_variance  = v2f32(1.2, 1.2);
-            emitter->starting_velocity_variance      = v2f32(1.3, 0);
-            emitter->lifetime                        = 0.6;
-            emitter->lifetime_variance               = 0.35;
-
-            /* emitter->particle_type = ENTITY_PARTICLE_TYPE_FIRE; */
-            emitter->particle_feature_flags = ENTITY_PARTICLE_FEATURE_FLAG_FLAMES;
-
-            emitter->scale_uniform = 0.2;
-            emitter->scale_variance_uniform = 0.12;
-        }
-    }
 #if 0
     int _game_sandbox_testing(void);
     _game_sandbox_testing();
@@ -1773,7 +1747,6 @@ local void game_setup_death_ui(void) {
 local void update_and_render_ingame_game_menu_ui(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
 
     /* I seem to have a pretty inconsistent UI priority state thing. */
-
     if (state->shopping) {
         game_display_and_update_shop_ui(framebuffer, dt);
         return;
@@ -1810,6 +1783,7 @@ local void update_and_render_ingame_game_menu_ui(struct game_state* state, struc
                     game_loot_chest(state, chest);
                 }
             } break;
+
             case INTERACTABLE_TYPE_ENTITY_CONVERSATION: {
                 struct entity* to_speak = state->interactable_state.context;
 
@@ -1824,9 +1798,16 @@ local void update_and_render_ingame_game_menu_ui(struct game_state* state, struc
                     game_focus_camera_to_entity(to_speak);
                 }
             } break;
-            default: {
-                
+
+            case INTERACTABLE_TYPE_ENTITY_SAVEPOINT: {
+                struct entity_savepoint* savepoint = state->interactable_state.context;
+                software_framebuffer_draw_text_bounds_centered(framebuffer, font, 2, rectangle_f32(0, 400, framebuffer->width, framebuffer->height - 400),
+                                                               string_literal("save"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+                if (is_action_pressed(INPUT_ACTION_CONFIRMATION)) {
+                    game_open_save_menu();
+                }
             } break;
+                bad_case;
         }
     }
 
@@ -2083,6 +2064,9 @@ void update_and_render_game_menu_ui(struct game_state* state, struct software_fr
         } break;
         case UI_STATE_PAUSE: {
             update_and_render_pause_game_menu_ui(state, framebuffer, dt);
+        } break;
+        case UI_STATE_SAVEGAME: {
+            update_and_render_save_game_menu_ui(state, framebuffer, dt);
         } break;
             bad_case;
     }
@@ -2399,19 +2383,26 @@ void player_handle_radial_interactables(struct game_state* state, struct entity*
 
     f32 closest_interactive_distance = INFINITY;
 
-    Array_For_Each(it, struct entity_chest, area->chests, area->entity_chest_count) {
-        f32 distance_sq = v2f32_distance_sq(entity->position, v2f32_scale(it->position, TILE_UNIT_SIZE));
-        if (it->flags & ENTITY_CHEST_FLAGS_UNLOCKED) continue;
+    if (found_any_interactable) { return; }
+    {
+        Array_For_Each(it, struct entity_chest, area->chests, area->entity_chest_count) {
+            f32 distance_sq = v2f32_distance_sq(entity->position, v2f32_scale(it->position, TILE_UNIT_SIZE));
+            if (it->flags & ENTITY_CHEST_FLAGS_UNLOCKED) {
+                continue;   
+            }
 
-        if (distance_sq <= (ENTITY_CHEST_INTERACTIVE_RADIUS*ENTITY_CHEST_INTERACTIVE_RADIUS)) {
-            if (distance_sq < closest_interactive_distance) {
-                mark_interactable(state, INTERACTABLE_TYPE_CHEST, it);
-                found_any_interactable = true;
-                closest_interactive_distance = distance_sq;
+            if (distance_sq <= (ENTITY_CHEST_INTERACTIVE_RADIUS*ENTITY_CHEST_INTERACTIVE_RADIUS)) {
+                if (distance_sq < closest_interactive_distance) {
+                    mark_interactable(state, INTERACTABLE_TYPE_CHEST, it);
+                    found_any_interactable = true;
+                    closest_interactive_distance = distance_sq;
+                    break;
+                }
             }
         }
     }
 
+    if (found_any_interactable) { return; }
     {
         struct entity_iterator iterator = game_entity_iterator(state);
 
@@ -2424,8 +2415,28 @@ void player_handle_radial_interactables(struct game_state* state, struct entity*
                         mark_interactable(state, INTERACTABLE_TYPE_ENTITY_CONVERSATION, current_entity);
                         found_any_interactable = true;
                         closest_interactive_distance = distance_sq;
+                        break;
                     }
                 } 
+            }
+        }
+    }
+    if (found_any_interactable) { return; }
+    {
+        Array_For_Each(it, struct entity_savepoint, area->savepoints, area->entity_savepoint_count) {
+            f32 distance_sq = v2f32_distance_sq(entity->position, v2f32_scale(it->position, TILE_UNIT_SIZE));
+
+            if (it->flags & ENTITY_SAVEPOINT_FLAGS_DISABLED) {
+                continue;
+            }
+
+            if (distance_sq <= (ENTITY_SAVEPOINT_INTERACTIVE_RADIUS*ENTITY_SAVEPOINT_INTERACTIVE_RADIUS)) {
+                if (distance_sq < closest_interactive_distance) {
+                    mark_interactable(state, INTERACTABLE_TYPE_ENTITY_SAVEPOINT, it);
+                    found_any_interactable = true;
+                    distance_sq = distance_sq;
+                    break;
+                }
             }
         }
     }
@@ -2847,6 +2858,78 @@ struct entity* game_any_entity_at_tile_point(v2f32 xy) {
     }
 
     return NULL;
+}
+
+local void update_and_render_save_game_menu_ui(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
+    struct ui_save_menu* ui_state = &state->ui_save;
+    u32 blur_samples = 2;
+    f32 max_blur = 1.0;
+    f32 max_grayscale = 0.8;
+
+    switch (ui_state->phase) {
+        case UI_SAVE_MENU_PHASE_FADEIN: {
+            const f32 MAX_T = 0.7;
+            f32 effective_t = ui_state->effects_timer / MAX_T;
+
+            if (effective_t > 1)      effective_t = 1;
+            else if (effective_t < 0) effective_t = 0;
+
+            game_postprocess_blur(framebuffer, blur_samples, max_blur * (effective_t), BLEND_MODE_ALPHA);
+            game_postprocess_grayscale(framebuffer, max_grayscale * (effective_t));
+
+            if (ui_state->effects_timer >= MAX_T) {
+                ui_state->phase         = UI_SAVE_MENU_PHASE_IDLE;
+                ui_state->effects_timer = 0;
+                save_menu_open_for_saving();
+            }
+
+            ui_state->effects_timer += dt;
+            disable_game_input = true;
+        } break;
+
+        case UI_SAVE_MENU_PHASE_IDLE: {
+            game_postprocess_blur(framebuffer, blur_samples, max_blur, BLEND_MODE_ALPHA);
+            game_postprocess_grayscale(framebuffer, max_grayscale);
+
+            s32 save_menu_result = do_save_menu(framebuffer, dt);
+
+            switch (save_menu_result) {
+                case SAVE_MENU_PROCESS_ID_SAVED_EXIT: {
+                    ui_state->phase = UI_SAVE_MENU_PHASE_FADEOUT;
+                    ui_state->effects_timer = 0;
+                } break;
+                case SAVE_MENU_PROCESS_ID_LOADED_EXIT: {
+                    ui_state->phase = UI_SAVE_MENU_PHASE_FADEOUT;
+                    ui_state->effects_timer = 0;
+                } break;
+                case SAVE_MENU_PROCESS_ID_EXIT: {
+                    ui_state->phase = UI_SAVE_MENU_PHASE_FADEOUT;
+                    ui_state->effects_timer = 0;
+                } break;
+            }
+            disable_game_input = true;
+        } break;
+
+        case UI_SAVE_MENU_PHASE_FADEOUT: {
+            const f32 MAX_T = 0.7;
+            f32 effective_t = ui_state->effects_timer / MAX_T;
+
+            if (effective_t > 1)      effective_t = 1;
+            else if (effective_t < 0) effective_t = 0;
+
+            game_postprocess_blur(framebuffer, blur_samples, max_blur * (1-effective_t), BLEND_MODE_ALPHA);
+            game_postprocess_grayscale(framebuffer, max_grayscale * (1-effective_t));
+
+            if (ui_state->effects_timer >= MAX_T) {
+                game_state_set_ui_state(game_state, state->last_ui_state);
+                disable_game_input = false;
+            }
+
+            ui_state->effects_timer += dt;
+        } break;
+    }
+
+    return;
 }
 
 #include "game_script.c"

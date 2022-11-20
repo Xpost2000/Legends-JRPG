@@ -90,6 +90,7 @@ local string activation_type_strings[] = {
 
 enum ui_state {
     UI_STATE_INGAME,
+    UI_STATE_SAVEGAME,
     UI_STATE_PAUSE,
     UI_STATE_GAMEOVER,
     UI_STATE_COUNT,
@@ -431,13 +432,15 @@ enum interactable_type {
     INTERACTABLE_TYPE_NONE,
     INTERACTABLE_TYPE_CHEST,
     INTERACTABLE_TYPE_ENTITY_CONVERSATION,
+    INTERACTABLE_TYPE_ENTITY_SAVEPOINT,
     INTERACTABLE_TYPE_COUNT,
 };
 static string interactable_type_strings[] = {
-    string_literal("(none)"),
-    string_literal("(chest)"),
-    string_literal("(conversation)"),
-    string_literal("(count)"),
+    [INTERACTABLE_TYPE_NONE] = string_literal("(none)"),
+    [INTERACTABLE_TYPE_CHEST] = string_literal("(chest)"),
+    [INTERACTABLE_TYPE_ENTITY_CONVERSATION] = string_literal("(conversation)"),
+    [INTERACTABLE_TYPE_ENTITY_SAVEPOINT] = string_literal("(savepoint)"),
+    [INTERACTABLE_TYPE_COUNT] = string_literal("(count)"),
 };
 
 #define MAX_STORED_COMBAT_PARTICIPANTS (512)
@@ -491,6 +494,15 @@ s32  game_variables_count_all(void);
 #include "shop_def.c"
 
 #define MAX_GAME_DYNAMIC_LIGHT_POOL (1024)
+enum ui_save_menu_phase {
+    UI_SAVE_MENU_PHASE_FADEIN,
+    UI_SAVE_MENU_PHASE_IDLE,
+    UI_SAVE_MENU_PHASE_FADEOUT,
+};
+struct ui_save_menu {
+    s32 phase;
+    f32 effects_timer;
+};
 struct game_state {
     struct memory_arena* arena;
 
@@ -514,6 +526,8 @@ struct game_state {
 
     /* TODO add party member stuff! */
     struct player_party_inventory inventory;
+
+    struct ui_save_menu ui_save;
 
     bool                 shopping;
     struct shop_instance active_shop;

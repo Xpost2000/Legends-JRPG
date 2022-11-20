@@ -145,8 +145,10 @@ local s32 _do_save_menu_core(struct software_framebuffer* framebuffer, f32 y_off
         if (effective_slot_t > 1) effective_slot_t      = 1;
         else if (effective_slot_t < 0) effective_slot_t = 0;
 
-        if (selection_confirm) {
-            return save_slot_index;
+        if  (selection_confirm) {
+            if (global_save_menu_state.currently_selected_option_choice == save_slot_index) {
+                return save_slot_index;
+            }
         }
 
         if (global_save_menu_state.currently_selected_option_choice == save_slot_index) {
@@ -270,9 +272,9 @@ s32 do_save_menu(struct software_framebuffer* framebuffer, f32 dt) {
             if (selected_slot != -1) {
                 switch (global_save_menu_state.intent) {
                     case SAVE_MENU_INTENT_SAVING: {
-                        game_load_from_save_slot(selected_slot);
+                        game_write_save_slot(selected_slot);
+                        save_menu_close();
                         /* TODO: Need to have more fancy UI regarding saving! */
-                        return SAVE_MENU_PROCESS_ID_SAVED_EXIT;
                     } break;
                     case SAVE_MENU_INTENT_LOADING: {
                         /* load slot and start the game */

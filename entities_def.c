@@ -146,6 +146,7 @@ enum entity_savepoint_flags {
     ENTITY_SAVEPOINT_FLAGS_NONE     = 0,
     ENTITY_SAVEPOINT_FLAGS_DISABLED = BIT(0),
 };
+#define ENTITY_SAVEPOINT_INTERACTIVE_RADIUS ((f32)1.9565 * TILE_UNIT_SIZE)
 struct entity_savepoint {
     v2f32 position;
     u32   flags;
@@ -572,9 +573,6 @@ struct entity {
     /* this is just so I can zero out this thing and have expected behavior. */
     s32                           interacted_script_trigger_write_index;
     s32                           interacted_script_trigger_ids[32];
-
-    s32                           particle_attachment_TEST;
-    s32                           light_attachment_TEST;
 };
 
 void entity_snap_to_grid_position(struct entity* entity) {

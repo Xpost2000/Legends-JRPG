@@ -781,31 +781,6 @@ void update_entities(struct game_state* state, f32 dt, struct entity_iterator it
             continue;
         }
 
-        /** PARTICLE SYSTEM TEST */
-#if 0
-        if (current_entity->particle_attachment_TEST != 0) {
-            struct entity_particle_emitter* emitter = entity_particle_emitter_dereference(&game_state->permenant_particle_emitters, current_entity->particle_attachment_TEST);
-            if (emitter) {
-                emitter->position = current_entity->position;
-                emitter->position.x /= TILE_UNIT_SIZE;
-                emitter->position.y /= TILE_UNIT_SIZE;
-                emitter->position.x += 0.45;
-                emitter->position.y -= 0.4;
-                _debugprintf("HI! I'm NEW HERE: [%d]: %f, %f", current_entity->particle_attachment_TEST , emitter->position.x * TILE_UNIT_SIZE, emitter->position.y * TILE_UNIT_SIZE);
-                entity_particle_emitter_start_emitting(&game_state->permenant_particle_emitters, current_entity->particle_attachment_TEST);
-
-                emitter->spawn_shape = emitter_spawn_shape_circle(v2f32(0,0), normalized_sinf(global_elapsed_time*3) + 1.4, 0.2, false);
-            }
-        }
-
-        if (current_entity->light_attachment_TEST != 0) {
-            struct light_def* light = game_dereference_dynamic_light(current_entity->light_attachment_TEST);
-            light->position.x = current_entity->position.x/TILE_UNIT_SIZE;
-            light->position.y = current_entity->position.y/TILE_UNIT_SIZE;
-            light->power = normalized_sinf(global_elapsed_time*8)*10 + 10;
-            light->color = color32u8(255,255,255,255);
-        }
-#endif
         {
             if (!(current_entity->flags & ENTITY_FLAGS_NOCLIP)) {
                 /* _debugprintf("cx: %f, %f\n", current_entity->velocity.x, current_entity->velocity.y); */
