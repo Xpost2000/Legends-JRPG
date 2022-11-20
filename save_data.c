@@ -101,11 +101,17 @@ local s32 save_area_record_entry_count(void) {
 local struct memory_arena save_arena = {};
 
 void initialize_save_data(void) {
+#ifndef RELEASE
     save_arena = memory_arena_create_from_heap("Save Data Memory", Megabyte(16));
+#else
+    save_arena = memory_arena_push_sub_arena(&game_arena, Megabyte(4));
+#endif
 }
 
 void finish_save_data(void) {
+#ifndef RELEASE
     memory_arena_finish(&save_arena);
+#endif
 }
 
 /*

@@ -39,7 +39,7 @@ enum memory_arena_allocation_region {
     s32                  peak_top;              \
     s32                  peak_bottom;           \
     struct memory_arena* next;                  \
-    u8                   alloc_region;
+    u8                   alloc_region;          \
 
 struct memory_arena {
     Memory_Arena_Base;

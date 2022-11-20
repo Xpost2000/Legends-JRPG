@@ -24,6 +24,13 @@ struct memory_arena memory_arena_create_from_heap_growable(cstring name, u64 cap
 #endif
 
 void memory_arena_finish(struct memory_arena* arena) {
+#if 0
+    if (arena->parent) {
+        arena->memory = 0;
+        return;
+    }
+#endif
+
     system_heap_memory_deallocate(arena->memory);
     arena->memory = 0;
 }
@@ -58,8 +65,10 @@ void _memory_arena_usage_bounds_check(struct memory_arena* arena) {
 #endif
         }
     } else {
+#if 0 /* This triggers a warning on GCC, that I'm pretty sure is actually bogus */
         struct temporary_memory* temporary_arena = (struct temporary_memory*) arena;
         assertion((temporary_arena->used+temporary_arena->used_top+temporary_arena->parent->used +temporary_arena->parent->used_top) <= temporary_arena->parent->capacity);
+#endif
     }
 }
 
@@ -107,7 +116,7 @@ struct memory_arena memory_arena_push_sub_arena(struct memory_arena* arena, u64 
     char* name = MEMORY_ARENA_DEFAULT_NAME;
 
     struct memory_arena sub_arena = {};
-    /* sub_arena.parent = arena; */
+    /* sub_arena.parent   = arena; */
     sub_arena.memory   = memory_arena_push(arena, amount);
     sub_arena.capacity = amount;
     sub_arena.name     = name;

@@ -446,6 +446,7 @@ void deinitialize(void) {
     SDL_Quit();
     _memory_arena_peak_usages(&game_arena);
     _memory_arena_peak_usages(&scratch_arena);
+    _memory_arena_peak_usages(&save_arena);
 #ifdef USE_EDITOR
     _memory_arena_peak_usages(&editor_arena);
 #endif
