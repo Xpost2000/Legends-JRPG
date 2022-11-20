@@ -38,7 +38,7 @@ void inventory_remove_queued_item_usage(void) {
 
 void user_use_inventory_item_at_index(s32 item_index) {
     struct entity_inventory* inventory              = (struct entity_inventory*)(&game_state->inventory);
-    struct item_instance*    current_inventory_item = inventory->items + specific_inventory_ui_state.queued_item_use_index;
+    struct item_instance*    current_inventory_item = inventory->items + item_index;
     struct item_def*         item_base              = item_database_find_by_id(current_inventory_item->item);
 
     /* do not allow random items to be used. */
