@@ -135,6 +135,96 @@ local void parse_markup_details(struct rich_text_state* rich_text_state, string 
     
 }
 
+local s32 text_length_without_dialogue_rich_markup_length(string text) {
+    s32 length = 0;
+    for (s32 character_index = 0; character_index < text.length; ++character_index) {
+        switch (text.data[character_index]) {
+            case '\\': {
+                character_index += 2;
+                length          += 1;
+            } break;
+            case '[': {
+                s32 bracket_counter = 1;
+                character_index++;
+                while (bracket_counter > 0) {
+                    if (text.data[character_index] == '[') {
+                        bracket_counter += 1;
+                    } else if (text.data[character_index] == ']') {
+                        bracket_counter -= 1;
+                    }
+                    character_index++;
+                }
+            } break;
+            default: {
+                length += 1;
+            } break;
+        }
+    }
+    return length;
+}
+
+/* returns amount of characters to read */
+local s32 conversation_ui_advance_character(void) {
+    struct conversation* conversation = &game_state->current_conversation;
+    struct conversation_node* current_conversation_node = &conversation->nodes[game_state->current_conversation_node_id-1];
+
+    s32 fake_length = text_length_without_dialogue_rich_markup_length(current_conversation_node->text);
+
+    dialogue_ui.speak_timer = 0;
+
+#ifdef RICHTEXT_EXPERIMENTAL
+    /* NOTE: This doesn't do correct bounds checks */
+    if (current_conversation_node->text.data[dialogue_ui.parse_character_cursor] == '\\') {
+        dialogue_ui.parse_character_cursor++;
+    } else if (current_conversation_node->text.data[dialogue_ui.parse_character_cursor] == '[') {
+        s32 bracket_count = 1;
+
+        dialogue_ui.parse_character_cursor += 1;
+
+        s32 start_of_rich_markup = dialogue_ui.parse_character_cursor;
+
+        while (bracket_count > 0) {
+            if (current_conversation_node->text.data[dialogue_ui.parse_character_cursor] == '[') {
+                bracket_count += 1;
+            } else if (current_conversation_node->text.data[dialogue_ui.parse_character_cursor] == ']') {
+                bracket_count -= 1;
+            }
+
+            dialogue_ui.parse_character_cursor += 1;
+        }
+
+        s32 end_of_rich_markup = dialogue_ui.parse_character_cursor-1;
+
+        string markup_text = string_slice(current_conversation_node->text, start_of_rich_markup, end_of_rich_markup);
+        parse_markup_details(&dialogue_ui.rich_text_state, markup_text);
+    }
+
+    { /* rich text render path, this is adding / updating glyphs */
+        {
+            struct rich_text_state* rich_state = &dialogue_ui.rich_text_state;
+            bool skip_glyph    = false;
+
+            string current_character_string = string_slice(current_conversation_node->text,
+                                                           dialogue_ui.parse_character_cursor, dialogue_ui.parse_character_cursor+1);
+            /* char  current_character         =  */
+
+            struct rich_glyph* current_rich_glyph = &dialogue_ui.rich_text[dialogue_ui.rich_text_length++];
+            assertion(dialogue_ui.rich_text_length <= RICH_TEXT_CONVERSATION_UI_MAX_LENGTH && "Your text is too big!");
+
+            current_rich_glyph->scale            = rich_state->text_scale;
+            current_rich_glyph->breath_magnitude = rich_state->breath_magnitude;
+            current_rich_glyph->breath_speed     = rich_state->breath_speed;
+            current_rich_glyph->character        = current_character_string.data[0];
+            current_rich_glyph->font_id          = rich_state->font_id;
+        }
+    }
+#endif
+    dialogue_ui.visible_characters     += 1;
+    dialogue_ui.parse_character_cursor += 1;
+
+    return fake_length - dialogue_ui.visible_characters;
+}
+
 local void update_and_render_conversation_ui(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
     struct font_cache* font = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_YELLOW]);
     struct font_cache* font2 = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_GOLD]);
@@ -231,61 +321,11 @@ local void update_and_render_conversation_ui(struct game_state* state, struct so
         }
 #endif
 
-        if (dialogue_ui.visible_characters < current_conversation_node->text.length) {
+        if (dialogue_ui.visible_characters < text_length_without_dialogue_rich_markup_length(current_conversation_node->text)) {
             dialogue_ui.speak_timer += dt;
 
             if (dialogue_ui.speak_timer >= DIALOGUE_UI_CHARACTER_TYPE_TIMER) {
-                dialogue_ui.speak_timer = 0;
-
-                /* NOTE: This doesn't do correct bounds checks */
-                if (current_conversation_node->text.data[dialogue_ui.parse_character_cursor] == '\\') {
-                    dialogue_ui.parse_character_cursor++;
-                } else if (current_conversation_node->text.data[dialogue_ui.parse_character_cursor] == '[') {
-                    s32 bracket_count = 1;
-
-                    dialogue_ui.parse_character_cursor += 1;
-
-                    s32 start_of_rich_markup = dialogue_ui.parse_character_cursor;
-
-                    while (bracket_count > 0) {
-                        if (current_conversation_node->text.data[dialogue_ui.parse_character_cursor] == '[') {
-                            bracket_count += 1;
-                        } else if (current_conversation_node->text.data[dialogue_ui.parse_character_cursor] == ']') {
-                            bracket_count -= 1;
-                        }
-
-                        dialogue_ui.parse_character_cursor += 1;
-                    }
-
-                    s32 end_of_rich_markup = dialogue_ui.parse_character_cursor-1;
-
-                    string markup_text = string_slice(current_conversation_node->text, start_of_rich_markup, end_of_rich_markup);
-                    parse_markup_details(&dialogue_ui.rich_text_state, markup_text);
-                }
-
-#ifdef RICHTEXT_EXPERIMENTAL
-                { /* rich text render path, this is adding / updating glyphs */
-                    {
-                        struct rich_text_state* rich_state = &dialogue_ui.rich_text_state;
-                        bool skip_glyph    = false;
-
-                        string current_character_string = string_slice(current_conversation_node->text,
-                                                                       dialogue_ui.parse_character_cursor, dialogue_ui.parse_character_cursor+1);
-                        /* char  current_character         =  */
-
-                        struct rich_glyph* current_rich_glyph = &dialogue_ui.rich_text[dialogue_ui.rich_text_length++];
-                        assertion(dialogue_ui.rich_text_length <= RICH_TEXT_CONVERSATION_UI_MAX_LENGTH && "Your text is too big!");
-
-                        current_rich_glyph->scale            = rich_state->text_scale;
-                        current_rich_glyph->breath_magnitude = rich_state->breath_magnitude;
-                        current_rich_glyph->breath_speed     = rich_state->breath_speed;
-                        current_rich_glyph->character        = current_character_string.data[0];
-                        current_rich_glyph->font_id          = rich_state->font_id;
-                    }
-                }
-#endif
-                dialogue_ui.visible_characters     += 1;
-                dialogue_ui.parse_character_cursor += 1;
+                conversation_ui_advance_character();
             }
         }
     }
@@ -295,8 +335,10 @@ local void update_and_render_conversation_ui(struct game_state* state, struct so
         draw_ui_breathing_text(framebuffer, v2f32(dialogue_box_start_position.x + 30, dialogue_box_start_position.y + dialogue_box_extents.y - 10), font2, 2, string_literal("(proceed)"), 0451, color32f32(1,1,1,1));
 
         if (is_action_pressed(INPUT_ACTION_CONFIRMATION)) {
-            if (dialogue_ui.visible_characters < current_conversation_node->text.length) {
-                dialogue_ui.visible_characters = current_conversation_node->text.length;
+            if (conversation_ui_advance_character()) {
+                while (conversation_ui_advance_character()) {
+                    (void)(0);
+                }
             } else {
                 u32 target = current_conversation_node->target;
                 dialogue_ui_set_target_node(target);
