@@ -98,19 +98,81 @@ local void update_and_render_conversation_ui(struct game_state* state, struct so
             draw_ui_breathing_text_word_wrapped(framebuffer, v2f32(dialogue_box_start_position.x + 30, dialogue_box_start_position.y + 50), dialogue_box_extents.x * 0.76, font, 2, string_slice(current_conversation_node->text, 0, dialogue_ui.visible_characters), 1492, color32f32(1,1,1,1));
         }
 #else
+        /* NOTE: this can be moved out when I'm "done" */
+        f32 start_x_cursor        = dialogue_box_start_position.x + 30;
+        f32 start_y_cursor        = dialogue_box_start_position.y + 50;
+        f32 x_cursor              = start_x_cursor;
+        f32 y_cursor              = start_y_cursor;
+        f32 tallest_glyph_on_line = 0;
+
+        f32 wrap_bounds_w = dialogue_box_extents.x * 0.75;
+
         for (s32 rich_glyph_index = 0; rich_glyph_index < dialogue_ui.rich_text_length; ++rich_glyph_index) {
             struct rich_glyph* current_glyph          = dialogue_ui.rich_text + rich_glyph_index;
             struct font_cache* glyph_font             = game_get_font(current_glyph->font_id);
-            v2f32              glyph_where            = v2f32(current_glyph->x, current_glyph->y);
             f32                glyph_scale            = current_glyph->scale;
             f32                glyph_breath_magnitude = current_glyph->breath_magnitude;
             f32                glyph_breath_speed     = current_glyph->breath_speed;
             char               glyph_character        = current_glyph->character;
 
-            glyph_where.x += dialogue_box_start_position.x + 30;
-            glyph_where.y += dialogue_box_start_position.y + 50;
+            /* The word wrap here is going to be **very** slow, so I'm very sorry for myself... */
+            /*
+              NOTE: I originally planned to precalculate this (when I pushed glyphs.) If it becomes slow enough
+              I'll revert the changes and try to do it the other way around.
+            */
+            f32 estimated_width_of_current_word = 0;
+            {
+                s32 word_start = rich_glyph_index;
+                s32 word_end   = word_start;
+                {
 
-            software_framebuffer_draw_glyph(framebuffer, glyph_font, glyph_scale, glyph_where, glyph_character-32, color32f32_WHITE, BLEND_MODE_ALPHA);
+                    for (; word_end < dialogue_ui.rich_text_length; ++word_end) {
+                        if (is_whitespace(dialogue_ui.rich_text[word_end].character)) {
+                            break;
+                        }
+                    }
+
+                }
+
+                {
+                    for (s32 glyph_index = word_start; glyph_index < word_end; ++glyph_index) {
+                        struct rich_glyph* current_glyph          = dialogue_ui.rich_text + glyph_index;
+                        struct font_cache* glyph_font             = game_get_font(current_glyph->font_id);
+                        f32                glyph_scale            = current_glyph->scale;
+                        char               glyph_character        = current_glyph->character;
+
+                        string glyph_string = {};
+                        glyph_string.data   = &glyph_character;
+                        glyph_string.length = 1;
+                        f32 glyph_width = font_cache_text_width(glyph_font, glyph_string, glyph_scale);
+                        estimated_width_of_current_word += glyph_width;
+                    }
+                }
+
+            }
+
+            string glyph_string = {};
+            glyph_string.data   = &glyph_character;
+            glyph_string.length = 1;
+
+            f32 glyph_width   = font_cache_text_width(glyph_font, glyph_string, glyph_scale);
+            f32 glyph_height  = font_cache_text_height(glyph_font) * glyph_scale;
+
+            if (glyph_height > tallest_glyph_on_line) {
+                tallest_glyph_on_line = glyph_height;
+            }
+
+            if (glyph_character == '\n' || (x_cursor-start_x_cursor)+estimated_width_of_current_word > wrap_bounds_w) {
+                x_cursor =  start_x_cursor;
+                y_cursor += tallest_glyph_on_line;
+                tallest_glyph_on_line = 0;
+            }
+
+            f32 character_displacement_y = sinf((global_elapsed_time*glyph_breath_speed)) * glyph_breath_magnitude;
+            if (glyph_character != '\n') {
+                software_framebuffer_draw_glyph(framebuffer, glyph_font, glyph_scale, v2f32(x_cursor, y_cursor+character_displacement_y), glyph_character-32, color32f32_WHITE, BLEND_MODE_ALPHA);
+                x_cursor += glyph_width;
+            }
         }
 #endif
 
@@ -124,61 +186,18 @@ local void update_and_render_conversation_ui(struct game_state* state, struct so
                 { /* rich text render path, this is adding / updating glyphs */
                     {
                         struct rich_text_state* rich_state = &dialogue_ui.rich_text_state;
-
-                        bool needs_newline = false;
                         bool skip_glyph    = false;
 
-                        string current_character_string = string_slice(current_conversation_node->text,
-                                                                       dialogue_ui.visible_characters, dialogue_ui.visible_characters+1);
-                        /* TODO word wrap */
+                        string current_character_string = string_slice(current_conversation_node->text, dialogue_ui.visible_characters, dialogue_ui.visible_characters+1);
 
-                        if (current_character_string.data[0] == '\n') {
-                            needs_newline = true;
-                            skip_glyph    = true;
-                        }
+                        struct rich_glyph* current_rich_glyph = &dialogue_ui.rich_text[dialogue_ui.rich_text_length++];
+                        assertion(dialogue_ui.rich_text_length <= RICH_TEXT_CONVERSATION_UI_MAX_LENGTH && "Your text is too big!");
 
-                        /* readding word wrap */
-                        if (!needs_newline) {
-                            string current_viewable_slice = string_slice(current_conversation_node->text, 0, dialogue_ui.visible_characters);
-                            f32 current_x_cursor = rich_state->x_cursor;
-                            f32 wrap_bounds_w = dialogue_box_extents.x * 0.70;
-                            {
-                                if (current_x_cursor > wrap_bounds_w) {
-                                    needs_newline = true;
-                                }
-                            }
-                        }
-
-                        if (needs_newline) {
-                            rich_state->x_cursor                      = 0;
-                            rich_state->y_cursor                     += rich_state->tallest_glyph_height_on_line;
-                            rich_state->tallest_glyph_height_on_line  = 0;
-                        }
-
-                        if (!skip_glyph) {
-                            struct rich_glyph* current_rich_glyph = &dialogue_ui.rich_text[dialogue_ui.rich_text_length++];
-                            _debugprintf("HI! NEW GLYPH (%d)(%c)\n", dialogue_ui.rich_text_length, current_character_string.data[0]);
-                            assertion(dialogue_ui.rich_text_length <= RICH_TEXT_CONVERSATION_UI_MAX_LENGTH && "Your text is too big!");
-
-                            current_rich_glyph->x                = rich_state->x_cursor;
-                            current_rich_glyph->y                = rich_state->y_cursor;
-                            current_rich_glyph->scale            = rich_state->text_scale;
-                            current_rich_glyph->breath_magnitude = rich_state->breath_magnitude;
-                            current_rich_glyph->breath_speed     = rich_state->breath_speed;
-                            current_rich_glyph->character        = current_character_string.data[0];
-                            current_rich_glyph->font_id          = rich_state->font_id;
-
-                            struct font_cache* glyph_font = game_get_font(current_rich_glyph->font_id);
-                            f32 font_scale   = current_rich_glyph->scale;
-                            f32 glyph_width  = font_cache_text_width(glyph_font, current_character_string, font_scale);
-                            f32 glyph_height = font_cache_text_height(glyph_font) * font_scale;
-
-                            if (glyph_height > rich_state->tallest_glyph_height_on_line) {
-                                rich_state->tallest_glyph_height_on_line = glyph_height;
-                            }
-
-                            rich_state->x_cursor += glyph_width;
-                        }
+                        current_rich_glyph->scale            = rich_state->text_scale;
+                        current_rich_glyph->breath_magnitude = rich_state->breath_magnitude;
+                        current_rich_glyph->breath_speed     = rich_state->breath_speed;
+                        current_rich_glyph->character        = current_character_string.data[0];
+                        current_rich_glyph->font_id          = rich_state->font_id;
                     }
                 }
 #endif
