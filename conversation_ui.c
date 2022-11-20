@@ -25,8 +25,6 @@ struct rich_text_state {
 };
 
 struct rich_glyph {
-    f32  x;
-    f32  y;
     f32  scale;
     f32  breath_magnitude;
     f32  breath_speed;
@@ -80,6 +78,61 @@ void dialogue_ui_set_target_node(u32 id) {
     if (id == 0) {
         game_finish_conversation(game_state);
     }
+}
+
+s32 fontname_string_to_id(string name) {
+    local struct {
+        string first;
+        s32    result;
+    } string_table_mapping_to_font_id[] = {
+        {string_literal("gold"),     MENU_FONT_COLOR_GOLD},
+        {string_literal("orange"),   MENU_FONT_COLOR_ORANGE},
+        {string_literal("lime"),     MENU_FONT_COLOR_LIME},
+        {string_literal("skyblue"),  MENU_FONT_COLOR_SKYBLUE},
+        {string_literal("purple"),   MENU_FONT_COLOR_PURPLE},
+        {string_literal("blue"),     MENU_FONT_COLOR_BLUE},
+        {string_literal("steel"),    MENU_FONT_COLOR_STEEL},
+        {string_literal("white"),    MENU_FONT_COLOR_WHITE},
+        {string_literal("yellow"),   MENU_FONT_COLOR_YELLOW},
+        {string_literal("bloodred"), MENU_FONT_COLOR_BLOODRED},
+        {string_literal("red"),      MENU_FONT_COLOR_BLOODRED},
+    };
+
+    for (s32 mapping_index = 0; mapping_index < array_count(string_table_mapping_to_font_id); ++mapping_index) {
+        if (string_equal(name, string_table_mapping_to_font_id[mapping_index].first)) {
+            return string_table_mapping_to_font_id[mapping_index].result;
+        }
+    }
+
+    return MENU_FONT_COLOR_GOLD;
+}
+
+local void parse_markup_details(struct rich_text_state* rich_text_state, string text_data) {
+    /* lisp forms */ 
+    struct lisp_list markup_forms = lisp_read_string_into_forms(&scratch_arena, text_data);
+
+    /* NOTE: no error checking */
+    for (s32 markup_form_index = 0; markup_form_index < markup_forms.count; ++markup_form_index) {
+        struct lisp_form* current_form  = markup_forms.forms + markup_form_index;
+        struct lisp_form* name_part     = lisp_list_nth(current_form, 0);
+        struct lisp_form* argument_part = lisp_list_nth(current_form, 1);
+
+        if (lisp_form_symbol_matching(*name_part, string_literal("font"))) {
+            string font_name = {};
+            assertion(lisp_form_get_string(*argument_part, &font_name) && "Bad font string");
+            s32 new_font_id = fontname_string_to_id(font_name);
+            rich_text_state->font_id = new_font_id;
+        } else if (lisp_form_symbol_matching(*name_part, string_literal("breath_speed"))) {
+            assertion(lisp_form_get_f32(*argument_part, &rich_text_state->breath_speed) && "Bad breath speed value");
+        } else if (lisp_form_symbol_matching(*name_part, string_literal("breath_magnitude"))) {
+            assertion(lisp_form_get_f32(*argument_part, &rich_text_state->breath_magnitude) && "Bad breath magnitude value");
+        } else if (lisp_form_symbol_matching(*name_part, string_literal("text_scale"))) {
+            assertion(lisp_form_get_f32(*argument_part, &rich_text_state->text_scale) && "Bad text scale value");
+        } else if (lisp_form_symbol_matching(*name_part, string_literal("reset"))) {
+            *rich_text_state = rich_text_state_default();
+        }
+    }
+    
 }
 
 local void update_and_render_conversation_ui(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
@@ -184,13 +237,40 @@ local void update_and_render_conversation_ui(struct game_state* state, struct so
             if (dialogue_ui.speak_timer >= DIALOGUE_UI_CHARACTER_TYPE_TIMER) {
                 dialogue_ui.speak_timer = 0;
 
+                /* NOTE: This doesn't do correct bounds checks */
+                if (current_conversation_node->text.data[dialogue_ui.parse_character_cursor] == '\\') {
+                    dialogue_ui.parse_character_cursor++;
+                } else if (current_conversation_node->text.data[dialogue_ui.parse_character_cursor] == '[') {
+                    s32 bracket_count = 1;
+
+                    dialogue_ui.parse_character_cursor += 1;
+
+                    s32 start_of_rich_markup = dialogue_ui.parse_character_cursor;
+
+                    while (bracket_count > 0) {
+                        if (current_conversation_node->text.data[dialogue_ui.parse_character_cursor] == '[') {
+                            bracket_count += 1;
+                        } else if (current_conversation_node->text.data[dialogue_ui.parse_character_cursor] == ']') {
+                            bracket_count -= 1;
+                        }
+
+                        dialogue_ui.parse_character_cursor += 1;
+                    }
+
+                    s32 end_of_rich_markup = dialogue_ui.parse_character_cursor-1;
+
+                    string markup_text = string_slice(current_conversation_node->text, start_of_rich_markup, end_of_rich_markup);
+                    parse_markup_details(&dialogue_ui.rich_text_state, markup_text);
+                }
+
 #ifdef RICHTEXT_EXPERIMENTAL
                 { /* rich text render path, this is adding / updating glyphs */
                     {
                         struct rich_text_state* rich_state = &dialogue_ui.rich_text_state;
                         bool skip_glyph    = false;
 
-                        string current_character_string = string_slice(current_conversation_node->text, dialogue_ui.visible_characters, dialogue_ui.visible_characters+1);
+                        string current_character_string = string_slice(current_conversation_node->text,
+                                                                       dialogue_ui.parse_character_cursor, dialogue_ui.parse_character_cursor+1);
                         /* char  current_character         =  */
 
                         struct rich_glyph* current_rich_glyph = &dialogue_ui.rich_text[dialogue_ui.rich_text_length++];
@@ -204,7 +284,8 @@ local void update_and_render_conversation_ui(struct game_state* state, struct so
                     }
                 }
 #endif
-                dialogue_ui.visible_characters += 1;
+                dialogue_ui.visible_characters     += 1;
+                dialogue_ui.parse_character_cursor += 1;
             }
         }
     }
