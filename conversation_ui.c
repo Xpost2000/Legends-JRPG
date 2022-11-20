@@ -15,10 +15,11 @@ struct rich_text_state {
     s32 font_id;
     f32 text_scale;
 
-#if 0
+#if 1
     /* Do later, not sure how to work this one out honestly. */
     f32 delay_timer;
     f32 text_type_speed;
+    f32 type_trauma;
 #endif
 };
 
@@ -46,9 +47,11 @@ struct rich_text_state rich_text_state_default(void) {
     return (struct rich_text_state) {
         .breath_speed     = 0,
         .breath_magnitude = 0,
-        /* .text_delay       = DIALOGUE_UI_CHARACTER_TYPE_TIMER, */
+        .delay_timer      = 0,
+        .text_type_speed  = DIALOGUE_UI_CHARACTER_TYPE_TIMER,
         .font_id          = MENU_FONT_COLOR_YELLOW,
         .text_scale       = 2,
+        .type_trauma      = 0,
     };
 }
 
@@ -126,6 +129,12 @@ local void parse_markup_details(struct rich_text_state* rich_text_state, string 
             assertion(lisp_form_get_f32(*argument_part, &rich_text_state->text_scale) && "Bad text scale value");
         } else if (lisp_form_symbol_matching(*name_part, string_literal("reset"))) {
             *rich_text_state = rich_text_state_default();
+        } else if (lisp_form_symbol_matching(*name_part, string_literal("type_speed"))) {
+            assertion(lisp_form_get_f32(*argument_part, &rich_text_state->text_type_speed) && "Bad type speed");
+        } else if (lisp_form_symbol_matching(*name_part, string_literal("delay_timer"))) {
+            assertion(lisp_form_get_f32(*argument_part, &rich_text_state->delay_timer) && "Bad delay timer");
+        } else if (lisp_form_symbol_matching(*name_part, string_literal("type_trauma"))) {
+            assertion(lisp_form_get_f32(*argument_part, &rich_text_state->type_trauma) && "Bad trauma value");
         }
     }
     
@@ -170,7 +179,9 @@ local s32 conversation_ui_advance_character(void) {
         return 0;
     }
 
-    dialogue_ui.speak_timer = 0;
+    dialogue_ui.speak_timer                 = 0;
+    dialogue_ui.rich_text_state.delay_timer = 0;
+    camera_traumatize(&game_state->camera, dialogue_ui.rich_text_state.type_trauma);
 
 #ifdef RICHTEXT_EXPERIMENTAL
     /* NOTE: This doesn't do correct bounds checks */
@@ -322,10 +333,14 @@ local void update_and_render_conversation_ui(struct game_state* state, struct so
 #endif
 
         if (dialogue_ui.visible_characters < text_length_without_dialogue_rich_markup_length(current_conversation_node->text)) {
-            dialogue_ui.speak_timer += dt;
+            if (dialogue_ui.rich_text_state.delay_timer > 0) {
+                dialogue_ui.rich_text_state.delay_timer -= dt;
+            } else {
+                dialogue_ui.speak_timer += dt;
 
-            if (dialogue_ui.speak_timer >= DIALOGUE_UI_CHARACTER_TYPE_TIMER) {
-                conversation_ui_advance_character();
+                if (dialogue_ui.speak_timer >= dialogue_ui.rich_text_state.text_type_speed) {
+                    conversation_ui_advance_character();
+                }
             }
         }
     }
