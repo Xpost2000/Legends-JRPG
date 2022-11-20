@@ -1,9 +1,11 @@
 /*
   TODO: might be using too many globals.
-  TODO:
-  Move the common inventory viewing code elsewhere.
+  TODO: Move the common inventory viewing code elsewhere.
 
   Probably just going to call inventory viewer.
+
+  NOTE 11/19: It's highly likely I'm not doing whatever the above TODOs said,
+  because there's kind of no reason to as far as I'm concerned.
  */
 enum shopping_ui_animation_phase {
     SHOPPING_UI_ANIMATION_PHASE_FADE_IN,
@@ -285,6 +287,7 @@ local void do_gold_counter(struct software_framebuffer* framebuffer, f32 dt) {
 /* There is duplicated code. Beware, and maybe try and shrink this. */
 local void do_shopping_menu(struct software_framebuffer* framebuffer, f32 x, bool allow_input, s32 shop_mode) {
     struct font_cache* normal_font      = game_get_font(MENU_FONT_COLOR_WHITE);
+    struct font_cache* usable_font      = game_get_font(MENU_FONT_COLOR_LIME);
     struct font_cache* highlighted_font = game_get_font(MENU_FONT_COLOR_GOLD);
 
     union color32f32 modulation_color = color32f32_WHITE;
@@ -398,10 +401,6 @@ local void do_shopping_menu(struct software_framebuffer* framebuffer, f32 x, boo
             s32                lookup_index  = shopping_ui.shop_filtered_array[item_index];
             struct font_cache* painting_text = normal_font;
 
-            if (item_index == shopping_ui.shopping_item_index) {
-                painting_text = highlighted_font;
-            }
-
             s32              price           = 0;
             struct item_def* item_base       = 0;
             s32              item_stack_size = 0;
@@ -420,6 +419,23 @@ local void do_shopping_menu(struct software_framebuffer* framebuffer, f32 x, boo
                 item_stack_size                              = current_inventory_item->count;
                 item_max_size                                = current_inventory_item->count;
             }
+
+            /* special code for the inventory, highlight usable items. */
+            {
+                if (shop_mode == SHOPPING_MODE_VIEWING) {
+                    struct item_instance* current_inventory_item = inventory->items + lookup_index;
+                    item_base                                    = item_database_find_by_id(current_inventory_item->item);
+
+                    if (item_base->type == ITEM_TYPE_CONSUMABLE_ITEM) {
+                        painting_text = usable_font;
+                    }
+                }
+            }
+
+            if (item_index == shopping_ui.shopping_item_index) {
+                painting_text = highlighted_font;
+            }
+
 
             string item_name = item_base->name;
 
@@ -498,9 +514,6 @@ local void do_shopping_menu(struct software_framebuffer* framebuffer, f32 x, boo
             /* This is a bit nasty, but I'd rather handle it here. */
             if (shop_mode != SHOPPING_MODE_VIEWING) {
                 shop_ui_set_phase(SHOPPING_UI_ANIMATION_PHASE_SLIDE_OUT_SHOPPING);
-            } else {
-                void close_party_inventory_screen(void);
-                close_party_inventory_screen();
             }
         }
     }

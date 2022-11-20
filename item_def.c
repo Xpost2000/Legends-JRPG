@@ -1,7 +1,7 @@
 /*
-  I think I may need to restructure this, but I'll really know once
-  I try to turn this into a bunch of files.
- */
+  There are very few usages of items in the codebase, and the game
+  design right now which kind of hurts!
+*/
 #ifndef ITEM_DEF_C
 #define ITEM_DEF_C
 

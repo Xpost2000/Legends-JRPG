@@ -1,13 +1,31 @@
-/* 8/26, man this thing has been code rotting... */
+#define DIALOGUE_UI_CHARACTER_TYPE_TIMER (0.045)
+
 struct {
     f32 timer;
     f32 speak_timer;
     s32 visible_characters;
 } dialogue_ui;
 
+struct rich_text_state {
+    f32 breath_magnitude;
+    f32 breath_speed;
+    f32 text_delay;
+    s32 font_id;
+    f32 text_scale;
+};
+
+struct rich_text_state rich_text_state_default(void) {
+    return (struct rich_text_state) {
+        .breath_speed     = 0,
+        .breath_magnitude = 0,
+        .text_delay       = DIALOGUE_UI_CHARACTER_TYPE_TIMER,
+        .font_id          = MENU_FONT_COLOR_YELLOW,
+        .text_scale       = 2,
+    };
+}
+
 /* I would like to vary dialogue, but that takes a lot of extra mark up and rewriting... */
 /* for now just keep it like this. */
-#define DIALOGUE_UI_CHARACTER_TYPE_TIMER (0.045)
 void dialogue_ui_setup_for_next_line_of_dialogue(void) {
     dialogue_ui.speak_timer        = 0;
     dialogue_ui.visible_characters = 0;

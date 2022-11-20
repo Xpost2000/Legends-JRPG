@@ -25,7 +25,8 @@ local void repopulate_inventory_view(void) {
 }
 
 void open_party_inventory_screen(void) {
-    shopping_ui.phase = INVENTORY_UI_ANIMATION_PHASE_IDLE;
+    shopping_ui.phase = INVENTORY_UI_ANIMATION_PHASE_SLIDE_IN;
+    /* shopping_ui.phase = INVENTORY_UI_ANIMATION_PHASE_IDLE; */
     repopulate_inventory_view();
     specific_inventory_ui_state.queued_item_use_index = -1;
     specific_inventory_ui_state.confirmation_popup_selection = 0;
@@ -36,6 +37,15 @@ void inventory_remove_queued_item_usage(void) {
 }
 
 void user_use_inventory_item_at_index(s32 item_index) {
+    struct entity_inventory* inventory              = (struct entity_inventory*)(&game_state->inventory);
+    struct item_instance*    current_inventory_item = inventory->items + specific_inventory_ui_state.queued_item_use_index;
+    struct item_def*         item_base              = item_database_find_by_id(current_inventory_item->item);
+
+    /* do not allow random items to be used. */
+    if (item_base->type != ITEM_TYPE_CONSUMABLE_ITEM) {
+        return;
+    }
+
     if (specific_inventory_ui_state.queued_item_use_index == -1) {
         specific_inventory_ui_state.queued_item_use_index = item_index;
         _debugprintf("item index: %d", item_index);
@@ -70,9 +80,9 @@ local void do_inventory_use_item_popup(struct software_framebuffer* framebuffer,
     struct font_cache* normal_font      = game_get_font(MENU_FONT_COLOR_WHITE);
     struct font_cache* highlighted_font = game_get_font(MENU_FONT_COLOR_GOLD);
 
-    struct entity_inventory* inventory             = (struct entity_inventory*)(&game_state->inventory);
-    struct item_instance*   current_inventory_item = inventory->items + specific_inventory_ui_state.queued_item_use_index;
-    struct item_def*  item_base             = item_database_find_by_id(current_inventory_item->item);
+    struct entity_inventory* inventory              = (struct entity_inventory*)(&game_state->inventory);
+    struct item_instance*    current_inventory_item = inventory->items + specific_inventory_ui_state.queued_item_use_index;
+    struct item_def*         item_base              = item_database_find_by_id(current_inventory_item->item);
 
     string confirmation_string = format_temp_s("Use \"%.*s\"?", item_base->name.length, item_base->name.data);
     f32 text_width  = font_cache_text_width(normal_font, confirmation_string, TEXT_SCALE); 
@@ -146,6 +156,7 @@ local void do_inventory_use_item_popup(struct software_framebuffer* framebuffer,
                     s32 index = specific_inventory_ui_state.queued_item_use_index;
                     struct item_def* item = item_database_find_by_id(inventory->items[index].item);
 
+                    /* should this type checking really be here? */
                     if (item->type != ITEM_TYPE_MISC) {
                         _debugprintf("use item \"%.*s\"", item->name.length, item->name.data);
 
@@ -169,6 +180,23 @@ local void update_and_render_party_inventory_screen(struct game_state* state, st
     struct font_cache* highlighted_font = game_get_font(MENU_FONT_COLOR_GOLD);
 
     switch (shopping_ui.phase) {
+        case INVENTORY_UI_ANIMATION_PHASE_SLIDE_IN: {
+            const f32 MAX_TIME = 1.6f;
+
+            f32 t  = shopping_ui.timer / (MAX_TIME-0.6);
+            f32 t2 = (shopping_ui.timer-1.0) / 0.6;
+            if (t2 < 0)    t2 = 0.0;
+            if (t2 >= 1.0) t2 = 1.0;
+            if (t >= 1.0)  t  = 1.0;
+
+            if (shopping_ui.timer >= MAX_TIME) {
+                shop_ui_set_phase(SHOPPING_UI_ANIMATION_PHASE_IDLE);
+            }
+
+            do_shopping_menu(framebuffer, lerp_f32(-999, FINAL_SHOPPING_MENU_X, t), false, SHOPPING_MODE_VIEWING);
+            software_framebuffer_draw_text(framebuffer, normal_font, 4, v2f32(10, 10), string_literal("INVENTORY"), color32f32(1,1,1,t2), BLEND_MODE_ALPHA);
+            shopping_ui.timer += dt;
+        } break;
         case INVENTORY_UI_ANIMATION_PHASE_IDLE: {
             do_gold_counter(framebuffer, dt);
 
@@ -182,6 +210,24 @@ local void update_and_render_party_inventory_screen(struct game_state* state, st
             software_framebuffer_draw_text(framebuffer, normal_font, 4, v2f32(10, 10),
                                            string_literal("INVENTORY"), color32f32_WHITE, BLEND_MODE_ALPHA);
             do_inventory_use_item_popup(framebuffer, should_use_input);
+        } break;
+        case INVENTORY_UI_ANIMATION_PHASE_SLIDE_OUT: {
+            const f32 MAX_TIME = 1.6f;
+
+            f32 t  = shopping_ui.timer / (MAX_TIME-0.6);
+            f32 t2 = (shopping_ui.timer-1.0) / 0.6;
+            if (t2 < 0)    t2 = 0.0;
+            if (t2 >= 1.0) t2 = 1.0;
+            if (t >= 1.0)  t  = 1.0;
+
+            if (shopping_ui.timer >= MAX_TIME) {
+                close_party_inventory_screen();
+                shopping_ui.timer = 0;
+            }
+
+            do_shopping_menu(framebuffer, lerp_f32(-999, FINAL_SHOPPING_MENU_X, (1.0 - t)), false, SHOPPING_MODE_VIEWING);
+            software_framebuffer_draw_text(framebuffer, normal_font, 4, v2f32(10, 10), string_literal("INVENTORY"), color32f32(1,1,1,(1.0 - t2)), BLEND_MODE_ALPHA);
+            shopping_ui.timer += dt;
         } break;
         default: {
             _debugprintf("bad case");
