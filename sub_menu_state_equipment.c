@@ -3,7 +3,14 @@
 /* TODO: better UI state handling, since we don't consume events properly. */
 #define EQUIPMENT_SCREEN_SPIN_TIMER_LENGTH (0.2)
 
+enum equipment_screen_phase {
+    EQUIPMENT_SCREEN_PHASE_SLIDE_IN,
+    EQUIPMENT_SCREEN_PHASE_IDLE,
+    EQUIPMENT_SCREEN_PHASE_SLIDE_OUT,
+};
+
 struct {
+    s32       phase;
     entity_id focus_entity;
 
     s32 direction_index;
@@ -33,8 +40,9 @@ struct {
 /* render the entity but spinning their directional animations */
 local void open_equipment_screen(entity_id target_id) {
     equipment_screen_state.inventory_slot_selection = 0;
-    equipment_screen_state.equip_slot_selection = 0;
-    equipment_screen_state.focus_entity = target_id;
+    equipment_screen_state.equip_slot_selection     = 0;
+    equipment_screen_state.focus_entity             = target_id;
+    equipment_screen_state.phase                    = EQUIPMENT_SCREEN_PHASE_SLIDE_IN;
 }
 
 local void equipment_screen_build_new_filtered_item_list(s32 filter_mask) {
@@ -165,7 +173,7 @@ local s32 filter_mask_slot_table_map[] = {
 
     EQUIPMENT_SLOT_FLAG_WEAPON,
 };
-local void do_entity_equipment_panel(struct software_framebuffer* framebuffer, f32 x, f32 y, struct entity* entity) {
+local void do_entity_equipment_panel(struct software_framebuffer* framebuffer, f32 x, f32 y, struct entity* entity, bool allow_input) {
     local string info_labels[] = {
         string_literal("HEAD:"),
         string_literal("CHST:"),
@@ -177,6 +185,10 @@ local void do_entity_equipment_panel(struct software_framebuffer* framebuffer, f
 
         string_literal("WPN:"),
     };
+
+    bool action_move_down = is_action_down_with_repeat(INPUT_ACTION_MOVE_DOWN);
+    bool action_move_up   = is_action_down_with_repeat(INPUT_ACTION_MOVE_UP);
+    bool action_pause     = is_action_pressed(INPUT_ACTION_PAUSE);
 
     f32 largest_label_width = 0;
 
@@ -199,6 +211,7 @@ local void do_entity_equipment_panel(struct software_framebuffer* framebuffer, f
         s32 index = 0;
         f32 y_cursor = y+15;
 
+        /* NOTE: can refactor easily later. */
         for (; index < array_count(info_labels)-3; ++index) {
             f32 offset_indent = 15;
             software_framebuffer_draw_text(framebuffer, label_name_font, font_scale, v2f32(x+offset_indent, y_cursor), info_labels[index], color32f32_WHITE, BLEND_MODE_ALPHA);
@@ -266,14 +279,14 @@ local void do_entity_equipment_panel(struct software_framebuffer* framebuffer, f
     }
 
     if (!equipment_screen_state.inventory_pick_mode) {
-        if (is_action_down_with_repeat(INPUT_ACTION_MOVE_DOWN)) {
+        if (action_move_down) {
             equipment_screen_state.equip_slot_selection += 1;
             if (equipment_screen_state.equip_slot_selection >= array_count(info_labels)) {
                 equipment_screen_state.equip_slot_selection = 0;
             }
 
             equipment_screen_build_new_filtered_item_list(filter_mask_slot_table_map[equipment_screen_state.equip_slot_selection]);
-        } else if (is_action_down_with_repeat(INPUT_ACTION_MOVE_UP)) {
+        } else if (action_move_up) {
             equipment_screen_state.equip_slot_selection -= 1;
             if (equipment_screen_state.equip_slot_selection < 0) {
                 equipment_screen_state.equip_slot_selection = array_count(info_labels)-1;
@@ -299,7 +312,7 @@ local void do_entity_equipment_panel(struct software_framebuffer* framebuffer, f
             }
         }
 
-        if (is_action_pressed(INPUT_ACTION_PAUSE) || (is_action_pressed(INPUT_ACTION_CANCEL) && allow_cancel_input_to_leave_equipment)) {
+        if (action_pause || (equipment_screen_state.cancel_pressed && allow_cancel_input_to_leave_equipment)) {
             struct ui_pause_menu* menu_state = &game_state->ui_pause;
             menu_state->animation_state     = UI_PAUSE_MENU_TRANSITION_IN;
             menu_state->last_sub_menu_state = menu_state->sub_menu_state;
@@ -311,11 +324,19 @@ local void do_entity_equipment_panel(struct software_framebuffer* framebuffer, f
 
 /* TODO: draw icons */
 /* TODO: scrolling behavior! I simply don't have enough items to trigger any bugs right now so I don't know! */
-local void do_entity_select_equipment_panel(struct software_framebuffer* framebuffer, f32 x, f32 y, struct entity* entity) {
+local void do_entity_select_equipment_panel(struct software_framebuffer* framebuffer, f32 x, f32 y, struct entity* entity, bool allow_input) {
     if (equipment_screen_state.inventory_filtered_size == 0) return;
 
     union color32f32 ui_color  = UI_DEFAULT_COLOR;
     union color32f32 mod_color = color32f32_WHITE;
+
+    bool action_move_down = is_action_down_with_repeat(INPUT_ACTION_MOVE_DOWN);
+    bool action_move_up   = is_action_down_with_repeat(INPUT_ACTION_MOVE_UP);
+
+    if (!allow_input) {
+        action_move_up   = false;
+        action_move_down = false;
+    }
 
     if (!equipment_screen_state.inventory_pick_mode) {
         ui_color.a = 0.5;
@@ -354,13 +375,13 @@ local void do_entity_select_equipment_panel(struct software_framebuffer* framebu
     }
 
     if (equipment_screen_state.inventory_pick_mode) {
-        if (is_action_down_with_repeat(INPUT_ACTION_MOVE_DOWN)) {
+        if (action_move_down) {
             equipment_screen_state.inventory_slot_selection += 1;
 
             if (equipment_screen_state.inventory_slot_selection >= equipment_screen_state.inventory_filtered_size) {
                 equipment_screen_state.inventory_slot_selection = 0;
             }
-        } else if (is_action_down_with_repeat(INPUT_ACTION_MOVE_UP)) {
+        } else if (action_move_up) {
             equipment_screen_state.inventory_slot_selection -= 1;
 
             if (equipment_screen_state.inventory_slot_selection < 0) {
@@ -382,9 +403,7 @@ local void do_entity_select_equipment_panel(struct software_framebuffer* framebu
     }
 }
 
-local void update_and_render_character_equipment_screen(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
-    struct entity* target_entity = entity_list_dereference_entity(&state->permenant_entities, equipment_screen_state.focus_entity);
-
+local void do_spinning_preview_of_character(f32 x, f32 y, struct software_framebuffer* framebuffer, struct entity* target_entity) {
     {
         string facing_direction_string = facing_direction_strings_normal[equipment_screen_state.direction_index];
         struct entity_animation* anim = find_animation_by_name(target_entity->model_index, format_temp_s("idle_%.*s", facing_direction_string.length, facing_direction_string.data));
@@ -392,17 +411,23 @@ local void update_and_render_character_equipment_screen(struct game_state* state
 
         software_framebuffer_draw_image_ex(framebuffer,
                                            graphics_assets_get_image_by_id(&graphics_assets, sprite_to_use),
-                                           rectangle_f32(100, 240-TILE_UNIT_SIZE/2, TILE_UNIT_SIZE*2, TILE_UNIT_SIZE*4),
+                                           rectangle_f32(x, y-TILE_UNIT_SIZE/2, TILE_UNIT_SIZE*2, TILE_UNIT_SIZE*4),
                                            RECTANGLE_F32_NULL,
                                            color32f32_WHITE, NO_FLAGS, BLEND_MODE_ALPHA);
     }
+}
+
+local void update_and_render_character_equipment_screen(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
+    struct entity* target_entity = entity_list_dereference_entity(&state->permenant_entities, equipment_screen_state.focus_entity);
+
+    do_spinning_preview_of_character(100, 240, framebuffer, target_entity);
 
     equipment_screen_state.cancel_pressed  = is_action_pressed(INPUT_ACTION_CANCEL);
     equipment_screen_state.confirm_pressed = is_action_pressed(INPUT_ACTION_CONFIRMATION);
 
     do_entity_stat_information_panel(framebuffer, framebuffer->width - TILE_UNIT_SIZE*13, 30, target_entity);
-    do_entity_select_equipment_panel(framebuffer, framebuffer->width-TILE_UNIT_SIZE*6, framebuffer->height-TILE_UNIT_SIZE*6, target_entity);
-    do_entity_equipment_panel(framebuffer, framebuffer->width - TILE_UNIT_SIZE*6, 30, target_entity);
+    do_entity_select_equipment_panel(framebuffer, framebuffer->width-TILE_UNIT_SIZE*6, framebuffer->height-TILE_UNIT_SIZE*6, target_entity, true);
+    do_entity_equipment_panel(framebuffer, framebuffer->width - TILE_UNIT_SIZE*6, 30, target_entity, true);
 
     equipment_screen_state.spin_timer += dt;
 

@@ -1481,6 +1481,7 @@ void entity_inventory_unequip_item(struct entity_inventory* inventory, s32 limit
 
 bool entity_any_equipped_item(struct entity* target, s32 equipment_index) {
     if (target->equip_slots[equipment_index].id_hash != 0) {
+        _debugprintf("has equipped item");
         return true;
     }
 
