@@ -1,6 +1,8 @@
 /*
   INPROGRESS: Rich text system, which is kind of annoying to implement.
 */
+#define RICHTEXT_EXPERIMENTAL
+
 #define DIALOGUE_UI_CHARACTER_TYPE_TIMER     (0.045)
 /* Honestly this is more than can actually show up to the game anyways. */
 #define RICH_TEXT_CONVERSATION_UI_MAX_LENGTH (512)
@@ -91,7 +93,7 @@ local void update_and_render_conversation_ui(struct game_state* state, struct so
     {
         draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, dialogue_box_start_position, BOX_WIDTH, BOX_HEIGHT, UI_DEFAULT_COLOR);
         draw_ui_breathing_text(framebuffer, v2f32(dialogue_box_start_position.x + 20, dialogue_box_start_position.y + 15), font2, 3, current_conversation_node->speaker_name, 0, color32f32(1,1,1,1));
-#if 0
+#ifndef RICHTEXT_EXPERIMENTAL
         {
             draw_ui_breathing_text_word_wrapped(framebuffer, v2f32(dialogue_box_start_position.x + 30, dialogue_box_start_position.y + 50), dialogue_box_extents.x * 0.76, font, 2, string_slice(current_conversation_node->text, 0, dialogue_ui.visible_characters), 1492, color32f32(1,1,1,1));
         }
@@ -108,7 +110,7 @@ local void update_and_render_conversation_ui(struct game_state* state, struct so
             glyph_where.x += dialogue_box_start_position.x + 30;
             glyph_where.y += dialogue_box_start_position.y + 50;
 
-            software_framebuffer_draw_glyph(framebuffer, glyph_font, glyph_scale, glyph_where, glyph_character, color32f32_WHITE, BLEND_MODE_ALPHA);
+            software_framebuffer_draw_glyph(framebuffer, glyph_font, glyph_scale, glyph_where, glyph_character-32, color32f32_WHITE, BLEND_MODE_ALPHA);
         }
 #endif
 
@@ -117,21 +119,34 @@ local void update_and_render_conversation_ui(struct game_state* state, struct so
 
             if (dialogue_ui.speak_timer >= DIALOGUE_UI_CHARACTER_TYPE_TIMER) {
                 dialogue_ui.speak_timer = 0;
-                dialogue_ui.visible_characters += 1;
 
+#ifdef RICHTEXT_EXPERIMENTAL
                 { /* rich text render path, this is adding / updating glyphs */
                     {
                         struct rich_text_state* rich_state = &dialogue_ui.rich_text_state;
 
                         bool needs_newline = false;
-                        bool skip_glyph    = true;
+                        bool skip_glyph    = false;
 
-                        string current_character_string = string_slice(current_conversation_node->text, dialogue_ui.visible_characters, dialogue_ui.visible_characters+1);
+                        string current_character_string = string_slice(current_conversation_node->text,
+                                                                       dialogue_ui.visible_characters, dialogue_ui.visible_characters+1);
                         /* TODO word wrap */
 
                         if (current_character_string.data[0] == '\n') {
                             needs_newline = true;
                             skip_glyph    = true;
+                        }
+
+                        /* readding word wrap */
+                        if (!needs_newline) {
+                            string current_viewable_slice = string_slice(current_conversation_node->text, 0, dialogue_ui.visible_characters);
+                            f32 current_x_cursor = rich_state->x_cursor;
+                            f32 wrap_bounds_w = dialogue_box_extents.x * 0.70;
+                            {
+                                if (current_x_cursor > wrap_bounds_w) {
+                                    needs_newline = true;
+                                }
+                            }
                         }
 
                         if (needs_newline) {
@@ -142,8 +157,8 @@ local void update_and_render_conversation_ui(struct game_state* state, struct so
 
                         if (!skip_glyph) {
                             struct rich_glyph* current_rich_glyph = &dialogue_ui.rich_text[dialogue_ui.rich_text_length++];
-
-                            assertion(dialogue_ui.rich_text_length >= RICH_TEXT_CONVERSATION_UI_MAX_LENGTH && "Your text is too big!");
+                            _debugprintf("HI! NEW GLYPH (%d)(%c)\n", dialogue_ui.rich_text_length, current_character_string.data[0]);
+                            assertion(dialogue_ui.rich_text_length <= RICH_TEXT_CONVERSATION_UI_MAX_LENGTH && "Your text is too big!");
 
                             current_rich_glyph->x                = rich_state->x_cursor;
                             current_rich_glyph->y                = rich_state->y_cursor;
@@ -165,8 +180,9 @@ local void update_and_render_conversation_ui(struct game_state* state, struct so
                             rich_state->x_cursor += glyph_width;
                         }
                     }
-
                 }
+#endif
+                dialogue_ui.visible_characters += 1;
             }
         }
     }
