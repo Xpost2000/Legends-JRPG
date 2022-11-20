@@ -37,6 +37,7 @@ struct rich_glyph {
 struct {
     f32 speak_timer;
     s32 visible_characters;
+    s32 parse_character_cursor;
 
     /* rich string */
     s32                rich_text_length;
@@ -60,8 +61,9 @@ struct rich_text_state rich_text_state_default(void) {
 /* I would like to vary dialogue, but that takes a lot of extra mark up and rewriting... */
 /* for now just keep it like this. */
 void dialogue_ui_setup_for_next_line_of_dialogue(void) {
-    dialogue_ui.speak_timer        = 0;
-    dialogue_ui.visible_characters = 0;
+    dialogue_ui.speak_timer            = 0;
+    dialogue_ui.visible_characters     = 0;
+    dialogue_ui.parse_character_cursor = 0;
 
     dialogue_ui.rich_text_length = 0;
     dialogue_ui.rich_text_state  = rich_text_state_default();
@@ -189,6 +191,7 @@ local void update_and_render_conversation_ui(struct game_state* state, struct so
                         bool skip_glyph    = false;
 
                         string current_character_string = string_slice(current_conversation_node->text, dialogue_ui.visible_characters, dialogue_ui.visible_characters+1);
+                        /* char  current_character         =  */
 
                         struct rich_glyph* current_rich_glyph = &dialogue_ui.rich_text[dialogue_ui.rich_text_length++];
                         assertion(dialogue_ui.rich_text_length <= RICH_TEXT_CONVERSATION_UI_MAX_LENGTH && "Your text is too big!");

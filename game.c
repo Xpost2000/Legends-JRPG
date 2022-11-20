@@ -1317,6 +1317,47 @@ local void draw_ui_breathing_text_word_wrapped_centered(struct software_framebuf
     }
 }
 
+/* NOTE: specific variation used by the game over screen, it's "better" for slowly displaying text. The dialogue system doesn't need it, since it looks fine, but it's annoying on the death screen */
+/* wrapupon is the same as text, but upto the next word */
+local void draw_ui_breathing_text_word_wrapped_centered1(struct software_framebuffer* framebuffer, struct rectangle_f32 bounds, f32 wrap_width, struct font_cache* font, f32 scale, string wrap_upon, string text, s32 seed_displacement, union color32f32 modulation) {
+    f32 text_width  = font_cache_text_width(font, text, scale);
+    f32 text_height = font_cache_calculate_height_of(font, text, wrap_width, scale);
+    f32 font_height = font_cache_text_height(font) * scale;
+
+
+    v2f32 centered_starting_position = v2f32(0,0);
+
+    centered_starting_position.x = bounds.x + (bounds.w/2) - (wrap_width/2);
+    centered_starting_position.y = bounds.y + (bounds.h/2) - (text_height/2);
+
+    f32 x_cursor = centered_starting_position.x;
+    f32 y_cursor = centered_starting_position.y;
+
+    for (unsigned character_index = 0; character_index < text.length; ++character_index) {
+        s32 current_word_start = character_index;
+        s32 current_word_end   = current_word_start;
+        {
+            while (current_word_end < wrap_upon.length && wrap_upon.data[current_word_end] != ' ') {
+                current_word_end++;
+            }
+        }
+        string word = string_slice(wrap_upon, current_word_start, current_word_end);
+        f32 word_width = font_cache_text_width(font, word, scale);
+
+        if ((x_cursor-centered_starting_position.x) + word_width >= wrap_width || text.data[character_index] == '\n') {
+            x_cursor  = centered_starting_position.x;
+            y_cursor += font_height;
+        }
+
+        f32 character_displacement_y = sinf((global_elapsed_time*2) + ((character_index+seed_displacement) * 2381.2318)) * 3;
+
+        v2f32 glyph_position = v2f32(x_cursor, y_cursor + character_displacement_y);
+        x_cursor += font->tile_width * scale;
+
+        software_framebuffer_draw_text(framebuffer, font, scale, glyph_position, string_slice(text, character_index, character_index+1), modulation, BLEND_MODE_ALPHA);
+    }
+}
+
 
 #ifdef USE_EDITOR
 void editor_initialize(struct editor_state* state);

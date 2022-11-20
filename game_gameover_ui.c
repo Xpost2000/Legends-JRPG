@@ -139,6 +139,19 @@ local void do_game_over_options(struct software_framebuffer* framebuffer, f32 dt
     global_game_over_ui_state.timer += dt;
 }
 
+local string gameover_string_sliced_properly(void) {
+    s32 word_remainder = 0;
+    while (global_game_over_ui_state.characters_shown_in_text+word_remainder < game_over_text.length) {
+        if (is_whitespace(game_over_text.data[global_game_over_ui_state.characters_shown_in_text+word_remainder])) {
+            break;
+        }
+        word_remainder++;
+    }
+
+    string result = string_slice(game_over_text, 0, global_game_over_ui_state.characters_shown_in_text+word_remainder);
+    return result;
+}
+
 local void update_and_render_gameover_game_menu_ui(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
     struct font_cache* font                     = game_get_font(MENU_FONT_COLOR_WHITE);
     const f32          FONT_SCALE               = 4;
@@ -158,11 +171,12 @@ local void update_and_render_gameover_game_menu_ui(struct game_state* state, str
         case GAME_OVER_UI_PHASE_POP_IN_TEXT: {
             bool text_status = game_over_ui_state_advance_text_length(dt);
 
-            draw_ui_breathing_text_word_wrapped_centered(
+            draw_ui_breathing_text_word_wrapped_centered1(
                 framebuffer,
                 rectangle_f32(0, 100, SCREEN_WIDTH, BOUNDS_H),
                 WRAP_BOUNDS_W,
                 font, FONT_SCALE,
+                gameover_string_sliced_properly(),
                 string_slice(game_over_text, 0, global_game_over_ui_state.characters_shown_in_text),
                 SEED_DISPLACEMENT, color32f32_WHITE);
 
@@ -175,11 +189,12 @@ local void update_and_render_gameover_game_menu_ui(struct game_state* state, str
         case GAME_OVER_UI_PHASE_SHOW_OPTIONS: {
             f32 effective_t = global_game_over_ui_state.timer / MAX_FADE_IN_OPTIONS_TIME;
             game_over_ui_state_advance_text_length(dt);
-            draw_ui_breathing_text_word_wrapped_centered(
+            draw_ui_breathing_text_word_wrapped_centered1(
                 framebuffer,
                 rectangle_f32(0, 100, SCREEN_WIDTH, BOUNDS_H),
                 WRAP_BOUNDS_W,
                 font, FONT_SCALE,
+                gameover_string_sliced_properly(),
                 string_slice(game_over_text, 0, global_game_over_ui_state.characters_shown_in_text),
                 SEED_DISPLACEMENT, color32f32_WHITE);
             if (effective_t > 1) {
@@ -200,11 +215,12 @@ local void update_and_render_gameover_game_menu_ui(struct game_state* state, str
 
         case GAME_OVER_UI_PHASE_IDLE: {
             game_over_ui_state_advance_text_length(dt);
-            draw_ui_breathing_text_word_wrapped_centered(
+            draw_ui_breathing_text_word_wrapped_centered1(
                 framebuffer,
                 rectangle_f32(0, 100, SCREEN_WIDTH, BOUNDS_H),
                 WRAP_BOUNDS_W,
                 font, FONT_SCALE,
+                gameover_string_sliced_properly(),
                 string_slice(game_over_text, 0, global_game_over_ui_state.characters_shown_in_text),
                 SEED_DISPLACEMENT, color32f32_WHITE);
             do_game_over_options(framebuffer, dt, 1, true);
@@ -219,11 +235,12 @@ local void update_and_render_gameover_game_menu_ui(struct game_state* state, str
                 effective_t = 0;
             }
 
-            draw_ui_breathing_text_word_wrapped_centered(
+            draw_ui_breathing_text_word_wrapped_centered1(
                 framebuffer,
                 rectangle_f32(0, 100, SCREEN_WIDTH, BOUNDS_H),
                 WRAP_BOUNDS_W,
                 font, FONT_SCALE,
+                gameover_string_sliced_properly(),
                 string_slice(game_over_text, 0, global_game_over_ui_state.characters_shown_in_text),
                 SEED_DISPLACEMENT, color32f32(1, 1, 1, 1 - effective_t));
             do_game_over_options(framebuffer, dt, 1 - effective_t, false);
