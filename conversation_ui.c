@@ -8,8 +8,6 @@
 #define RICH_TEXT_CONVERSATION_UI_MAX_LENGTH (512)
 
 struct rich_text_state {
-    f32 x_cursor;
-    f32 y_cursor;
     f32 tallest_glyph_height_on_line;
 
     f32 breath_magnitude;
@@ -46,8 +44,6 @@ struct {
 
 struct rich_text_state rich_text_state_default(void) {
     return (struct rich_text_state) {
-        .x_cursor         = 0,
-        .y_cursor         = 0,
         .breath_speed     = 0,
         .breath_magnitude = 0,
         /* .text_delay       = DIALOGUE_UI_CHARACTER_TYPE_TIMER, */
@@ -151,6 +147,7 @@ local s32 text_length_without_dialogue_rich_markup_length(string text) {
                         bracket_counter += 1;
                     } else if (text.data[character_index] == ']') {
                         bracket_counter -= 1;
+                        character_index--;
                     }
                     character_index++;
                 }
@@ -165,10 +162,13 @@ local s32 text_length_without_dialogue_rich_markup_length(string text) {
 
 /* returns amount of characters to read */
 local s32 conversation_ui_advance_character(void) {
-    struct conversation* conversation = &game_state->current_conversation;
+    struct conversation*      conversation              = &game_state->current_conversation;
     struct conversation_node* current_conversation_node = &conversation->nodes[game_state->current_conversation_node_id-1];
+    s32                       fake_length               = text_length_without_dialogue_rich_markup_length(current_conversation_node->text);
 
-    s32 fake_length = text_length_without_dialogue_rich_markup_length(current_conversation_node->text);
+    if (dialogue_ui.visible_characters >= fake_length) {
+        return 0;
+    }
 
     dialogue_ui.speak_timer = 0;
 
