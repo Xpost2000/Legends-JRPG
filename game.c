@@ -1389,6 +1389,7 @@ local void fade_into_game(void) {
 local void game_VFS_mount_archives(void) {
     /* main databigfile */
     mount_bigfile_archive(&game_arena, string_literal("./data.bigfile"));
+    mount_bigfile_archive(&game_arena, string_literal("./mod1.bigfile"));
 }
 
 void game_initialize(void) {
