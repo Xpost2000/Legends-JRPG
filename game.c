@@ -1515,7 +1515,7 @@ void game_initialize_game_world(void) {
 
     if (file_exists(string_literal(GAME_DEFAULT_STARTUP_FILE))) {
         _debugprintf("Trying to execute game startup script!");
-        struct lisp_list startup_forms = lisp_VFS_read_entire_file_into_forms(&scratch_arena, string_literal(GAME_DEFAULT_STARTUP_FILE));
+        struct lisp_list startup_forms = lisp_read_entire_file_into_forms(&scratch_arena, string_literal(GAME_DEFAULT_STARTUP_FILE));
 
         /* NOTE: none of the code here */
         for (unsigned form_index = 0; form_index < startup_forms.count; ++form_index) {

@@ -18,7 +18,6 @@ struct image_buffer image_buffer_load_from_file(string filepath) {
     /* STBIDEF stbi_uc *stbi_load_from_memory   (stbi_uc           const *buffer, int len   , int *x, int *y, int *channels_in_file, int desired_channels); */
     u8* image_buffer = NULL;
     {
-        /* struct file_buffer buffer = VFS_read_entire_file(memory_arena_allocator(&game_arena), filepath); */
         struct file_buffer buffer = read_entire_file(memory_arena_allocator(&game_arena), filepath);
         _debugprintf("%p, %d", buffer.buffer, (s32)buffer.length);
         image_buffer = stbi_load_from_memory(buffer.buffer, buffer.length, &width, &height, &components, 4);

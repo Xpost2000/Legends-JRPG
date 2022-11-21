@@ -503,7 +503,7 @@ string file_buffer_as_string(struct file_buffer* buffer) {
     return file_buffer_slice(buffer, 0, buffer->length);
 }
 
-bool file_exists(string path) {
+bool OS_file_exists(string path) {
     FILE* f = fopen(path.data, "r");
 
     if (f) {
@@ -514,7 +514,7 @@ bool file_exists(string path) {
     return false;
 }
 
-size_t file_length(string path) {
+size_t OS_file_length(string path) {
     size_t result = 0;
     FILE*  file   = fopen(path.data, "rb+");
 
@@ -527,17 +527,17 @@ size_t file_length(string path) {
     return result;
 }
 
-void read_entire_file_into_buffer(string path, u8* buffer, size_t buffer_length) {
+void OS_read_entire_file_into_buffer(string path, u8* buffer, size_t buffer_length) {
     FILE* file = fopen(path.data, "rb+");
     fread(buffer, 1, buffer_length, file);
     fclose(file);
 }
 
-struct file_buffer read_entire_file(IAllocator allocator, string path) {
+struct file_buffer OS_read_entire_file(IAllocator allocator, string path) {
     _debugprintf("file buffer create!");
-    size_t file_size   = file_length(path);
+    size_t file_size   = OS_file_length(path);
     u8*    file_buffer = allocator.alloc(&allocator, file_size+1);
-    read_entire_file_into_buffer(path, file_buffer, file_size);
+    OS_read_entire_file_into_buffer(path, file_buffer, file_size);
     file_buffer[file_size] = 0;
     return (struct file_buffer) {
         .allocator = allocator,
@@ -568,6 +568,12 @@ local void mount_bigfile_archive(struct memory_arena* arena, string path) {
 }
 
 local bool VFS__find_last_mounted_file(string path, struct bigfile_file_data* out_result) {
+    if (global_mounted_bigfile_count <= 0) {
+        out_result->data   = NULL;
+        out_result->length = 0;
+        return false;
+    }
+
     for (s32 mounted_bigfile_index = global_mounted_bigfile_count-1; mounted_bigfile_index >= 0; --mounted_bigfile_index) {
         out_result->data   = NULL;
         out_result->length = 0;
@@ -584,6 +590,20 @@ local bool VFS__find_last_mounted_file(string path, struct bigfile_file_data* ou
     return false;
 }
 
+size_t VFS_file_length(string path) {
+    struct bigfile_file_data found_mounted_file = {};
+    if (VFS__find_last_mounted_file(path, &found_mounted_file)) {
+        return found_mounted_file.length;
+    }
+
+    return 0;
+}
+
+bool VFS_file_exists(string path) {
+    struct bigfile_file_data found_mounted_file = {};
+    return VFS__find_last_mounted_file(path, &found_mounted_file);
+}
+
 void VFS_read_entire_file_into_buffer(string path, u8* buffer, size_t buffer_length) {
     {
         struct bigfile_file_data found_mounted_file = {};
@@ -592,25 +612,68 @@ void VFS_read_entire_file_into_buffer(string path, u8* buffer, size_t buffer_len
         }
     }
 }
-struct file_buffer VFS_read_entire_file(IAllocator allocator, string path) {
-    {
-        struct bigfile_file_data found_mounted_file = {};
 
-        if (VFS__find_last_mounted_file(path, &found_mounted_file)) {
-            struct file_buffer as_filebuffer = {};
-            as_filebuffer.buffer              = found_mounted_file.data;
-            as_filebuffer.length              = found_mounted_file.length;
-            as_filebuffer.does_not_own_memory = true;
-            _debugprintf("Loaded \"%.*s\" from bigfile archive!", path.length, path.data);
-            return as_filebuffer;
-        }
+struct file_buffer VFS_read_entire_file(IAllocator allocator, string path) {
+    struct bigfile_file_data found_mounted_file = {};
+    struct file_buffer as_filebuffer = {};
+
+    if (VFS__find_last_mounted_file(path, &found_mounted_file)) {
+        as_filebuffer.buffer              = found_mounted_file.data;
+        as_filebuffer.length              = found_mounted_file.length;
+        as_filebuffer.does_not_own_memory = true;
     }
-    {
-        _debugprintf("Loaded \"%.*s\" from real filesystem!", path.length, path.data);
-        return read_entire_file(allocator, path);
-    }
+
+    return as_filebuffer;
 }
 
+/* NOTE: these wrappers should have a way to specify preference */
+bool file_exists(string path) {
+#ifdef EXPERIMENTAL_VFS
+    return VFS_file_exists(path) || OS_file_exists(path);
+#else
+    return OS_file_exists(path);
+#endif
+}
+
+size_t file_length(string path) {
+#ifdef EXPERIMENTAL_VFS
+    if (VFS_file_exists(path)) {
+        return VFS_file_length(path);
+    }
+
+    return OS_file_length(path);
+#else
+    return OS_file_length(path);
+#endif
+}
+
+void read_entire_file_into_buffer(string path, u8* buffer, size_t buffer_length) {
+#ifdef EXPERIMENTAL_VFS
+    if (VFS_file_exists(path)) {
+        VFS_read_entire_file_into_buffer(path, buffer, buffer_length);
+        return;
+    }
+    OS_read_entire_file_into_buffer(path, buffer, buffer_length);
+#else
+    OS_read_entire_file_into_buffer(path, buffer, buffer_length);
+#endif
+}
+
+struct file_buffer read_entire_file(IAllocator allocator, string path) {
+#ifdef EXPERIMENTAL_VFS
+    if (VFS_file_exists(path)) {
+        _debugprintf("Read \"%.*s\" from VFS", path.length, path.data);
+        return VFS_read_entire_file(allocator, path);
+    }
+
+    _debugprintf("Read \"%.*s\" from real file system", path.length, path.data);
+    return OS_read_entire_file(allocator, path);
+#else
+    return OS_read_entire_file(allocator, path);
+#endif
+}
+
+/* there is no VFS variation because bigfiles are read only */
 void write_entire_file(string path, u8* buffer, size_t buffer_length) {
     FILE* file = fopen(path.data, "wb+");
     fwrite(buffer, 1, buffer_length, file);
