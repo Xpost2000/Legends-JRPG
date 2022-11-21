@@ -49,6 +49,8 @@ struct bigfile_record* bigfile_get_record_by_name(bigfile_blob_t blob, string fi
     return NULL;
 }
 
+/* NOTE: This is a higher level function, and I need to be able to get this to work on various fucked up file paths. Since the archive only stores
+ a localized unix style path*/
 struct bigfile_file_data bigfile_get_raw_file_data_by_name(bigfile_blob_t blob, string file) {
     u8*                    all_file_data_bytes = bigfile_get_file_data_bytes(blob);
 

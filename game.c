@@ -1406,15 +1406,14 @@ void game_initialize(void) {
     game_state->arena = &game_arena;
     graphics_assets   = graphics_assets_create(&game_arena, 16, 1024);
 
-    combat_square_unselected = DEBUG_CALL(graphics_assets_load_image(&graphics_assets, string_literal(GAME_DEFAULT_RESOURCE_PATH "/img/cmbt/cmbt_grid_sq.png")));
-    combat_square_selected   = DEBUG_CALL(graphics_assets_load_image(&graphics_assets, string_literal(GAME_DEFAULT_RESOURCE_PATH "/img/cmbt/cmbt_selected_sq.png")));
-    drop_shadow              = DEBUG_CALL(graphics_assets_load_image(&graphics_assets, string_literal(GAME_DEFAULT_RESOURCE_PATH "/img/dropshadow.png")));
+    combat_square_unselected = DEBUG_CALL(graphics_assets_load_image(&graphics_assets, string_literal(GAME_DEFAULT_RESOURCE_PATH "img/cmbt/cmbt_grid_sq.png")));
+    combat_square_selected   = DEBUG_CALL(graphics_assets_load_image(&graphics_assets, string_literal(GAME_DEFAULT_RESOURCE_PATH "img/cmbt/cmbt_selected_sq.png")));
+    drop_shadow              = DEBUG_CALL(graphics_assets_load_image(&graphics_assets, string_literal(GAME_DEFAULT_RESOURCE_PATH "img/dropshadow.png")));
 
-    chest_closed_img      = DEBUG_CALL(graphics_assets_load_image(&graphics_assets, string_literal(GAME_DEFAULT_RESOURCE_PATH "/img/chestclosed.png")));
-    chest_open_bottom_img = DEBUG_CALL(graphics_assets_load_image(&graphics_assets, string_literal(GAME_DEFAULT_RESOURCE_PATH "/img/chestopenbottom.png")));
-    chest_open_top_img    = DEBUG_CALL(graphics_assets_load_image(&graphics_assets, string_literal(GAME_DEFAULT_RESOURCE_PATH "/img/chestopentop.png")));
-    ui_chunky             = DEBUG_CALL(game_ui_nine_patch_load_from_directory(&graphics_assets, string_literal(GAME_DEFAULT_RESOURCE_PATH "/img/ui/chunky"), 16, 16));
-    /* selection_sword_img   = graphics_assets_load_image(&graphics_assets, string_literal("./res/img/selection_sword.png")); */
+    chest_closed_img      = DEBUG_CALL(graphics_assets_load_image(&graphics_assets, string_literal(GAME_DEFAULT_RESOURCE_PATH "img/chestclosed.png")));
+    chest_open_bottom_img = DEBUG_CALL(graphics_assets_load_image(&graphics_assets, string_literal(GAME_DEFAULT_RESOURCE_PATH "img/chestopenbottom.png")));
+    chest_open_top_img    = DEBUG_CALL(graphics_assets_load_image(&graphics_assets, string_literal(GAME_DEFAULT_RESOURCE_PATH "img/chestopentop.png")));
+    ui_chunky             = DEBUG_CALL(game_ui_nine_patch_load_from_directory(&graphics_assets, string_literal(GAME_DEFAULT_RESOURCE_PATH "img/ui/chunky"), 16, 16));
     /* TODO: Load from file */
     global_entity_models = entity_model_database_create(&game_arena, 512);
 
@@ -1422,8 +1421,8 @@ void game_initialize(void) {
 
     passive_speaking_dialogues = memory_arena_push(&game_arena, MAX_PASSIVE_SPEAKING_DIALOGUES * sizeof(*passive_speaking_dialogues));
 
-    ui_blip = load_sound(string_literal("res/snds/ui_select.wav"), false);
-    test_mus = load_sound(string_literal("res/snds/medieval.ogg"), true);
+    ui_blip  = load_sound(string_literal(GAME_DEFAULT_RESOURCE_PATH "snds/ui_select.wav"), false);
+    test_mus = load_sound(string_literal(GAME_DEFAULT_RESOURCE_PATH "snds/medieval.ogg"), true);
     /* play_sound(test_mus); */
 
     for (unsigned index = 0; index < array_count(menu_font_variation_string_names); ++index) {
