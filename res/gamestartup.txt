@@ -6,7 +6,7 @@
 
 (game_load_area "bforest1.area" 'retained)
 
-(set_health_limit '(entity player) 900)
+(set_health_limit '(entity player) 100)
 (set_vigor '(entity player) 120)
 (set_strength '(entity player) 120)
 (set_constitution '(entity player) 120)

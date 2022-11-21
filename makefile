@@ -18,7 +18,7 @@ pack.exe: bigfilemaker/bigfile_packer.c bigfilemaker/bigfile_def.c
 metagen.exe: metagen.c
 	$(CC) metagen.c -g -w -o $@
 depack.exe: bigfilemaker/depacker.c bigfilemaker/bigfile_unpacker.c bigfilemaker/bigfile_def.c
-	$(cc) bigfilemaker/depacker.c -o $@ -O2
+	$(CC) bigfilemaker/depacker.c -o $@ -O2
 game.exe: data.bigfile metagen.exe $(wildcard *.c *.h)
 	./metagen.exe
 	$(CC) $(SOURCE_FILE_MODULES) -DUSE_EDITOR  -DRELEASE -o $@ $(CFLAGS) $(CLIBS) -m64 -O2 -mwindows

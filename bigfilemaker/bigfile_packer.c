@@ -28,6 +28,8 @@
   If I need to, we'll switch to a hashmap...
 
   (it'd technically be faster to just store the hashes for bigfile names, so that way we save lots of space.)
+
+  NOTE: this is the program that informs the data format
 */
 
 #include <stdarg.h>
@@ -144,7 +146,11 @@ int main(int argc, char** argv) {
             printf("Preallocation of packs, created %d entries.\n", packed_archive.record_count);
             printf("Beginning file loading\n");
 
-            s64 beginning_offset_of_file_chunks = sizeof(s32) + sizeof(s32) + sizeof(*packed_archive.records) * packed_archive.record_count;
+            s64 beginning_offset_of_file_chunks =
+                sizeof(s32) +
+                sizeof(s32) +
+                sizeof(s64) +
+                (sizeof(*packed_archive.records) * packed_archive.record_count);
 
             u8* start_pointer_to_file_chunks_in_arena = memory_arena_push(&archive_arena, 0);
             packed_archive.file_data = start_pointer_to_file_chunks_in_arena;
@@ -162,8 +168,13 @@ int main(int argc, char** argv) {
                 /* read_entire_file adds a null byte */
                 s64 occupied_file_data_size = file_data.length+1;
 
-                packed_archive.file_data_size += occupied_file_data_size;
-                {record->data_offset = beginning_offset_of_file_chunks;}
+                {
+                    s64 relative = (s64)(file_data.buffer - start_pointer_to_file_chunks_in_arena);
+                    packed_archive.file_data_size += occupied_file_data_size;
+                    {
+                        record->data_offset = relative;
+                    }
+                }
                 beginning_offset_of_file_chunks += occupied_file_data_size;
                 printf("\t%d bytes read from file\n", occupied_file_data_size);
             }
