@@ -629,7 +629,11 @@ struct file_buffer VFS_read_entire_file(IAllocator allocator, string path) {
 /* NOTE: these wrappers should have a way to specify preference */
 bool file_exists(string path) {
 #ifdef EXPERIMENTAL_VFS
-    return VFS_file_exists(path) || OS_file_exists(path);
+    if (VFS_configuration_prefer_local) {
+        return OS_file_exists(path) || VFS_file_exists(path);
+    } else {
+        return VFS_file_exists(path) || OS_file_exists(path);
+    }
 #else
     return OS_file_exists(path);
 #endif
@@ -637,11 +641,19 @@ bool file_exists(string path) {
 
 size_t file_length(string path) {
 #ifdef EXPERIMENTAL_VFS
-    if (VFS_file_exists(path)) {
-        return VFS_file_length(path);
-    }
+    if (VFS_configuration_prefer_local) {
+        if (OS_file_exists(path)) {
+            return OS_file_length(path);
+        }
 
-    return OS_file_length(path);
+        return VFS_file_length(path);
+    } else {
+        if (VFS_file_exists(path)) {
+            return VFS_file_length(path);
+        }
+
+        return OS_file_length(path);
+    }
 #else
     return OS_file_length(path);
 #endif
@@ -649,11 +661,19 @@ size_t file_length(string path) {
 
 void read_entire_file_into_buffer(string path, u8* buffer, size_t buffer_length) {
 #ifdef EXPERIMENTAL_VFS
-    if (VFS_file_exists(path)) {
+    if (VFS_configuration_prefer_local) {
+        if (OS_file_exists(path)) {
+            OS_read_entire_file_into_buffer(path, buffer, buffer_length);
+            return;
+        }
         VFS_read_entire_file_into_buffer(path, buffer, buffer_length);
-        return;
+    } else {
+        if (VFS_file_exists(path)) {
+            VFS_read_entire_file_into_buffer(path, buffer, buffer_length);
+            return;
+        }
+        OS_read_entire_file_into_buffer(path, buffer, buffer_length);
     }
-    OS_read_entire_file_into_buffer(path, buffer, buffer_length);
 #else
     OS_read_entire_file_into_buffer(path, buffer, buffer_length);
 #endif
@@ -662,13 +682,24 @@ void read_entire_file_into_buffer(string path, u8* buffer, size_t buffer_length)
 struct file_buffer read_entire_file(IAllocator allocator, string path) {
 #ifdef EXPERIMENTAL_VFS
     _debugprintf("read_entire_file start");
-    if (VFS_file_exists(path)) {
+    /* this will be compiled out anyways, I need a slightly more elegant way perhaps, but this is good enough */
+    if (VFS_configuration_prefer_local) {
+        if (OS_file_exists(path)) {
+            _debugprintf("Read \"%.*s\" from real file system", path.length, path.data);
+            return OS_read_entire_file(allocator, path);
+        }
+
         _debugprintf("Read \"%.*s\" from VFS", path.length, path.data);
         return VFS_read_entire_file(allocator, path);
-    }
+    } else {
+        if (VFS_file_exists(path)) {
+            _debugprintf("Read \"%.*s\" from VFS", path.length, path.data);
+            return VFS_read_entire_file(allocator, path);
+        }
 
-    _debugprintf("Read \"%.*s\" from real file system", path.length, path.data);
-    return OS_read_entire_file(allocator, path);
+        _debugprintf("Read \"%.*s\" from real file system", path.length, path.data);
+        return OS_read_entire_file(allocator, path);
+    }
 #else
     return OS_read_entire_file(allocator, path);
 #endif

@@ -3,6 +3,12 @@
 /* #define NO_FANCY_FADEIN_INTRO */
 #define EXPERIMENTAL_VFS
 
+#ifndef RELEASE
+#define VFS_configuration_prefer_local (true)
+#else
+#define VFS_configuration_prefer_local (false)
+#endif
+
 /*
   NOTE: Software is always the primary target,
 
