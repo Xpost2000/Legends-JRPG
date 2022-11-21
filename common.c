@@ -273,16 +273,16 @@ static inline void memory_copy(void* source, void* destination, size_t amount) {
 #if 1
     if (amount & ~(63)) {
         memory_copy64(source, destination, amount);
-        /* _debugprintf("memory copy 64bit"); */
+        _debugprintf("memory copy 64bit");
     } else if (amount & ~(31)) {
         memory_copy32(source, destination, amount);
-        /* _debugprintf("memory copy 32bit"); */
+        _debugprintf("memory copy 32bit");
     } else if (amount & ~(15)) {
         memory_copy16(source, destination, amount);
-        /* _debugprintf("memory copy 16bit"); */
+        _debugprintf("memory copy 16bit");
     } else {
         memory_copy8(source, destination, amount);
-        /* _debugprintf("memory copy default"); */
+        _debugprintf("memory copy default");
     }
 #else
     memcpy(destination, source, amount);
@@ -485,10 +485,13 @@ static const string truefalse[] = {string_literal("false"), string_literal("true
 #include "memory_arena.c"
 #include "allocators.c"
 
+#include "bigfilemaker/bigfile_def.c"
+
 struct file_buffer {
     IAllocator allocator;
     u8* buffer;
     u64 length;
+    u8  does_not_own_memory;
 };
 
 string file_buffer_slice(struct file_buffer* buffer, u64 start, u64 end) {
@@ -543,6 +546,57 @@ struct file_buffer read_entire_file(IAllocator allocator, string path) {
     };
 }
 
+#define MAX_MOUNTABLE_BIGFILES (8)
+local bigfile_blob_t global_mounted_bigfiles[MAX_MOUNTABLE_BIGFILES] = {};
+local s32            global_mounted_bigfile_count                    = 0;
+
+/* NOTE: we cannot unmount any archives */
+local void mount_bigfile_archive(struct memory_arena* arena, string path) {
+    s32 current_archive = global_mounted_bigfile_count++;
+    global_mounted_bigfiles[current_archive] = bigfile_load_blob(memory_arena_allocator(arena), path);
+    _debugprintf("\"%.*s\" bigfile archive was mounted!", path.length, path.data);
+    _debugprintf("\tVERSION: %d", bigfile_get_version(global_mounted_bigfiles[current_archive]));
+    _debugprintf("\tRECORDCOUNT: %d", bigfile_get_record_count(global_mounted_bigfiles[current_archive]));
+    assertion(global_mounted_bigfile_count < MAX_MOUNTABLE_BIGFILES && "Too many mounted bigfile archives!");
+}
+
+local bool VFS__find_last_mounted_file(string path, struct bigfile_file_data* out_result) {
+    for (s32 mounted_bigfile_index = global_mounted_bigfile_count-1; mounted_bigfile_index >= 0; --mounted_bigfile_index) {
+        *out_result = bigfile_get_raw_file_data_by_name(global_mounted_bigfiles[mounted_bigfile_index], path);
+
+        if (out_result->data) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void VFS_read_entire_file_into_buffer(string path, u8* buffer, size_t buffer_length) {
+    {
+        struct bigfile_file_data found_mounted_file = {};
+        if (VFS__find_last_mounted_file(path, &found_mounted_file)) {
+            memory_copy(found_mounted_file.data, buffer, buffer_length);
+        }
+    }
+}
+struct file_buffer VFS_read_entire_file(IAllocator allocator, string path) {
+    {
+        struct bigfile_file_data found_mounted_file = {};
+
+        if (VFS__find_last_mounted_file(path, &found_mounted_file)) {
+            struct file_buffer as_filebuffer = {};
+            as_filebuffer.buffer              = found_mounted_file.data;
+            as_filebuffer.length              = found_mounted_file.length;
+            as_filebuffer.does_not_own_memory = true;
+            return as_filebuffer;
+        }
+    }
+    {
+        return read_entire_file(allocator, path);
+    }
+}
+
 void write_entire_file(string path, u8* buffer, size_t buffer_length) {
     FILE* file = fopen(path.data, "wb+");
     fwrite(buffer, 1, buffer_length, file);
@@ -554,8 +608,11 @@ void write_string_into_entire_file(string path, string contents) {
 }
 
 void file_buffer_free(struct file_buffer* file) {
-    if (file->buffer)
+    if (file->does_not_own_memory) {
+        return;
+    } else if (file->buffer) {
         file->allocator.free(&file->allocator, file->buffer);
+    }
 }
 
 /* if the order is confusing, most significant bit is first. */

@@ -100,6 +100,7 @@ local bool is_widescreen_resolution(void) {
 #include "sdl_scancode_table.c"
 #include "graphics.c"
 #include "audio_sdl2_mixer.c"
+#include "bigfilemaker/bigfile_unpacker.c"
 
 const char* _build_flags =
 #ifdef USE_SIMD_OPTIMIZATIONS
