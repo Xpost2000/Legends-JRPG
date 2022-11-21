@@ -824,3 +824,9 @@ struct lisp_list lisp_read_entire_file_into_forms(struct memory_arena* arena, st
     struct lisp_list   forms     = lisp_read_string_into_forms(arena, file_buffer_as_string(&data_file));
     return forms;
 }
+
+struct lisp_list lisp_VFS_read_entire_file_into_forms(struct memory_arena* arena, string file_location) {
+    struct file_buffer data_file = VFS_read_entire_file(memory_arena_allocator(arena), file_location);
+    struct lisp_list   forms     = lisp_read_string_into_forms(arena, file_buffer_as_string(&data_file));
+    return forms;
+}

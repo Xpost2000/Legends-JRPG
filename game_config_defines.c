@@ -11,4 +11,5 @@
 #define GAME_DEFAULT_ENTITY_ABILITY_FILE GAME_DEFAULT_RESOURCE_PATH "abilities.txt"
 #define GAME_DEFAULT_ITEM_FILE           GAME_DEFAULT_RESOURCE_PATH "item_data.txt"
 #define GAME_DEFAULT_TILE_DATA_FILE      GAME_DEFAULT_RESOURCE_PATH "tile_data.txt"
-#define GAME_DEFAULT_STARTUP_FILE      GAME_DEFAULT_RESOURCE_PATH "gamestartup.txt"
+/* #define GAME_DEFAULT_STARTUP_FILE        GAME_DEFAULT_RESOURCE_PATH "gamestartup.txt" */
+#define GAME_DEFAULT_STARTUP_FILE        "res/" "gamestartup.txt"

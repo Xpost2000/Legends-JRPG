@@ -1391,6 +1391,7 @@ void game_initialize(void) {
     editor_arena = memory_arena_create_from_heap("Editor Memory", Megabyte(32));
 #endif
 
+    game_VFS_mount_archives();
     game_state                      = memory_arena_push(&game_arena, sizeof(*game_state));
     game_state->variables           = game_variables(&game_arena);
     game_state->conversation_arena  = memory_arena_push_sub_arena(&game_arena, Kilobyte(64));
@@ -1404,8 +1405,6 @@ void game_initialize(void) {
     game_state->rng   = random_state();
     game_state->arena = &game_arena;
     graphics_assets   = graphics_assets_create(&game_arena, 16, 1024);
-
-    game_VFS_mount_archives();
 
     combat_square_unselected = DEBUG_CALL(graphics_assets_load_image(&graphics_assets, string_literal(GAME_DEFAULT_RESOURCE_PATH "/img/cmbt/cmbt_grid_sq.png")));
     combat_square_selected   = DEBUG_CALL(graphics_assets_load_image(&graphics_assets, string_literal(GAME_DEFAULT_RESOURCE_PATH "/img/cmbt/cmbt_selected_sq.png")));
@@ -1516,7 +1515,7 @@ void game_initialize_game_world(void) {
 
     if (file_exists(string_literal(GAME_DEFAULT_STARTUP_FILE))) {
         _debugprintf("Trying to execute game startup script!");
-        struct lisp_list startup_forms = lisp_read_entire_file_into_forms(&scratch_arena, string_literal(GAME_DEFAULT_STARTUP_FILE));
+        struct lisp_list startup_forms = lisp_VFS_read_entire_file_into_forms(&scratch_arena, string_literal(GAME_DEFAULT_STARTUP_FILE));
 
         /* NOTE: none of the code here */
         for (unsigned form_index = 0; form_index < startup_forms.count; ++form_index) {

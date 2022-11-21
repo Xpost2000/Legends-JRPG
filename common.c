@@ -571,9 +571,12 @@ local bool VFS__find_last_mounted_file(string path, struct bigfile_file_data* ou
     for (s32 mounted_bigfile_index = global_mounted_bigfile_count-1; mounted_bigfile_index >= 0; --mounted_bigfile_index) {
         out_result->data   = NULL;
         out_result->length = 0;
-        *out_result         = bigfile_get_raw_file_data_by_name(global_mounted_bigfiles[mounted_bigfile_index], path);
+        *out_result        = bigfile_get_raw_file_data_by_name(global_mounted_bigfiles[mounted_bigfile_index], path);
 
         if (out_result->data) {
+            _debugprintf("BUFFER CONTENTS");
+            _debugprintf("%.*s", (s32)out_result->length, out_result->data);
+            _debugprintf("END BUFFER CONTENTS");
             return true;
         }
     }
