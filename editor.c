@@ -1,4 +1,6 @@
 /*
+  NOTE: Level editor does not use the VFS (or it shouldn't anyways.)
+
   Level testing behavior may no longer work, as they may now require dependence on a script file,
   which bares their name.
   

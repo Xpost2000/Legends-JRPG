@@ -982,7 +982,14 @@ void load_level_from_file(struct game_state* state, string filename) {
     state->loaded_area.on_enter_triggered = false;
 
     string fullpath = string_concatenate(&scratch_arena, string_literal("areas/"), filename);
+#ifdef EXPERIMENTAL_VFS
+    /* This is slow path. I should write a native backend for the VFS instead of this weird hack */
+    struct file_buffer file = read_entire_file(memory_arena_allocator(&scratch_arena), fullpath);
+    struct binary_serializer serializer = open_read_memory_serializer(file.buffer, file.length);
+    file_buffer_free(&file);
+#else
     struct binary_serializer serializer = open_read_file_serializer(fullpath);
+#endif
     serialize_level_area(state, &serializer, &state->loaded_area, true);
     load_area_script(game_state->arena, &state->loaded_area, string_concatenate(&scratch_arena, string_slice(fullpath, 0, (fullpath.length+1)-sizeof("area")), string_literal("area_script")));
     {
@@ -1472,7 +1479,6 @@ void game_initialize(void) {
 
             entity_model_add_animation(base_guy, string_literal("kneel_down"), 2, 0.4);
             entity_model_add_animation(base_guy, string_literal("dead"),       1, 0);
-
         }
     }
 

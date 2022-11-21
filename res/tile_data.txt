@@ -4,71 +4,71 @@
 # everything else can go in any order you want.
 
 ("grass"
-(frames "./res/img/land/grass.png"))
+(frames "res/img/land/grass.png"))
 
 ("brick"
-(frames "./res/img/brick.png")
+(frames "res/img/brick.png")
 (flags 'solid))
 
 ("dirt"
-(frames "./res/img/land/dirt.png"))
+(frames "res/img/land/dirt.png"))
 
 # Water
 ("water [solid]"
-(frames "./res/img/land/water.png" "./res/img/land/water2.png")
+(frames "res/img/land/water.png" "res/img/land/water2.png")
 (time-until-next-frame 0.15)
 (flags 'solid))
 ("water"
-(frames "./res/img/land/water.png" "./res/img/land/water2.png")
+(frames "res/img/land/water.png" "res/img/land/water2.png")
 (time-until-next-frame 0.15))
 
 # Cave tiles
 ("cave wall"
-(frames "./res/img/cave/cavewall.png")
+(frames "res/img/cave/cavewall.png")
 (flags 'solid))
 ("cave wall opening"
-(frames "./res/img/cave/cavewall_opening.png")
+(frames "res/img/cave/cavewall_opening.png")
 (flags 'solid))
 ("cave wall mossy"
-(frames "./res/img/cave/cavewall1.png")
+(frames "res/img/cave/cavewall1.png")
 (flags 'solid))
 ("cobble floor"
-(frames "./res/img/cave/cobble_floor1.png"))
+(frames "res/img/cave/cobble_floor1.png"))
 
 ("bush"
-(frames "./res/img/land/bush.png")
+(frames "res/img/land/bush.png")
 (flags 'solid))
 ("house block"
-(frames "./res/img/building/home_block.png")
+(frames "res/img/building/home_block.png")
 (flags 'solid))
 ("house block top"
-(frames "./res/img/building/home_top_block.png")
+(frames "res/img/building/home_top_block.png")
 (flags 'solid))
 ("house block window"
-(frames "./res/img/building/home_block_window.png")
+(frames "res/img/building/home_block_window.png")
 (flags 'solid))
 
 ("carpet red fuzz"
-(frames "./res/img/building/home_red_fuzz_pit.png"))
+(frames "res/img/building/home_red_fuzz_pit.png"))
 
 ("home wood floor"
-(frames "./res/img/building/home_wood_floor.png"))
+(frames "res/img/building/home_wood_floor.png"))
 
 ("home wood wall"
-(frames "./res/img/building/home_wood_wall.png")
+(frames "res/img/building/home_wood_wall.png")
 (flags 'solid))
 
 ("home wood wall top"
-(frames "./res/img/building/home_wood_wall_top.png")
+(frames "res/img/building/home_wood_wall_top.png")
 (flags 'solid))
 
 ("door"
-(frames "./res/img/building/door.png")
+(frames "res/img/building/door.png")
 (flags 'solid))
 
 ("wood log side"
-(frames "./res/img/cave/wood_log_side.png"))
+(frames "res/img/cave/wood_log_side.png"))
 
 ("small tree"
-(frames "./res/img/land/tree_small.png")
+(frames "res/img/land/tree_small.png")
 (flags 'solid))

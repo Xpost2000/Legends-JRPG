@@ -8,8 +8,8 @@ CLIBS=-Dmain=SDL_main -lmingw32 -L./dependencies/x86-64/lib/ -L./dependencies/x8
 SOURCE_FILE_MODULES= main.c
 EMCC=emcc
 
-.PHONY: all clean gen-asm gen-asm-debug cloc
-all: packer.exe depack.exe game.exe game-debug.exe
+.PHONY: all build-run-tree clean gen-asm gen-asm-debug cloc run run-debug run-from-runtree run-debug-from-runtree
+all: build-run-tree packer.exe depack.exe game.exe game-debug.exe
 
 data.bigfile: pack.exe
 	./pack $@ areas dlg res scenes shops
@@ -33,10 +33,17 @@ gamex86-debug.exe: metagen.exe $(wildcard *.c *.h)
 	$(CC) $(SOURCE_FILE_MODULES) -DUSE_EDITOR -o $@ $(CFLAGS) $(CLIBS) -m32 -ggdb3
 web-experimental: $(wildcard *.c *.h)
 	$(EMCC) $(SOURCE_FILE_MODULES) -DRELEASE -s USE_SDL=2 -s USE_WEBGL2=1 -o game.html $(CFLAGS) $(CLIBS) -s INITIAL_MEMORY=127MB --preload-file res --preload-file scenes --preload-file areas
+build-run-tree: game-debug.exe game.exe data.bigfile
+	-mkdir run-tree
+	cp game-debug.exe game.exe data.bigfile run-tree/
 run: game.exe
 	./game.exe
 run-debug: game-debug.exe
 	./game-debug.exe
+run-from-runtree: build-run-tree
+	./run-tree/game.exe
+run-debug-from-runtree: build-run-tree
+	./run-tree/game-debug.exe
 gen-asm-debug: $(wildcard *.c *.h)
 	-mkdir asm
 	$(CC) $(SOURCE_FILE_MODULES) $(CFLAGS) $(CLIBS) -S -masm=intel -ggdb3 -fverbose-asm -o asm/debug.s
