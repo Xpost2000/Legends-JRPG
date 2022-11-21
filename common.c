@@ -552,15 +552,15 @@ local s32            global_mounted_bigfile_count                    = 0;
 
 /* NOTE: we cannot unmount any archives */
 local void mount_bigfile_archive(struct memory_arena* arena, string path) {
-    s32 current_archive = global_mounted_bigfile_count++;
+    s32 current_archive                      = global_mounted_bigfile_count;
     global_mounted_bigfiles[current_archive] = bigfile_load_blob(memory_arena_allocator(arena), path);
 
     if (global_mounted_bigfiles[current_archive]) {
+        global_mounted_bigfile_count++;
         _debugprintf("\"%.*s\" bigfile archive was mounted!", path.length, path.data);
         _debugprintf("\tVERSION: %d", bigfile_get_version(global_mounted_bigfiles[current_archive]));
         _debugprintf("\tRECORDCOUNT: %d", bigfile_get_record_count(global_mounted_bigfiles[current_archive]));
     } else {
-        global_mounted_bigfile_count -= 1;
         _debugprintf("Failure to mount \"%.*s\"", path.length, path.data);
     }
 
@@ -661,6 +661,7 @@ void read_entire_file_into_buffer(string path, u8* buffer, size_t buffer_length)
 
 struct file_buffer read_entire_file(IAllocator allocator, string path) {
 #ifdef EXPERIMENTAL_VFS
+    _debugprintf("read_entire_file start");
     if (VFS_file_exists(path)) {
         _debugprintf("Read \"%.*s\" from VFS", path.length, path.data);
         return VFS_read_entire_file(allocator, path);
