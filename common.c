@@ -554,9 +554,16 @@ local s32            global_mounted_bigfile_count                    = 0;
 local void mount_bigfile_archive(struct memory_arena* arena, string path) {
     s32 current_archive = global_mounted_bigfile_count++;
     global_mounted_bigfiles[current_archive] = bigfile_load_blob(memory_arena_allocator(arena), path);
-    _debugprintf("\"%.*s\" bigfile archive was mounted!", path.length, path.data);
-    _debugprintf("\tVERSION: %d", bigfile_get_version(global_mounted_bigfiles[current_archive]));
-    _debugprintf("\tRECORDCOUNT: %d", bigfile_get_record_count(global_mounted_bigfiles[current_archive]));
+
+    if (global_mounted_bigfiles[current_archive]) {
+        _debugprintf("\"%.*s\" bigfile archive was mounted!", path.length, path.data);
+        _debugprintf("\tVERSION: %d", bigfile_get_version(global_mounted_bigfiles[current_archive]));
+        _debugprintf("\tRECORDCOUNT: %d", bigfile_get_record_count(global_mounted_bigfiles[current_archive]));
+    } else {
+        global_mounted_bigfile_count -= 1;
+        _debugprintf("Failure to mount \"%.*s\"", path.length, path.data);
+    }
+
     assertion(global_mounted_bigfile_count < MAX_MOUNTABLE_BIGFILES && "Too many mounted bigfile archives!");
 }
 

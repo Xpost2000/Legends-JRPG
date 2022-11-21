@@ -1379,8 +1379,14 @@ local void fade_into_game(void) {
     do_color_transition_out(color32f32(0, 0, 0, 1), 0.2, 0.35);
     transition_register_on_finish(_unlock_game_input, NULL, 0);
 }
+
+local void game_VFS_mount_archives(void) {
+    /* main databigfile */
+    mount_bigfile_archive(&game_arena, string_literal("./data.bigfile"));
+}
+
 void game_initialize(void) {
-    game_arena   = memory_arena_create_from_heap("Game Memory", Megabyte(32));
+    game_arena   = memory_arena_create_from_heap("Game Memory", Megabyte(64));
     scratch_arena = memory_arena_create_from_heap("Scratch Buffer", Megabyte(8));
 #ifdef USE_EDITOR
     editor_arena = memory_arena_create_from_heap("Editor Memory", Megabyte(32));
@@ -1399,6 +1405,8 @@ void game_initialize(void) {
     game_state->rng   = random_state();
     game_state->arena = &game_arena;
     graphics_assets   = graphics_assets_create(&game_arena, 16, 1024);
+
+    game_VFS_mount_archives();
 
     combat_square_unselected = DEBUG_CALL(graphics_assets_load_image(&graphics_assets, string_literal(GAME_DEFAULT_RESOURCE_PATH "/img/cmbt/cmbt_grid_sq.png")));
     combat_square_selected   = DEBUG_CALL(graphics_assets_load_image(&graphics_assets, string_literal(GAME_DEFAULT_RESOURCE_PATH "/img/cmbt/cmbt_selected_sq.png")));
