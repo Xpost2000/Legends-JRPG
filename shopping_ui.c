@@ -285,6 +285,14 @@ local void do_gold_counter(struct software_framebuffer* framebuffer, f32 dt) {
 }
 
 /* There is duplicated code. Beware, and maybe try and shrink this. */
+local v2f32 estimate_shopping_menu_dimensions(void) {
+    /* should put this constant elsewhere */
+    const s32 BOX_WIDTH  = 35;
+    const s32 BOX_HEIGHT = 20;
+
+    return nine_patch_estimate_extents(ui_chunky, 1, BOX_WIDTH, BOX_HEIGHT);
+}
+
 local void do_shopping_menu(struct software_framebuffer* framebuffer, f32 x, bool allow_input, s32 shop_mode) {
     struct font_cache* normal_font      = game_get_font(MENU_FONT_COLOR_WHITE);
     struct font_cache* usable_font      = game_get_font(MENU_FONT_COLOR_LIME);
@@ -306,7 +314,9 @@ local void do_shopping_menu(struct software_framebuffer* framebuffer, f32 x, boo
 
     if (!allow_input) {
         selection_down = selection_up = selection_confirmation = selection_increment = selection_decrement = selection_switch_tab_reverse = selection_switch_tab = selection_quit = false;
+#if 0
         modulation_color.a = ui_color.a = 0.5;
+#endif
     }
 
     f32 y_cursor = 100;
@@ -527,10 +537,11 @@ local void game_display_and_update_shop_ui(struct software_framebuffer* framebuf
     struct font_cache* normal_font      = game_get_font(MENU_FONT_COLOR_WHITE);
     struct font_cache* highlighted_font = game_get_font(MENU_FONT_COLOR_GOLD);
 
+    v2f32 shopping_menu_dimensions = estimate_shopping_menu_dimensions();
 
     switch (shopping_ui.phase) {
         case SHOPPING_UI_ANIMATION_PHASE_FADE_IN: {
-            const f32 MAX_TIME = 1.2f;
+            const f32 MAX_TIME = 1.0f;
 
             f32 t = shopping_ui.timer / MAX_TIME;
             if (t >= 1.0) t = 1.0;
@@ -636,7 +647,7 @@ local void game_display_and_update_shop_ui(struct software_framebuffer* framebuf
                 shop_ui_set_phase(SHOPPING_UI_ANIMATION_PHASE_IDLE);
             }
 
-            do_shopping_menu(framebuffer, lerp_f32(-999, FINAL_SHOPPING_MENU_X, t), false, shopping_ui.shopping_mode);
+            do_shopping_menu(framebuffer, lerp_f32(-FINAL_SHOPPING_MENU_X - shopping_menu_dimensions.x, FINAL_SHOPPING_MENU_X, t), false, shopping_ui.shopping_mode);
             software_framebuffer_draw_text(framebuffer, normal_font, 4, v2f32(10, 10), shopping_mode_type_strings[shopping_ui.shopping_mode], color32f32(1,1,1,t2), BLEND_MODE_ALPHA);
         } break;
 
@@ -665,7 +676,7 @@ local void game_display_and_update_shop_ui(struct software_framebuffer* framebuf
                 shop_ui_set_phase(SHOPPING_UI_ANIMATION_PHASE_SELECT_SHOPPING_MODE);
             }
 
-            do_shopping_menu(framebuffer, lerp_f32(-999, FINAL_SHOPPING_MENU_X, (1.0 - t)), false, shopping_ui.shopping_mode);
+            do_shopping_menu(framebuffer, lerp_f32(-FINAL_SHOPPING_MENU_X - shopping_menu_dimensions.x, FINAL_SHOPPING_MENU_X, (1.0 - t)), false, shopping_ui.shopping_mode);
             software_framebuffer_draw_text(framebuffer, normal_font, 4, v2f32(10, 10), shopping_mode_type_strings[shopping_ui.shopping_mode], color32f32(1,1,1,(1.0 - t2)), BLEND_MODE_ALPHA);
         } break;
 

@@ -179,6 +179,8 @@ local void update_and_render_party_inventory_screen(struct game_state* state, st
     struct font_cache* normal_font      = game_get_font(MENU_FONT_COLOR_WHITE);
     struct font_cache* highlighted_font = game_get_font(MENU_FONT_COLOR_GOLD);
 
+    v2f32 shopping_menu_dimensions = estimate_shopping_menu_dimensions();
+
     switch (shopping_ui.phase) {
         case INVENTORY_UI_ANIMATION_PHASE_SLIDE_IN: {
             const f32 MAX_TIME = 1.6f;
@@ -193,7 +195,7 @@ local void update_and_render_party_inventory_screen(struct game_state* state, st
                 shop_ui_set_phase(SHOPPING_UI_ANIMATION_PHASE_IDLE);
             }
 
-            do_shopping_menu(framebuffer, lerp_f32(-999, FINAL_SHOPPING_MENU_X, t), false, SHOPPING_MODE_VIEWING);
+            do_shopping_menu(framebuffer, lerp_f32(-FINAL_SHOPPING_MENU_X - shopping_menu_dimensions.x, FINAL_SHOPPING_MENU_X, t), false, SHOPPING_MODE_VIEWING);
             software_framebuffer_draw_text(framebuffer, normal_font, 4, v2f32(10, 10), string_literal("INVENTORY"), color32f32(1,1,1,t2), BLEND_MODE_ALPHA);
             shopping_ui.timer += dt;
         } break;
@@ -225,7 +227,7 @@ local void update_and_render_party_inventory_screen(struct game_state* state, st
                 shopping_ui.timer = 0;
             }
 
-            do_shopping_menu(framebuffer, lerp_f32(-999, FINAL_SHOPPING_MENU_X, (1.0 - t)), false, SHOPPING_MODE_VIEWING);
+            do_shopping_menu(framebuffer, lerp_f32(-FINAL_SHOPPING_MENU_X - shopping_menu_dimensions.x, FINAL_SHOPPING_MENU_X, (1.0 - t)), false, SHOPPING_MODE_VIEWING);
             software_framebuffer_draw_text(framebuffer, normal_font, 4, v2f32(10, 10), string_literal("INVENTORY"), color32f32(1,1,1,(1.0 - t2)), BLEND_MODE_ALPHA);
             shopping_ui.timer += dt;
         } break;
