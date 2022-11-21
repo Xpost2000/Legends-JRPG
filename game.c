@@ -31,7 +31,6 @@ image_id           drop_shadow        = {};
 sound_id           ui_blip            = {};
 sound_id           test_mus            = {};
 
-static struct memory_arena game_arena   = {};
 /* compile out */
 #ifdef USE_EDITOR
 struct editor_state* editor_state = 0;

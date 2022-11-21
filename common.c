@@ -42,7 +42,7 @@
 #ifndef RELEASE
 #define _debugprintf(fmt, args...)   fprintf(stderr, "[%s:%d:%s()]: " fmt "\n", __FILE__, __LINE__, __func__, ##args)
 #define _debugprintf1(fmt, args...)  fprintf(stderr,  fmt, ##args)
-#define DEBUG_CALL(fn) fn; _debugprintf("calling %s in [%s:%d:%s()]\n", #fn, __FILE__, __LINE__, __func__)
+#define DEBUG_CALL(fn) fn; _debugprintf("calling %s in [%s:%d:%s()]", #fn, __FILE__, __LINE__, __func__)
 #else
 #define _debugprintf(fmt, args...)  
 #define _debugprintf1(fmt, args...)
@@ -569,7 +569,9 @@ local void mount_bigfile_archive(struct memory_arena* arena, string path) {
 
 local bool VFS__find_last_mounted_file(string path, struct bigfile_file_data* out_result) {
     for (s32 mounted_bigfile_index = global_mounted_bigfile_count-1; mounted_bigfile_index >= 0; --mounted_bigfile_index) {
-        *out_result = bigfile_get_raw_file_data_by_name(global_mounted_bigfiles[mounted_bigfile_index], path);
+        out_result->data   = NULL;
+        out_result->length = 0;
+        *out_result         = bigfile_get_raw_file_data_by_name(global_mounted_bigfiles[mounted_bigfile_index], path);
 
         if (out_result->data) {
             return true;
@@ -596,10 +598,12 @@ struct file_buffer VFS_read_entire_file(IAllocator allocator, string path) {
             as_filebuffer.buffer              = found_mounted_file.data;
             as_filebuffer.length              = found_mounted_file.length;
             as_filebuffer.does_not_own_memory = true;
+            _debugprintf("Loaded \"%.*s\" from bigfile archive!", path.length, path.data);
             return as_filebuffer;
         }
     }
     {
+        _debugprintf("Loaded \"%.*s\" from real filesystem!", path.length, path.data);
         return read_entire_file(allocator, path);
     }
 }

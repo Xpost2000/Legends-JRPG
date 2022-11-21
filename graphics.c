@@ -12,7 +12,17 @@ struct image_buffer image_buffer_load_from_file(string filepath) {
     s32 height;
     s32 components;
 
+#ifndef EXPERIMENTAL_VFS
     u8* image_buffer = stbi_load(filepath.data, &width, &height, &components, 4);
+#else
+    /* STBIDEF stbi_uc *stbi_load_from_memory   (stbi_uc           const *buffer, int len   , int *x, int *y, int *channels_in_file, int desired_channels); */
+    u8* image_buffer = NULL;
+    {
+        struct file_buffer buffer = VFS_read_entire_file(memory_arena_allocator(&game_arena), filepath);
+        image_buffer = stbi_load_from_memory(buffer.buffer, buffer.length, &width, &height, &components, 4);
+        file_buffer_free(&buffer);
+    }
+#endif
     _debugprintf("tried to load: \"%.*s\"", filepath.length, filepath.data);
     if (!image_buffer) {
         _debugprintf("Failed to load \"%.*s\"", filepath.length, filepath.data);

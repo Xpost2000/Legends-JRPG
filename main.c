@@ -1,6 +1,7 @@
 /* #define NO_POSTPROCESSING */
 /* #define RELEASE */
 /* #define NO_FANCY_FADEIN_INTRO */
+#define EXPERIMENTAL_VFS
 
 /*
   NOTE: Software is always the primary target,
@@ -29,6 +30,7 @@ static bool                global_game_running      = true;
 static f32                 global_elapsed_time      = 0.0f;
 static f32                 global_elapsed_game_time = 0.0f;
 static struct memory_arena scratch_arena            = {};
+static struct memory_arena game_arena               = {};
 
 string format_temp_s(const char* fmt, ...) {
     int written = 0;
