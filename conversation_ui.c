@@ -106,7 +106,7 @@ s32 fontname_string_to_id(string name) {
     return MENU_FONT_COLOR_GOLD;
 }
 
-local void parse_markup_details(struct rich_text_state* rich_text_state, string text_data) {
+local void parse_markup_details(struct rich_text_state* rich_text_state, string text_data, bool skipping_mode) {
     /* lisp forms */ 
     struct lisp_list markup_forms = lisp_read_string_into_forms(&scratch_arena, text_data);
 
@@ -116,25 +116,31 @@ local void parse_markup_details(struct rich_text_state* rich_text_state, string 
         struct lisp_form* name_part     = lisp_list_nth(current_form, 0);
         struct lisp_form* argument_part = lisp_list_nth(current_form, 1);
 
-        if (lisp_form_symbol_matching(*name_part, string_literal("font"))) {
-            string font_name = {};
-            assertion(lisp_form_get_string(*argument_part, &font_name) && "Bad font string");
-            s32 new_font_id = fontname_string_to_id(font_name);
-            rich_text_state->font_id = new_font_id;
-        } else if (lisp_form_symbol_matching(*name_part, string_literal("breath_speed"))) {
-            assertion(lisp_form_get_f32(*argument_part, &rich_text_state->breath_speed) && "Bad breath speed value");
-        } else if (lisp_form_symbol_matching(*name_part, string_literal("breath_magnitude"))) {
-            assertion(lisp_form_get_f32(*argument_part, &rich_text_state->breath_magnitude) && "Bad breath magnitude value");
-        } else if (lisp_form_symbol_matching(*name_part, string_literal("text_scale"))) {
-            assertion(lisp_form_get_f32(*argument_part, &rich_text_state->text_scale) && "Bad text scale value");
-        } else if (lisp_form_symbol_matching(*name_part, string_literal("reset"))) {
-            *rich_text_state = rich_text_state_default();
-        } else if (lisp_form_symbol_matching(*name_part, string_literal("type_speed"))) {
-            assertion(lisp_form_get_f32(*argument_part, &rich_text_state->text_type_speed) && "Bad type speed");
-        } else if (lisp_form_symbol_matching(*name_part, string_literal("delay_timer"))) {
-            assertion(lisp_form_get_f32(*argument_part, &rich_text_state->delay_timer) && "Bad delay timer");
-        } else if (lisp_form_symbol_matching(*name_part, string_literal("type_trauma"))) {
-            assertion(lisp_form_get_f32(*argument_part, &rich_text_state->type_trauma) && "Bad trauma value");
+        { /* Purely visual or non-affecting actions */
+            if (lisp_form_symbol_matching(*name_part, string_literal("font"))) {
+                string font_name = {};
+                assertion(lisp_form_get_string(*argument_part, &font_name) && "Bad font string");
+                s32 new_font_id = fontname_string_to_id(font_name);
+                rich_text_state->font_id = new_font_id;
+            } else if (lisp_form_symbol_matching(*name_part, string_literal("breath_speed"))) {
+                assertion(lisp_form_get_f32(*argument_part, &rich_text_state->breath_speed) && "Bad breath speed value");
+            } else if (lisp_form_symbol_matching(*name_part, string_literal("breath_magnitude"))) {
+                assertion(lisp_form_get_f32(*argument_part, &rich_text_state->breath_magnitude) && "Bad breath magnitude value");
+            } else if (lisp_form_symbol_matching(*name_part, string_literal("text_scale"))) {
+                assertion(lisp_form_get_f32(*argument_part, &rich_text_state->text_scale) && "Bad text scale value");
+            } else if (lisp_form_symbol_matching(*name_part, string_literal("reset"))) {
+                *rich_text_state = rich_text_state_default();
+            } else if (lisp_form_symbol_matching(*name_part, string_literal("type_speed"))) {
+                assertion(lisp_form_get_f32(*argument_part, &rich_text_state->text_type_speed) && "Bad type speed");
+            }
+        }
+
+        if (!skipping_mode) { /* Affecting actions */
+            if (lisp_form_symbol_matching(*name_part, string_literal("delay_timer"))) {
+                assertion(lisp_form_get_f32(*argument_part, &rich_text_state->delay_timer) && "Bad delay timer");
+            } else if (lisp_form_symbol_matching(*name_part, string_literal("type_trauma"))) {
+                assertion(lisp_form_get_f32(*argument_part, &rich_text_state->type_trauma) && "Bad trauma value");
+            }
         }
     }
     
@@ -170,7 +176,7 @@ local s32 text_length_without_dialogue_rich_markup_length(string text) {
 }
 
 /* returns amount of characters to read */
-local s32 conversation_ui_advance_character(void) {
+local s32 conversation_ui_advance_character(bool skipping_mode) {
     struct conversation*      conversation              = &game_state->current_conversation;
     struct conversation_node* current_conversation_node = &conversation->nodes[game_state->current_conversation_node_id-1];
     s32                       fake_length               = text_length_without_dialogue_rich_markup_length(current_conversation_node->text);
@@ -181,7 +187,10 @@ local s32 conversation_ui_advance_character(void) {
 
     dialogue_ui.speak_timer                 = 0;
     dialogue_ui.rich_text_state.delay_timer = 0;
-    camera_traumatize(&game_state->camera, dialogue_ui.rich_text_state.type_trauma);
+
+    if (!skipping_mode) {
+        camera_traumatize(&game_state->camera, dialogue_ui.rich_text_state.type_trauma);
+    }
 
 #ifdef RICHTEXT_EXPERIMENTAL
     /* NOTE: This doesn't do correct bounds checks */
@@ -207,7 +216,7 @@ local s32 conversation_ui_advance_character(void) {
         s32 end_of_rich_markup = dialogue_ui.parse_character_cursor-1;
 
         string markup_text = string_slice(current_conversation_node->text, start_of_rich_markup, end_of_rich_markup);
-        parse_markup_details(&dialogue_ui.rich_text_state, markup_text);
+        parse_markup_details(&dialogue_ui.rich_text_state, markup_text, skipping_mode);
     }
 
     { /* rich text render path, this is adding / updating glyphs */
@@ -339,7 +348,7 @@ local void update_and_render_conversation_ui(struct game_state* state, struct so
                 dialogue_ui.speak_timer += dt;
 
                 if (dialogue_ui.speak_timer >= dialogue_ui.rich_text_state.text_type_speed) {
-                    conversation_ui_advance_character();
+                    conversation_ui_advance_character(false);
                 }
             }
         }
@@ -350,8 +359,8 @@ local void update_and_render_conversation_ui(struct game_state* state, struct so
         draw_ui_breathing_text(framebuffer, v2f32(dialogue_box_start_position.x + 30, dialogue_box_start_position.y + dialogue_box_extents.y - 10), font2, 2, string_literal("(proceed)"), 0451, color32f32(1,1,1,1));
 
         if (is_action_pressed(INPUT_ACTION_CONFIRMATION)) {
-            if (conversation_ui_advance_character()) {
-                while (conversation_ui_advance_character()) {
+            if (conversation_ui_advance_character(true)) {
+                while (conversation_ui_advance_character(true)) {
                     (void)(0);
                 }
             } else {
