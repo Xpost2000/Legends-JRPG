@@ -546,26 +546,11 @@ struct file_buffer OS_read_entire_file(IAllocator allocator, string path) {
     };
 }
 
-#define MAX_MOUNTABLE_BIGFILES (8)
+#define MAX_MOUNTABLE_BIGFILES (32)
 local bigfile_blob_t global_mounted_bigfiles[MAX_MOUNTABLE_BIGFILES] = {};
 local s32            global_mounted_bigfile_count                    = 0;
 
 /* NOTE: we cannot unmount any archives */
-local void mount_bigfile_archive(struct memory_arena* arena, string path) {
-    s32 current_archive                      = global_mounted_bigfile_count;
-    global_mounted_bigfiles[current_archive] = bigfile_load_blob(memory_arena_allocator(arena), path);
-
-    if (global_mounted_bigfiles[current_archive]) {
-        global_mounted_bigfile_count++;
-        _debugprintf("\"%.*s\" bigfile archive was mounted!", path.length, path.data);
-        _debugprintf("\tVERSION: %d", bigfile_get_version(global_mounted_bigfiles[current_archive]));
-        _debugprintf("\tRECORDCOUNT: %d", bigfile_get_record_count(global_mounted_bigfiles[current_archive]));
-    } else {
-        _debugprintf("Failure to mount \"%.*s\"", path.length, path.data);
-    }
-
-    assertion(global_mounted_bigfile_count < MAX_MOUNTABLE_BIGFILES && "Too many mounted bigfile archives!");
-}
 
 local bool VFS__find_last_mounted_file(string path, struct bigfile_file_data* out_result) {
     if (global_mounted_bigfile_count <= 0) {
@@ -703,6 +688,24 @@ struct file_buffer read_entire_file(IAllocator allocator, string path) {
 #else
     return OS_read_entire_file(allocator, path);
 #endif
+}
+
+local void mount_bigfile_archive(struct memory_arena* arena, string path) {
+    if (file_exists(path)) {
+        s32 current_archive                      = global_mounted_bigfile_count;
+        global_mounted_bigfiles[current_archive] = bigfile_load_blob(memory_arena_allocator(arena), path);
+
+        if (global_mounted_bigfiles[current_archive]) {
+            global_mounted_bigfile_count++;
+            _debugprintf("\"%.*s\" bigfile archive was mounted!", path.length, path.data);
+            _debugprintf("\tVERSION: %d", bigfile_get_version(global_mounted_bigfiles[current_archive]));
+            _debugprintf("\tRECORDCOUNT: %d", bigfile_get_record_count(global_mounted_bigfiles[current_archive]));
+        } else {
+            _debugprintf("Failure to mount \"%.*s\"", path.length, path.data);
+        }
+
+        assertion(global_mounted_bigfile_count < MAX_MOUNTABLE_BIGFILES && "Too many mounted bigfile archives!");
+    }
 }
 
 /* there is no VFS variation because bigfiles are read only */

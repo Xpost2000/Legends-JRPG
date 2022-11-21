@@ -27,9 +27,6 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
-#define STB_TRUETYPE_IMPLEMENTATION
-#include <stb_truetype.h>
-
 /* (I do recognize the intent of the engine is to eventually support paletted rendering but that comes later.) */
 /* the image is expected to be rgba32, and must be converted to as such before rendering. */
 #define Image_Buffer_Base \

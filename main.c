@@ -3,7 +3,7 @@
 /* #define NO_FANCY_FADEIN_INTRO */
 #define EXPERIMENTAL_VFS
 
-#if 0
+#if 1
 #ifndef RELEASE
 #define VFS_configuration_prefer_local (true)
 #else
