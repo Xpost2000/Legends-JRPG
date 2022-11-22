@@ -41,10 +41,12 @@
 
 #ifndef RELEASE
 #define _debugprintf(fmt, args...)   fprintf(stderr, "[%s:%d:%s()]: " fmt "\n", __FILE__, __LINE__, __func__, ##args)
+#define _debugprintfhead()   fprintf(stderr, "[%s:%d:%s()]: " ,__FILE__, __LINE__, __func__)
 #define _debugprintf1(fmt, args...)  fprintf(stderr,  fmt, ##args)
 #define DEBUG_CALL(fn) fn; _debugprintf("calling %s in [%s:%d:%s()]", #fn, __FILE__, __LINE__, __func__)
 #else
 #define _debugprintf(fmt, args...)  
+#define _debugprintfhead(fmt, args...)
 #define _debugprintf1(fmt, args...)
 #define DEBUG_CALL(_) _;
 #endif
@@ -117,6 +119,12 @@ static inline u32 hash_bytes_fnv1a(u8* bytes, size_t length) {
         type tmp = a;                           \
         a = b;                                  \
         b = tmp;                                \
+    } while (0)
+#define XorSwap(a, b)                           \
+    do {                                        \
+        a ^= b;                                 \
+        b ^= a;                                 \
+        a ^= b;                                 \
     } while (0)
 
 #define Reverse_Array_Inplace(ARRAY, LENGTH, TYPE)                      \
@@ -345,7 +353,6 @@ void* system_heap_memory_allocate(size_t amount, s32 line_number, const char* fi
 
     return memory + sizeof(struct tracked_memory_allocation_header);
 }
-
 
 void* system_heap_memory_reallocate(void* original_pointer, size_t new_amount) {
     if (original_pointer) {
@@ -981,5 +988,85 @@ local void OS_create_directory(string location) {
     CreateDirectory(s.data, NULL);
 #endif
 }
+
+
+enum endianess {
+    ENDIANESS_LITTLE,
+    ENDIANESS_BIG,
+};
+
+local string endian_strings[] = {
+    [ENDIANESS_LITTLE] = string_literal("(little-endian)"),
+    [ENDIANESS_BIG] = string_literal("(big-endian)"),
+};
+
+#define ByteUnion(BITS, TYPE)                   \
+    union {                                     \
+        TYPE as_ ## TYPE;                           \
+        u8   as_bytes[BITS/8];               \
+    }
+
+enum endianess system_get_endian(void) {
+    ByteUnion(32, u32) x;
+    x.as_u32 = 1;
+
+    if (x.as_bytes[0]) {
+        return ENDIANESS_LITTLE;
+    }
+
+    return ENDIANESS_BIG;
+}
+
+/* NOTE: I am horrified by how I use the preprocessor sometimes, */
+#define Define_ByteSwap_Procedures(BITCOUNT)                            \
+    inline local u ## BITCOUNT byteswap_u##BITCOUNT(u##BITCOUNT input) { \
+        ByteUnion(BITCOUNT, u##BITCOUNT) x;                             \
+        x.as_u##BITCOUNT = input;                                       \
+        for (unsigned byte_index = 0; byte_index < sizeof(u##BITCOUNT)/2; ++byte_index) { \
+            XorSwap(x.as_bytes[byte_index], x.as_bytes[(sizeof(u##BITCOUNT)-1) - byte_index]); \
+        }                                                               \
+        return x.as_u##BITCOUNT;                                        \
+    }                                                                   \
+    inline local s ## BITCOUNT byteswap_s##BITCOUNT(s##BITCOUNT input) { \
+        ByteUnion(BITCOUNT, s##BITCOUNT) x;                             \
+        x.as_s##BITCOUNT = input;                                       \
+        for (unsigned byte_index = 0; byte_index < sizeof(s##BITCOUNT)/2; ++byte_index) { \
+            XorSwap(x.as_bytes[byte_index], x.as_bytes[(sizeof(u##BITCOUNT)-1) - byte_index]); \
+        }                                                               \
+        return x.as_s##BITCOUNT;                                        \
+    }                                                                   \
+    inline local void inplace_byteswap_u##BITCOUNT(u##BITCOUNT *input) { \
+        assertion(input && "cannot byteswap nullptr?");                 \
+        u##BITCOUNT copy = *input;                                      \
+        copy = byteswap_u##BITCOUNT(copy);                              \
+        *input = copy;                                                  \
+    }                                                                   \
+    inline local void inplace_byteswap_s##BITCOUNT(s##BITCOUNT *input) { \
+        assertion(input && "cannot byteswap nullptr?");                 \
+        s##BITCOUNT copy = *input;                                      \
+        copy = byteswap_s##BITCOUNT(copy);                              \
+        *input = copy;                                                  \
+    }
+
+Define_ByteSwap_Procedures(64);
+Define_ByteSwap_Procedures(32);
+Define_ByteSwap_Procedures(16);
+
+local void _debug_print_bitstring(u8* bytes, unsigned length) {
+    unsigned bits = length * 8;
+    _debugprintfhead();
+    /* reverse print, higher addresses come first, lower addresses come last. To give obvious endian representation */
+    for (s32 bit_index = bits-1; bit_index >= 0; --bit_index) {
+        unsigned real_index   = (bit_index / 8);
+        u8       current_byte = bytes[real_index];
+        _debugprintf1("%d", (current_byte & BIT(bit_index % 8)) > 0);
+        if (((bit_index) % 8) == 0) {
+            _debugprintf1(" ");   
+        }
+    }
+    _debugprintf1("\n");
+}
+
+#undef Define_ByteSwap_Procedures
 
 #endif

@@ -21,6 +21,7 @@ struct binary_serializer_memory_node {
 struct binary_serializer {
     enum binary_serializer_type type;
     enum binary_serializer_mode mode;
+    enum endianess              expected_endianess;
 
     union {
         /*maybe use this arena, don't know quite yet*/
@@ -45,6 +46,7 @@ struct binary_serializer open_write_file_serializer(string filename);
 struct binary_serializer open_read_file_serializer(string filename);
 struct binary_serializer open_write_memory_serializer(void);
 struct binary_serializer open_read_memory_serializer(void* buffer, size_t buffer_size);
+void serializer_set_endianess(struct binary_serializer* serializer, enum endianess expected_endianess);
 void serializer_finish(struct binary_serializer* serializer);
 void* serializer_flatten_memory(struct binary_serializer* serializer, size_t* size);
 void serializer_push_memory_node(struct binary_serializer* serializer, void* bytes, size_t size);

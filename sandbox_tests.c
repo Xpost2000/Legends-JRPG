@@ -74,7 +74,29 @@ static bool _interpolation_testing(void) {
     Interpolation_Loop_Test(ease_out_back_f32);
     Interpolation_Loop_Test(ease_in_out_back_f32);
 
+#undef Interpolation_Loop_Test
     return true;
+}
+
+/* no assertive tests I'm eyeballing this */
+local void _sandbox_test_byteswap(void) {
+    _debugprintf("sandbox endian test");
+#define Byteswap_Test(BITS, V)                          \
+    do {                                                \
+        uint##BITS##_t a = V;                           \
+        uint##BITS##_t b = byteswap_u##BITS(a);         \
+        _debug_print_bitstring((uint8_t*)&a, BITS/8);   \
+        _debugprintf("NUM: %llu", (u64)a);                  \
+        _debugprintf("swapped?");                       \
+        _debug_print_bitstring((uint8_t*)&b, BITS/8);   \
+        _debugprintf("NUM: %llu", (u64)b);                  \
+        _debugprintf("next");                           \
+    } while(0)
+
+    Byteswap_Test(64, 2);
+    Byteswap_Test(32, 2);
+    Byteswap_Test(16, 2);
+#undef Byteswap_Test
 }
 
 static bool sandbox_testing(void) {
@@ -82,6 +104,7 @@ static bool sandbox_testing(void) {
     /* _thread_testing(); */
     /* _sandbox_shop_inventory(); */
     assertion(_interpolation_testing());
+    _sandbox_test_byteswap();
     _debugprintf("sandbox end");
     return false;
 }

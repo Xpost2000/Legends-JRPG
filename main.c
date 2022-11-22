@@ -475,7 +475,6 @@ void deinitialize(void) {
 
 f32 last_elapsed_delta_time = (1.0 / 60.0f);
 
-
 void engine_main_loop() {
     char window_name_title_buffer[256] = {};
     u32 start_frame_time = SDL_GetTicks();
@@ -541,11 +540,12 @@ int engine_main(int argc, char** argv) {
     initialize();
     
     /* feature testing */
+    _debugprintf("endian: %.*s", endian_strings[system_get_endian()].length, endian_strings[system_get_endian()].data);
     {
         _debugprintf("%d byte sized cache line\n", SDL_GetCPUCacheLineSize());
         _debugprintf("%d MB of ram\n", SDL_GetSystemRAM());
         if (SDL_HasMMX()) {
-            printf("MMX Detected\n");
+            _debugprintf("MMX Detected\n");
         }
 
         if (SDL_HasSSE()) {

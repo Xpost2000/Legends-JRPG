@@ -1,5 +1,9 @@
 #include "serializer_def.c"
 
+void serializer_set_endianess(struct binary_serializer* serializer, enum endianess expected_endianess) {
+    serializer->expected_endianess = expected_endianess;
+}
+
 struct binary_serializer open_write_file_serializer(string filename) {
     struct binary_serializer result = {};
     result.mode = BINARY_SERIALIZER_WRITE;
