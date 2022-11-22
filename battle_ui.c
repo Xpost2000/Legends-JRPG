@@ -912,6 +912,17 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
     }
 }
 
+local void award_loot_table_to_party(void) {
+    assertion(global_battle_ui_state.populated_loot_table && "Should be impossible to fail");
+
+    struct entity_inventory* inventory = (struct entity_inventory*)(&game_state->inventory);
+
+    for (s32 loot_table_index = 0; loot_table_index < global_battle_ui_state.loot_result_count; ++loot_table_index) {
+        struct item_instance* loot_item = global_battle_ui_state.loot_results + loot_table_index;
+        entity_inventory_add_multiple(inventory, MAX_PARTY_ITEMS, loot_item->item, loot_item->count);
+    }
+}
+
 local void do_after_action_report_screen(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt, f32 y, bool allow_input) {
     if (disable_game_input) allow_input = false;
 
@@ -938,7 +949,7 @@ local void do_after_action_report_screen(struct game_state* state, struct softwa
     }
 
     s32 BOX_WIDTH  = 20;
-    s32 BOX_HEIGHT = 17;
+    s32 BOX_HEIGHT = 9 + global_battle_ui_state.loot_result_count*2;
 
     /* DISPLAY XP Gain */ 
     /* and party member stuff */
@@ -985,6 +996,7 @@ local void do_after_action_report_screen(struct game_state* state, struct softwa
         state->combat_state.active_combat = false;
 
         struct entity* player = game_get_player(state);
+        award_loot_table_to_party();
         camera_set_point_to_interpolate(&state->camera, player->position);
     }
 }
@@ -1395,6 +1407,11 @@ local void render_combat_area_information(struct game_state* state, struct rende
             bool found_first_collision = false;
             s32 first_collision_relative_x = 0;
             s32 first_collision_relative_y = 0;
+
+            /* This humungous motherfucker is slightly buggy. I wonder why? */
+            /* Honestly I think the right answer is to "floodfill" the grid. */
+            /* So I'll do that later! TODO: that I'm actually going to do since it's noticable!
+               Seems to be difficult to trigger though. */
 
             for (s32 y_index = start_y; _comparison_predicate(sign_y, y_index, target_y) && !found_first_collision; y_index += sign_y) {
                 for (s32 x_index = start_x; _comparison_predicate(sign_x, x_index, target_x) && !found_first_collision; x_index += sign_x) {
