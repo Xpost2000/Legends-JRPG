@@ -1051,6 +1051,18 @@ enum endianess system_get_endian(void) {
 Define_ByteSwap_Procedures(64);
 Define_ByteSwap_Procedures(32);
 Define_ByteSwap_Procedures(16);
+inline local u8 byteswap_u8(u8 input) {
+    return input;
+}
+inline local s8 byteswap_s8(s8 input) {
+    return input;
+}
+inline local void inplace_byteswap_s8(s8* input) {
+    return;
+}
+inline local void inplace_byteswap_u8(u8* input) {
+    return;
+}
 inline local f32 byteswap_f32(f32 input) {
     ByteUnion(32, f32) x;
     x.as_f32 = input;

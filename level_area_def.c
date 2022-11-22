@@ -47,7 +47,7 @@ local string tile_layer_strings[] = {
 struct tile {
     s32 id;
     /* NOTE, remove? */
-    s32 flags; /* acts as a XOR against it's parent? (tile definitions elsewhere.) */
+    u32 flags; /* acts as a XOR against it's parent? (tile definitions elsewhere.) */
     s16 x;
     s16 y;
     /* old: layer field */
