@@ -21,8 +21,11 @@ void level_area_entity_savepoint_unpack(struct level_area_savepoint* entity, str
 /* assorted random function prototype forward declarations */
 void render_cutscene_entities(struct sortable_draw_entities* draw_entities);
 void game_initialize_game_world(void);
+void game_push_reported_entity_death(entity_id id);
 void game_report_entity_death(entity_id id);
+
 local f32 GLOBAL_GAME_TIMESTEP_MODIFIER = 1;
+
 local void game_over_ui_setup(void);
 local void game_produce_damaging_explosion(v2f32 where, f32 radius, s32 effect_explosion_id, s32 damage_amount, s32 team_origin, u32 explosion_flags);
 struct game_state* game_state         = 0;
@@ -2274,6 +2277,23 @@ struct queued_load_level_data {
     char  destination_string_buffer[256];
 };
 
+local void setup_level_common(void) {
+    apply_save_data(game_state);
+    /* set the stage */
+    {
+        struct entity_iterator iterator = game_entity_iterator(game_state);
+        for (struct entity* current_entity = entity_iterator_begin(&iterator);
+             !entity_iterator_finished(&iterator);
+             current_entity = entity_iterator_advance(&iterator)) {
+            /* entities that are already dead, are reported to avoid triggering their on-death trigger since it makes no sense */
+            /* and also skip the death animation */
+            if (current_entity->health.value == 0 || !(current_entity->flags & ENTITY_FLAGS_ALIVE)) {
+                game_push_reported_entity_death(iterator.current_id);
+                current_entity->ai.death_animation_phase = DEATH_ANIMATION_DIE;
+            }
+        }
+    }
+}
 
 void load_level_queued_for_transition(void* callback_data) {
     struct queued_load_level_data* data   = callback_data;
@@ -2293,7 +2313,7 @@ void load_level_queued_for_transition(void* callback_data) {
     }
 
     load_level_from_file(game_state, assembled_string);
-    apply_save_data(game_state);
+    setup_level_common();
 
     if (!data->use_default_spawn_location) {
         player->position.x = data->spawn_location.x * TILE_UNIT_SIZE;
@@ -2350,6 +2370,13 @@ void handle_entity_level_trigger_interactions(struct game_state* state, struct e
     }
 }
 
+void game_push_reported_entity_death(entity_id id) {
+    struct level_area* area                                           = &game_state->loaded_area;
+    area->reported_entity_deaths[area->reported_entity_death_count++] = id;
+    assertion(area->reported_entity_death_count < MAX_REPORTED_ENTITY_DEATHS && "Too many dead entities? Need to bump the number?");
+    return;
+}
+
 void game_report_entity_death(entity_id id) {
     struct level_area*          area           = &game_state->loaded_area;
     struct level_area_listener* listener_lists = area->script.listeners + LEVEL_AREA_LISTEN_EVENT_ON_DEATH;
@@ -2369,13 +2396,13 @@ void game_report_entity_death(entity_id id) {
         struct entity*               dead  = game_dereference_entity(game_state, ptr.entity_id);
 
         if (entity_id_equal(ptr.entity_id, id)) {
-            area->reported_entity_deaths[area->reported_entity_death_count++] = id;
             struct lisp_form body = lisp_list_sliced(*event_action_form, 2, -1);
             game_script_enqueue_form_to_execute(body);
-            return;
+            break;
         }
     }
 
+    game_push_reported_entity_death(id);
     return;
 }
 

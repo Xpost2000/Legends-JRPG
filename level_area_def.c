@@ -1,6 +1,8 @@
 #ifndef LEVEL_AREA_DEF_C
 #define LEVEL_AREA_DEF_C
 
+#define MAX_REPORTED_ENTITY_DEATHS (1024)
+
 /*
   NOTE: I don't think there's a good manual way to do something like
   this, but metaprogramming this would be a pita, so I'm just manually
@@ -247,7 +249,7 @@ struct level_area {
     struct level_area_script_data    script;
     struct level_area_navigation_map navigation_data;
     s32                              reported_entity_death_count;
-    entity_id                        reported_entity_deaths[1024];
+    entity_id                        reported_entity_deaths[MAX_REPORTED_ENTITY_DEATHS];
     /* used for displaying what tiles you can walk to. */
     u8*                              combat_movement_visibility_map;
 

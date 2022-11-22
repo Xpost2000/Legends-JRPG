@@ -885,6 +885,7 @@ void update_entities(struct game_state* state, f32 dt, struct entity_iterator it
             if (!(current_entity->flags & ENTITY_FLAGS_ALIVE)) {
                 game_report_entity_death(it.current_id);
                 if (current_entity->ai.hurt_animation_phase == ENTITY_HURT_ANIMATION_ON) {
+                    /* Need to figure this... */
                 } else {
                     switch (current_entity->ai.death_animation_phase) {
                         case DEATH_ANIMATION_KNEEL: {

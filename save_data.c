@@ -210,7 +210,7 @@ void game_load_from_save_slot(s32 save_slot_id) {
 
     struct binary_serializer read_serializer = open_read_file_serializer(filename_from_saveslot_id(save_slot_id));
     game_serialize_save(&read_serializer);
-    apply_save_data(game_state);
+    setup_level_common();
     serializer_finish(&read_serializer);
 }
 

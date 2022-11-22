@@ -890,6 +890,19 @@ GAME_LISP_FUNCTION(SET_TIMESTEP_SCALE) {
     return LISP_nil;
 }
 
+GAME_LISP_FUNCTION(ENGINEFORCESAVE) {
+    Required_Argument_Count(ENGINEFORCESAVE, 1);
+    s32 save_slot = 0;
+    lisp_form_get_s32(arguments[0], &save_slot);
+    if (save_slot >= GAME_MAX_SAVE_SLOTS) {
+        save_slot = GAME_MAX_SAVE_SLOTS-1;
+    } else if (save_slot < 0) {
+        save_slot = 0;
+    }
+    game_write_save_slot(save_slot);
+    return LISP_nil;
+}
+
 #undef GAME_LISP_FUNCTION
 
 #define STRINGIFY(x) #x
