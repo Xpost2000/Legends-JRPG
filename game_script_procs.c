@@ -472,8 +472,7 @@ GAME_LISP_FUNCTION(GAME_LOAD_AREA) {
     }
 
     u8 direction = facing_direction_from_string(direction_string);
-    load_level_from_file(game_state, level_path);
-
+    load_level_from_file_with_setup(game_state, level_path);
 
     /* * get all player entities */
     struct entity* player = game_get_player(game_state);

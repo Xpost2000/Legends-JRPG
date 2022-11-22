@@ -2,7 +2,7 @@
 /* Needs lots of clean up. (Man I keep saying this every time I come back here, but it doesn't seem to matter too much.) */
 /* TODO fix coordinate system <3 */
 /* virtual pixels */
-#define TILE_UNIT_SIZE                      (48) /* measured with a reference of 640x480 */
+#define TILE_UNIT_SIZE                      (32) /* measured with a reference of 640x480 */
 #define REFERENCE_TILE_UNIT_SIZE            (16) /* What most tiles should be */
 #define GAME_COMMAND_CONSOLE_LINE_INPUT_MAX (512)
 #include "cutscene_def.c"
@@ -2283,18 +2283,29 @@ local void setup_level_common(void) {
     apply_save_data(game_state);
     /* set the stage */
     {
+        _debugprintf("setting up stage");
+        
         struct entity_iterator iterator = game_entity_iterator(game_state);
         for (struct entity* current_entity = entity_iterator_begin(&iterator);
              !entity_iterator_finished(&iterator);
              current_entity = entity_iterator_advance(&iterator)) {
             /* entities that are already dead, are reported to avoid triggering their on-death trigger since it makes no sense */
             /* and also skip the death animation */
-            if (current_entity->health.value == 0 || !(current_entity->flags & ENTITY_FLAGS_ALIVE)) {
+            _debugprintf("ENTITY HP: %d", current_entity->health.value);
+            if (current_entity->health.value <= 0 ||
+                current_entity->health.max   <= 0 ||
+                !(current_entity->flags & ENTITY_FLAGS_ALIVE)) {
                 game_push_reported_entity_death(iterator.current_id);
-                current_entity->ai.death_animation_phase = DEATH_ANIMATION_DIE;
+                current_entity->flags                    &= ~(ENTITY_FLAGS_ALIVE);
+                current_entity->ai.death_animation_phase  = DEATH_ANIMATION_DIE;
             }
         }
     }
+}
+
+local void load_level_from_file_with_setup(struct game_state* state, string where) {
+    load_level_from_file(state, where);
+    setup_level_common();
 }
 
 void load_level_queued_for_transition(void* callback_data) {
@@ -2314,8 +2325,7 @@ void load_level_queued_for_transition(void* callback_data) {
         }
     }
 
-    load_level_from_file(game_state, assembled_string);
-    setup_level_common();
+    load_level_from_file_with_setup(game_state, assembled_string);
 
     if (!data->use_default_spawn_location) {
         player->position.x = data->spawn_location.x * TILE_UNIT_SIZE;
