@@ -8,6 +8,7 @@ struct binary_serializer open_write_file_serializer(string filename) {
     struct binary_serializer result = {};
     result.mode = BINARY_SERIALIZER_WRITE;
     result.type = BINARY_SERIALIZER_FILE;
+    serializer_set_endianess(&result, ENDIANESS_LITTLE);
 
     _debugprintf("requested to open: %s\n", filename.data);
     result.file_handle = fopen(filename.data, "wb+");
@@ -18,6 +19,7 @@ struct binary_serializer open_read_file_serializer(string filename) {
     struct binary_serializer result = {};
     result.mode = BINARY_SERIALIZER_READ;
     result.type = BINARY_SERIALIZER_FILE;
+    serializer_set_endianess(&result, ENDIANESS_LITTLE);
 
     _debugprintf("requested to open: %s\n", filename.data);
     result.file_handle = fopen(filename.data, "rb+");
@@ -28,6 +30,7 @@ struct binary_serializer open_write_memory_serializer(void) {
     struct binary_serializer result = {};
     result.mode = BINARY_SERIALIZER_WRITE;
     result.type = BINARY_SERIALIZER_MEMORY;
+    serializer_set_endianess(&result, ENDIANESS_LITTLE);
 
     return result;
 }
@@ -36,6 +39,7 @@ struct binary_serializer open_read_memory_serializer(void* buffer, size_t buffer
     struct binary_serializer result = {};
     result.mode = BINARY_SERIALIZER_READ;
     result.type = BINARY_SERIALIZER_MEMORY;
+    serializer_set_endianess(&result, ENDIANESS_LITTLE);
 
     result.memory_buffer.size   = buffer_size;
     result.memory_buffer.buffer = buffer;
@@ -168,36 +172,46 @@ void serialize_format(struct binary_serializer* serializer, char* format_string,
     case BINARY_SERIALIZER_FILE: {                                      \
         assert(serializer->file_handle && "File handle not opened on file serializer?"); \
         if (serializer->mode == BINARY_SERIALIZER_READ) {               \
-            fread(&obj_, sizeof(type), 1, serializer->file_handle);       \
+            fread(obj, sizeof(type), 1, serializer->file_handle);       \
         } else {                                                        \
-            fwrite(&obj_, sizeof(type), 1, serializer->file_handle);      \
+            fwrite(obj, sizeof(type), 1, serializer->file_handle);      \
         }                                                               \
     } break
 #define Serialize_Object_Into_Memory_Buffer(type)                       \
     case BINARY_SERIALIZER_MEMORY: {                                    \
         if (serializer->mode == BINARY_SERIALIZER_READ) {               \
-            memcpy(&obj_, serializer->memory_buffer.buffer + serializer->memory_buffer.already_read, sizeof(type)); \
+            memcpy(obj, serializer->memory_buffer.buffer + serializer->memory_buffer.already_read, sizeof(type)); \
             serializer->memory_buffer.already_read += sizeof(type);     \
         } else {                                                        \
-            serializer_push_memory_node(serializer, &obj_, sizeof(type)); \
+            serializer_push_memory_node(serializer, obj, sizeof(type)); \
         }                                                               \
     } break
 
 /* Pretty sure there's no special casing so this is okay. C "templates" to the rescue! */
-/* endian aware for these primitive types */
+/*
+  endian aware for these primitive types
+  for some reason I cannot make temporaries and read that with these macros?
+
+  So I double swap the pointer value.
+*/
 #define Define_Serializer_Function(Typename, Type)                      \
     void serialize_##Typename(struct binary_serializer* serializer, Type* obj) { \
-        Type obj_ = *obj;                                               \
         if (sizeof(Type) > 1) {                                         \
             assertion(serializer->expected_endianess != 0 && "Serializer does not have a set endian target!"); \
             if (system_get_endian() != serializer->expected_endianess) { \
-                obj_ = byteswap_##Type(obj_);                           \
+                *obj = byteswap_##Type(*obj);                           \
             }                                                           \
         }                                                               \
         switch (serializer->type) {                                     \
             Serialize_Object_Into_File(Type);                           \
             Serialize_Object_Into_Memory_Buffer(Type);                  \
             invalid_cases();                                            \
+        }                                                               \
+        if (sizeof(Type) > 1) {                                         \
+            assertion(serializer->expected_endianess != 0 && "Serializer does not have a set endian target!"); \
+            if (system_get_endian() != serializer->expected_endianess) { \
+                *obj = byteswap_##Type(*obj);                           \
+            }                                                           \
         }                                                               \
     }
 
