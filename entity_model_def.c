@@ -8,7 +8,7 @@
   and then we'll have a few extra atop that.
 */
 
-#define ENTITY_ANIMATION_MAX_FRAMES (16)
+#define ENTITY_ANIMATION_MAX_FRAMES (8)
 struct entity_animation {
     string   name;
     f32      time_until_next_frame;
@@ -16,7 +16,7 @@ struct entity_animation {
     image_id sprites[ENTITY_ANIMATION_MAX_FRAMES];
 };
 
-#define ENTITY_ANIMATION_MAX (64)
+#define ENTITY_ANIMATION_MAX (16)
 struct entity_model {
     string                  name;
     s32                     animation_count;

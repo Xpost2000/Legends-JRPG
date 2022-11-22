@@ -1397,6 +1397,12 @@ local void game_VFS_mount_archives(void) {
     mount_bigfile_archive(&game_arena, string_literal("./mod1.bigfile"));
 }
 
+#define Report_Memory_Status_Region(ARENA, WHY) \
+    do {                                        \
+        _debugprintf(WHY);                      \
+        _memory_arena_peak_usages(ARENA);       \
+    } while (0)
+
 void game_initialize(void) {
     game_arena   = memory_arena_create_from_heap("Game Memory", Megabyte(64));
     scratch_arena = memory_arena_create_from_heap("Scratch Buffer", Megabyte(8));
@@ -1408,9 +1414,11 @@ void game_initialize(void) {
     game_state                      = memory_arena_push(&game_arena, sizeof(*game_state));
     game_state->variables           = game_variables(&game_arena);
     game_state->conversation_arena  = memory_arena_push_sub_arena(&game_arena, Kilobyte(64));
+    Report_Memory_Status_Region(&game_arena, "Conversation Arena & Game Variables Initialization");
 
     cutscene_initialize(&game_arena);
     game_state->entity_database     = entity_database_create(&game_arena);
+    Report_Memory_Status_Region(&game_arena, "Entity Database allocation");
     
     initialize_save_data();
     initialize_main_menu();
@@ -1418,6 +1426,7 @@ void game_initialize(void) {
     game_state->rng   = random_state();
     game_state->arena = &game_arena;
     graphics_assets   = graphics_assets_create(&game_arena, 16, 1024);
+    Report_Memory_Status_Region(&game_arena, "Graphics assets allocation");
 
     combat_square_unselected = DEBUG_CALL(graphics_assets_load_image(&graphics_assets, string_literal(GAME_DEFAULT_RESOURCE_PATH "img/cmbt/cmbt_grid_sq.png")));
     combat_square_selected   = DEBUG_CALL(graphics_assets_load_image(&graphics_assets, string_literal(GAME_DEFAULT_RESOURCE_PATH "img/cmbt/cmbt_selected_sq.png")));
@@ -1429,10 +1438,12 @@ void game_initialize(void) {
     ui_chunky             = DEBUG_CALL(game_ui_nine_patch_load_from_directory(&graphics_assets, string_literal(GAME_DEFAULT_RESOURCE_PATH "img/ui/chunky"), 16, 16));
     /* TODO: Load from file */
     global_entity_models = entity_model_database_create(&game_arena, 512);
+    Report_Memory_Status_Region(&game_arena, "Entity models database");
 
     game_script_initialize(&game_arena);
 
     passive_speaking_dialogues = memory_arena_push(&game_arena, MAX_PASSIVE_SPEAKING_DIALOGUES * sizeof(*passive_speaking_dialogues));
+    Report_Memory_Status_Region(&game_arena, "Passive Dialogues & Game Script initialization");
 
     ui_blip     = load_sound(string_literal(GAME_DEFAULT_RESOURCE_PATH "snds/ui_select.wav"), false);
     ui_blip_bad = load_sound(string_literal(GAME_DEFAULT_RESOURCE_PATH "snds/ui_bad.wav"), false);
@@ -1458,6 +1469,7 @@ void game_initialize(void) {
     game_state->permenant_entities          = entity_list_create(&game_arena, GAME_MAX_PERMENANT_ENTITIES, ENTITY_LIST_STORAGE_TYPE_PERMENANT_STORE);
     game_state->permenant_particle_emitters = entity_particle_emitter_list(&game_arena, GAME_MAX_PERMENANT_PARTICLE_EMITTERS);
     initialize_particle_pools(&game_arena, PARTICLE_POOL_MAX_SIZE);
+    Report_Memory_Status_Region(&game_arena, "Permenant entity pools");
 
     player_id                               = entity_list_create_player(&game_state->permenant_entities, v2f32(70, 70));
     /* entity_list_create_niceguy(&game_state->permenant_entities, v2f32(9 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE)); */
