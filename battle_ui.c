@@ -705,22 +705,26 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
 
             if (selection_confirm) {
                 /* submit movement */
-                global_battle_ui_state.submode = BATTLE_UI_SUBMODE_NONE;
+                if (global_battle_ui_state.max_remembered_path_points_count != 0) {
+                    global_battle_ui_state.submode = BATTLE_UI_SUBMODE_NONE;
 
-                if (global_battle_ui_state.movement_start_x != global_battle_ui_state.movement_end_x ||
-                    global_battle_ui_state.movement_start_y != global_battle_ui_state.movement_end_y) {
-                    entity_combat_submit_movement_action(active_combatant_entity, global_battle_ui_state.max_remembered_path_points, global_battle_ui_state.max_remembered_path_points_count);
+                    if (global_battle_ui_state.movement_start_x != global_battle_ui_state.movement_end_x ||
+                        global_battle_ui_state.movement_start_y != global_battle_ui_state.movement_end_y) {
+                        entity_combat_submit_movement_action(active_combatant_entity,
+                                                             global_battle_ui_state.max_remembered_path_points,
+                                                             global_battle_ui_state.max_remembered_path_points_count);
 
-                    global_battle_ui_state.max_remembered_path_points_count = 0;
-                    level_area_clear_movement_visibility_map(&state->loaded_area);
-                    /* register camera lerp */
-                    /* NOTE: the camera is in a weird intermediary position
-                       during this action, however when waiting for the path to finish,
-                       there is no issue. Right now we're doing instant teleport. Either way I should wait for the camera to finish...
-                    */
-                    {
-                        struct camera* camera = &state->camera;
-                        camera_set_point_to_interpolate(camera, v2f32(global_battle_ui_state.movement_end_x * TILE_UNIT_SIZE, global_battle_ui_state.movement_end_y * TILE_UNIT_SIZE));
+                        global_battle_ui_state.max_remembered_path_points_count = 0;
+                        level_area_clear_movement_visibility_map(&state->loaded_area);
+                        /* register camera lerp */
+                        /* NOTE: the camera is in a weird intermediary position
+                           during this action, however when waiting for the path to finish,
+                           there is no issue. Right now we're doing instant teleport. Either way I should wait for the camera to finish...
+                        */
+                        {
+                            struct camera* camera = &state->camera;
+                            camera_set_point_to_interpolate(camera, v2f32(global_battle_ui_state.movement_end_x * TILE_UNIT_SIZE, global_battle_ui_state.movement_end_y * TILE_UNIT_SIZE));
+                        }
                     }
                 }
             }

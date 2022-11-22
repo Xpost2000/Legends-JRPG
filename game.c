@@ -642,7 +642,7 @@ struct navigation_path navigation_path_find(struct memory_arena* arena, struct l
 
             /* TODO: allow special case, if we can do a bresenham line, just use the trace */
 
-            while (exploration_queue_start <= exploration_queue_end && !found_end) {
+            while (exploration_queue_start < exploration_queue_end && !found_end) {
                 v2f32 current_point = exploration_queue[exploration_queue_start++];
                 /* _debugprintf("current point: <%d, %d>", (s32)current_point.x, (s32)current_point.y); */
                 explored_points[((s32)current_point.y - navigation_map->min_y) * map_width + ((s32)current_point.x - navigation_map->min_x)] = true;
