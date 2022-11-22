@@ -1174,6 +1174,7 @@ local void battle_ui_banner_fade_text_out(struct software_framebuffer* framebuff
 
 local void battle_ui_trigger_end_turn(void) {
     global_battle_ui_state.phase = BATTLE_UI_FADE_OUT_DETAILS_AFTER_TURN_COMPLETION;
+    global_battle_ui_state.timer = 0;
 }
 
 local void update_and_render_battle_ui(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
@@ -1278,7 +1279,7 @@ local void update_and_render_battle_ui(struct game_state* state, struct software
                 dt,
                 string_literal("ROUND END!"),
                 4,
-                BATTLE_UI_IDLE
+                BATTLE_UI_FADE_IN_DARK
             );
         } break;
 
