@@ -1065,7 +1065,7 @@ local void sortable_entity_draw_entity(struct render_commands* commands, struct 
 
           However all the art is expected to be relative to 16x16 tiles
         */
-        f32 scale_x = 2;
+        f32 scale_x = TILE_UNIT_SIZE/REFERENCE_TILE_UNIT_SIZE;
         
         v2f32 real_dimensions  = v2f32(sprite_dimensions.x * scale_x, sprite_dimensions.y * scale_x);
 

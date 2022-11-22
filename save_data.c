@@ -1,5 +1,17 @@
 #include "save_data_def.c"
-#define CURRENT_SAVE_RECORD_VERSION (2)
+#define CURRENT_SAVE_RECORD_VERSION (3)
+/*
+  Save record versions are done to accomodate new save record data updates
+
+  VERSION1&2:
+      Basically initial versions.
+      (broken!)
+  VERSION3: (new forward format)
+      size discriminator
+      Entity record
+         - Position
+         - Health
+*/
 #define SAVE_RECORDS_PER_SAVE_AREA_RECORD_CHUNK (64)
 
 /*
@@ -38,6 +50,18 @@ struct save_record_entity_chest {
 
 struct save_record {
     u32 type;
+    /*
+      NOTE:
+      byte size of record_size,
+      under the assumption that I will generally only add fields (without
+      changing the size of or moving older fields, which is a fair assumption.),
+
+      this decision should make the savefiles forward compatible with all engine versions
+      after today.
+
+      [At least the save records part.]
+    */
+    s32 record_size;
 
     union {
         struct save_record_entity_chest chest_record;
@@ -209,6 +233,7 @@ struct save_record* save_area_record_entry_allocate_record(struct save_area_reco
     }
 
     struct save_record* new_record = &area_entry->last->records[area_entry->last->written_entries++];
+    new_record->record_size        = sizeof(*new_record);
     return new_record;
 }
 
@@ -251,6 +276,45 @@ struct save_area_record_entry* save_record_area_entry_find_or_allocate(string en
   disallow saving during combat, no combat state
   --------------
 */
+
+local void save_serialize_record_entry(struct save_area_record_chunk* entry_chunk, s32 record_to_consume, struct binary_serializer* serializer, s32 save_version) {
+    struct save_record* record_to_serialize = entry_chunk->records + record_to_consume; 
+
+    switch (save_version) {
+        case 1:
+        case 2: { /* This was before the backwards compatibility changes in Version 3 */
+            assertion(!"This is a prerelease save file. I have no idea why you have one of these!");
+        } break;
+            /* The default case is meant to generally be forward compatible with everything in the future... */
+            /* If it fails to work, I can analyze the specific structures and drop down */
+        case CURRENT_SAVE_RECORD_VERSION: {
+        default:
+            if (save_version != CURRENT_SAVE_RECORD_VERSION) {
+                s32 current_size_of_save_record_structure = sizeof(struct save_record);
+
+                serialize_u32(serializer, &record_to_serialize->type);
+                serialize_s32(serializer, &record_to_serialize->record_size);
+
+                s32 already_read = sizeof(s32) + sizeof(u32);
+
+                s32 record_size                        = record_to_serialize->record_size-already_read;
+                current_size_of_save_record_structure -= already_read;
+
+                if (record_size >= current_size_of_save_record_structure) {
+                    u8 garbage_bytes_to_read[4096];
+                    serialize_bytes(serializer, record_to_serialize, current_size_of_save_record_structure);
+                    s32 remaining_read_amount = record_size - current_size_of_save_record_structure;
+                    serialize_bytes(serializer, garbage_bytes_to_read, remaining_read_amount);
+                } else {
+                    serialize_bytes(serializer, record_to_serialize, record_size);
+                }
+            } else {
+                /* serialize_bytes(serializer, entry_chunk->records, sizeof(*entry_chunk->records) * amount_to_consume); */
+                serialize_bytes(serializer, record_to_serialize, sizeof(*record_to_serialize));
+            }
+        } break;
+    }
+}
 
 /* I don't really care about versioning right now since I'm using this for experimental purposes to make any progress on the save system. */
 void game_serialize_save(struct binary_serializer* serializer) {
@@ -333,6 +397,7 @@ void game_serialize_save(struct binary_serializer* serializer) {
                 {
                     struct save_area_record_chunk* entry_chunk = current_area_entry->first;
 
+                    /* NOTE: when writing I don't really care about how I serialize, just blit the direct image. */
                     s32 written = 0;
                     while (entry_chunk) {
                         serialize_bytes(serializer, entry_chunk->records, sizeof(*entry_chunk->records) * entry_chunk->written_entries);
@@ -395,7 +460,12 @@ void game_serialize_save(struct binary_serializer* serializer) {
                             amount_to_consume = SAVE_RECORDS_PER_SAVE_AREA_RECORD_CHUNK;
                         }
 
-                        serialize_bytes(serializer, entry_chunk->records, sizeof(*entry_chunk->records) * amount_to_consume);
+                        for (s32 record_to_consume = 0; record_to_consume < amount_to_consume; ++record_to_consume) {
+                            save_serialize_record_entry(entry_chunk, record_to_consume, serializer, save_version);
+                        }
+                        
+                        /* serialize_bytes(serializer, entry_chunk->records, sizeof(*entry_chunk->records) * amount_to_consume); */
+
                         entry_chunk->written_entries = amount_to_consume;
                         record_entries -= amount_to_consume;
                         consumed_chunks += 1;
@@ -492,4 +562,12 @@ void save_data_register_chest_looted(u32 chest_id) {
     struct save_record*            new_record = save_area_record_entry_allocate_record(area);
     new_record->type                          = SAVE_RECORD_TYPE_ENTITY_CHEST;
     new_record->chest_record.target_entity    = chest_id;
+}
+
+void save_data_register_entity(entity_id id) {
+    struct entity* entity_object = game_dereference_entity(game_state, id);
+
+    if (entity_object->flags & ENTITY_FLAGS_PLAYER_CONTROLLED) {
+        return;
+    }
 }

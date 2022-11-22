@@ -10,6 +10,7 @@ void finish_save_data(void);
 
 string filename_from_saveslot_id(s32 id);
 void   save_data_register_chest_looted(u32 chest_id);
+void   save_data_register_entity(entity_id id);
 
 struct save_data_description {
     bool good;

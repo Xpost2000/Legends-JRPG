@@ -3,6 +3,7 @@
 /* TODO fix coordinate system <3 */
 /* virtual pixels */
 #define TILE_UNIT_SIZE                      (32) /* measured with a reference of 640x480 */
+#define REFERENCE_TILE_UNIT_SIZE            (16) /* What most tiles should be */
 #define GAME_COMMAND_CONSOLE_LINE_INPUT_MAX (512)
 #include "cutscene_def.c"
 #include "game_def.c"
@@ -2281,7 +2282,16 @@ void load_level_queued_for_transition(void* callback_data) {
     struct entity*                 player = game_get_player(game_state);
     string assembled_string = string_from_cstring_length_counted(data->destination_string_buffer, data->length_of_destination);
 
+    /* register entities to the save entry before changing to maintain state persistence. */
+    {
+        struct entity_iterator iterator = game_entity_iterator(game_state);
+        for (struct entity* current_entity = entity_iterator_begin(&iterator); !entity_iterator_finished(&iterator); current_entity = entity_iterator_advance(&iterator)) {
+            save_data_register_entity(iterator.current_id);
+        }
+    }
+
     load_level_from_file(game_state, assembled_string);
+    apply_save_data(game_state);
 
     if (!data->use_default_spawn_location) {
         player->position.x = data->spawn_location.x * TILE_UNIT_SIZE;

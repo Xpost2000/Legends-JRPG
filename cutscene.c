@@ -39,7 +39,14 @@ void cutscene_load_area(string path) {
         unimplemented("reloading area is not done yet");
     } else {
         string fullpath = string_concatenate(&scratch_arena, string_literal("areas/"), path);
+#ifdef EXPERIMENTAL_VFS
+        /* This is slow path. I should write a native backend for the VFS instead of this weird hack */
+        struct file_buffer file = read_entire_file(memory_arena_allocator(&scratch_arena), fullpath);
+        struct binary_serializer serializer = open_read_memory_serializer(file.buffer, file.length);
+        file_buffer_free(&file);
+#else
         struct binary_serializer serializer = open_read_file_serializer(fullpath);
+#endif
         {
             _serialize_level_area(&cutscene_state.arena, &serializer, &cutscene_state.loaded_area, ENTITY_LIST_STORAGE_TYPE_PER_LEVEL_CUTSCENE);
             load_area_script(&cutscene_state.arena, &cutscene_state.loaded_area, string_concatenate(&scratch_arena, string_slice(fullpath, 0, (fullpath.length+1)-sizeof("area")), string_literal("area_script")));
