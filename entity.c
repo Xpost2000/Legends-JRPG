@@ -2714,7 +2714,32 @@ void serialize_level_area_entity_savepoint(struct binary_serializer* serializer,
     switch (version) {
         default:
         case CURRENT_LEVEL_AREA_VERSION: {
-            Serialize_Structure(serializer, *entity);
+            serialize_f32(serializer, &entity->position.x);
+            serialize_f32(serializer, &entity->position.y);
+            serialize_u32(serializer, &entity->flags);
+            /* this should not be here */
+        } break;
+    }
+}
+
+void serialize_light(struct binary_serializer* serializer, s32 version, struct light_def* light) {
+    switch (version) {
+        default:
+        case CURRENT_LEVEL_AREA_VERSION: {
+            serialize_f32(serializer, &light->position.x);
+            serialize_f32(serializer, &light->position.y);
+            serialize_f32(serializer, &light->scale.x);
+            serialize_f32(serializer, &light->scale.y);
+            serialize_u8(serializer, &light->color.r);
+            serialize_u8(serializer, &light->color.g);
+            serialize_u8(serializer, &light->color.b);
+            serialize_u8(serializer, &light->color.a);
+            serialize_u32(serializer, &light->flags);
+            /* should not be here */
+            serialize_u8(serializer, &light->reserved_bytes[0]);
+            serialize_u8(serializer, &light->reserved_bytes[1]);
+            serialize_u8(serializer, &light->reserved_bytes[2]);
+            serialize_u8(serializer, &light->reserved_bytes[3]);
         } break;
     }
 }

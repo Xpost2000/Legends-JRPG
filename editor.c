@@ -196,7 +196,7 @@ void editor_serialize_area(struct binary_serializer* serializer) {
     if (version_id >= 6) {
         serialize_s32(serializer, &editor_state->light_count);
         for (s32 light_index = 0; light_index < editor_state->light_count; ++light_index) {
-            Serialize_Structure(serializer, editor_state->lights[light_index]);
+            serialize_light(serializer, version_id, &editor_state->lights[light_index]);
         }
     }
     if (version_id >= 9) {

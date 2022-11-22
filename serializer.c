@@ -171,16 +171,20 @@ void serialize_format(struct binary_serializer* serializer, char* format_string,
 #define Serialize_Object_Into_File(type)                                \
     case BINARY_SERIALIZER_FILE: {                                      \
         assert(serializer->file_handle && "File handle not opened on file serializer?"); \
-        if (serializer->mode == BINARY_SERIALIZER_READ) {               \
-            fread(obj, sizeof(type), 1, serializer->file_handle);       \
-        } else {                                                        \
-            fwrite(obj, sizeof(type), 1, serializer->file_handle);      \
+        if (obj) {                                                      \
+            if (serializer->mode == BINARY_SERIALIZER_READ) {           \
+                fread(obj, sizeof(type), 1, serializer->file_handle);   \
+            } else {                                                    \
+                fwrite(obj, sizeof(type), 1, serializer->file_handle);  \
+            }                                                           \
         }                                                               \
     } break
 #define Serialize_Object_Into_Memory_Buffer(type)                       \
     case BINARY_SERIALIZER_MEMORY: {                                    \
         if (serializer->mode == BINARY_SERIALIZER_READ) {               \
-            memcpy(obj, serializer->memory_buffer.buffer + serializer->memory_buffer.already_read, sizeof(type)); \
+            if (obj) {                                                  \
+                memcpy(obj, serializer->memory_buffer.buffer + serializer->memory_buffer.already_read, sizeof(type)); \
+            }                                                           \
             serializer->memory_buffer.already_read += sizeof(type);     \
         } else {                                                        \
             serializer_push_memory_node(serializer, obj, sizeof(type)); \
