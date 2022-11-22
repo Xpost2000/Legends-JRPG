@@ -145,12 +145,6 @@ local s32 _do_save_menu_core(struct software_framebuffer* framebuffer, f32 y_off
         if (effective_slot_t > 1) effective_slot_t      = 1;
         else if (effective_slot_t < 0) effective_slot_t = 0;
 
-        if  (selection_confirm) {
-            if (global_save_menu_state.currently_selected_option_choice == save_slot_index) {
-                return save_slot_index;
-            }
-        }
-
         if (global_save_menu_state.currently_selected_option_choice == save_slot_index) {
             if (allow_input) {
                 current_slot->lean_in_t += dt;
@@ -218,6 +212,10 @@ local s32 _do_save_menu_core(struct software_framebuffer* framebuffer, f32 y_off
         }
     }
 
+    if  (selection_confirm) {
+        return (global_save_menu_state.currently_selected_option_choice);
+    }
+
     if (selection_cancel) {
         save_menu_close();
     }
@@ -278,10 +276,12 @@ s32 do_save_menu(struct software_framebuffer* framebuffer, f32 dt) {
                     } break;
                     case SAVE_MENU_INTENT_LOADING: {
                         /* load slot and start the game */
-                        screen_mode = GAME_SCREEN_INGAME;
-                        fade_into_game();
-                        game_load_from_save_slot(selected_slot);
-                        return SAVE_MENU_PROCESS_ID_LOADED_EXIT;
+                        if (game_can_load_save(selected_slot)) {
+                            screen_mode = GAME_SCREEN_INGAME;
+                            fade_into_game();
+                            game_load_from_save_slot(selected_slot);
+                            return SAVE_MENU_PROCESS_ID_LOADED_EXIT;
+                        }
                     } break;
                 }
             }

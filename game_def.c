@@ -588,6 +588,7 @@ struct game_state {
     f32  constant_camera_trauma_value;
 };
 
+bool game_can_load_save(s32 save_slot_id);
 void game_write_save_slot(s32 save_slot_id);
 void game_load_from_save_slot(s32 save_slot_id);
 void dialogue_ui_set_target_node(u32 id);

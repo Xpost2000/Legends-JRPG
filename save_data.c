@@ -192,27 +192,41 @@ struct save_data_description get_save_data_description(s32 save_id) {
 }
 
 void game_write_save_slot(s32 save_slot_id) {
+    string savename = filename_from_saveslot_id(save_slot_id);
     assertion(save_slot_id >= 0 && save_slot_id < GAME_MAX_SAVE_SLOTS);
+
     OS_create_directory(string_literal("saves/"));
-    struct binary_serializer write_serializer = open_write_file_serializer(filename_from_saveslot_id(save_slot_id));
+    struct binary_serializer write_serializer = open_write_file_serializer(savename);
     game_serialize_save(&write_serializer);
     serializer_finish(&write_serializer);
 }
 
+/* I mean I should verify if the save works, since we don't know if a save is corrupted */
+bool game_can_load_save(s32 save_slot_id) {
+    string savename = filename_from_saveslot_id(save_slot_id);
+    if (OS_file_exists(savename)) {
+        return true;
+    }
+    return false;
+}
+
 void game_load_from_save_slot(s32 save_slot_id) {
+    string savename = filename_from_saveslot_id(save_slot_id);
     assertion(save_slot_id >= 0 && save_slot_id < GAME_MAX_SAVE_SLOTS);
 
-    /* clear both arenas and start from zero. */
-    {
-        zero_memory(&global_save_data, sizeof(global_save_data));
-        memory_arena_clear_top(&save_arena);
-        memory_arena_clear_bottom(&save_arena);
-    }
+    if (OS_file_exists(savename)) {
+        /* clear both arenas and start from zero. */
+        {
+            zero_memory(&global_save_data, sizeof(global_save_data));
+            memory_arena_clear_top(&save_arena);
+            memory_arena_clear_bottom(&save_arena);
+        }
 
-    struct binary_serializer read_serializer = open_read_file_serializer(filename_from_saveslot_id(save_slot_id));
-    game_serialize_save(&read_serializer);
-    setup_level_common();
-    serializer_finish(&read_serializer);
+        struct binary_serializer read_serializer = open_read_file_serializer(savename);
+        game_serialize_save(&read_serializer);
+        setup_level_common();
+        serializer_finish(&read_serializer);
+    }
 }
 
 struct save_area_record_entry* save_record_allocate_area_entry_chunk(void) {
