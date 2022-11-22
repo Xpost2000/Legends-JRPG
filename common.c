@@ -991,8 +991,8 @@ local void OS_create_directory(string location) {
 
 
 enum endianess {
-    ENDIANESS_LITTLE,
-    ENDIANESS_BIG,
+    ENDIANESS_LITTLE = 1,
+    ENDIANESS_BIG    = 2,
 };
 
 local string endian_strings[] = {
@@ -1051,6 +1051,34 @@ enum endianess system_get_endian(void) {
 Define_ByteSwap_Procedures(64);
 Define_ByteSwap_Procedures(32);
 Define_ByteSwap_Procedures(16);
+inline local f32 byteswap_f32(f32 input) {
+    ByteUnion(32, f32) x;
+    x.as_f32 = input;
+    for (unsigned byte_index = 0; byte_index < sizeof(f32)/2; ++byte_index) {
+        XorSwap(x.as_bytes[byte_index], x.as_bytes[(sizeof(f32)-1) - byte_index]);
+    }
+    return x.as_f32;
+}
+inline local f64 byteswap_f64(f64 input) {
+    ByteUnion(64, f64) x;
+    x.as_f64 = input;
+    for (unsigned byte_index = 0; byte_index < sizeof(f64)/2; ++byte_index) {
+        XorSwap(x.as_bytes[byte_index], x.as_bytes[(sizeof(f64)-1) - byte_index]);
+    }
+    return x.as_f64;
+}
+inline local void inplace_byteswap_f32(f32 *input) {
+    assertion(input && "cannot byteswap nullptr?");
+    f32 copy = *input;
+    copy = byteswap_f32(copy);
+    *input = copy;
+}
+inline local void inplace_byteswap_f64(f64 *input) {
+    assertion(input && "cannot byteswap nullptr?");
+    f64 copy = *input;
+    copy = byteswap_f32(copy);
+    *input = copy;
+}
 
 local void _debug_print_bitstring(u8* bytes, unsigned length) {
     unsigned bits = length * 8;
