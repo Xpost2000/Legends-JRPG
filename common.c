@@ -273,16 +273,24 @@ static inline void memory_copy(void* source, void* destination, size_t amount) {
 #if 1
     if (amount & ~(63)) {
         memory_copy64(source, destination, amount);
+#if 0
         _debugprintf("memory copy 64bit");
+#endif
     } else if (amount & ~(31)) {
         memory_copy32(source, destination, amount);
+#if 0
         _debugprintf("memory copy 32bit");
+#endif
     } else if (amount & ~(15)) {
         memory_copy16(source, destination, amount);
+#if 0
         _debugprintf("memory copy 16bit");
+#endif
     } else {
         memory_copy8(source, destination, amount);
+#if 0
         _debugprintf("memory copy default");
+#endif
     }
 #else
     memcpy(destination, source, amount);

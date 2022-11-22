@@ -2285,7 +2285,9 @@ void load_level_queued_for_transition(void* callback_data) {
     /* register entities to the save entry before changing to maintain state persistence. */
     {
         struct entity_iterator iterator = game_entity_iterator(game_state);
-        for (struct entity* current_entity = entity_iterator_begin(&iterator); !entity_iterator_finished(&iterator); current_entity = entity_iterator_advance(&iterator)) {
+        for (struct entity* current_entity = entity_iterator_begin(&iterator);
+             !entity_iterator_finished(&iterator);
+             current_entity = entity_iterator_advance(&iterator)) {
             save_data_register_entity(iterator.current_id);
         }
     }
@@ -2365,7 +2367,6 @@ void game_report_entity_death(entity_id id) {
 
         struct game_script_typed_ptr ptr   = game_script_object_handle_decode(*object_handle);
         struct entity*               dead  = game_dereference_entity(game_state, ptr.entity_id);
-
 
         if (entity_id_equal(ptr.entity_id, id)) {
             area->reported_entity_deaths[area->reported_entity_death_count++] = id;

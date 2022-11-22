@@ -1,6 +1,8 @@
 #include "save_data_def.c"
 #define CURRENT_SAVE_RECORD_VERSION (3)
 /*
+  NOTE: it may be nice to build an iterator type for these nested things...
+
   Save record versions are done to accomodate new save record data updates
 
   VERSION1&2:
@@ -48,6 +50,22 @@ struct save_record_entity_chest {
     u32 target_entity;
 };
 
+enum save_record_entity_field_flags {
+    SAVE_RECORD_ENTITY_FIELD_FLAGS_NONE         = 0,
+    SAVE_RECORD_ENTITY_FIELD_FLAGS_HEALTH       = BIT(0),
+    SAVE_RECORD_ENTITY_FIELD_FLAGS_POSITION     = BIT(1),
+    SAVE_RECORD_ENTITY_FIELD_FLAGS_DIRECTION    = BIT(2),
+    SAVE_RECORD_ENTITY_FIELD_FLAGS_ENTITY_FLAGS = BIT(3),
+};
+struct save_record_entity_entity {
+    entity_id id;
+    u32       entity_field_flags; /* intepret whether to read the fields, we save them regardless though */
+    u32       entity_flags      ; /* flags stored on the entity itself. */
+    v2f32     position;
+    s32       health;
+    u8        direction;
+};
+
 struct save_record {
     u32 type;
     /*
@@ -64,7 +82,8 @@ struct save_record {
     s32 record_size;
 
     union {
-        struct save_record_entity_chest chest_record;
+        struct save_record_entity_chest  chest_record;
+        struct save_record_entity_entity entity_record;
     };
 };
 
@@ -247,6 +266,7 @@ struct save_area_record_entry* save_record_area_entry_find_or_allocate(string en
                 _debugprintf("found match for \"%.*s\"", entryname.length, entryname.data);
                 return cursor;
             }
+            cursor = cursor->next;
         }
     }
 
@@ -537,6 +557,28 @@ local void apply_save_record_chest_entry(struct save_record_entity_chest* chest_
     _debugprintf("opening chest: %d\n", chest_record->target_entity);
 }
 
+local void apply_save_record_entity_entry(struct save_record_entity_entity* entity_record, struct game_state* state) {
+    struct entity* entity_object = game_dereference_entity(state, entity_record->id);
+
+    u32 field_flags_to_read = entity_record->entity_field_flags;
+
+    if (field_flags_to_read & SAVE_RECORD_ENTITY_FIELD_FLAGS_HEALTH) {
+        entity_object->health.value = entity_record->health;
+    }
+
+    if (field_flags_to_read & SAVE_RECORD_ENTITY_FIELD_FLAGS_POSITION) {
+        entity_object->position = entity_record->position;
+    }
+
+    if (field_flags_to_read & SAVE_RECORD_ENTITY_FIELD_FLAGS_DIRECTION) {
+        entity_object->facing_direction = entity_record->direction;
+    }
+
+    if (field_flags_to_read & SAVE_RECORD_ENTITY_FIELD_FLAGS_ENTITY_FLAGS) {
+        entity_object->flags = entity_record->entity_flags;
+    }
+}
+
 void try_to_apply_record_entry(struct save_record* record, struct game_state* state) {
     _debugprintf("RECORD TYPE: %.*s", save_record_type_strings[record->type].length, save_record_type_strings[record->type].data);
 
@@ -544,6 +586,10 @@ void try_to_apply_record_entry(struct save_record* record, struct game_state* st
         case SAVE_RECORD_TYPE_ENTITY_CHEST: {
             struct save_record_entity_chest* chest_record = &record->chest_record;
             apply_save_record_chest_entry(chest_record, state);
+        } break;
+        case SAVE_RECORD_TYPE_ENTITY_ENTITY: {
+            struct save_record_entity_entity* entity_record = &record->entity_record;
+            apply_save_record_entity_entry(entity_record, state);
         } break;
         default: {
             _debugprintf("UNHANDLED RECORD TYPE: %.*s", save_record_type_strings[record->type].length, save_record_type_strings[record->type].data);
@@ -557,17 +603,78 @@ local struct save_area_record_entry* current_area_save_entry(void) {
     return area_entry;
 }
 
+local struct save_record* save_data_existing_chest_record(u32 chest_id) {
+    struct save_area_record_entry* area = current_area_save_entry();
+
+    for (struct save_area_record_chunk* record_chunk = area->first; record_chunk; record_chunk = record_chunk->next) {
+        for (s32 record_index = 0; record_index < record_chunk->written_entries; ++record_index) {
+            struct save_record* current_record = &record_chunk->records[record_index];
+
+            if (current_record->type == SAVE_RECORD_TYPE_ENTITY_CHEST) {
+                if (current_record->chest_record.target_entity == chest_id) {
+                    return current_record;
+                }
+            }
+        }
+    }
+
+    return NULL;
+}
+
 void save_data_register_chest_looted(u32 chest_id) {
     struct save_area_record_entry* area       = current_area_save_entry();
-    struct save_record*            new_record = save_area_record_entry_allocate_record(area);
+    struct save_record*            new_record = save_data_existing_chest_record(chest_id);
+
+    if (!new_record) {
+        new_record = save_area_record_entry_allocate_record(area);
+    }
+
     new_record->type                          = SAVE_RECORD_TYPE_ENTITY_CHEST;
     new_record->chest_record.target_entity    = chest_id;
 }
 
+local struct save_record* save_data_existing_entity_record(entity_id id) {
+    struct save_area_record_entry* area = current_area_save_entry();
+
+    for (struct save_area_record_chunk* record_chunk = area->first; record_chunk; record_chunk = record_chunk->next) {
+        for (s32 record_index = 0; record_index < record_chunk->written_entries; ++record_index) {
+            struct save_record* current_record = &record_chunk->records[record_index];
+
+            if (current_record->type == SAVE_RECORD_TYPE_ENTITY_ENTITY) {
+                if (entity_id_equal(current_record->entity_record.id, id)) {
+                    return current_record;
+                }
+            }
+        }
+    }
+
+    return NULL;
+}
+
 void save_data_register_entity(entity_id id) {
-    struct entity* entity_object = game_dereference_entity(game_state, id);
+    _debugprintf("register entity save data");
+    struct save_area_record_entry* area          = current_area_save_entry();
+    struct entity*                 entity_object = game_dereference_entity(game_state, id);
 
     if (entity_object->flags & ENTITY_FLAGS_PLAYER_CONTROLLED) {
         return;
     }
+
+    struct save_record* new_record = save_data_existing_entity_record(id);
+    if (!new_record) {
+        _debugprintf("alloced new save record for entity");
+        new_record = save_area_record_entry_allocate_record(area);
+    } else {
+        _debugprintf("found existing save record for entity");
+    }
+
+    new_record->type                                = SAVE_RECORD_TYPE_ENTITY_ENTITY;
+    struct save_record_entity_entity* entity_record = &new_record->entity_record;
+
+    entity_record->entity_field_flags = BIT(0) | BIT(1) | BIT(2) | BIT(3);
+    entity_record->id                 = id;
+    entity_record->entity_flags       = entity_object->flags;
+    entity_record->position           = entity_object->position;
+    entity_record->health             = entity_object->health.value;
+    entity_record->direction          = entity_object->facing_direction;
 }
