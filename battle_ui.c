@@ -164,7 +164,22 @@ local void populate_post_battle_loot_table(void) {
             {
                 for (s32 loot_table_temporary_index = 0; loot_table_temporary_index < loot_table_temporary_count; ++loot_table_temporary_index) {
                     assertion(global_battle_ui_state.loot_result_count <= MAX_LOOT_ITEMS && "Too much loot to store!");
-                    global_battle_ui_state.loot_results[global_battle_ui_state.loot_result_count++] = loot_table_temporary[loot_table_temporary_index];
+                    item_id loot_table_current_item  = loot_table_temporary[loot_table_temporary_index].item;
+                    s32     loot_table_current_count = loot_table_temporary[loot_table_temporary_index].count;
+
+                    bool already_exists = false;
+
+                    for (s32 loot_index = 0; loot_index < global_battle_ui_state.loot_result_count; ++loot_index) {
+                        if (item_id_equal(global_battle_ui_state.loot_results[loot_index].item, loot_table_current_item)) {
+                            global_battle_ui_state.loot_results[loot_index].count += loot_table_current_count;
+                            already_exists = true;
+                            break;
+                        }
+                    }
+
+                    if (!already_exists) {
+                        global_battle_ui_state.loot_results[global_battle_ui_state.loot_result_count++] = loot_table_temporary[loot_table_temporary_index];
+                    }
                 }
             }
         }
