@@ -33,7 +33,7 @@ gamex86-debug.exe: metagen.exe $(wildcard *.c *.h)
 	$(CC) $(SOURCE_FILE_MODULES) -DUSE_EDITOR -o $@ $(CFLAGS) $(CLIBS) -m32 -ggdb3
 web-experimental: $(wildcard *.c *.h)
 	$(EMCC) $(SOURCE_FILE_MODULES) -DRELEASE -s USE_SDL=2 -s USE_WEBGL2=1 -o game.html $(CFLAGS) $(CLIBS) -s INITIAL_MEMORY=127MB --preload-file res --preload-file scenes --preload-file areas
-build-run-tree: game-debug.exe game.exe data.bigfile
+build-run-tree: clean game-debug.exe game.exe data.bigfile
 	-mkdir run-tree
 	cp game-debug.exe game.exe data.bigfile run-tree/
 run: game.exe
@@ -60,3 +60,5 @@ clean:
 	-rm game.wasm
 	-rm game.data
 	-rm game-debug.exe
+	-rm pack.exe
+	-rm depack.exe
