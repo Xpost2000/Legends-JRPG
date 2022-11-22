@@ -33,7 +33,8 @@ local bool         disable_game_input = false;
 
 image_id           drop_shadow        = {};
 sound_id           ui_blip            = {};
-sound_id           test_mus            = {};
+sound_id           ui_blip_bad        = {};
+sound_id           test_mus           = {};
 
 /* compile out */
 #ifdef USE_EDITOR
@@ -1433,8 +1434,9 @@ void game_initialize(void) {
 
     passive_speaking_dialogues = memory_arena_push(&game_arena, MAX_PASSIVE_SPEAKING_DIALOGUES * sizeof(*passive_speaking_dialogues));
 
-    ui_blip  = load_sound(string_literal(GAME_DEFAULT_RESOURCE_PATH "snds/ui_select.wav"), false);
-    test_mus = load_sound(string_literal(GAME_DEFAULT_RESOURCE_PATH "snds/medieval.ogg"), true);
+    ui_blip     = load_sound(string_literal(GAME_DEFAULT_RESOURCE_PATH "snds/ui_select.wav"), false);
+    ui_blip_bad = load_sound(string_literal(GAME_DEFAULT_RESOURCE_PATH "snds/ui_bad.wav"), false);
+    test_mus    = load_sound(string_literal(GAME_DEFAULT_RESOURCE_PATH "snds/medieval.ogg"), true);
     /* play_sound(test_mus); */
 
     for (unsigned index = 0; index < array_count(menu_font_variation_string_names); ++index) {

@@ -8,6 +8,7 @@ local u32        loaded_stream_hashes[MAX_LOADED_SAMPLES]={};
 local s32        loaded_sample_count               = 0;
 local s32        loaded_stream_count               = 0;
 
+
 void audio_initialize(void) {
     _debugprintf("Audio hi");
     Mix_Init(MIX_INIT_OGG | MIX_INIT_MOD);
@@ -36,11 +37,15 @@ sound_id load_sound(string filepath, bool streamed) {
         }
 
         if (load_required) {
-            Mix_Music* new_stream = Mix_LoadMUS(filepath.data);
+            struct file_buffer filebuffer = read_entire_file(memory_arena_allocator(&scratch_arena), filepath);
+            SDL_RWops*         rw         = SDL_RWFromConstMem(filebuffer.buffer, filebuffer.length);
+            /* Mix_Music* new_stream = Mix_LoadMUS(filepath.data); */
+            Mix_Music* new_stream = Mix_LoadMUS_RW(rw, 1);
+
             if (new_stream) {
                 _debugprintf("new stream: %p", new_stream);
                 loaded_streams[loaded_stream_count]       = new_stream;
-                loaded_stream_hashes[loaded_stream_count] = hash_bytes_fnv1a((u8*)filepath.data, filepath.length);
+                loaded_stream_hashes[loaded_stream_count] = path_hash;
 
                 loaded_stream_count++;
                 result.index = loaded_stream_count;
@@ -57,11 +62,14 @@ sound_id load_sound(string filepath, bool streamed) {
         }
 
         if (load_required) {
-            Mix_Chunk* new_chunk = Mix_LoadWAV(filepath.data);
+            struct file_buffer filebuffer = read_entire_file(memory_arena_allocator(&scratch_arena), filepath);
+            SDL_RWops*         rw         = SDL_RWFromConstMem(filebuffer.buffer, filebuffer.length);
+            /* Mix_Chunk* new_chunk = Mix_LoadWAV(filepath.data); */
+            Mix_Chunk* new_chunk = Mix_LoadWAV_RW(rw, 1);
             if (new_chunk) {
                 _debugprintf("new sample: %p", new_chunk);
                 loaded_samples[loaded_sample_count]       = new_chunk;
-                loaded_sample_hashes[loaded_sample_count] = hash_bytes_fnv1a((u8*)filepath.data, filepath.length);
+                loaded_sample_hashes[loaded_sample_count] = path_hash;
 
                 loaded_sample_count++;
                 result.index = loaded_sample_count;

@@ -193,6 +193,7 @@ struct save_data_description get_save_data_description(s32 save_id) {
 
 void game_write_save_slot(s32 save_slot_id) {
     assertion(save_slot_id >= 0 && save_slot_id < GAME_MAX_SAVE_SLOTS);
+    OS_create_directory(string_literal("saves/"));
     struct binary_serializer write_serializer = open_write_file_serializer(filename_from_saveslot_id(save_slot_id));
     game_serialize_save(&write_serializer);
     serializer_finish(&write_serializer);

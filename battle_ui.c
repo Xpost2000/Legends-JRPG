@@ -493,6 +493,7 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                 s32 options_count = array_count(battle_menu_main_options);
 
                 if (selection_down) {
+                    play_sound(ui_blip);
                     do {
                         global_battle_ui_state.selection++;
 
@@ -502,6 +503,7 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                     } while (disabled_actions[global_battle_ui_state.selection]);
                 }
                 else if (selection_up) {
+                    play_sound(ui_blip);
                     do {
                         global_battle_ui_state.selection--;
 
@@ -512,6 +514,7 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                 }
 
                 if (selection_confirm) {
+                    play_sound(ui_blip);
                     if (!disabled_actions[global_battle_ui_state.selection]) {
                         switch (global_battle_ui_state.selection) {
                             /* NOTE: No ability is expected to really reach outside of your view... Hence the need for a separate view command */
@@ -609,11 +612,13 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
             }
 
             if (selection_up) {
+                play_sound(ui_blip);
                 global_battle_ui_state.selection--;
                 if (global_battle_ui_state.selection < 0) {
                     global_battle_ui_state.selection = target_list_count-1;
                 }
             } else if (selection_down) {
+                play_sound(ui_blip);
                 global_battle_ui_state.selection++;
                 if (global_battle_ui_state.selection >= target_list_count) {
                     global_battle_ui_state.selection = 0;
@@ -710,6 +715,7 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
 
                     if (global_battle_ui_state.movement_start_x != global_battle_ui_state.movement_end_x ||
                         global_battle_ui_state.movement_start_y != global_battle_ui_state.movement_end_y) {
+                        play_sound(ui_blip);
                         entity_combat_submit_movement_action(active_combatant_entity,
                                                              global_battle_ui_state.max_remembered_path_points,
                                                              global_battle_ui_state.max_remembered_path_points_count);
@@ -726,6 +732,8 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                             camera_set_point_to_interpolate(camera, v2f32(global_battle_ui_state.movement_end_x * TILE_UNIT_SIZE, global_battle_ui_state.movement_end_y * TILE_UNIT_SIZE));
                         }
                     }
+                } else {
+                    play_sound(ui_blip_bad);
                 }
             }
             
@@ -742,11 +750,13 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                 draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, ui_box_position, BOX_WIDTH, BOX_HEIGHT, UI_BATTLE_COLOR);
 
                 if (selection_up) {
+                    play_sound(ui_blip);
                     global_battle_ui_state.selection--;
                     if (global_battle_ui_state.selection < 0) {
                         global_battle_ui_state.selection = user->ability_count-1;
                     }
                 } else if (selection_down) {
+                    play_sound(ui_blip);
                     global_battle_ui_state.selection++;
                     if (global_battle_ui_state.selection >= user->ability_count) {
                         global_battle_ui_state.selection = 0;

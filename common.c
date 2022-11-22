@@ -975,4 +975,11 @@ local char* biggest_valid_memory_string(size_t in_bytes) {
     return format_temp("%llu (B)", bytes);
 }
 
+local void OS_create_directory(string location) {
+#ifdef _WIN32 
+    string s = format_temp_s("%.*s", location.length, location.data);
+    CreateDirectory(s.data, NULL);
+#endif
+}
+
 #endif
