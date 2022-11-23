@@ -15,6 +15,27 @@
 
 #include "fade_transitions.c"
 
+void serialize_tile(struct binary_serializer* serializer, s32 version, struct tile* tile) {
+    switch (version) {
+        default:
+        case CURRENT_LEVEL_AREA_VERSION: {
+            serialize_s32(serializer, &tile->id);
+            serialize_u32(serializer, &tile->flags);
+            serialize_s16(serializer, &tile->x);
+            serialize_s16(serializer, &tile->y);
+            /* remove */
+            serialize_s16(serializer, &tile->reserved_);
+        } break;
+    }
+}
+
+void serialize_tile_layer(struct binary_serializer* serializer, s32 version, s32* counter, struct tile* tile) {
+    serialize_s32(serializer, counter);
+    for (s32 index = 0; index < *counter; ++index) {
+        serialize_tile(serializer, version, tile+index);
+    }
+}
+
 void level_area_entity_unpack(struct level_area_entity* entity, struct entity* unpack_target);
 void level_area_entity_savepoint_unpack(struct level_area_savepoint* entity, struct entity_savepoint* unpack_target);
 
@@ -749,6 +770,16 @@ void _serialize_level_area(struct memory_arena* arena, struct binary_serializer*
 
         /* I should try to move this into one spot since it's a little annoying */
         if (level->version >= 4) {
+#define Serialize_Tile_Layer(LAYER)                                     \
+            do {                                                        \
+                 {                                                      \
+                     serialize_s32(serializer, &level->tile_counts[LAYER]); \
+                     level->tile_layers[LAYER] = memory_arena_push(arena, level->tile_counts[LAYER]*sizeof(*level->tile_layers[LAYER])); \
+                     for (s32 index = 0; index < level->tile_counts[LAYER]; ++index) { \
+                         serialize_tile(serializer, level->version, level->tile_layers[LAYER] + index); \
+                     }                                                  \
+                 }                                                      \
+            } while(0)
             if (level->version < CURRENT_LEVEL_AREA_VERSION) {
                 /* for older versions I have to know what the tile layers were and assign them like this. */
                 switch (level->version) {
@@ -772,7 +803,25 @@ void _serialize_level_area(struct memory_arena* arena, struct binary_serializer*
         } else {
             Serialize_Fixed_Array_And_Allocate_From_Arena(serializer, arena, s32, level->tile_counts[TILE_LAYER_OBJECT], level->tile_layers[TILE_LAYER_OBJECT]);
         }
-
+#if 0
+        if (level->version >= 1) {
+            _debugprintf("reading level transitions");
+            /* this thing is allergic to chest updates. Unfortunately it might happen a lot... */
+            serialize_s32(serializer, &level->trigger_level_transition_count);
+            level->trigger_level_transitions = memory_arena_push(arena, sizeof(*level->trigger_level_transitions) * level->trigger_level_transition_count);
+            for (s32 trigger_index = 0; trigger_index < level->trigger_level_transition_count; ++trigger_index) {
+                serialize_trigger_level_transition(serializer, level->version, level->trigger_level_transitions + trigger_index);
+            }
+        }
+        if (level->version >= 2) {
+            _debugprintf("reading containers");
+            serialize_s32(serializer, &level->entity_chest_count);
+            level->chests = memory_arena_push(arena, sizeof(*level->chests) * level->entity_chest_count);
+            for (s32 chest_index = 0; chest_index < level->entity_chest_count; ++chest_index) {
+                serialize_entity_chest(serializer, level->version, level->chests + chest_index);
+            }
+        }
+#else 
         if (level->version >= 1) {
             _debugprintf("reading level transitions");
             Serialize_Fixed_Array_And_Allocate_From_Arena(serializer, arena, s32, level->trigger_level_transition_count, level->trigger_level_transitions);
@@ -782,6 +831,7 @@ void _serialize_level_area(struct memory_arena* arena, struct binary_serializer*
             _debugprintf("reading containers");
             Serialize_Fixed_Array_And_Allocate_From_Arena(serializer, arena, s32, level->entity_chest_count, level->chests);
         }
+#endif
         if (level->version >= 3) {
             _debugprintf("reading scriptable triggers");
             Serialize_Fixed_Array_And_Allocate_From_Arena(serializer, arena, s32, level->script_trigger_count, level->script_triggers);

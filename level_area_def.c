@@ -301,4 +301,8 @@ bool level_area_any_obstructions_at(struct level_area* area, s32 x, s32 y) {
     return false;
 }
 
+void serialize_level_area_entity_savepoint(struct binary_serializer* serializer, s32 version, struct level_area_savepoint* entity);
+void serialize_generic_trigger(struct binary_serializer* serializer, s32 version, struct trigger* trigger);
+void serialize_trigger_level_transition(struct binary_serializer* serializer, s32 version, struct trigger_level_transition* trigger);
+void serialize_level_area_entity(struct binary_serializer* serializer, s32 version, struct level_area_entity* entity);
 #endif

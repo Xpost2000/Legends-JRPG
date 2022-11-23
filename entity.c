@@ -2710,6 +2710,55 @@ struct entity_loot_table* entity_lookup_loot_table(struct entity_database* entit
     return entity_database->loot_tables + loot_table_id_index;
 }
 
+void serialize_trigger_level_transition(struct binary_serializer* serializer, s32 version, struct trigger_level_transition* trigger) {
+    switch (version) {
+        default:
+        case CURRENT_LEVEL_AREA_VERSION: {
+            serialize_f32(serializer,   &trigger->bounds.x);
+            serialize_f32(serializer,   &trigger->bounds.y);
+            serialize_f32(serializer,   &trigger->bounds.w);
+            serialize_f32(serializer,   &trigger->bounds.h);
+            serialize_bytes(serializer, trigger->target_level, 128);
+            serialize_u8(serializer,   &trigger->new_facing_direction); /* should not be here */
+            serialize_f32(serializer,   &trigger->spawn_location.x);
+            serialize_f32(serializer,   &trigger->spawn_location.y);
+        } break;
+    }
+}
+void serialize_entity_chest(struct binary_serializer* serializer, s32 version, struct entity_chest* chest) {
+    switch (version) {
+        default:
+        case CURRENT_LEVEL_AREA_VERSION: {
+            serialize_f32(serializer,   &chest->position.x);
+            serialize_f32(serializer,   &chest->position.y);
+            /* should be gone */
+            serialize_f32(serializer,   &chest->scale.x);
+            serialize_f32(serializer,   &chest->scale.y);
+            serialize_u32(serializer,   &chest->flags);
+            serialize_s32(serializer,   &chest->inventory.item_count);
+            for (s32 index = 0; index < chest->inventory.item_count; ++index) {
+                serialize_u32(serializer,   &chest->inventory.items[index].item.id_hash);
+                serialize_s32(serializer,   &chest->inventory.items[index].count);
+            }
+            serialize_u32(serializer,   &chest->key_item.id_hash); /* should not be here */
+        } break;
+    }
+}
+void serialize_generic_trigger(struct binary_serializer* serializer, s32 version, struct trigger* trigger) {
+    switch (version) {
+        default:
+        case CURRENT_LEVEL_AREA_VERSION: {
+            serialize_f32(serializer, &trigger->bounds.x);
+            serialize_f32(serializer, &trigger->bounds.y);
+            serialize_f32(serializer, &trigger->bounds.w);
+            serialize_f32(serializer, &trigger->bounds.h);
+            serialize_u32(serializer, &trigger->activations); /* should not be here */
+            serialize_u8(serializer, &trigger->active); /* should be a flags bitfield */
+            serialize_bytes(serializer, trigger->unique_name, 32);
+        } break;
+    }
+}
+
 void serialize_level_area_entity_savepoint(struct binary_serializer* serializer, s32 version, struct level_area_savepoint* entity) {
     switch (version) {
         default:

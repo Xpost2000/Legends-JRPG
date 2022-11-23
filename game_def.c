@@ -623,4 +623,6 @@ local void wrap_around_key_selection(s32 decrease_key, s32 increase_key, s32* po
     }
 }
 
+void serialize_light(struct binary_serializer* serializer, s32 version, struct light_def* light);
+
 #endif

@@ -158,10 +158,10 @@ void editor_serialize_area(struct binary_serializer* serializer) {
             /* for older versions I have to know what the tile layers were and assign them like this. */
             switch (version_id) {
                 case 4: {
-                    Serialize_Fixed_Array(serializer, s32, editor_state->tile_counts[TILE_LAYER_GROUND],     editor_state->tile_layers[TILE_LAYER_GROUND]);
-                    Serialize_Fixed_Array(serializer, s32, editor_state->tile_counts[TILE_LAYER_OBJECT],     editor_state->tile_layers[TILE_LAYER_OBJECT]);
-                    Serialize_Fixed_Array(serializer, s32, editor_state->tile_counts[TILE_LAYER_ROOF],       editor_state->tile_layers[TILE_LAYER_ROOF]);
-                    Serialize_Fixed_Array(serializer, s32, editor_state->tile_counts[TILE_LAYER_FOREGROUND], editor_state->tile_layers[TILE_LAYER_FOREGROUND]);
+                    serialize_tile_layer(serializer, version_id, &editor_state->tile_counts[TILE_LAYER_GROUND],     editor_state->tile_layers[TILE_LAYER_GROUND]);
+                    serialize_tile_layer(serializer, version_id, &editor_state->tile_counts[TILE_LAYER_OBJECT],     editor_state->tile_layers[TILE_LAYER_OBJECT]);
+                    serialize_tile_layer(serializer, version_id, &editor_state->tile_counts[TILE_LAYER_ROOF],       editor_state->tile_layers[TILE_LAYER_ROOF]);
+                    serialize_tile_layer(serializer, version_id, &editor_state->tile_counts[TILE_LAYER_FOREGROUND], editor_state->tile_layers[TILE_LAYER_FOREGROUND]);
                 } break;
                 default: {
                     goto didnt_change_level_tile_format_from_current;
@@ -171,21 +171,30 @@ void editor_serialize_area(struct binary_serializer* serializer) {
             /* the current version of the tile layering, we can just load them in order. */
         didnt_change_level_tile_format_from_current:
             for (s32 index = 0; index < TILE_LAYER_COUNT; ++index) {
-                Serialize_Fixed_Array(serializer, s32, editor_state->tile_counts[index], editor_state->tile_layers[index]);
+                serialize_tile_layer(serializer, version_id, &editor_state->tile_counts[index], editor_state->tile_layers[index]);
             }
         }
     } else {
-        Serialize_Fixed_Array(serializer, s32, editor_state->tile_counts[TILE_LAYER_OBJECT], editor_state->tile_layers[TILE_LAYER_OBJECT]);
+        serialize_tile_layer(serializer, version_id, &editor_state->tile_counts[TILE_LAYER_OBJECT],     editor_state->tile_layers[TILE_LAYER_OBJECT]);
     }
 
     if (version_id >= 1) {
-        Serialize_Fixed_Array(serializer, s32, editor_state->trigger_level_transition_count, editor_state->trigger_level_transitions);
+        serialize_s32(serializer, &editor_state->trigger_level_transition_count);
+        for (s32 trigger_index = 0; trigger_index < editor_state->trigger_level_transition_count; ++trigger_index) {
+            serialize_trigger_level_transition(serializer, version_id, editor_state->trigger_level_transitions + trigger_index);
+        }
     }
     if (version_id >= 2) {
-        Serialize_Fixed_Array(serializer, s32, editor_state->entity_chest_count, editor_state->entity_chests);
+        serialize_s32(serializer, &editor_state->entity_chest_count);
+        for (s32 chest_index = 0; chest_index < editor_state->entity_chest_count; ++chest_index) {
+            serialize_entity_chest(serializer, version_id, editor_state->entity_chests + chest_index);
+        }
     }
     if (version_id >= 3) {
-        Serialize_Fixed_Array(serializer, s32, editor_state->generic_trigger_count, editor_state->generic_triggers);
+        serialize_s32(serializer, &editor_state->generic_trigger_count);
+        for (s32 trigger_index = 0; trigger_index < editor_state->generic_trigger_count; ++trigger_index) {
+            serialize_generic_trigger(serializer, version_id, editor_state->generic_triggers + trigger_index);
+        }
     }
     if (version_id >= 5) {
         serialize_s32(serializer, &editor_state->entity_count);

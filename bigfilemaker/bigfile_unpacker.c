@@ -1,5 +1,6 @@
 #include "bigfile_def.c"
 
+/* TODO: endian independence */
 bigfile_blob_t bigfile_load_blob(IAllocator allocator, string path) {
     struct file_buffer buffer = read_entire_file(allocator, path);
     return buffer.buffer;

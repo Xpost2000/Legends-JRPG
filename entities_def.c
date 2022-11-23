@@ -786,4 +786,6 @@ void sortable_draw_entities_sort_keys(struct sortable_draw_entities* entities);
 
 void render_entities(struct game_state* state, struct sortable_draw_entities* draw_entities);
 
+void serialize_entity_chest(struct binary_serializer* serializer, s32 version, struct entity_chest* chest);
+
 #endif
