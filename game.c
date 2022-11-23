@@ -25,8 +25,7 @@ void serialize_tile(struct binary_serializer* serializer, s32 version, struct ti
             serialize_s16(serializer, &tile->y);
             /* remove */
             serialize_s16(serializer, &tile->reserved_);
-            s16 padding;
-            serialize_s16(serializer, &padding);
+            serialize_s16(serializer, NULL);
         } break;
     }
 }
@@ -826,7 +825,11 @@ void _serialize_level_area(struct memory_arena* arena, struct binary_serializer*
 
         if (level->version >= 3) {
             _debugprintf("reading scriptable triggers");
-            Serialize_Fixed_Array_And_Allocate_From_Arena(serializer, arena, s32, level->script_trigger_count, level->script_triggers);
+            serialize_s32(serializer, &level->script_trigger_count);
+            level->script_triggers = memory_arena_push(arena, sizeof(*level->script_triggers) * level->script_trigger_count);
+            for (s32 trigger_index = 0; trigger_index < level->script_trigger_count; ++trigger_index) {
+                serialize_generic_trigger(serializer, level->version, level->script_triggers + trigger_index);
+            }
         }
         if (level->version >= 5) {
             struct level_area_entity current_packed_entity = {};
@@ -864,7 +867,11 @@ void _serialize_level_area(struct memory_arena* arena, struct binary_serializer*
         }
         if (level->version >= 6) {
             _debugprintf("loading lights");
-            Serialize_Fixed_Array_And_Allocate_From_Arena(serializer, arena, s32, level->light_count, level->lights);
+            serialize_s32(serializer, &level->light_count);
+            level->lights = memory_arena_push(arena, sizeof(*level->lights) * level->light_count);
+            for (s32 light_index = 0; light_index < level->light_count; ++light_index) {
+                serialize_light(serializer, level->version, level->lights + light_index);
+            }
         }
 
         if (level->version >= 9) {

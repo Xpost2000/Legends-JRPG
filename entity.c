@@ -2714,7 +2714,6 @@ void serialize_trigger_level_transition(struct binary_serializer* serializer, s3
     switch (version) {
         default:
         case CURRENT_LEVEL_AREA_VERSION: {
-#if 0
             serialize_f32(serializer,   &trigger->bounds.x);
             serialize_f32(serializer,   &trigger->bounds.y);
 
@@ -2724,12 +2723,13 @@ void serialize_trigger_level_transition(struct binary_serializer* serializer, s3
             serialize_bytes(serializer, trigger->target_level, 128);
 
             serialize_u8(serializer,    &trigger->new_facing_direction); /* should not be here */
+            /* padding bytes */
+            serialize_u8(serializer, 0);
+            serialize_u8(serializer, 0);
+            serialize_u8(serializer, 0);
 
             serialize_f32(serializer,   &trigger->spawn_location.x);
             serialize_f32(serializer,   &trigger->spawn_location.y);
-#else
-            Serialize_Structure(serializer, *trigger);
-#endif
         } break;
     }
 }
@@ -2737,7 +2737,6 @@ void serialize_entity_chest(struct binary_serializer* serializer, s32 version, s
     switch (version) {
         default:
         case CURRENT_LEVEL_AREA_VERSION: {
-#if 0
             serialize_f32(serializer,   &chest->position.x);
             serialize_f32(serializer,   &chest->position.y);
             /* should be gone */
@@ -2750,9 +2749,6 @@ void serialize_entity_chest(struct binary_serializer* serializer, s32 version, s
                 serialize_s32(serializer,   &chest->inventory.items[index].count);
             }
             serialize_u32(serializer,   &chest->key_item.id_hash); /* should not be here */
-#else
-            Serialize_Structure(serializer, *chest);
-#endif
         } break;
     }
 }
@@ -2760,17 +2756,17 @@ void serialize_generic_trigger(struct binary_serializer* serializer, s32 version
     switch (version) {
         default:
         case CURRENT_LEVEL_AREA_VERSION: {
-#if 0
             serialize_f32(serializer, &trigger->bounds.x);
             serialize_f32(serializer, &trigger->bounds.y);
             serialize_f32(serializer, &trigger->bounds.w);
             serialize_f32(serializer, &trigger->bounds.h);
             serialize_u32(serializer, &trigger->activations); /* should not be here */
             serialize_u8(serializer, &trigger->active); /* should be a flags bitfield */
+            /* padding */
+            serialize_u8(serializer, 0);
+            serialize_u8(serializer, 0);
+            serialize_u8(serializer, 0);
             serialize_bytes(serializer, trigger->unique_name, 32);
-#else
-            Serialize_Structure(serializer, *trigger);
-#endif
         } break;
     }
 }
@@ -2779,14 +2775,9 @@ void serialize_level_area_entity_savepoint(struct binary_serializer* serializer,
     switch (version) {
         default:
         case CURRENT_LEVEL_AREA_VERSION: {
-#if 0
             serialize_f32(serializer, &entity->position.x);
             serialize_f32(serializer, &entity->position.y);
             serialize_u32(serializer, &entity->flags);
-            /* this should not be here */
-#else
-            Serialize_Structure(serializer, *entity);
-#endif
         } break;
     }
 }
@@ -2795,7 +2786,6 @@ void serialize_light(struct binary_serializer* serializer, s32 version, struct l
     switch (version) {
         default:
         case CURRENT_LEVEL_AREA_VERSION: {
-#if 0
             serialize_f32(serializer, &light->position.x);
             serialize_f32(serializer, &light->position.y);
             serialize_f32(serializer, &light->scale.x);
@@ -2810,9 +2800,6 @@ void serialize_light(struct binary_serializer* serializer, s32 version, struct l
             serialize_u8(serializer, &light->reserved_bytes[1]);
             serialize_u8(serializer, &light->reserved_bytes[2]);
             serialize_u8(serializer, &light->reserved_bytes[3]);
-#else
-            Serialize_Structure(serializer, *light);
-#endif
         } break;
     }
 }

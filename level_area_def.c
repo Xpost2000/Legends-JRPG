@@ -53,6 +53,7 @@ struct tile {
     /* old: layer field */
     s16 reserved_;
 };
+void serialize_tile(struct binary_serializer* serializer, s32 version, struct tile* tile);
 
 struct trigger_level_transition {
     /* assume to be in tile coordinates. */
