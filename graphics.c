@@ -399,6 +399,9 @@ void software_framebuffer_draw_image_ex_clipped(struct software_framebuffer* fra
             if ((flags & SOFTWARE_FRAMEBUFFER_DRAW_IMAGE_FLIP_VERTICALLY))
                 image_sample_y = (s32)(((unclamped_end_y - y_cursor) * scale_ratio_h) + src.y);
 
+            image_sample_x %= image->width;
+            image_sample_y %= image->height;
+
             union color32f32 sampled_pixel = color32f32(image->pixels[image_sample_y * image_stride * 4 + image_sample_x * 4 + 0] / 255.0f,
                                                         image->pixels[image_sample_y * image_stride * 4 + image_sample_x * 4 + 1] / 255.0f,
                                                         image->pixels[image_sample_y * image_stride * 4 + image_sample_x * 4 + 2] / 255.0f,

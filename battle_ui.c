@@ -46,7 +46,6 @@ enum battle_ui_submodes {
     BATTLE_UI_SUBMODE_USING_ABILITY,
     BATTLE_UI_SUBMODE_USING_ITEM,
     /* the rest are not submodes, and are just registered actions. */
-    /* NOTE action point system. There is no cancelling. */
 };
 
 /* This is a pretty generous number. */
@@ -214,9 +213,9 @@ local string battle_menu_main_option_descriptions[] = {
     [BATTLE_ATTACK]          = string_literal("use your weapons' basic attack."),
     [BATTLE_ABILITY]         = string_literal("use an ability from your list."),
     [BATTLE_ITEM]            = string_literal("use an item from your party inventory."),
-    [BATTLE_DEFEND]          = string_literal("finish turn, lose AP on next turn for higher DEF."),
+    [BATTLE_DEFEND]          = string_literal("increase defense, and delay future turns."),
     [BATTLE_THROW_OR_PICKUP] = string_literal("Pickup an object and toss it around for tactical advantage."),
-    [BATTLE_WAIT]            = string_literal("finish turn, conserving AP."),
+    [BATTLE_WAIT]            = string_literal("finish turn"),
 };
 
 local void start_combat_ui(void) {
@@ -555,7 +554,7 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                                 global_battle_ui_state.submode = BATTLE_UI_SUBMODE_USING_ABILITY;
                             } break;
                             case BATTLE_ITEM: {
-                                /* global_battle_ui_state.submode = BATTLE_UI_SUBMODE_USING_ITEM; */
+                                global_battle_ui_state.submode = BATTLE_UI_SUBMODE_USING_ITEM;
                                 _debugprintf("TODO: using items!");
                             } break;
                             case BATTLE_DEFEND: {
@@ -658,6 +657,10 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                 global_battle_ui_state.submode = BATTLE_UI_SUBMODE_NONE;
                 entity_combat_submit_attack_action(active_combatant_entity, enemy_id);
             }
+        } break;
+
+        case BATTLE_UI_SUBMODE_USING_ITEM: {
+            unimplemented("using items is not done");
         } break;
 
         case BATTLE_UI_SUBMODE_MOVING: {
