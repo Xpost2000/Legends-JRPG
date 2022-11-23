@@ -19,12 +19,16 @@ void serialize_tile(struct binary_serializer* serializer, s32 version, struct ti
     switch (version) {
         default:
         case CURRENT_LEVEL_AREA_VERSION: {
+#if 0
             serialize_s32(serializer, &tile->id);
             serialize_u32(serializer, &tile->flags);
             serialize_s16(serializer, &tile->x);
             serialize_s16(serializer, &tile->y);
             /* remove */
             serialize_s16(serializer, &tile->reserved_);
+#else
+            Serialize_Structure(serializer, *tile);
+#endif
         } break;
     }
 }
@@ -776,7 +780,7 @@ void _serialize_level_area(struct memory_arena* arena, struct binary_serializer*
                      serialize_s32(serializer, &level->tile_counts[LAYER]); \
                      level->tile_layers[LAYER] = memory_arena_push(arena, level->tile_counts[LAYER]*sizeof(*level->tile_layers[LAYER])); \
                      for (s32 index = 0; index < level->tile_counts[LAYER]; ++index) { \
-                         serialize_tile(serializer, level->version, level->tile_layers[LAYER] + index); \
+                         serialize_tile(serializer, level->version, &level->tile_layers[LAYER][index]); \
                      }                                                  \
                  }                                                      \
             } while(0)
@@ -797,13 +801,14 @@ void _serialize_level_area(struct memory_arena* arena, struct binary_serializer*
                 /* the current version of the tile layering, we can just load them in order. */
             didnt_change_level_tile_format_from_current:
                 for (s32 index = 0; index < TILE_LAYER_COUNT; ++index) {
-                    Serialize_Fixed_Array_And_Allocate_From_Arena(serializer, arena, s32, level->tile_counts[index], level->tile_layers[index]);
+                    Serialize_Tile_Layer(index);
+                    /* Serialize_Fixed_Array_And_Allocate_From_Arena(serializer, arena, s32, level->tile_counts[index], level->tile_layers[index]); */
                 }
             }
         } else {
             Serialize_Fixed_Array_And_Allocate_From_Arena(serializer, arena, s32, level->tile_counts[TILE_LAYER_OBJECT], level->tile_layers[TILE_LAYER_OBJECT]);
         }
-#if 0
+
         if (level->version >= 1) {
             _debugprintf("reading level transitions");
             /* this thing is allergic to chest updates. Unfortunately it might happen a lot... */
@@ -821,17 +826,7 @@ void _serialize_level_area(struct memory_arena* arena, struct binary_serializer*
                 serialize_entity_chest(serializer, level->version, level->chests + chest_index);
             }
         }
-#else 
-        if (level->version >= 1) {
-            _debugprintf("reading level transitions");
-            Serialize_Fixed_Array_And_Allocate_From_Arena(serializer, arena, s32, level->trigger_level_transition_count, level->trigger_level_transitions);
-            /* this thing is allergic to chest updates. Unfortunately it might happen a lot... */
-        }
-        if (level->version >= 2) {
-            _debugprintf("reading containers");
-            Serialize_Fixed_Array_And_Allocate_From_Arena(serializer, arena, s32, level->entity_chest_count, level->chests);
-        }
-#endif
+
         if (level->version >= 3) {
             _debugprintf("reading scriptable triggers");
             Serialize_Fixed_Array_And_Allocate_From_Arena(serializer, arena, s32, level->script_trigger_count, level->script_triggers);
