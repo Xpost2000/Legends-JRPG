@@ -3012,4 +3012,15 @@ local void entity_think_basic_zombie_combat_actions(struct entity* entity, struc
     }
 }
 
+/* NOTE: This is one of the few serialization procedures that works on the save data version */
+void serialize_entity_id(struct binary_serializer* serializer, s32 version, entity_id* id) {
+    switch (version) {
+        default:
+        case CURRENT_SAVE_RECORD_VERSION: {
+            serialize_u64(serializer, &id->full_id);
+            serialize_s32(serializer, &id->generation);
+        } break;
+    }
+}
+
 #include "entity_ability.c"

@@ -26,6 +26,7 @@ enum entity_list_storage_type {
     /* cutscene loaded levels, these entities are even more temporary */
     ENTITY_LIST_STORAGE_TYPE_PER_LEVEL_CUTSCENE,
 };
+
 typedef struct entity_id {
     /* use this flag to reference a companion instead. */
     /* the game does not know how to handle this yet. */
@@ -51,6 +52,7 @@ typedef struct entity_id {
     };
     s32  generation;
 } entity_id;
+
 bool entity_id_equal(entity_id a, entity_id b) {
     /* same list origin */
     if (a.store_type == b.store_type && a.index == b.index) {
@@ -787,5 +789,6 @@ void sortable_draw_entities_sort_keys(struct sortable_draw_entities* entities);
 void render_entities(struct game_state* state, struct sortable_draw_entities* draw_entities);
 
 void serialize_entity_chest(struct binary_serializer* serializer, s32 version, struct entity_chest* chest);
+void serialize_entity_id(struct binary_serializer* serializer, s32 version, entity_id* id);
 
 #endif

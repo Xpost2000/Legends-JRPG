@@ -1,6 +1,8 @@
 #ifndef SAVE_DATA_DEF_C
 #define SAVE_DATA_DEF_C
 
+#define CURRENT_SAVE_RECORD_VERSION (4)
+
 void initialize_save_data(void);
 void apply_save_data(struct game_state* state);
 

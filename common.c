@@ -561,6 +561,7 @@ struct file_buffer OS_read_entire_file(IAllocator allocator, string path) {
     };
 }
 
+#ifdef EXPERIMENTAL_VFS
 #define MAX_MOUNTABLE_BIGFILES (32)
 local bigfile_blob_t global_mounted_bigfiles[MAX_MOUNTABLE_BIGFILES] = {};
 local s32            global_mounted_bigfile_count                    = 0;
@@ -625,6 +626,7 @@ struct file_buffer VFS_read_entire_file(IAllocator allocator, string path) {
 
     return as_filebuffer;
 }
+#endif
 
 /* NOTE: these wrappers should have a way to specify preference */
 bool file_exists(string path) {
@@ -705,6 +707,7 @@ struct file_buffer read_entire_file(IAllocator allocator, string path) {
 #endif
 }
 
+#ifdef EXPERIMENTAL_VFS
 local void mount_bigfile_archive(struct memory_arena* arena, string path) {
     if (file_exists(path)) {
         s32 current_archive                      = global_mounted_bigfile_count;
@@ -722,6 +725,7 @@ local void mount_bigfile_archive(struct memory_arena* arena, string path) {
         assertion(global_mounted_bigfile_count < MAX_MOUNTABLE_BIGFILES && "Too many mounted bigfile archives!");
     }
 }
+#endif
 
 /* there is no VFS variation because bigfiles are read only */
 void write_entire_file(string path, u8* buffer, size_t buffer_length) {

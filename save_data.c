@@ -1,5 +1,4 @@
 #include "save_data_def.c"
-#define CURRENT_SAVE_RECORD_VERSION (4)
 /*
   NOTE: it may be nice to build an iterator type for these nested things...
 
@@ -324,8 +323,8 @@ local void save_serialize_record_entry(struct save_area_record_chunk* entry_chun
                 } break;
                 case SAVE_RECORD_TYPE_ENTITY_ENTITY: {
                     struct save_record_entity_entity* entity_record = &current_entry->entity_record;
-                    serialize_u64(serializer, &entity_record->id.full_id);
-                    serialize_s32(serializer, &entity_record->id.generation);
+
+                    serialize_entity_id(serializer, save_version, &entity_record->id);
 
                     serialize_u32(serializer, &entity_record->entity_field_flags);
                     serialize_u32(serializer, &entity_record->entity_flags);
@@ -572,22 +571,24 @@ local void apply_save_record_chest_entry(struct save_record_entity_chest* chest_
 local void apply_save_record_entity_entry(struct save_record_entity_entity* entity_record, struct game_state* state) {
     struct entity* entity_object = game_dereference_entity(state, entity_record->id);
 
-    u32 field_flags_to_read = entity_record->entity_field_flags;
+    if (entity_object) {
+        u32 field_flags_to_read = entity_record->entity_field_flags;
 
-    if (field_flags_to_read & SAVE_RECORD_ENTITY_FIELD_FLAGS_HEALTH) {
-        entity_object->health.value = entity_record->health;
-    }
+        if (field_flags_to_read & SAVE_RECORD_ENTITY_FIELD_FLAGS_HEALTH) {
+            entity_object->health.value = entity_record->health;
+        }
 
-    if (field_flags_to_read & SAVE_RECORD_ENTITY_FIELD_FLAGS_POSITION) {
-        entity_object->position = entity_record->position;
-    }
+        if (field_flags_to_read & SAVE_RECORD_ENTITY_FIELD_FLAGS_POSITION) {
+            entity_object->position = entity_record->position;
+        }
 
-    if (field_flags_to_read & SAVE_RECORD_ENTITY_FIELD_FLAGS_DIRECTION) {
-        entity_object->facing_direction = entity_record->direction;
-    }
+        if (field_flags_to_read & SAVE_RECORD_ENTITY_FIELD_FLAGS_DIRECTION) {
+            entity_object->facing_direction = entity_record->direction;
+        }
 
-    if (field_flags_to_read & SAVE_RECORD_ENTITY_FIELD_FLAGS_ENTITY_FLAGS) {
-        entity_object->flags = entity_record->entity_flags;
+        if (field_flags_to_read & SAVE_RECORD_ENTITY_FIELD_FLAGS_ENTITY_FLAGS) {
+            entity_object->flags = entity_record->entity_flags;
+        }
     }
 }
 

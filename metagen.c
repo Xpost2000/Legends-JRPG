@@ -24,6 +24,10 @@ static struct game_script_function_entry game_script_function_entry(char* name, 
 static struct game_script_function_entry* global_game_script_functions_list = 0;
 static struct memory_arena                arena;
 
+string format_temp_s(const char* fmt, ...) {
+    return string_literal("unused. just hack around it");
+}
+
 string* string_sliced_into_lines(string original) {
     string* line_list = 0;
 
@@ -107,7 +111,7 @@ static void generate_game_script_builtins_procedure_table(char* argv0, const cha
                 for (unsigned blacklist_entry_index = 0; blacklist_entry_index < array_count(blacklisted_files); ++blacklist_entry_index) {
                     if (string_equal(filename, blacklisted_files[blacklist_entry_index])) {
                         cancel = true;
-                        printf("Bad file: %.*s", filename.length, filename.data);
+                        printf("Bad file: %.*s\n", filename.length, filename.data);
                         break;
                     }
                 }
