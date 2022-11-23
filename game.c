@@ -1075,13 +1075,14 @@ bool game_state_set_ui_state(struct game_state* state, u32 new_ui_state) {
     return false;
 }
 
+local void register_all_entities_to_save_record(void);
 local void game_open_save_menu(void) {
     save_menu_open_for_saving();
     game_state_set_ui_state(game_state, UI_STATE_SAVEGAME);
     game_state->ui_save.effects_timer = 0;
     game_state->ui_save.phase         = UI_SAVE_MENU_PHASE_FADEIN;
+    register_all_entities_to_save_record();
 }
-
 
 local void _transition_callback_game_over(void*) {
     game_state_set_ui_state(game_state, UI_STATE_GAMEOVER);
@@ -2380,6 +2381,17 @@ local void load_level_from_file_with_setup(struct game_state* state, string wher
     setup_level_common();
 }
 
+local void register_all_entities_to_save_record(void) {
+    {
+        struct entity_iterator iterator = game_entity_iterator(game_state);
+        for (struct entity* current_entity = entity_iterator_begin(&iterator);
+             !entity_iterator_finished(&iterator);
+             current_entity = entity_iterator_advance(&iterator)) {
+            save_data_register_entity(iterator.current_id);
+        }
+    }    
+}
+
 void load_level_queued_for_transition(void* callback_data) {
     struct queued_load_level_data* data   = callback_data;
 
@@ -2388,15 +2400,7 @@ void load_level_queued_for_transition(void* callback_data) {
     string assembled_string = string_from_cstring_length_counted(data->destination_string_buffer, data->length_of_destination);
 
     /* register entities to the save entry before changing to maintain state persistence. */
-    {
-        struct entity_iterator iterator = game_entity_iterator(game_state);
-        for (struct entity* current_entity = entity_iterator_begin(&iterator);
-             !entity_iterator_finished(&iterator);
-             current_entity = entity_iterator_advance(&iterator)) {
-            save_data_register_entity(iterator.current_id);
-        }
-    }
-
+    register_all_entities_to_save_record();
     load_level_from_file_with_setup(game_state, assembled_string);
 
     if (!data->use_default_spawn_location) {

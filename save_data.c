@@ -1,5 +1,5 @@
 #include "save_data_def.c"
-#define CURRENT_SAVE_RECORD_VERSION (3)
+#define CURRENT_SAVE_RECORD_VERSION (4)
 /*
   NOTE: it may be nice to build an iterator type for these nested things...
 
@@ -68,18 +68,6 @@ struct save_record_entity_entity {
 
 struct save_record {
     u32 type;
-    /*
-      NOTE:
-      byte size of record_size,
-      under the assumption that I will generally only add fields (without
-      changing the size of or moving older fields, which is a fair assumption.),
-
-      this decision should make the savefiles forward compatible with all engine versions
-      after today.
-
-      [At least the save records part.]
-    */
-    s32 record_size;
 
     union {
         struct save_record_entity_chest  chest_record;
@@ -222,6 +210,7 @@ void game_load_from_save_slot(s32 save_slot_id) {
             memory_arena_clear_bottom(&save_arena);
         }
 
+        _debugprintf("Trying to serialize save?");
         struct binary_serializer read_serializer = open_read_file_serializer(savename);
         game_serialize_save(&read_serializer);
         setup_level_common();
@@ -267,7 +256,6 @@ struct save_record* save_area_record_entry_allocate_record(struct save_area_reco
     }
 
     struct save_record* new_record = &area_entry->last->records[area_entry->last->written_entries++];
-    new_record->record_size        = sizeof(*new_record);
     return new_record;
 }
 
@@ -317,35 +305,41 @@ local void save_serialize_record_entry(struct save_area_record_chunk* entry_chun
 
     switch (save_version) {
         case 1:
-        case 2: { /* This was before the backwards compatibility changes in Version 3 */
+        case 2:
+        case 3:{ /* This was before the backwards compatibility changes in Version 3 */
             assertion(!"This is a prerelease save file. I have no idea why you have one of these!");
         } break;
             /* The default case is meant to generally be forward compatible with everything in the future... */
             /* If it fails to work, I can analyze the specific structures and drop down */
         case CURRENT_SAVE_RECORD_VERSION: {
         default:
-            if (save_version != CURRENT_SAVE_RECORD_VERSION) {
-                s32 current_size_of_save_record_structure = sizeof(struct save_record);
+            struct save_record* current_entry = entry_chunk->records + record_to_consume;
+            serialize_u32(serializer, &current_entry->type);
 
-                serialize_u32(serializer, &record_to_serialize->type);
-                serialize_s32(serializer, &record_to_serialize->record_size);
+            /* this compresses our save files I guess (it's a stream now :! ) */
+            _debugprintf("Current record type: %d %s", current_entry->type, save_record_type_strings[current_entry->type].data);
+            switch (current_entry->type) {
+                case SAVE_RECORD_TYPE_NIL: {
+                    
+                } break;
+                case SAVE_RECORD_TYPE_ENTITY_ENTITY: {
+                    struct save_record_entity_entity* entity_record = &current_entry->entity_record;
+                    serialize_u64(serializer, &entity_record->id.full_id);
+                    serialize_s32(serializer, &entity_record->id.generation);
 
-                s32 already_read = sizeof(s32) + sizeof(u32);
+                    serialize_u32(serializer, &entity_record->entity_field_flags);
+                    serialize_u32(serializer, &entity_record->entity_flags);
 
-                s32 record_size                        = record_to_serialize->record_size-already_read;
-                current_size_of_save_record_structure -= already_read;
+                    serialize_f32(serializer, &entity_record->position.x);
+                    serialize_f32(serializer, &entity_record->position.y);
 
-                if (record_size >= current_size_of_save_record_structure) {
-                    u8 garbage_bytes_to_read[4096];
-                    serialize_bytes(serializer, record_to_serialize, current_size_of_save_record_structure);
-                    s32 remaining_read_amount = record_size - current_size_of_save_record_structure;
-                    serialize_bytes(serializer, garbage_bytes_to_read, remaining_read_amount);
-                } else {
-                    serialize_bytes(serializer, record_to_serialize, record_size);
-                }
-            } else {
-                /* serialize_bytes(serializer, entry_chunk->records, sizeof(*entry_chunk->records) * amount_to_consume); */
-                serialize_bytes(serializer, record_to_serialize, sizeof(*record_to_serialize));
+                    serialize_s32(serializer, &entity_record->health);
+                    serialize_u8(serializer,  &entity_record->direction);
+                } break;
+                case SAVE_RECORD_TYPE_ENTITY_CHEST: {
+                    struct save_record_entity_chest* chest_record = &current_entry->chest_record;
+                    serialize_u32(serializer, &chest_record->target_entity);
+                } break;
             }
         } break;
     }
@@ -415,6 +409,7 @@ void game_serialize_save(struct binary_serializer* serializer) {
 
       that might be some... Uh, shit I forgot the rest of what I wanted to type, got distracted by texting on Discord.)
     */
+    _debugprintf("area entry count: %d", area_entry_count);
 
     if (serializer->mode == BINARY_SERIALIZER_WRITE) {
         /* we're going to write them as if they were flat entries */ 
@@ -435,8 +430,10 @@ void game_serialize_save(struct binary_serializer* serializer) {
                     /* NOTE: when writing I don't really care about how I serialize, just blit the direct image. */
                     s32 written = 0;
                     while (entry_chunk) {
-                        serialize_bytes(serializer, entry_chunk->records, sizeof(*entry_chunk->records) * entry_chunk->written_entries);
-                        written += entry_chunk->written_entries;
+                        for (s32 record_index = 0; record_index < entry_chunk->written_entries; ++record_index) {
+                            save_serialize_record_entry(entry_chunk, record_index, serializer, save_version);
+                            written += 1;
+                        }
                         _debugprintf("Current entry chunk wrote: %d entries (%d total)", entry_chunk->written_entries, written);
 
                         entry_chunk = entry_chunk->next;
