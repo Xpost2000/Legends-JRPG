@@ -172,6 +172,12 @@ void editor_serialize_area(struct binary_serializer* serializer) {
         didnt_change_level_tile_format_from_current:
             for (s32 index = 0; index < TILE_LAYER_COUNT; ++index) {
                 serialize_tile_layer(serializer, version_id, &editor_state->tile_counts[index], editor_state->tile_layers[index]);
+
+                /* serialize_s32(serializer, counter); */
+                /* _debugprintf("%d tiles in this layer", *counter); */
+                /* for (s32 index = 0; index < *counter; ++index) { */
+                /*     serialize_tile(serializer, version, tile+index); */
+                /* } */
             }
         }
     } else {

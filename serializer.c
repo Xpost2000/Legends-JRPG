@@ -171,11 +171,18 @@ void serialize_format(struct binary_serializer* serializer, char* format_string,
 #define Serialize_Object_Into_File(type)                                \
     case BINARY_SERIALIZER_FILE: {                                      \
         assert(serializer->file_handle && "File handle not opened on file serializer?"); \
+        type _garbage = 0;                                              \
         if (obj) {                                                      \
             if (serializer->mode == BINARY_SERIALIZER_READ) {           \
                 fread(obj, sizeof(type), 1, serializer->file_handle);   \
             } else {                                                    \
                 fwrite(obj, sizeof(type), 1, serializer->file_handle);  \
+            }                                                           \
+        } else {                                                        \
+            if (serializer->mode == BINARY_SERIALIZER_READ) {           \
+                fread(&_garbage, sizeof(type), 1, serializer->file_handle);   \
+            } else {                                                    \
+                fwrite(&_garbage, sizeof(type), 1, serializer->file_handle);  \
             }                                                           \
         }                                                               \
     } break

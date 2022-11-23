@@ -100,12 +100,14 @@ local void _sandbox_test_byteswap(void) {
 }
 
 static bool sandbox_testing(void) {
+#if 0
     _debugprintf("sandbox start");
     /* _thread_testing(); */
     /* _sandbox_shop_inventory(); */
     assertion(_interpolation_testing());
     _sandbox_test_byteswap();
     _debugprintf("sandbox end");
+#endif
     return false;
 }
 

@@ -19,6 +19,7 @@ void serialize_tile(struct binary_serializer* serializer, s32 version, struct ti
     switch (version) {
         default:
         case CURRENT_LEVEL_AREA_VERSION: {
+            _debugprintf("Tile id is :%d", tile->id);
             serialize_s32(serializer, &tile->id);
             serialize_u32(serializer, &tile->flags);
             serialize_s16(serializer, &tile->x);
@@ -32,6 +33,7 @@ void serialize_tile(struct binary_serializer* serializer, s32 version, struct ti
 
 void serialize_tile_layer(struct binary_serializer* serializer, s32 version, s32* counter, struct tile* tile) {
     serialize_s32(serializer, counter);
+    _debugprintf("%d tiles in this layer", *counter);
     for (s32 index = 0; index < *counter; ++index) {
         serialize_tile(serializer, version, tile+index);
     }
@@ -446,6 +448,7 @@ local void build_navigation_map_for_level_area(struct memory_arena* arena, struc
 
         navigation_map->tiles                 = memory_arena_push(arena, sizeof(*navigation_map->tiles) * navigation_map->width * navigation_map->height);
         level->combat_movement_visibility_map = memory_arena_push(arena, navigation_map->width * navigation_map->height);
+        _debugprintf("Navigation map is estimated to be %d x %d", navigation_map->width, navigation_map->height);
 
         for (s32 y_cursor = navigation_map->min_y; y_cursor < navigation_map->max_y; ++y_cursor) {
             for (s32 x_cursor = navigation_map->min_x; x_cursor < navigation_map->max_x; ++x_cursor) {
@@ -775,6 +778,7 @@ void _serialize_level_area(struct memory_arena* arena, struct binary_serializer*
             do {                                                        \
                  {                                                      \
                      serialize_s32(serializer, &level->tile_counts[LAYER]); \
+                     _debugprintf("%d tiles in this layer", level->tile_counts[LAYER]); \
                      level->tile_layers[LAYER] = memory_arena_push(arena, level->tile_counts[LAYER]*sizeof(*level->tile_layers[LAYER])); \
                      for (s32 _index = 0; _index < level->tile_counts[LAYER]; ++_index) { \
                          serialize_tile(serializer, level->version, &level->tile_layers[LAYER][_index]); \
@@ -797,8 +801,8 @@ void _serialize_level_area(struct memory_arena* arena, struct binary_serializer*
             } else {
                 /* the current version of the tile layering, we can just load them in order. */
             didnt_change_level_tile_format_from_current:
-                for (s32 index = 0; index < TILE_LAYER_COUNT; ++index) {
-                    Serialize_Tile_Layer(index);
+                for (s32 I = 0; I < TILE_LAYER_COUNT; ++I) {
+                    Serialize_Tile_Layer(I);
                 }
             }
         } else {
@@ -809,6 +813,7 @@ void _serialize_level_area(struct memory_arena* arena, struct binary_serializer*
             _debugprintf("reading level transitions");
             /* this thing is allergic to chest updates. Unfortunately it might happen a lot... */
             serialize_s32(serializer, &level->trigger_level_transition_count);
+            _debugprintf("%d level transitions to read", level->trigger_level_transition_count);
             level->trigger_level_transitions = memory_arena_push(arena, sizeof(*level->trigger_level_transitions) * level->trigger_level_transition_count);
             for (s32 trigger_index = 0; trigger_index < level->trigger_level_transition_count; ++trigger_index) {
                 serialize_trigger_level_transition(serializer, level->version, level->trigger_level_transitions + trigger_index);
@@ -817,6 +822,7 @@ void _serialize_level_area(struct memory_arena* arena, struct binary_serializer*
         if (level->version >= 2) {
             _debugprintf("reading containers");
             serialize_s32(serializer, &level->entity_chest_count);
+            _debugprintf("%d chest entities to read", level->entity_chest_count);
             level->chests = memory_arena_push(arena, sizeof(*level->chests) * level->entity_chest_count);
             for (s32 chest_index = 0; chest_index < level->entity_chest_count; ++chest_index) {
                 serialize_entity_chest(serializer, level->version, level->chests + chest_index);
@@ -826,6 +832,7 @@ void _serialize_level_area(struct memory_arena* arena, struct binary_serializer*
         if (level->version >= 3) {
             _debugprintf("reading scriptable triggers");
             serialize_s32(serializer, &level->script_trigger_count);
+            _debugprintf("%d scriptable triggers to read", level->script_trigger_count);
             level->script_triggers = memory_arena_push(arena, sizeof(*level->script_triggers) * level->script_trigger_count);
             for (s32 trigger_index = 0; trigger_index < level->script_trigger_count; ++trigger_index) {
                 serialize_generic_trigger(serializer, level->version, level->script_triggers + trigger_index);
@@ -1036,20 +1043,24 @@ void load_level_from_file(struct game_state* state, string filename) {
     state->loaded_area.on_enter_triggered = false;
 
     string fullpath = string_concatenate(&scratch_arena, string_literal("areas/"), filename);
+    if (file_exists(fullpath)) {
 #ifdef EXPERIMENTAL_VFS
-    /* This is slow path. I should write a native backend for the VFS instead of this weird hack */
-    struct file_buffer file = read_entire_file(memory_arena_allocator(&scratch_arena), fullpath);
-    struct binary_serializer serializer = open_read_memory_serializer(file.buffer, file.length);
-    file_buffer_free(&file);
+        /* This is slow path. I should write a native backend for the VFS instead of this weird hack */
+        struct file_buffer file = read_entire_file(memory_arena_allocator(&scratch_arena), fullpath);
+        struct binary_serializer serializer = open_read_memory_serializer(file.buffer, file.length);
+        file_buffer_free(&file);
 #else
-    struct binary_serializer serializer = open_read_file_serializer(fullpath);
+        struct binary_serializer serializer = open_read_file_serializer(fullpath);
 #endif
-    serialize_level_area(state, &serializer, &state->loaded_area, true);
-    load_area_script(game_state->arena, &state->loaded_area, string_concatenate(&scratch_arena, string_slice(fullpath, 0, (fullpath.length+1)-sizeof("area")), string_literal("area_script")));
-    {
-        cstring_copy(filename.data, state->loaded_area_name, filename.length);
+        serialize_level_area(state, &serializer, &state->loaded_area, true);
+        load_area_script(game_state->arena, &state->loaded_area, string_concatenate(&scratch_arena, string_slice(fullpath, 0, (fullpath.length+1)-sizeof("area")), string_literal("area_script")));
+        {
+            cstring_copy(filename.data, state->loaded_area_name, filename.length);
+        }
+        serializer_finish(&serializer);
+    } else {
+        _debugprintf("level does not exist! (%.*s)", filename.length, filename.data);
     }
-    serializer_finish(&serializer);
 }
 
 /* true - changed, false - same */
