@@ -101,22 +101,6 @@ static string ui_state_strings[] = {
     string_literal("(count)"),
 };
 
-static string ui_pause_menu_strings[] = {
-    string_literal("RESUME"),
-    string_literal("PARTY"),
-    string_literal("ITEMS"),
-    string_literal("OPTIONS"),
-    string_literal("QUIT"),
-    string_literal("RETURN TO DESKTOP"),
-};
-static string ui_pause_editor_menu_strings[] = {
-    string_literal("RESUME"),
-    string_literal("TEST"),
-    string_literal("SAVE"),
-    string_literal("LOAD"),
-    string_literal("OPTIONS"),
-    string_literal("QUIT"),
-};
 
 #define COLOR_GRADING_DAY     color32u8(250,245,216,255)
 /* #define COLOR_GRADING_DAY     color32u8(249,184,165,255) */
@@ -370,48 +354,12 @@ void notify_damage(v2f32 position, s32 amount) {
     notifier->amount                 = amount;
 }
 
+#include "pause_menu_ui_def.c"
 void game_display_and_update_message_notifications(struct render_commands* framebuffer, f32 dt);
 
 struct ui_popup_state global_popup_state = {};
 void game_message_queue(string message);
 bool game_display_and_update_messages(struct software_framebuffer* framebuffer, f32 dt);
-
-enum ui_pause_menu_animation_state{
-    UI_PAUSE_MENU_TRANSITION_IN,
-    UI_PAUSE_MENU_NO_ANIM,
-    UI_PAUSE_MENU_TRANSITION_CLOSING,
-};
-
-/* 
-   check this when doing the transitions,
-       
-   Afterwards we have to hand over control to the sub menu states...
-   It was either this or spend more weeks making a more elaborate UI system...
-       
-   I'd rather just tangle this jungle of complexity now I guess.
-*/
-enum ui_pause_menu_sub_menu_state {
-    UI_PAUSE_MENU_SUB_MENU_STATE_NONE      = 0,
-    UI_PAUSE_MENU_SUB_MENU_STATE_INVENTORY = 1,
-    UI_PAUSE_MENU_SUB_MENU_STATE_EQUIPMENT = 2,
-    UI_PAUSE_MENU_SUB_MENU_STATE_OPTIONS   = 3,
-};
-
-/* share this for all types of similar menu types. */
-/* could do for a renaming. */
-struct ui_pause_menu {
-    u8  animation_state; /* 0 = OPENING, 1 = NONE, 2 = CLOSING */
-    f32 transition_t;
-    s32 selection;
-    /* NOTE we can use this field instead of that weird thing in the editor_state */
-    /* other than the fact that the editor is actually ripping this state from the game state */
-    /* in reality, I guess this should actually just be a global variable LOL. Or otherwise shared state */
-    /* since preferably the game_state is almost exclusively only serializing stuff. */
-    s32 last_sub_menu_state;
-    s32 sub_menu_state;
-    /* reserved space */
-    f32 shift_t[128];
-};
 
 /* Non-pausing text you can read. */
 #define MAX_PASSIVE_SPEAKING_DIALOGUES (256)

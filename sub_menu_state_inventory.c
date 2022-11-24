@@ -53,11 +53,7 @@ void user_use_inventory_item_at_index(s32 item_index) {
 }
 
 void close_party_inventory_screen(void) {
-    struct ui_pause_menu* menu_state = &game_state->ui_pause;
-    menu_state->animation_state     = UI_PAUSE_MENU_TRANSITION_IN;
-    menu_state->last_sub_menu_state = menu_state->sub_menu_state;
-    menu_state->sub_menu_state      = UI_PAUSE_MENU_SUB_MENU_STATE_NONE;
-    menu_state->transition_t = 0;
+    reexpose_pause_menu_options();
     zero_memory(&shopping_ui, sizeof(shopping_ui));
 }
 

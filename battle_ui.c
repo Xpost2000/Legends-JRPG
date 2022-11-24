@@ -732,7 +732,7 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
             }
 
             s32 bottom_index = item_use->selection-MAX_DISPLAYABLE_ITEMS/2;
-            s32 top_index    = item_use->selection+MAX_DISPLAYABLE_ITEMS/2;
+            s32 top_index    = item_use->selection+MAX_DISPLAYABLE_ITEMS/2+1;
 
             if (item_use->selectable_item_count <= MAX_DISPLAYABLE_ITEMS) {
                 bottom_index = 0;
