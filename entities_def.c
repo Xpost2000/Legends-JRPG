@@ -505,6 +505,55 @@ struct entity_sequence_state {
     s32 current_sequence_index;
 };
 
+/*
+  I should not this is a list for undoable actions,
+
+  the reason why undoing attacks is not possible is because
+  they are randomly rolled, so it would be possible to cheese
+  attacks (because you can just undo until you get a critical).
+
+  Item usage doesn't count because items will only do a fixed or otherwise
+  deterministic amount of damage without any rolls.
+*/
+enum used_battle_action_type {
+    LAST_USED_ENTITY_ACTION_NONE,
+    LAST_USED_ENTITY_ACTION_MOVEMENT,
+    LAST_USED_ENTITY_ACTION_DEFEND,
+    LAST_USED_ENTITY_ACTION_ITEM_USAGE,
+    LAST_USED_ENTITY_ACTION_COUNT,
+};
+
+struct used_battle_action_movement {
+    v2f32 last_movement_position;
+};
+
+struct used_battle_action_defend {
+    /* empty, just here for structure consistency */
+};
+
+struct used_battle_action_item_usage {
+    /*
+      TODO: Not done yet!
+      However the intent was to literally copy all relevant game_state,
+      and just restore it when we undo.
+    */
+    s64 memory_arena_marker;
+};
+
+struct used_battle_action {
+    u8 type;
+    union {
+        struct used_battle_action_movement   action_movement;
+        struct used_battle_action_defend     action_defend;
+        struct used_battle_action_item_usage action_item_usage;
+    };
+};
+
+struct used_battle_action_stack {
+    s32 top;
+    struct used_battle_action actions[LAST_USED_ENTITY_ACTION_COUNT];
+};
+
 #define ENTITY_TALK_INTERACTIVE_RADIUS ((f32)1.9565 * TILE_UNIT_SIZE)
 struct entity {
     string name;
@@ -567,8 +616,10 @@ struct entity {
     /* Movement is not counted as "main turn action" */
     /* I would add throwing/pickup like Disgaea here, but right now one at a time */
     /* for undoing the action alla Disgaea style. */
-    bool                          used_up_movement_action;
-    v2f32                         last_movement_position; /* This is in the entity pixel coordinates, which is kind of stupid. I made a mistake really early on in this engine with the coordinate conversion... */
+
+    /* NOTE: Honestly I should try to make all actions undoable, since it allows for more thinking and experimenting */
+    /* but it might be difficult when you have to essentially rewind all frame state... Thankfully I think I can copy most engine state temporarily... */
+    struct used_battle_action_stack used_actions;
 
     /* to avoid double fires */
     /* NOTE: ids are internally (index+1), it's a bit confusing as the editor and engine otherwise have id as 0 indices */
@@ -576,6 +627,17 @@ struct entity {
     s32                           interacted_script_trigger_write_index;
     s32                           interacted_script_trigger_ids[32];
 };
+
+/* should not be using pointers in the future, but whatever... */
+void entity_add_used_battle_action(struct entity* entity, struct used_battle_action action);
+void entity_undo_last_used_battle_action(struct entity* entity);
+void entity_clear_battle_action_stack(struct entity* entity);
+bool entity_already_used(struct entity* entity, u8 battle_action_type);
+bool entity_action_stack_any(struct entity* entity);
+
+struct used_battle_action battle_action_movement(struct entity* entity);
+struct used_battle_action battle_action_defend(struct entity* entity);
+struct used_battle_action battle_action_item_usage(struct entity* entity);
 
 void entity_snap_to_grid_position(struct entity* entity) {
     v2f32 position   = entity->position;

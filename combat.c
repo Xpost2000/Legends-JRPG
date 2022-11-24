@@ -38,8 +38,9 @@ local void add_all_combat_participants(struct game_state* state) {
         if (current_entity->flags & ENTITY_FLAGS_ALIVE) {
             entity_snap_to_grid_position(current_entity);
             current_entity->waiting_on_turn                   = true;
-            current_entity->used_up_movement_action           = false;
             current_entity->ai.attack_animation_timer         = 0;
+
+            entity_clear_battle_action_stack(current_entity);
 
             s32 priority = index;
             if (current_entity->flags & ENTITY_FLAGS_PLAYER_CONTROLLED) {

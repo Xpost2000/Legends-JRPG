@@ -426,10 +426,8 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                 _debugprintf("restore to previous menu state");
             }
         } else {
-            if (active_combatant_entity->used_up_movement_action) {
-                active_combatant_entity->used_up_movement_action = false;
-                active_combatant_entity->position                = active_combatant_entity->last_movement_position;
-                game_focus_camera_to_entity(active_combatant_entity);
+            if (entity_action_stack_any(active_combatant_entity)) {
+                entity_undo_last_used_battle_action(active_combatant_entity);
             }
         }
     }
@@ -450,10 +448,17 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
             bool disabled_actions[array_count(battle_menu_main_options)] = {};
             /* disable selecting attack if we don't have anyone within attack range */
             {
-                if (active_combatant_entity->used_up_movement_action) {
-                    disabled_actions[BATTLE_MOVE] = true;
+                if (entity_already_used(active_combatant_entity, LAST_USED_ENTITY_ACTION_MOVEMENT)) {
+                    disabled_actions[BATTLE_MOVE]   = true;
+                }
+                if (entity_already_used(active_combatant_entity, LAST_USED_ENTITY_ACTION_DEFEND)) {
+                    disabled_actions[BATTLE_DEFEND] = true;
+                }
+                if (entity_already_used(active_combatant_entity, LAST_USED_ENTITY_ACTION_ITEM_USAGE)) {
+                    disabled_actions[BATTLE_ITEM]   = true;
                 }
             }
+
             {
                 f32 attack_radius = DEFAULT_ENTITY_ATTACK_RADIUS;
                 struct entity_query_list nearby_potential_targets = find_entities_within_radius(&scratch_arena, state, active_combatant_entity->position, attack_radius * TILE_UNIT_SIZE);

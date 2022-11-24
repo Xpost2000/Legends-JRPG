@@ -1532,11 +1532,12 @@ void entity_combat_submit_movement_action(struct entity* entity, v2f32* path_poi
     }
     
     entity_copy_path_array_into_navigation_data(entity, path_points, path_count);
+
     entity->ai.following_path = true;
     entity->ai.current_action  = ENTITY_ACTION_MOVEMENT;
     /* entity->waiting_on_turn                     = 0; */
-    entity->used_up_movement_action                = true;
-    entity->last_movement_position                 = entity->position;
+    entity_add_used_battle_action(entity, battle_action_movement(entity));
+
     _debugprintf("Okay... %.*s should walk!", entity->name.length, entity->name.data);
 }
 
@@ -2864,6 +2865,88 @@ void entity_remove_ability_by_name(struct entity* entity, string id) {
     }
 }
 
+/* NOTE: we need to assert we don't already have the same action, but that *can't* happen on the player menu */
+void entity_add_used_battle_action(struct entity* entity, struct used_battle_action action) {
+    struct used_battle_action_stack* actions = &entity->used_actions;
+
+    if (actions->top >= LAST_USED_ENTITY_ACTION_COUNT) {
+        return;
+    }
+
+    actions->actions[actions->top++] = action;
+}
+
+void entity_clear_battle_action_stack(struct entity* entity) {
+    struct used_battle_action_stack* actions = &entity->used_actions;
+    actions->top = 0;
+}
+
+bool entity_action_stack_any(struct entity* entity) {
+    if (entity->used_actions.top > 0) {
+        return true;
+    }
+
+    return false;
+}
+
+void entity_undo_last_used_battle_action(struct entity* entity) {
+    struct used_battle_action_stack* actions          = &entity->used_actions;
+
+    if (actions->top <= 0) {
+        return;
+    }
+
+    struct used_battle_action* last_used_action  = &actions->actions[actions->top-1];
+    actions->top                                -= 1;
+
+    switch (last_used_action->type) {
+        case LAST_USED_ENTITY_ACTION_MOVEMENT: {
+            entity->position = last_used_action->action_movement.last_movement_position;
+            game_focus_camera_to_entity(entity);
+        } break;
+        case LAST_USED_ENTITY_ACTION_DEFEND: {
+            unimplemented("Last used entity action defend not done!");
+        } break;
+        case LAST_USED_ENTITY_ACTION_ITEM_USAGE: {
+            unimplemented("Last used entity action item not done!");
+        } break;
+        default: {
+            assertion(0 && "Impossible to undo no battle action!");
+        } break;
+    }
+}
+
+bool entity_already_used(struct entity* entity, u8 battle_action_type) {
+    s32 stack_top = entity->used_actions.top;
+
+    for (s32 stack_index = 0; stack_index < stack_top; ++stack_index) {
+        if (entity->used_actions.actions[stack_index].type == battle_action_type) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+struct used_battle_action battle_action_movement(struct entity* entity) {
+    return (struct used_battle_action) {
+        .type = LAST_USED_ENTITY_ACTION_MOVEMENT,
+        .action_movement.last_movement_position = entity->position
+    };
+}
+
+struct used_battle_action battle_action_defend(struct entity* entity) {
+    return (struct used_battle_action) {
+        .type = LAST_USED_ENTITY_ACTION_DEFEND,
+    };
+}
+
+struct used_battle_action battle_action_item_usage(struct entity* entity) {
+    return (struct used_battle_action) {
+        .type = LAST_USED_ENTITY_ACTION_ITEM_USAGE
+    };
+}
+
 /* should have static level up table somewhere... probably here? */
 /* knows? */
 
@@ -2963,7 +3046,7 @@ local void entity_think_basic_zombie_combat_actions(struct entity* entity, struc
 
     /* try to move closer. */
     if (v2f32_distance(entity->position, target_entity->position) > attack_radius) {
-        if (entity->used_up_movement_action) {
+        if (entity_already_used(entity, LAST_USED_ENTITY_ACTION_MOVEMENT)) {
             entity->waiting_on_turn = false;
             return;
         }
