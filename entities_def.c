@@ -64,6 +64,46 @@ bool entity_id_equal(entity_id a, entity_id b) {
     return false;
 }
 
+struct entity_list {
+    u8             store_type;
+    s32*           generation_count;
+    struct entity* entities;
+    s32            capacity;
+};
+
+struct entity_particle_list {
+    s32 capacity;
+    struct entity_particle* particles;
+};
+
+struct entity_iterator {
+    u8  done;
+    s32 list_count;
+    s32 index;
+    s32 entity_list_index;
+    entity_id current_id;
+    struct entity_list* entity_lists[MAX_ENTITY_LIST_COUNT];
+};
+
+struct entity_iterator entity_iterator_create(void);
+struct entity_iterator entity_iterator_clone(struct entity_iterator* base);
+void                   entity_iterator_push(struct entity_iterator* iterator, struct entity_list* list);
+struct entity*         entity_iterator_begin(struct entity_iterator* iterator);
+bool                   entity_iterator_finished(struct entity_iterator* iterator);
+s32                    entity_iterator_count_all_entities(struct entity_iterator* entities);
+struct entity*         entity_iterator_advance(struct entity_iterator* iterator);
+
+
+struct entity_list entity_list_create(struct memory_arena* arena, s32 capacity, u8 storage_mark);
+struct entity_list entity_list_clone(struct memory_arena* arena, struct entity_list original);
+void               entity_list_copy(struct entity_list* source, struct entity_list* destination);
+entity_id          entity_list_create_entity(struct entity_list* entities);
+entity_id          entity_list_get_id(struct entity_list* entities, s32 index);
+entity_id          entity_list_find_entity_id_with_scriptname(struct entity_list* list, string scriptname);
+struct entity*     entity_list_dereference_entity(struct entity_list* entities, entity_id id);
+void               entity_list_clear(struct entity_list* entities);
+bool               entity_bad_ref(struct entity* e);
+
 #include "entity_ability_def.c"
 /* forward decl */
 void battle_notify_killed_entity(entity_id);
@@ -210,10 +250,7 @@ struct entity_particle {
     v2f32           velocity;
     v2f32           acceleration;
 };
-struct entity_particle_list {
-    s32 capacity;
-    struct entity_particle* particles;
-};
+
 enum entity_particle_emitter_flags{
     ENTITY_PARTICLE_EMITTER_INACTIVE  = 0,
     ENTITY_PARTICLE_EMITTER_ACTIVE    = BIT(0),
@@ -388,6 +425,7 @@ enum entity_combat_action {
     ENTITY_ACTION_MOVEMENT,
     ENTITY_ACTION_ATTACK,
     ENTITY_ACTION_ABILITY,
+    ENTITY_ACTION_ITEM,
     /* ENTITY_ACTION_SKIP_TURN, */
 };
 
@@ -426,6 +464,11 @@ struct entity_ai_data {
     u32                           flags;
     entity_id                     attack_target_id;
 
+    /* for item usage */
+    bool sourced_from_player_inventory;
+    s32 used_item_index;
+
+    /* for movement */
     bool                          following_path;
     struct entity_navigation_path navigation_path;
     s32                           current_path_point_index;
@@ -439,7 +482,7 @@ struct entity_ai_data {
     entity_id                       targeted_entities[MAX_SELECTED_ENTITIES_FOR_ABILITIES];
     s32                             using_ability_index;
 
-    /* used for determining when to aggro. */
+    /* TODO, unused used for determining when to aggro. */
     s32                             aggro_tolerance;
 
     /* HARDCODED ANIMATION_DATA */
@@ -550,7 +593,7 @@ struct used_battle_action_defend {
 struct used_battle_action_item_usage {
     /* I'll add stuff here as things are affected. */
     s64 memory_arena_marker;
-    s32 inventory_item_index;
+    s32 inventory_item_index; /* this might not be needed, but I'm recording it anyways */
 
     /* This is pretty heavy doc! */
     struct player_party_inventory*      inventory_state;
@@ -561,7 +604,13 @@ struct used_battle_action_item_usage {
     s32                                 permenant_light_count_state;
 
     struct entity_list                  level_entity_state;
+#if 0
+    /* NOTE:
+       I don't actually directly allocate storage for any particle emitters inside of a level
+       since they are all created a runtime by the objects that actually emit particles
+    */
     struct entity_particle_emitter_list level_particle_emitter_state;
+#endif
     struct light_def*                   level_lights_state;
     s32                                 level_light_count_state;
 };
@@ -786,44 +835,9 @@ bool entity_is_in_defense_stance(struct entity* entity);
 /* This only obviously allows you to use abilities that you have. Cannot force them! */
 /* though that'd be an interesting thing to allow. */
 void entity_combat_submit_ability_action(struct entity* entity, entity_id* targets, s32 target_count, s32 user_ability_index);
-#if 0
-void entity_combat_submit_item_use_action(struct entity* entity, s32 item_index, struct entity* target);
-#endif
 
-struct entity_list {
-    u8             store_type;
-    s32*           generation_count;
-    struct entity* entities;
-    s32            capacity;
-};
-
-struct entity_iterator {
-    u8  done;
-    s32 list_count;
-    s32 index;
-    s32 entity_list_index;
-    entity_id current_id;
-    struct entity_list* entity_lists[MAX_ENTITY_LIST_COUNT];
-};
-
-struct entity_iterator entity_iterator_create(void);
-struct entity_iterator entity_iterator_clone(struct entity_iterator* base);
-void                   entity_iterator_push(struct entity_iterator* iterator, struct entity_list* list);
-struct entity*         entity_iterator_begin(struct entity_iterator* iterator);
-bool                   entity_iterator_finished(struct entity_iterator* iterator);
-s32                    entity_iterator_count_all_entities(struct entity_iterator* entities);
-struct entity*         entity_iterator_advance(struct entity_iterator* iterator);
-
-
-struct entity_list entity_list_create(struct memory_arena* arena, s32 capacity, u8 storage_mark);
-struct entity_list entity_list_clone(struct memory_arena* arena, struct entity_list original);
-void               entity_list_copy(struct entity_list* source, struct entity_list* destination);
-entity_id          entity_list_create_entity(struct entity_list* entities);
-entity_id          entity_list_get_id(struct entity_list* entities, s32 index);
-entity_id          entity_list_find_entity_id_with_scriptname(struct entity_list* list, string scriptname);
-struct entity*     entity_list_dereference_entity(struct entity_list* entities, entity_id id);
-void               entity_list_clear(struct entity_list* entities);
-bool               entity_bad_ref(struct entity* e);
+/* NOTE: (like in a few days when I add explosives or something or molotovs) in the future this may obviously imply a target, but that can be in many places depending on the item type */
+void entity_combat_submit_item_use_action(struct entity* entity, s32 item_index, bool from_player_inventory);
 
 void               update_entities(struct game_state* state, f32 dt, struct entity_iterator it, struct level_area* area);
 

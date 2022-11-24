@@ -775,9 +775,7 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
             if (selection_confirm) {
                 /* MOVE TO USAGE PHASE */
                 global_battle_ui_state.submode = BATTLE_UI_SUBMODE_NONE;
-                struct item_instance* current_item_instance = inventory->items + item_use->selectable_items[item_use->selection];
-                struct item_def*      item_base             = item_database_find_by_id(current_item_instance->item);
-                entity_inventory_use_item(inventory, item_use->selection, user);
+                entity_combat_submit_item_use_action(user, item_use->selection, true);
             }
         } break;
 
