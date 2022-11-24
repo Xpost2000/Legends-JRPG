@@ -241,9 +241,6 @@ struct light_def {
                  /* since the renderer doesn't know how to rotate sprites who knows?  */
     union color32u8 color;
     u32   flags;
-
-    /* ??? later */
-    u8 reserved_bytes[4];
 };
 
 /* These are slightly different as they do different things on the "special_effects" behavior  */

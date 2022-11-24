@@ -441,7 +441,6 @@ void editor_place_or_drag_light(v2f32 point_in_tilespace) {
         new_light->color            = color32u8_WHITE;
         new_light->flags            = 0;
         new_light->scale            = v2f32(1, 1); /* for the dragging code which always expects a rectangle. */
-        zero_array(new_light->reserved_bytes);
 
         editor_state->last_selected = new_light;
     }

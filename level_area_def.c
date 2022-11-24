@@ -20,8 +20,9 @@
    Version 6: Add light entities
    Version 7: Change to the level area entity struct.
    Version 9: Added savepoint entities
+   Version 10: Format fix
 */
-#define CURRENT_LEVEL_AREA_VERSION (9)
+#define CURRENT_LEVEL_AREA_VERSION (10)
 
 enum tile_layers {
     TILE_LAYER_GROUND,            /* render below all. dark color? */
