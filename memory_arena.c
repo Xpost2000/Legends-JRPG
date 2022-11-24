@@ -23,6 +23,24 @@ struct memory_arena memory_arena_create_from_heap_growable(cstring name, u64 cap
 }
 #endif
 
+s64  memory_arena_get_cursor(struct memory_arena* arena) {
+    if (arena->alloc_region == MEMORY_ARENA_ALLOCATION_REGION_BOTTOM) {
+        return arena->used;
+    } else {
+        return arena->used_top;
+    }
+
+    return 0;
+}
+
+void memory_arena_set_cursor(struct memory_arena* arena, s64 where) {
+    if (arena->alloc_region == MEMORY_ARENA_ALLOCATION_REGION_BOTTOM) {
+        arena->used = where;
+    } else {
+        arena->used_top = where;
+    }
+}
+
 void memory_arena_finish(struct memory_arena* arena) {
 #if 0
     if (arena->parent) {

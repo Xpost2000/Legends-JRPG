@@ -54,6 +54,8 @@ struct temporary_memory {
 
 void                    memory_arena_set_allocation_region_top(struct memory_arena* arena);
 void                    memory_arena_set_allocation_region_bottom(struct memory_arena* arena);
+s64                     memory_arena_get_cursor(struct memory_arena* arena);
+void                    memory_arena_set_cursor(struct memory_arena* arena, s64 where);
 
 struct memory_arena     memory_arena_create_from_heap(cstring name, u64 capacity);
 void                    memory_arena_finish(struct memory_arena* arena);

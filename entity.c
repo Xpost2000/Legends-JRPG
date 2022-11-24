@@ -500,6 +500,24 @@ struct entity_list entity_list_create(struct memory_arena* arena, s32 capacity, 
     return result;
 }
 
+struct entity_list entity_list_clone(struct memory_arena* arena, struct entity_list original) {
+    struct entity_list clone_result = {
+        .store_type = original.store_type,
+        .capacity   = original.capacity,
+    };
+
+    clone_result.generation_count = memory_arena_push(arena, sizeof(*clone_result.generation_count) * original.capacity);
+    clone_result.entities         = memory_arena_push(arena, sizeof(*clone_result.entities)         * original.capacity);
+
+    entity_list_copy(&original, &clone_result);
+    return clone_result;
+}
+
+void entity_list_copy(struct entity_list* source, struct entity_list* destination) {
+    memory_copy(source->generation_count, destination->generation_count, sizeof(*destination->generation_count) * destination->capacity);
+    memory_copy(source->entities,         destination->entities,         sizeof(*destination->entities)         * destination->capacity);
+}
+
 entity_id entity_list_create_entity(struct entity_list* entities) {
     for (s32 index = 0; index < entities->capacity; ++index) {
         struct entity* current_entity = entities->entities + index;
@@ -2933,10 +2951,18 @@ void entity_undo_last_used_battle_action(struct entity* entity) {
             game_focus_camera_to_entity(entity);
         } break;
         case LAST_USED_ENTITY_ACTION_DEFEND: {
-            /* does nothing! */
+            /* does nothing! Removing it from the stack handles this. */
         } break;
         case LAST_USED_ENTITY_ACTION_ITEM_USAGE: {
-            unimplemented("Last used entity action item not done!");
+            struct used_battle_action_item_usage* item_usage = &last_used_action->action_item_usage;
+
+            { /* recopy everything into memory */
+                
+            }
+
+            memory_arena_set_allocation_region_top(&game_arena); {
+                memory_arena_set_cursor(&game_arena, item_usage->memory_arena_marker);
+            } memory_arena_set_allocation_region_bottom(&game_arena);
         } break;
         default: {
             assertion(0 && "Impossible to undo no battle action!");
@@ -2969,10 +2995,20 @@ struct used_battle_action battle_action_defend(struct entity* entity) {
     };
 }
 
-struct used_battle_action battle_action_item_usage(struct entity* entity) {
-    return (struct used_battle_action) {
-        .type = LAST_USED_ENTITY_ACTION_ITEM_USAGE
-    };
+/* NOTE:
+   this is a leaky abstraction,
+   but is kind of needed to maintain the engines' memory usage promises.
+*/
+struct used_battle_action battle_action_item_usage(struct entity* entity, s32 item_use_index) {
+    memory_arena_set_allocation_region_top(&game_arena); {
+        struct used_battle_action result = {
+            .type                                   = LAST_USED_ENTITY_ACTION_ITEM_USAGE,
+            .action_item_usage.inventory_item_index = item_use_index,
+            .memory_arena_marker                    = memory_arena_get_cursor(&game_arena)
+        };
+
+    } memory_arena_set_allocation_region_bottom(&game_arena);
+    return result;
 }
 
 /* should have static level up table somewhere... probably here? */
@@ -3012,6 +3048,21 @@ struct entity_particle_emitter_list entity_particle_emitter_list(struct memory_a
         .capacity   = capacity,
     };
     return result;
+}
+
+struct entity_particle_emitter_list entity_particle_emitter_list_clone(struct memory_arena* arena, struct entity_particle_emitter_list original) {
+    struct entity_particle_emitter_list clone_result = {};
+
+    clone_result.capacity = original.capacity;
+    clone_result.emitters = memory_arena_push(arena, sizeof(*clone_result.emitters) * clone_result.capacity);
+
+    entity_particle_emitter_list_copy(&original, &clone_result);
+
+    return clone_result;
+}
+
+void entity_particle_emitter_list_copy(struct entity_particle_emitter_list* source, struct entity_particle_emitter_list* destination) {
+    memory_copy(source->emitters, destination->emitters, sizeof(*source->emitters) * destination->capacity);
 }
 
 /* ENTITY THINK BRAINS */

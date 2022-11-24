@@ -52,6 +52,14 @@ enum battle_ui_submodes {
 #define MAX_KILLED_ENTITY_TRACKER           (MAX_SELECTED_ENTITIES_FOR_ABILITIES)
 #define MAX_LOOT_ITEMS                      (MAX_SELECTED_ENTITIES_FOR_ABILITIES*16)
 
+#define MAX_SELECTABLE_ITEMS (MAX_PARTY_ITEMS)
+struct battle_ui_item_state {
+    /* Item code */
+    s32 selection;
+    s32 selectable_item_count;
+    s32 selectable_items[MAX_SELECTABLE_ITEMS];
+};
+
 struct battle_ui_state {
     f32 timer;
     u32 phase;
@@ -104,7 +112,36 @@ struct battle_ui_state {
     bool                 populated_loot_table;
     struct item_instance loot_results[MAX_LOOT_ITEMS];
     s32                  loot_result_count;
+
+    struct battle_ui_item_state item_use;
 } global_battle_ui_state;
+
+local void setup_item_use_menu(void) {
+    struct battle_ui_item_state* item_use = &global_battle_ui_state.item_use;
+    item_use->selection = 0;
+
+    struct entity_inventory* inventory = (struct entity_inventory*)(&game_state->inventory);
+
+    {
+        for (s32 item_index = 0; item_index < inventory->count; ++item_index) {
+            struct item_instance* current_item_instance = inventory->items + item_index;
+            struct item_def*      item_base             = item_database_find_by_id(current_item_instance->item);
+            
+            bool allow_item = false;
+
+            {
+                if (item_base->type == ITEM_TYPE_CONSUMABLE_ITEM) {
+                    allow_item = true;
+                }
+            }
+
+            if (allow_item) {
+                item_use->selectable_items[item_use->selectable_item_count++] = item_index;
+            }
+        }
+    }
+    _debugprintf("Maximum usable items: %d", item_use->selectable_item_count);
+}
 
 void battle_ui_stalk_entity_with_camera(struct entity* to_stalk) {
     global_battle_ui_state.stalk_entity_with_camera = true; 
@@ -560,7 +597,7 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                             } break;
                             case BATTLE_ITEM: {
                                 global_battle_ui_state.submode = BATTLE_UI_SUBMODE_USING_ITEM;
-                                _debugprintf("TODO: using items!");
+                                setup_item_use_menu();
                             } break;
                             case BATTLE_DEFEND: {
                                 entity_combat_submit_defend_action(active_combatant_entity);
@@ -665,6 +702,83 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
         } break;
 
         case BATTLE_UI_SUBMODE_USING_ITEM: {
+            struct entity*               user     = game_get_player(state);
+            struct battle_ui_item_state* item_use = &global_battle_ui_state.item_use;
+
+            const s32 FIRST_SCROLLING_Y     = 3;
+            const s32 MAX_DISPLAYABLE_ITEMS = 5;
+
+            s32 BOX_WIDTH  = nine_patch_estimate_fitting_extents_width(ui_chunky, 1,
+                                                                       font_cache_text_width(game_get_font(MENU_FONT_COLOR_GOLD), string_literal("(x 999) "), 2)
+                                                                       + item_database_longest_string_name(game_get_font(MENU_FONT_COLOR_GOLD), 2));
+            s32 BOX_HEIGHT = roundf(MAX_DISPLAYABLE_ITEMS * 1.6);
+
+            v2f32 ui_box_size     = nine_patch_estimate_extents(ui_chunky, 1, BOX_WIDTH, BOX_HEIGHT);
+            v2f32 ui_box_position = v2f32(framebuffer->width*0.94-ui_box_size.x, 20);
+            draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, ui_box_position, BOX_WIDTH, BOX_HEIGHT, UI_BATTLE_COLOR);
+
+            if (selection_up) {
+                play_sound(ui_blip);
+                item_use->selection--;
+                if (item_use->selection < 0) {
+                    item_use->selection = item_use->selectable_item_count-1;
+                }
+            } else if (selection_down) {
+                play_sound(ui_blip);
+                item_use->selection++;
+                if (item_use->selection >= item_use->selectable_item_count) {
+                    item_use->selection = 0;
+                }
+            }
+
+            s32 bottom_index = item_use->selection-MAX_DISPLAYABLE_ITEMS/2;
+            s32 top_index    = item_use->selection+MAX_DISPLAYABLE_ITEMS/2;
+
+            if (item_use->selectable_item_count <= MAX_DISPLAYABLE_ITEMS) {
+                bottom_index = 0;
+                top_index    = MAX_DISPLAYABLE_ITEMS;
+            } else {
+                for (s32 selection = 0; selection < FIRST_SCROLLING_Y; ++selection) {
+                    if (item_use->selection == selection) {
+                        bottom_index = 0;
+                        top_index    = MAX_DISPLAYABLE_ITEMS;
+                        break;
+                    }
+                }
+
+                if (top_index >= item_use->selectable_item_count) {
+                    top_index = item_use->selectable_item_count;
+                }
+            }
+
+            f32 x_cursor = ui_box_position.x + 15;
+            f32 y_cursor = ui_box_position.y + 15;
+
+            struct font_cache*       painting_font = normal_font;
+            struct entity_inventory* inventory     = (struct entity_inventory*)(&game_state->inventory);
+
+            for (s32 display_item_index = bottom_index; display_item_index < top_index; ++display_item_index) {
+                struct item_instance* current_item_instance = inventory->items + item_use->selectable_items[display_item_index];
+                struct item_def*      item_base             = item_database_find_by_id(current_item_instance->item);
+
+                if (display_item_index == item_use->selection) {
+                    painting_font = highlighted_font;
+                } else {
+                    painting_font = normal_font;
+                }
+
+                string tmp = format_temp_s("(x %d) %.*s", current_item_instance->count, item_base->name.length, item_base->name.data);
+                draw_ui_breathing_text(framebuffer, v2f32(x_cursor, y_cursor), painting_font, 2, tmp, display_item_index, color32f32_WHITE);
+                y_cursor += 16*1.2;
+            }
+
+            if (selection_confirm) {
+                /* MOVE TO USAGE PHASE */
+                global_battle_ui_state.submode = BATTLE_UI_SUBMODE_NONE;
+                struct item_instance* current_item_instance = inventory->items + item_use->selectable_items[item_use->selection];
+                struct item_def*      item_base             = item_database_find_by_id(current_item_instance->item);
+                entity_inventory_use_item(inventory, item_use->selection, user);
+            }
         } break;
 
         case BATTLE_UI_SUBMODE_MOVING: {
@@ -1147,6 +1261,15 @@ local void draw_battle_tooltips(struct game_state* state, struct software_frameb
         case BATTLE_UI_SUBMODE_USING_ABILITY: {
             struct entity_ability* ability = entity_database_ability_find_by_index(&game_state->entity_database, game_get_player(state)->abilities[global_battle_ui_state.selection].ability);
             tip = ability->description;
+        } break;
+        case BATTLE_UI_SUBMODE_USING_ITEM: {
+            struct battle_ui_item_state* item_use              = &global_battle_ui_state.item_use;
+            struct entity_inventory*     inventory             = (struct entity_inventory*)(&game_state->inventory);
+            struct item_instance*        current_item_instance = inventory->items + item_use->selectable_items[item_use->selection];
+            assertion(current_item_instance && "There should be a valid item");
+            struct item_def*             item_base             = item_database_find_by_id(current_item_instance->item);
+            assertion(item_base && "There should be a valid item");
+            tip = item_base->description;
         } break;
         case BATTLE_UI_SUBMODE_NONE: {
             tip = battle_menu_main_option_descriptions[global_battle_ui_state.selection];

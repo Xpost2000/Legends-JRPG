@@ -160,16 +160,18 @@ v2f32 nine_patch_estimate_extents(struct game_ui_nine_patch ui_skin, f32 scaling
     return result;
 }
 
-v2f32 nine_patch_estimate_fitting_extents(struct game_ui_nine_patch ui_skin, f32 scaling_factor, f32 width, f32 height) {
-    v2f32 result = {};
-
+local s32 nine_patch_estimate_fitting_extents_width(struct game_ui_nine_patch ui_skin, f32 scaling_factor, f32 width) {
     f32 tile_width  = ui_skin.tile_width * scaling_factor;
-    f32 tile_height = ui_skin.tile_height * scaling_factor;
+    return ceilf(width/tile_width);
+}
+local s32 nine_patch_estimate_fitting_extents_height(struct game_ui_nine_patch ui_skin, f32 scaling_factor, f32 height) {
+    f32 tile_height  = ui_skin.tile_height * scaling_factor;
+    return ceilf(height/tile_height);
+}
 
-    result.x = ceilf(width/tile_width);
-    result.y = ceilf(height/tile_height);
-
-    return result;
+v2f32 nine_patch_estimate_fitting_extents(struct game_ui_nine_patch ui_skin, f32 scaling_factor, f32 width, f32 height) {
+    return v2f32(nine_patch_estimate_fitting_extents_width(ui_skin, scaling_factor, width),
+                 nine_patch_estimate_fitting_extents_height(ui_skin, scaling_factor, height));
 }
 
 void draw_nine_patch_ui(struct graphics_assets* graphics_assets, struct software_framebuffer* framebuffer, struct game_ui_nine_patch ui_skin, f32 scaling_factor, v2f32 xy, s32 tiles_width, s32 tiles_height, union color32f32 rgba) {

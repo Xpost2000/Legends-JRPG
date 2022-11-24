@@ -235,6 +235,11 @@ void special_effect_start_inversion(void);
 void special_effect_stop_effects(void);
 
 struct light_def {
+/*
+  NOTE Version 9 forgot
+  to serialize the power field, and
+  older versions had 4 reserved bytes
+*/
     v2f32 position;
     v2f32 scale;  /* Only used for the editor as it expects rectangle_f32s */
     f32   power; /* scale if we add a texture id for light casting? In tile units */

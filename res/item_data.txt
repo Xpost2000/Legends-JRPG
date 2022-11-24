@@ -12,7 +12,8 @@
 
 ("item_trout_fish_5"
 "Dead Trout(?)"
-"(+20 HP) I found this at the bottom of the river. Still tastes good"
+# I could marquee long text...
+"(+20 HP) I found this at the bottom of the river!"
 (type 'consumable)
 (restores-health 20)
 (value 5)
@@ -24,6 +25,30 @@
 (type 'consumable)
 (restores-health 35)
 (value 5)
+(max-stack 20))
+
+("item_chocolate_bar"
+"Chocolate Bar"
+"(+15 HP) Uh... This is dark chocolate. Yuck."
+(type 'consumable)
+(restores-health 15)
+(value 8)
+(max-stack 20))
+
+("item_bass_5"
+"Dead Bass(?)"
+"(+5 HP) Wow this thing is deep."
+(type 'consumable)
+(restores-health 5)
+(value 0)
+(max-stack 20))
+
+("item_wine"
+"Wine"
+"(+5 HP) Should I really be drinking this now?"
+(type 'consumable)
+(restores-health 5)
+(value 8)
 (max-stack 20))
 
 ("item_armor_rags"

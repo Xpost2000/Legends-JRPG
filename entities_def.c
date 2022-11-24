@@ -347,6 +347,8 @@ struct entity_particle_emitter_list {
     struct entity_particle_emitter* emitters;
 };
 struct entity_particle_emitter_list entity_particle_emitter_list(struct memory_arena* arena, s32 capacity);
+struct entity_particle_emitter_list entity_particle_emitter_list_clone(struct memory_arena* arena, struct entity_particle_emitter_list original);
+void                                entity_particle_emitter_list_copy(struct entity_particle_emitter_list* source, struct entity_particle_emitter_list* destination);
 /* NOTE: Going  */
 void                                initialize_particle_pools(struct memory_arena* arena, s32 particles_total_count);
 void                                entity_particle_emitter_list_update(struct entity_particle_emitter_list* particle_emitters, f32 dt);
@@ -506,7 +508,7 @@ struct entity_sequence_state {
 };
 
 /*
-  I should not this is a list for undoable actions,
+  I should note this is a list for undoable actions,
 
   the reason why undoing attacks is not possible is because
   they are randomly rolled, so it would be possible to cheese
@@ -531,13 +533,37 @@ struct used_battle_action_defend {
     /* empty, just here for structure consistency */
 };
 
+/*
+  Although copying the game state sounds pretty extreme, I promise it's not as bad as it
+  sounds.
+
+  We only require copying the entity state basically.
+
+  This is mostly because some items can also affect the "world", or explosives can kill
+  guys etc.
+
+  However since items have deterministic results, they should be undoable as it allows for more
+  advanced gameplay if someone decides maybe they shouldn't have used something.
+*/
+/* While particles may remain dormant, that's not too big of a deal to me. */
+/* NOTE: Allocated at the top of the game_arena (the same place I store the level data) */
 struct used_battle_action_item_usage {
-    /*
-      TODO: Not done yet!
-      However the intent was to literally copy all relevant game_state,
-      and just restore it when we undo.
-    */
+    /* I'll add stuff here as things are affected. */
     s64 memory_arena_marker;
+    s32 inventory_item_index;
+
+    /* This is pretty heavy doc! */
+    struct player_party_inventory*      inventory_state;
+    struct entity_list                  permenant_entity_state;
+    struct entity_particle_emitter_list permenant_particle_emitter_state;
+    /* These are not a list type unfortunately lol, have to copy this myself right now */
+    struct light_def*                   permenant_lights_state;
+    s32                                 permenant_light_count_state;
+
+    struct entity_list                  level_entity_state;
+    struct entity_particle_emitter_list level_particle_emitter_state;
+    struct light_def*                   level_lights_state;
+    s32                                 level_light_count_state;
 };
 
 struct used_battle_action {
@@ -637,7 +663,7 @@ bool entity_action_stack_any(struct entity* entity);
 
 struct used_battle_action battle_action_movement(struct entity* entity);
 struct used_battle_action battle_action_defend(struct entity* entity);
-struct used_battle_action battle_action_item_usage(struct entity* entity);
+struct used_battle_action battle_action_item_usage(struct entity* entity, s32 item_use_index);
 
 void entity_snap_to_grid_position(struct entity* entity) {
     v2f32 position   = entity->position;
@@ -744,6 +770,7 @@ s32 entity_find_effective_stat_value(struct entity* entity, s32 stat_index);
 void entity_inventory_equip_item(struct entity_inventory* inventory, s32 limits, s32 item_index, s32 equipment_index, struct entity* target);
 void entity_inventory_unequip_item(struct entity_inventory* inventory, s32 limits, s32 equipment_index, struct entity* target);
 bool entity_any_equipped_item(struct entity* target, s32 slot);
+/* NOTE: use item only technically works on "standard consumables", but some special consumable types such as "bombs/grenades" or projectiles require more work  */
 void entity_inventory_use_item(struct entity_inventory* inventory, s32 item_index, struct entity* target);
 
 s32  entity_inventory_count_instances_of(struct entity_inventory* inventory, string item_name);
@@ -789,7 +816,8 @@ struct entity*         entity_iterator_advance(struct entity_iterator* iterator)
 
 
 struct entity_list entity_list_create(struct memory_arena* arena, s32 capacity, u8 storage_mark);
-struct entity_list entity_list_create_top(struct memory_arena* arena, s32 capacity, u8 storage_mark);
+struct entity_list entity_list_clone(struct memory_arena* arena, struct entity_list original);
+void               entity_list_copy(struct entity_list* source, struct entity_list* destination);
 entity_id          entity_list_create_entity(struct entity_list* entities);
 entity_id          entity_list_get_id(struct entity_list* entities, s32 index);
 entity_id          entity_list_find_entity_id_with_scriptname(struct entity_list* list, string scriptname);

@@ -4,8 +4,7 @@
 # GAME NOTE: I think there might've been a bug in the shops or something?
 # might need to double check this stuff later.
 
-# (game_load_area "bforest1.area" 'retained)
-(game_load_area "g.area" 'retained)
+(game_load_area "bforest1.area" 'retained)
 
 (set_health_limit '(entity player) 100)
 (set_vigor '(entity player) 120)
@@ -27,6 +26,9 @@
 (entity_add_item '(entity player) "item_accessory_wedding_ring")
 (entity_add_item '(entity player) "item_sardine_fish_5")
 (entity_add_item '(entity player) "item_sardine_fish_5")
+(entity_add_item '(entity player) "item_chocolate_bar")
+(entity_add_item '(entity player) "item_bass_5")
+(entity_add_item '(entity player) "item_wine")
 (entity_add_item '(entity player) "item_trout_fish_5")
 (entity_add_item '(entity player) "item_trout_fish_5")
 (entity_add_item '(entity player) "item_sardine_fish_5")

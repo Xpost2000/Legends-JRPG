@@ -126,8 +126,8 @@ item_id item_get_id(struct item_def* item) {
     return item_id_make(item->id_name);
 }
 
-static s32              item_database_count = 0;
-static struct item_def* item_database       = 0;
+static s32              item_database_count               = 0;
+static struct item_def* item_database                     = 0;
 
 local void init_item_icon(s32 index) {
     if (item_database[index].frame_count == 0)
@@ -167,6 +167,24 @@ static struct item_def* item_database_find_by_id(item_id id) {
 
     return 0;
 }
+
+/* NOTE: this should cache for multiple fonts, but all of the engines' fonts are identically sized */
+/* but this can easily be expanded for that. */
+local f32 item_database_longest_string_name(struct font_cache* font, f32 scale) {
+    local bool found_answer = false;
+    local f32  answer       = 0;
+
+    if (!found_answer) {
+        for (s32 item_index = 0; item_index < item_database_count; ++item_index) {
+            f32 width = font_cache_text_width(font, item_database[item_index].name, scale);
+            if (width > answer) {
+                answer = width;  
+            }
+        }
+    }
+
+    return answer;
+} 
 
 /* TODO only for debug reasons I guess */
 static bool verify_no_item_id_name_hash_collisions(void) {
