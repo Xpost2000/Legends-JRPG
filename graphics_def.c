@@ -75,6 +75,7 @@ void                    lightmask_buffer_blit_rectangle_clipped(struct lightmask
 void                    lightmask_buffer_blit_image(struct lightmask_buffer* buffer, struct image_buffer* image, struct rectangle_f32 destination, struct rectangle_f32 src, u8 flags, u8 blend_mode, u8 v);
 void                    lightmask_buffer_blit_rectangle(struct lightmask_buffer* buffer, struct rectangle_f32 destination, u8 blend_mode, u8 v);
 bool                    lightmask_buffer_is_lit(struct lightmask_buffer* buffer, s32 x, s32 y);
+f32                     lightmask_buffer_lit_percent(struct lightmask_buffer* buffer, s32 x, s32 y);
 void                    lightmask_buffer_finish(struct lightmask_buffer* buffer);
 
 struct software_framebuffer {

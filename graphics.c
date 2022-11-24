@@ -1517,10 +1517,17 @@ void lightmask_buffer_blit_rectangle(struct lightmask_buffer* buffer, struct rec
     lightmask_buffer_blit_rectangle_clipped(buffer, rectangle_f32(0, 0, buffer->width, buffer->height), destination, blend_mode, v);
 }
 
+f32 lightmask_buffer_lit_percent(struct lightmask_buffer* buffer, s32 x, s32 y) {
+    u32 index = y * buffer->width + x;
+    u8 value = buffer->mask_buffer[index];
+
+    return (value) / 255.0f;
+}
+
 bool lightmask_buffer_is_lit(struct lightmask_buffer* buffer, s32 x, s32 y) {
     u32 index = y * buffer->width + x;
 
-    if (buffer->mask_buffer[index] == 255) {
+    if (buffer->mask_buffer[index] != 0) {
         return 1;
     }
 

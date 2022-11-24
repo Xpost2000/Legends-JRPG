@@ -55,10 +55,11 @@ local void game_produce_damaging_explosion(v2f32 where, f32 radius, s32 effect_e
 struct game_state* game_state         = 0;
 local bool         disable_game_input = false;
 
-image_id           drop_shadow        = {};
-sound_id           ui_blip            = {};
-sound_id           ui_blip_bad        = {};
-sound_id           test_mus           = {};
+image_id drop_shadow           = {};
+image_id ui_battle_defend_icon = {};
+sound_id ui_blip               = {};
+sound_id ui_blip_bad           = {};
+sound_id test_mus              = {};
 
 /* compile out */
 #ifdef USE_EDITOR
@@ -1143,7 +1144,19 @@ union color32f32 lighting_shader(struct software_framebuffer* framebuffer, union
     struct level_area* loaded_area = context;
 
     if (lightmask_buffer_is_lit(&global_lightmask_buffer, pixel_position.x, pixel_position.y)) {
-        return source_pixel;
+        f32 forced_r = source_pixel.r;
+        f32 forced_g = source_pixel.g;
+        f32 forced_b = source_pixel.b;
+        f32 light_percentage = lightmask_buffer_lit_percent(&global_lightmask_buffer, pixel_position.x, pixel_position.y);
+        forced_r *= light_percentage;
+        forced_g *= light_percentage;
+        forced_b *= light_percentage;
+
+        if (forced_r > 255) forced_r = 255;
+        if (forced_g > 255) forced_g = 255;
+        if (forced_b > 255) forced_b = 255;
+
+        return color32f32(forced_r, forced_g, forced_b, 1.0);
     }
 
     if (special_effects_active() && special_full_effects.type == SPECIAL_EFFECT_INVERSION_1) {
@@ -1492,6 +1505,7 @@ void game_initialize(void) {
     combat_square_unselected = DEBUG_CALL(graphics_assets_load_image(&graphics_assets, string_literal(GAME_DEFAULT_RESOURCE_PATH "img/cmbt/cmbt_grid_sq.png")));
     combat_square_selected   = DEBUG_CALL(graphics_assets_load_image(&graphics_assets, string_literal(GAME_DEFAULT_RESOURCE_PATH "img/cmbt/cmbt_selected_sq.png")));
     drop_shadow              = DEBUG_CALL(graphics_assets_load_image(&graphics_assets, string_literal(GAME_DEFAULT_RESOURCE_PATH "img/dropshadow.png")));
+    ui_battle_defend_icon    = DEBUG_CALL(graphics_assets_load_image(&graphics_assets, string_literal(GAME_DEFAULT_RESOURCE_PATH "img/ui/battle/defend.png")));
 
     chest_closed_img      = DEBUG_CALL(graphics_assets_load_image(&graphics_assets, string_literal(GAME_DEFAULT_RESOURCE_PATH "img/chestclosed.png")));
     chest_open_bottom_img = DEBUG_CALL(graphics_assets_load_image(&graphics_assets, string_literal(GAME_DEFAULT_RESOURCE_PATH "img/chestopenbottom.png")));
@@ -1748,9 +1762,13 @@ void game_display_and_update_damage_notifications(struct render_commands* comman
         /* draw_position       = camera_transform(camera, draw_position, framebuffer->width, framebuffer->height); */
 
         /* draw_ui_breathing_text(framebuffer, notifier->position, painting_font, 3, string_from_cstring(format_temp("%d!", notifier->amount)), index, color32f32_WHITE); */
-        string tmp = format_temp_s("%d!", notifier->amount);
-        string tmp2 = memory_arena_push_string(&scratch_arena, tmp);
-        render_commands_push_text(commands, painting_font, 4, draw_position, tmp2, color32f32_WHITE, BLEND_MODE_ALPHA);
+        if (notifier->amount == 0) {
+            render_commands_push_text(commands, painting_font, 4, draw_position, string_literal("RESIST!"), color32f32_WHITE, BLEND_MODE_ALPHA);
+        } else {
+            string tmp = format_temp_s("%d!", notifier->amount);
+            string tmp2 = memory_arena_push_string(&scratch_arena, tmp);
+            render_commands_push_text(commands, painting_font, 4, draw_position, tmp2, color32f32_WHITE, BLEND_MODE_ALPHA);
+        }
     }
 }
 

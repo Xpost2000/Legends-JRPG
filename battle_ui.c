@@ -563,7 +563,7 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                                 _debugprintf("TODO: using items!");
                             } break;
                             case BATTLE_DEFEND: {
-                                _debugprintf("TODO: using defending!");
+                                entity_combat_submit_defend_action(active_combatant_entity);
                             } break;
                             case BATTLE_WAIT: {
                                 struct entity* active_combatant_entity   = entity_list_dereference_entity(&state->permenant_entities, combat_state->participants[combat_state->active_combatant]);

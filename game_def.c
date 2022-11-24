@@ -304,9 +304,11 @@ struct ui_popup_state {
 };
 
 /* flashing floating texts that represent damage! */
-#define DAMAGE_NOTIFIER_LINGER_TIME (0.15f)
-#define DAMAGE_NOTIFIER_MAX_TIME (0.6)
+#define DAMAGE_NOTIFIER_LINGER_TIME  (0.15f)
+#define DAMAGE_NOTIFIER_MAX_TIME     (0.6)
 #define DAMAGE_NOTIFIER_FLICKER_TIME (0.075)
+#define MAX_DAMAGE_NOTIFICATIONS     (512)
+
 struct damage_notifier {
     v2f32 position;
     /* u8  type; /\* 0 - PHYSICAL, 1 - MAGIC *\/ */
@@ -318,9 +320,9 @@ struct damage_notifier {
     u8  alternative_color;
 };
 s32                    global_damage_notification_count  = 0;
-struct damage_notifier global_damage_notifications[1024] = {};
+struct damage_notifier global_damage_notifications[MAX_DAMAGE_NOTIFICATIONS] = {};
 void notify_damage(/* u8 type, */v2f32 position, s32 amount) {
-    if (global_damage_notification_count >= 1024) {
+    if (global_damage_notification_count >= MAX_DAMAGE_NOTIFICATIONS) {
         return;
     }
 

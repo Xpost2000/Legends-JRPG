@@ -29,7 +29,7 @@ local s32 entity_get_physical_damage_raw(struct entity* entity) {
     s32 strength = entity->stat_block.strength;
     s32 agility  = entity->stat_block.agility;
 
-    s32 result = (strength * 0.50 + agility * 0.4);
+    s32 result = ceilf(strength * 0.45 + agility * 0.37);
 
     if (result < 0) {
         result = 0;
@@ -39,10 +39,9 @@ local s32 entity_get_physical_damage_raw(struct entity* entity) {
 }
 local s32 entity_get_physical_damage(struct entity* entity) {
     /* TODO special effects for critical */
-    s32 raw  = entity_get_physical_damage_raw(entity);
-
-    f32 random_percentage = random_ranged_integer(&game_state->rng, 0.3, 0.5);
-    s32 raw2 = entity_get_physical_damage_raw(entity)*random_percentage;
+    s32 raw               = entity_get_physical_damage_raw(entity);
+    f32 random_percentage = random_ranged_integer(&game_state->rng, 0.4, 0.6);
+    s32 raw2              = entity_get_physical_damage_raw(entity)*random_percentage;
 
     s32 variance_random = random_ranged_integer(&game_state->rng, -raw2, raw2);
 
@@ -1144,23 +1143,24 @@ local void sortable_entity_draw_entity(struct render_commands* commands, struct 
                                    rectangle_f32(0, 0, sprite_dimensions.x, sprite_dimensions.y * (1 - height_trim)),
                                    modulation_color, NO_FLAGS, BLEND_MODE_ALPHA);
         render_commands_set_shader(commands, game_foreground_things_shader, NULL);
-#if 0
-        /* test for fullbright */
-        {
-            u8 v = 0;
-            if (current_entity == game_get_player(game_state)) {
-                v = 255;
-            } 
-            v2f32 draw_point     = v2f32(current_entity->position.x - alignment_offset.x + other_offsets.x, current_entity->position.y - alignment_offset.y + other_offsets.y);
-            draw_point       = camera_transform(&commands->camera, draw_point, SCREEN_WIDTH, SCREEN_HEIGHT);
-            struct rectangle_f32 dest_rect = rectangle_f32(draw_point.x, draw_point.y, real_dimensions.x, real_dimensions.y*(1 - height_trim));
-            lightmask_buffer_blit_image(&global_lightmask_buffer,
-                                        graphics_assets_get_image_by_id(assets, sprite_to_use),
-                                        dest_rect, 
-                                        rectangle_f32(0, 0, sprite_dimensions.x, sprite_dimensions.y * (1 - height_trim)),
-                                        NO_FLAGS, 0, v);
+
+        if (entity_is_in_defense_stance(current_entity)) {
+            struct image_buffer* used_image = graphics_assets_get_image_by_id(assets, ui_battle_defend_icon);
+            struct rectangle_f32 rectangle  = rectangle_f32(current_entity->position.x - alignment_offset.x,
+                                                            current_entity->position.y - alignment_offset.y - TILE_UNIT_SIZE*1.2 + (sinf(global_elapsed_time * 1.7) * TILE_UNIT_SIZE * 0.2),
+                                                            TILE_UNIT_SIZE,
+                                                            TILE_UNIT_SIZE);
+
+            render_commands_push_image(commands, used_image, rectangle, RECTANGLE_F32_NULL, color32f32_WHITE, NO_FLAGS, BLEND_MODE_ALPHA);
+
+            v2f32 rectangle_position_transformed = v2f32(rectangle.x, rectangle.y);
+            rectangle_position_transformed       = camera_transform(&commands->camera, rectangle_position_transformed, SCREEN_WIDTH, SCREEN_HEIGHT);
+            rectangle.x                          = rectangle_position_transformed.x;
+            rectangle.y                          = rectangle_position_transformed.y;
+
+            lightmask_buffer_blit_image(&global_lightmask_buffer, used_image, rectangle, RECTANGLE_F32_NULL, LIGHTMASK_BLEND_OR, BLEND_MODE_ALPHA, 200);
+            render_commands_set_shader(commands, game_foreground_things_shader, NULL);
         }
-#endif
 
 #ifndef RELEASE
 #if 0
@@ -1541,6 +1541,14 @@ void entity_combat_submit_movement_action(struct entity* entity, v2f32* path_poi
     _debugprintf("Okay... %.*s should walk!", entity->name.length, entity->name.data);
 }
 
+void entity_combat_submit_defend_action(struct entity* entity) {
+    entity_add_used_battle_action(entity, battle_action_defend(entity));
+}
+
+bool entity_is_in_defense_stance(struct entity* entity) {
+    return entity_already_used(entity, LAST_USED_ENTITY_ACTION_DEFEND);
+}
+
 void entity_combat_submit_attack_action(struct entity* entity, entity_id target_id) {
     if (entity->ai.current_action != ENTITY_ACTION_NONE)
         return;
@@ -1592,9 +1600,17 @@ bool entity_validate_death(struct entity* entity) {
 
 void entity_do_physical_hurt(struct entity* entity, s32 damage) {
     /* maybe do a funny animation */
-    s32 damage_reduction = entity->stat_block.constitution * 0.43 + entity->stat_block.vigor * 0.26;
+    s32 damage_reduction = entity->stat_block.constitution * 0.33 + entity->stat_block.vigor * 0.25;
+
+    if (entity_is_in_defense_stance(entity)) {
+        damage *= 0.865;
+    }
 
     damage -= damage_reduction;
+
+    if (damage < 0) {
+        damage = 0;
+    }
 
     entity->health.value -= damage;
 
@@ -2905,7 +2921,7 @@ void entity_undo_last_used_battle_action(struct entity* entity) {
             game_focus_camera_to_entity(entity);
         } break;
         case LAST_USED_ENTITY_ACTION_DEFEND: {
-            unimplemented("Last used entity action defend not done!");
+            /* does nothing! */
         } break;
         case LAST_USED_ENTITY_ACTION_ITEM_USAGE: {
             unimplemented("Last used entity action item not done!");

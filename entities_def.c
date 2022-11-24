@@ -751,7 +751,10 @@ s32  entity_inventory_get_gold_count(struct entity_inventory* inventory);
 void entity_inventory_set_gold_count(struct entity_inventory* inventory, s32 amount);
 
 void entity_combat_submit_movement_action(struct entity* entity, v2f32* path_points, s32 path_count);
+void entity_combat_submit_defend_action(struct entity* entity);
 void entity_combat_submit_attack_action(struct entity* entity, entity_id target_id);
+
+bool entity_is_in_defense_stance(struct entity* entity);
 
 /* This only obviously allows you to use abilities that you have. Cannot force them! */
 /* though that'd be an interesting thing to allow. */
