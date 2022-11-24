@@ -119,6 +119,15 @@ static void initialize_items_database(void) {
                         current_item_definition->equipment_slot_flags = EQUIPMENT_SLOT_FLAG_WEAPON;
                     }
                 }
+                /* CONSUMABLE ITEM FIELDS */
+                {
+                    if (lisp_form_symbol_matching(*parameter_name, string_literal("restores-health"))) {
+                        lisp_form_get_s32(parameter_arguments.list.forms[0], &current_item_definition->health_restoration_value);
+                    } else if (lisp_form_symbol_matching(*parameter_name, string_literal("damages-health"))) {
+                        lisp_form_get_s32(parameter_arguments.list.forms[0], &current_item_definition->health_restoration_value);
+                        current_item_definition->health_restoration_value *= -1;
+                    }
+                }
             }
         }
     }

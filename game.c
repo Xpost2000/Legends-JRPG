@@ -1738,44 +1738,62 @@ bool game_display_and_update_messages(struct software_framebuffer* framebuffer, 
     return false;
 }
 
-void game_display_and_update_damage_notifications(struct render_commands* commands, f32 dt) {
-    struct font_cache* font       = game_get_font(MENU_FONT_COLOR_STEEL);
-    struct font_cache* other_font = game_get_font(MENU_FONT_COLOR_ORANGE);
-
+void game_display_and_update_message_notifications(struct render_commands* commands, f32 dt) {
     struct camera* camera = &game_state->camera;
 
-    for (s32 index = 0; index < global_damage_notification_count; ++index) {
-        struct damage_notifier* notifier = global_damage_notifications + index;
-
-        struct font_cache* painting_font = font;
-        if (notifier->alternative_color) painting_font = other_font;
+    for (s32 index = 0; index < global_message_notification_count; ++index) {
+        struct notifier_message* notifier = global_message_notifications + index;
 
         {
             notifier->position.y -= 50 * dt;
             notifier->timer         += dt;
             notifier->flicker_timer += dt;
 
-            if (notifier->timer >= DAMAGE_NOTIFIER_MAX_TIME) {
-                global_damage_notifications[index] = global_damage_notifications[--global_damage_notification_count];
+            if (notifier->timer >= MESSAGE_NOTIFIER_MAX_TIME) {
+                global_message_notifications[index] = global_message_notifications[--global_message_notification_count];
                 continue;
             }
 
-            if (notifier->flicker_timer >= DAMAGE_NOTIFIER_FLICKER_TIME) {
+            if (notifier->flicker_timer >= MESSAGE_NOTIFIER_FLICKER_TIME) {
                 notifier->alternative_color ^= 1;
                 notifier->flicker_timer      = 0;
             }
         }
 
         v2f32 draw_position = notifier->position;
-        /* draw_position       = camera_transform(camera, draw_position, framebuffer->width, framebuffer->height); */
 
-        /* draw_ui_breathing_text(framebuffer, notifier->position, painting_font, 3, string_from_cstring(format_temp("%d!", notifier->amount)), index, color32f32_WHITE); */
-        if (notifier->amount == 0) {
-            render_commands_push_text(commands, painting_font, 4, draw_position, string_literal("RESIST!"), color32f32_WHITE, BLEND_MODE_ALPHA);
-        } else {
-            string tmp = format_temp_s("%d!", notifier->amount);
-            string tmp2 = memory_arena_push_string(&scratch_arena, tmp);
-            render_commands_push_text(commands, painting_font, 4, draw_position, tmp2, color32f32_WHITE, BLEND_MODE_ALPHA);
+        switch (notifier->type) {
+            case NOTIFIER_MESSAGE_STANDARD: {
+                struct font_cache* painting_font               = game_get_font(MENU_FONT_COLOR_STEEL);
+                if (notifier->alternative_color) painting_font = game_get_font(notifier->message_color);
+                    string tmp2 = memory_arena_push_string(&scratch_arena, notifier->text);
+                render_commands_push_text(commands, painting_font, 4, draw_position, tmp2, color32f32_WHITE, BLEND_MODE_ALPHA);
+            } break;
+            case NOTIFIER_MESSAGE_DAMAGE: {
+                struct font_cache* painting_font               = game_get_font(MENU_FONT_COLOR_STEEL);
+                if (notifier->alternative_color) painting_font = game_get_font(MENU_FONT_COLOR_ORANGE);
+
+                if (notifier->amount == 0) {
+                    render_commands_push_text(commands, painting_font, 4, draw_position, string_literal("RESIST!"), color32f32_WHITE, BLEND_MODE_ALPHA);
+                } else {
+                    string tmp = format_temp_s("%d!", notifier->amount);
+                    string tmp2 = memory_arena_push_string(&scratch_arena, tmp);
+                    render_commands_push_text(commands, painting_font, 4, draw_position, tmp2, color32f32_WHITE, BLEND_MODE_ALPHA);
+                }
+            } break;
+            case NOTIFIER_MESSAGE_HEALING: {
+                struct font_cache* painting_font               = game_get_font(MENU_FONT_COLOR_STEEL);
+                if (notifier->alternative_color) painting_font = game_get_font(MENU_FONT_COLOR_LIME);
+
+                if (notifier->amount == 0) {
+                    render_commands_push_text(commands, painting_font, 4, draw_position, string_literal("RESIST?!"), color32f32_WHITE, BLEND_MODE_ALPHA);
+                } else {
+                    string tmp = format_temp_s("%d!", notifier->amount);
+                    string tmp2 = memory_arena_push_string(&scratch_arena, tmp);
+                    render_commands_push_text(commands, painting_font, 4, draw_position, tmp2, color32f32_WHITE, BLEND_MODE_ALPHA);
+                }
+            } break;
+                bad_case;
         }
     }
 }
@@ -2904,7 +2922,7 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                 {
                     struct render_commands commands = render_commands(&scratch_arena, 1024, game_state->camera);
                     do_ui_passive_speaking_dialogue(&commands, dt);
-                    game_display_and_update_damage_notifications(&commands, dt);
+                    game_display_and_update_message_notifications(&commands, dt);
                     software_framebuffer_render_commands(framebuffer, &commands);
                 }
 

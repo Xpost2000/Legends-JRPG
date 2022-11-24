@@ -306,36 +306,71 @@ struct ui_popup_state {
 };
 
 /* flashing floating texts that represent damage! */
-#define DAMAGE_NOTIFIER_LINGER_TIME  (0.15f)
-#define DAMAGE_NOTIFIER_MAX_TIME     (0.6)
-#define DAMAGE_NOTIFIER_FLICKER_TIME (0.075)
-#define MAX_DAMAGE_NOTIFICATIONS     (512)
+#define MESSAGE_NOTIFIER_LINGER_TIME  (0.15f)
+#define MESSAGE_NOTIFIER_MAX_TIME     (0.6)
+#define MESSAGE_NOTIFIER_FLICKER_TIME (0.075)
+#define MAX_MESSAGE_NOTIFICATIONS     (1024)
 
-struct damage_notifier {
+enum notifier_type {
+    NOTIFIER_MESSAGE_STANDARD,
+    NOTIFIER_MESSAGE_DAMAGE,
+    NOTIFIER_MESSAGE_HEALING,
+    NOTIFIER_MESSAGE_COUNT
+};
+local string notifier_type_strings[] = {
+    [NOTIFIER_MESSAGE_STANDARD] = string_literal("(standard-message)"),
+    [NOTIFIER_MESSAGE_DAMAGE]   = string_literal("(damage-message)"),
+    [NOTIFIER_MESSAGE_HEALING]  = string_literal("(healing-message)"),
+};
+struct notifier_message {
+    u8    type;
     v2f32 position;
-    /* u8  type; /\* 0 - PHYSICAL, 1 - MAGIC *\/ */
 
-    s32 amount;
+    union {
+        s32    amount;
+        string text;
+    };
+
     f32 timer;
 
     f32 flicker_timer;
+    u8  message_color;
     u8  alternative_color;
 };
-s32                    global_damage_notification_count  = 0;
-struct damage_notifier global_damage_notifications[MAX_DAMAGE_NOTIFICATIONS] = {};
-void notify_damage(/* u8 type, */v2f32 position, s32 amount) {
-    if (global_damage_notification_count >= MAX_DAMAGE_NOTIFICATIONS) {
-        return;
+s32                    global_message_notification_count  = 0;
+struct notifier_message global_message_notifications[MAX_MESSAGE_NOTIFICATIONS+1] = {};
+
+struct notifier_message* _allocate_global_message_notification(u8 type) {
+    if (global_message_notification_count >= MAX_MESSAGE_NOTIFICATIONS) {
+        return &global_message_notifications[MAX_MESSAGE_NOTIFICATIONS]; 
     }
 
-    struct damage_notifier* notifier = &global_damage_notifications[global_damage_notification_count++];
-    zero_memory(notifier, sizeof(*notifier));
+    struct notifier_message* result = &global_message_notifications[global_message_notification_count++];
+    zero_memory(result, sizeof(*result));
+    result->type                    = type;
+    return result;
+}
 
+void notify_message(v2f32 position, string text, u8 color) {
+    struct notifier_message* notifier = _allocate_global_message_notification(NOTIFIER_MESSAGE_STANDARD);
+    notifier->position                = position;
+    notifier->text                    = memory_arena_push_string(&scratch_arena, text);
+    notifier->message_color           = color;
+}
+
+void notify_healing(v2f32 position, s32 amount) {
+    struct notifier_message* notifier = _allocate_global_message_notification(NOTIFIER_MESSAGE_HEALING);
     notifier->position               = position;
     notifier->amount                 = amount;
 }
 
-void game_display_and_update_damage_notifications(struct render_commands* framebuffer, f32 dt);
+void notify_damage(v2f32 position, s32 amount) {
+    struct notifier_message* notifier = _allocate_global_message_notification(NOTIFIER_MESSAGE_DAMAGE);
+    notifier->position               = position;
+    notifier->amount                 = amount;
+}
+
+void game_display_and_update_message_notifications(struct render_commands* framebuffer, f32 dt);
 
 struct ui_popup_state global_popup_state = {};
 void game_message_queue(string message);

@@ -24,6 +24,8 @@ local void entity_advance_ability_sequence(struct entity* entity);
 #include "handle_hardcoded_animation_sequence_action.c"
 
 bool entity_bad_ref(struct entity* e);
+void entity_do_healing(struct entity* entity, s32 healing);
+void entity_do_physical_hurt(struct entity* entity, s32 damage);
 
 local s32 entity_get_physical_damage_raw(struct entity* entity) {
     s32 strength = entity->stat_block.strength;
@@ -1468,9 +1470,11 @@ void item_apply_to_entity(struct item_def* item, struct entity* target) {
     /* NOTE: obviously we need more stuff here */
     switch (item->type) {
         case ITEM_TYPE_CONSUMABLE_ITEM: {
+            _debugprintf("Can try to use consumable item");
+            _debugprintf("(%.*s) HP VALUE: %d", item->name.length, item->name.data, item->health_restoration_value);
             if (item->health_restoration_value != 0) {
-                target->health.value += item->health_restoration_value;
-                _debugprintf("restored: %d health", item->health_restoration_value);
+                entity_do_healing(target, item->health_restoration_value);
+                _debugprintf("ITEMUSED: (%p) (item %p) restored: %d health", item, target, item->health_restoration_value);
             }
         } break;
     }
@@ -1514,11 +1518,10 @@ void entity_inventory_use_item(struct entity_inventory* inventory, s32 item_inde
     struct item_def* item_base         = item_database_find_by_id(current_item->item);
 
     if (item_base->type == ITEM_TYPE_CONSUMABLE_ITEM) {
+        _debugprintf("Trying to use (item %d) from (inventory %p)", item_index, inventory);
         entity_inventory_remove_item(inventory, item_index, false);
+        item_apply_to_entity(item_base, target);
     }
-
-    /* or region? */
-    item_apply_to_entity(item_base, target);
 }
 
 local void entity_copy_path_array_into_navigation_data(struct entity* entity, v2f32* path_points, s32 path_count) {
@@ -1581,10 +1584,10 @@ void entity_combat_submit_item_use_action(struct entity* entity, s32 item_index,
       This isn't exactly the same as an action because the results happen "immediately",
       and are not queued.
     */
+    entity_add_used_battle_action(entity, battle_action_item_usage(entity, item_index));
     entity->ai.current_action                = ENTITY_ACTION_ITEM;
     entity->ai.used_item_index               = item_index;
     entity->ai.sourced_from_player_inventory = from_player_inventory;
-    entity_add_used_battle_action(entity, battle_action_item_usage(entity, item_index));
 }
 
 void entity_combat_submit_attack_action(struct entity* entity, entity_id target_id) {
@@ -1637,6 +1640,11 @@ bool entity_validate_death(struct entity* entity) {
     return false;
 }
 
+void entity_do_healing(struct entity* entity, s32 healing) {
+    entity->health.value += healing;
+    notify_healing(v2f32_sub(entity->position, v2f32(0, TILE_UNIT_SIZE)), healing);
+}
+
 void entity_do_physical_hurt(struct entity* entity, s32 damage) {
     /* maybe do a funny animation */
     s32 damage_reduction = entity->stat_block.constitution * 0.33 + entity->stat_block.vigor * 0.25;
@@ -1657,7 +1665,7 @@ void entity_do_physical_hurt(struct entity* entity, s32 damage) {
     entity->ai.hurt_animation_shakes             = 0;
     entity->ai.hurt_animation_phase              = ENTITY_HURT_ANIMATION_ON;
 
-    notify_damage(entity->position, damage);
+    notify_damage(v2f32_sub(entity->position, v2f32(0, TILE_UNIT_SIZE)), damage);
     (entity_validate_death(entity));
 }
 

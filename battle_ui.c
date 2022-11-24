@@ -775,7 +775,7 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
             if (selection_confirm) {
                 /* MOVE TO USAGE PHASE */
                 global_battle_ui_state.submode = BATTLE_UI_SUBMODE_NONE;
-                entity_combat_submit_item_use_action(user, item_use->selection, true);
+                entity_combat_submit_item_use_action(user, item_use->selectable_items[item_use->selection], true);
             }
         } break;
 

@@ -81,7 +81,6 @@ struct item_def {
     string description;
 
     s32 type;
-
     s32 health_restoration_value;
 
     /* override the default type icon */
