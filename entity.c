@@ -514,6 +514,8 @@ struct entity_list entity_list_clone(struct memory_arena* arena, struct entity_l
 }
 
 void entity_list_copy(struct entity_list* source, struct entity_list* destination) {
+    assertion(source->generation_count && "Incomplete source list! (missing generation count?)");
+    assertion(source->entities         && "Incomplete source list! (missing entities)");
     memory_copy(source->generation_count, destination->generation_count, sizeof(*destination->generation_count) * destination->capacity);
     memory_copy(source->entities,         destination->entities,         sizeof(*destination->entities)         * destination->capacity);
 }
@@ -2990,28 +2992,28 @@ void entity_undo_last_used_battle_action(struct entity* entity) {
             /* does nothing! Removing it from the stack handles this. */
         } break;
         case LAST_USED_ENTITY_ACTION_ITEM_USAGE: {
-            struct used_battle_action_item_usage* item_usage        = &last_used_action->action_item_usage;
+            struct used_battle_action_item_usage  item_usage        = last_used_action->action_item_usage;
             struct level_area*                    loaded_level_area = &game_state->loaded_area;
 
             { /* recopy everything into memory */
-                entity_list_copy(&item_usage->permenant_entity_state, &game_state->permenant_entities);
-                entity_list_copy(&item_usage->level_entity_state,     &loaded_level_area->entities);
+                entity_list_copy(&item_usage.permenant_entity_state, &game_state->permenant_entities);
+                entity_list_copy(&item_usage.level_entity_state,     &loaded_level_area->entities);
 
-                entity_particle_emitter_list_copy(&item_usage->permenant_particle_emitter_state, &game_state->permenant_particle_emitters);
+                entity_particle_emitter_list_copy(&item_usage.permenant_particle_emitter_state, &game_state->permenant_particle_emitters);
 
                 {
-                    memory_copy(item_usage->level_lights_state, loaded_level_area->lights, sizeof(*loaded_level_area->lights) * item_usage->level_light_count_state);
-                    loaded_level_area->light_count = item_usage->level_light_count_state;
-                    memory_copy(item_usage->permenant_lights_state, game_state->dynamic_lights, sizeof(*game_state->dynamic_lights) * item_usage->permenant_light_count_state);
-                    game_state->dynamic_light_count = item_usage->permenant_light_count_state;
+                    memory_copy(item_usage.level_lights_state, loaded_level_area->lights, sizeof(*loaded_level_area->lights) * item_usage.level_light_count_state);
+                    loaded_level_area->light_count = item_usage.level_light_count_state;
+                    memory_copy(item_usage.permenant_lights_state, game_state->dynamic_lights, sizeof(*game_state->dynamic_lights) * item_usage.permenant_light_count_state);
+                    game_state->dynamic_light_count = item_usage.permenant_light_count_state;
                 }
                 {
-                    memory_copy(item_usage->inventory_state, &game_state->inventory, sizeof(game_state->inventory));
+                    memory_copy(item_usage.inventory_state, &game_state->inventory, sizeof(game_state->inventory));
                 }
             }
 
             memory_arena_set_allocation_region_top(&game_arena); {
-                memory_arena_set_cursor(&game_arena, item_usage->memory_arena_marker);
+                memory_arena_set_cursor(&game_arena, item_usage.memory_arena_marker);
             } memory_arena_set_allocation_region_bottom(&game_arena);
         } break;
         default: {
