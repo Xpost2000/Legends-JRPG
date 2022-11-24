@@ -28,8 +28,8 @@ void entity_do_healing(struct entity* entity, s32 healing);
 void entity_do_physical_hurt(struct entity* entity, s32 damage);
 
 local s32 entity_get_physical_damage_raw(struct entity* entity) {
-    s32 strength = entity->stat_block.strength;
-    s32 agility  = entity->stat_block.agility;
+    s32 strength = entity_find_effective_stat_value(entity, STAT_STRENGTH);
+    s32 agility  = entity_find_effective_stat_value(entity, STAT_AGILITY);
 
     s32 result = ceilf(strength * 0.45 + agility * 0.37);
 
@@ -1647,7 +1647,9 @@ void entity_do_healing(struct entity* entity, s32 healing) {
 
 void entity_do_physical_hurt(struct entity* entity, s32 damage) {
     /* maybe do a funny animation */
-    s32 damage_reduction = entity->stat_block.constitution * 0.33 + entity->stat_block.vigor * 0.25;
+    s32 constitution = entity_find_effective_stat_value(entity, STAT_CONSTITUTION);
+    s32 vigor        = entity_find_effective_stat_value(entity, STAT_VIGOR);
+    s32 damage_reduction = constitution * 0.33 + vigor * 0.25;
 
     if (entity_is_in_defense_stance(entity)) {
         damage *= 0.865;
@@ -3264,6 +3266,16 @@ void serialize_entity_id(struct binary_serializer* serializer, s32 version, enti
             serialize_s32(serializer, &id->generation);
         } break;
     }
+}
+
+struct entity_stat_block entity_find_effective_stat_block(struct entity* entity) {
+    struct entity_stat_block result = {};
+
+    for (unsigned index = 0; index < STAT_COUNT; ++index) {
+        result.values[index] = entity_find_effective_stat_value(entity, index);
+    }
+
+    return result;
 }
 
 #include "entity_ability.c"

@@ -813,6 +813,7 @@ void entity_play_animation_with_direction(struct entity* entity, string name);
 void entity_look_at(struct entity* entity, v2f32 position);
 
 s32 entity_find_effective_stat_value(struct entity* entity, s32 stat_index);
+struct entity_stat_block entity_find_effective_stat_block(struct entity* entity);
 
 /* these don't do error checking, they assume the item index is within bounds */
 /* NOTE: The inventory does not know it's own limits, since I use type-punning to allow these to work on different fixed sized instances. */
