@@ -44,6 +44,7 @@ enum battle_ui_submodes {
     BATTLE_UI_SUBMODE_MOVING,
     BATTLE_UI_SUBMODE_ATTACKING,
     BATTLE_UI_SUBMODE_USING_ABILITY,
+    BATTLE_UI_SUBMODE_EQUIPMENT_MODE,
     BATTLE_UI_SUBMODE_USING_ITEM,
     /* the rest are not submodes, and are just registered actions. */
 };
@@ -231,6 +232,7 @@ enum battle_options{
     BATTLE_ABILITY,
     BATTLE_ITEM,
     BATTLE_DEFEND,
+    BATTLE_EQUIPMENT,
     BATTLE_THROW_OR_PICKUP,
     BATTLE_WAIT,
 };
@@ -241,6 +243,7 @@ local string battle_menu_main_options[] = {
     [BATTLE_ABILITY]         = string_literal("ABILITY"),
     [BATTLE_ITEM]            = string_literal("ITEM"),
     [BATTLE_DEFEND]          = string_literal("DEFEND"),
+    [BATTLE_EQUIPMENT]            = string_literal("EQUIPMENT"),
     [BATTLE_THROW_OR_PICKUP] = string_literal("PICKUP/THROW"),
     [BATTLE_WAIT]            = string_literal("END TURN"),
 };
@@ -251,6 +254,7 @@ local string battle_menu_main_option_descriptions[] = {
     [BATTLE_ABILITY]         = string_literal("use an ability from your list."),
     [BATTLE_ITEM]            = string_literal("use an item from your party inventory."),
     [BATTLE_DEFEND]          = string_literal("increase defense, and delay future turns."),
+    [BATTLE_EQUIPMENT]       = string_literal("Change equipment to increase your advantage."),
     [BATTLE_THROW_OR_PICKUP] = string_literal("Pickup an object and toss it around for tactical advantage."),
     [BATTLE_WAIT]            = string_literal("finish turn"),
 };
@@ -424,7 +428,7 @@ local void recalculate_targeted_entities_by_ability(struct entity_ability* abili
     }
 }
 
-local void do_battle_selection_menu(struct game_state* state, struct software_framebuffer* framebuffer, f32 x, f32 y, bool allow_input) {
+local void do_battle_selection_menu(struct game_state* state, struct software_framebuffer* framebuffer, f32 x, f32 y, bool allow_input, f32 dt) {
     struct game_state_combat_state* combat_state            = &state->combat_state;
     struct entity*                  active_combatant_entity = game_dereference_entity(state, combat_state->participants[combat_state->active_combatant]);
 
@@ -447,10 +451,13 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
 
     if (selection_cancel) {
         if (global_battle_ui_state.submode != BATTLE_UI_SUBMODE_NONE) {
-            if (global_battle_ui_state.selecting_ability_target) {
+            if (global_battle_ui_state.submode == BATTLE_UI_SUBMODE_EQUIPMENT_MODE) {
+                /* the menu will handle that itself. */
+            } else if (global_battle_ui_state.selecting_ability_target) {
                 global_battle_ui_state.selecting_ability_target = false;
                 cancel_ability_selections();
             } else {
+            battle_menu_default_cleanup:
                 global_battle_ui_state.submode                             = BATTLE_UI_SUBMODE_NONE;
 
                 if (global_battle_ui_state.remembered_original_camera_position) {
@@ -480,7 +487,7 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                 ui_color.a = 0.5;
             }
 
-            draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, v2f32(x, y), 8, 16, ui_color);
+            draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, v2f32(x, y), 8, 18, ui_color);
 
             bool disabled_actions[array_count(battle_menu_main_options)] = {};
             /* disable selecting attack if we don't have anyone within attack range */
@@ -601,6 +608,10 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                             } break;
                             case BATTLE_DEFEND: {
                                 entity_combat_submit_defend_action(active_combatant_entity);
+                            } break;
+                            case BATTLE_EQUIPMENT: {
+                                global_battle_ui_state.submode = BATTLE_UI_SUBMODE_EQUIPMENT_MODE;
+                                open_equipment_screen(combat_state->participants[combat_state->active_combatant]);
                             } break;
                             case BATTLE_WAIT: {
                                 struct entity* active_combatant_entity   = entity_list_dereference_entity(&state->permenant_entities, combat_state->participants[combat_state->active_combatant]);
@@ -776,6 +787,20 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                 /* MOVE TO USAGE PHASE */
                 global_battle_ui_state.submode = BATTLE_UI_SUBMODE_NONE;
                 entity_combat_submit_item_use_action(user, item_use->selectable_items[item_use->selection], true);
+            }
+        } break;
+
+        case BATTLE_UI_SUBMODE_EQUIPMENT_MODE: {
+            s32 equipment_menu_result = do_equipment_menu(framebuffer, dt);
+
+            switch (equipment_menu_result) {
+                case EQUIPMENT_MENU_PROCESS_ID_EXIT: {
+                    global_battle_ui_state.submode = BATTLE_UI_SUBMODE_NONE;
+                } break;
+                case EQUIPMENT_MENU_PROCESS_ID_OKAY:
+                default: {
+                    /* control is back in the hands of the equipment UI */
+                } break;
             }
         } break;
 
@@ -1395,7 +1420,7 @@ local void update_and_render_battle_ui(struct game_state* state, struct software
             }
             {
                 f32 x_cursor = lerp_f32(framebuffer->width + BATTLE_SELECTIONS_WIDTH, framebuffer->width - BATTLE_SELECTIONS_WIDTH + 15, t);
-                do_battle_selection_menu(state, framebuffer, x_cursor, 100, false);
+                do_battle_selection_menu(state, framebuffer, x_cursor, 100, false, dt);
             }
 
             if (global_battle_ui_state.timer >= max_t) {
@@ -1410,7 +1435,7 @@ local void update_and_render_battle_ui(struct game_state* state, struct software
             bool is_player_turn = is_player_combat_turn(state);
 
             draw_turn_panel(state, framebuffer, 10, 100);
-            do_battle_selection_menu(state, framebuffer, framebuffer->width - BATTLE_SELECTIONS_WIDTH + 15, 100, is_player_turn);
+            do_battle_selection_menu(state, framebuffer, framebuffer->width - BATTLE_SELECTIONS_WIDTH + 15, 100, is_player_turn, dt);
             draw_battle_tooltips(state, framebuffer, dt, framebuffer->height, is_player_turn);
         } break;
 
@@ -1446,7 +1471,7 @@ local void update_and_render_battle_ui(struct game_state* state, struct software
 
             draw_turn_panel(state, framebuffer, lerp_f32(10, -300, t), 100);
 
-            do_battle_selection_menu(state, framebuffer, lerp_f32(framebuffer->width - BATTLE_SELECTIONS_WIDTH + 15, framebuffer->width + 300, t), 100, false);
+            do_battle_selection_menu(state, framebuffer, lerp_f32(framebuffer->width - BATTLE_SELECTIONS_WIDTH + 15, framebuffer->width + 300, t), 100, false, dt);
             draw_battle_tooltips(state, framebuffer, dt, lerp_f32(framebuffer->height, framebuffer->height + 300, t), false);
 
             global_battle_ui_state.timer += dt;

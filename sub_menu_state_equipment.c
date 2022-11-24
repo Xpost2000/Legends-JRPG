@@ -1,8 +1,7 @@
-/* TODO: Display equipment description */
 /* TODO: better UI state handling, since we don't consume events properly. */
-/* NOTE: Need to genericize this so I can use this module in the battle menu */
 /* need separate binding for removing items */
 #define EQUIPMENT_SCREEN_SPIN_TIMER_LENGTH (0.2)
+#include "equipment_ui_def.c"
 
 enum equipment_screen_phase {
     EQUIPMENT_SCREEN_PHASE_SLIDE_IN,
@@ -449,8 +448,8 @@ local void equipment_update_character_spinner(f32 dt) {
     }
 }
 
-local void update_and_render_character_equipment_screen(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
-    struct entity* target_entity = game_dereference_entity(state, equipment_screen_state.focus_entity);
+s32 do_equipment_menu(struct software_framebuffer* framebuffer, f32 dt) {
+    struct entity* target_entity = game_dereference_entity(game_state, equipment_screen_state.focus_entity);
 
     equipment_screen_state.cancel_pressed  = is_action_pressed(INPUT_ACTION_CANCEL);
     equipment_screen_state.confirm_pressed = is_action_pressed(INPUT_ACTION_CONFIRMATION);
@@ -488,7 +487,7 @@ local void update_and_render_character_equipment_screen(struct game_state* state
 
             /* NOTE need to generic menu */
             if (equipment_screen_state.animation_timer >= MAX_T+0.1) {
-                reexpose_pause_menu_options();
+                return EQUIPMENT_MENU_PROCESS_ID_EXIT;
             }
         } break;
     }
@@ -502,4 +501,13 @@ local void update_and_render_character_equipment_screen(struct game_state* state
     draw_equipment_tooltips(framebuffer, framebuffer->height);
 
     equipment_update_character_spinner(dt);
+    return EQUIPMENT_MENU_PROCESS_ID_OKAY;
 }
+
+local void update_and_render_character_equipment_screen(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
+    s32 menu_result = do_equipment_menu(framebuffer, dt);
+    if (menu_result == EQUIPMENT_MENU_PROCESS_ID_EXIT) {
+        reexpose_pause_menu_options();
+    }
+}
+

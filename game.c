@@ -10,6 +10,7 @@
 #include "save_data_def.c"
 #include "game_script_def.c"
 #include "save_menu_ui_def.c"
+#include "equipment_ui_def.c"
 #include "dialogue_script_parse.c"
 #include "storyboard_presentation_def.c" /* need to check the rot on this... */
 
