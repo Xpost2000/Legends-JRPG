@@ -879,6 +879,12 @@ void _serialize_level_area(struct memory_arena* arena, struct binary_serializer*
             level->lights = memory_arena_push(arena, sizeof(*level->lights) * level->light_count);
             for (s32 light_index = 0; light_index < level->light_count; ++light_index) {
                 serialize_light(serializer, level->version, level->lights + light_index);
+                {
+                    struct light_def* l = level->lights+light_index;
+                    _debugprintf("position: %f, %f", l->position.x, l->position.y);
+                    _debugprintf("scale:    %f", l->scale.x);
+                    _debugprintf("power:    %f", l->power);
+                }
             }
         }
 

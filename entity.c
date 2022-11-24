@@ -2807,10 +2807,11 @@ void serialize_light(struct binary_serializer* serializer, s32 version, struct l
             serialize_f32(serializer, &light->position.y);
             serialize_f32(serializer, &light->scale.x);
             serialize_f32(serializer, &light->scale.y);
-            serialize_u8(serializer, &light->color.r);
-            serialize_u8(serializer, &light->color.g);
-            serialize_u8(serializer, &light->color.b);
-            serialize_u8(serializer, &light->color.a);
+            serialize_f32(serializer, &light->power);
+            serialize_u8(serializer,  &light->color.r);
+            serialize_u8(serializer,  &light->color.g);
+            serialize_u8(serializer,  &light->color.b);
+            serialize_u8(serializer,  &light->color.a);
             serialize_u32(serializer, &light->flags);
             /* should not be here */
             serialize_u8(serializer, &light->reserved_bytes[0]);
