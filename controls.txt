@@ -5,6 +5,6 @@ ACTION_MOVE_LEFT                GAMEPAD_DPAD_LEFT  Arrow_Left        A
 ACTION_MOVE_RIGHT               GAMEPAD_DPAD_RIGHT Arrow_Right       D
 ACTION_PAUSE                    GAMEPAD_START      Escape            KEY_NONE
 ACTION_CONFIRM                  GAMEPAD_A          Return            KEY_NONE
-ACTION_CANCEL                   GAMEPAD_B          Escape            Backspace
+ACTION_CANCEL                   GAMEPAD_B          Backspace         KEY_NONE
 ACTION_SWITCH_CATEGORY_BACKWARD GAMEPAD_LB         Tab+Shift         KEY_NONE
 ACTION_SWITCH_CATEGORY_FORWARD  GAMEPAD_RB         Tab               KEY_NONE

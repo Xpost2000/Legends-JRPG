@@ -335,7 +335,6 @@ void initialize_input_mapper_with_bindings(void) {
             set_action_binding_key(INPUT_ACTION_MOVE_RIGHT,                   KEY_D,         KEY_MODIFIER_NONE,  1);
             set_action_binding_key(INPUT_ACTION_PAUSE,                        KEY_ESCAPE,    KEY_MODIFIER_NONE,  0);
             set_action_binding_key(INPUT_ACTION_CONFIRMATION,                 KEY_RETURN,    KEY_MODIFIER_NONE,  0);
-            set_action_binding_key(INPUT_ACTION_CANCEL,                       KEY_ESCAPE,    KEY_MODIFIER_NONE,  0);
             set_action_binding_key(INPUT_ACTION_CANCEL,                       KEY_BACKSPACE, KEY_MODIFIER_NONE,  1);
             set_action_binding_key(INPUT_ACTION_SWITCH_CATEGORY_FORWARDS,     KEY_TAB,       KEY_MODIFIER_NONE,  0);
             set_action_binding_key(INPUT_ACTION_SWITCH_CATEGORY_BACKWARDS,    KEY_TAB,       KEY_MODIFIER_SHIFT, 0);

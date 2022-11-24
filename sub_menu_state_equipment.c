@@ -1,6 +1,7 @@
-/* TODO: Equipment (frankly not even sure what this means, probably just animating the UI like I do for everything else) */
 /* TODO: Display equipment description */
 /* TODO: better UI state handling, since we don't consume events properly. */
+/* NOTE: Need to genericize this so I can use this module in the battle menu */
+/* need separate binding for removing items */
 #define EQUIPMENT_SCREEN_SPIN_TIMER_LENGTH (0.2)
 
 enum equipment_screen_phase {
@@ -69,6 +70,36 @@ local void equipment_screen_build_new_filtered_item_list(s32 filter_mask) {
                 equipment_screen_state.inventory_item_slice[equipment_screen_state.inventory_filtered_size++] = index;
             }
         }
+    }
+}
+
+local void draw_equipment_tooltips(struct software_framebuffer* framebuffer, f32 bottom_y) {
+    struct font_cache* normal_font      = game_get_font(MENU_FONT_COLOR_WHITE);
+
+    union color32f32 modulation_color = color32f32_WHITE;
+    union color32f32 ui_color         = UI_BATTLE_COLOR;
+
+    struct entity* entity = game_dereference_entity(game_state, equipment_screen_state.focus_entity);
+
+    string tip = {};
+    if (!equipment_screen_state.inventory_pick_mode) {
+        item_id slot = entity->equip_slots[equipment_screen_state.equip_slot_selection];
+        struct item_def* item = item_database_find_by_id(slot);
+        if (item) {
+            tip = item->description;
+        }
+    } else {
+        struct item_instance* instance = game_state->inventory.items + equipment_screen_state.inventory_item_slice[equipment_screen_state.inventory_slot_selection];
+        item_id item_handle = instance->item;
+        struct item_def* item = item_database_find_by_id(item_handle);
+        if (item) {
+            tip = item->description;
+        }
+    }
+
+    if (tip.length) {
+        draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, v2f32(15, bottom_y - (16*3.15)), 36, 2, ui_color);
+        draw_ui_breathing_text(framebuffer, v2f32(30, bottom_y - (16*3.15) + 15), normal_font, 2, tip, 0, modulation_color);
     }
 }
 
@@ -419,7 +450,7 @@ local void equipment_update_character_spinner(f32 dt) {
 }
 
 local void update_and_render_character_equipment_screen(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
-    struct entity* target_entity = entity_list_dereference_entity(&state->permenant_entities, equipment_screen_state.focus_entity);
+    struct entity* target_entity = game_dereference_entity(state, equipment_screen_state.focus_entity);
 
     equipment_screen_state.cancel_pressed  = is_action_pressed(INPUT_ACTION_CANCEL);
     equipment_screen_state.confirm_pressed = is_action_pressed(INPUT_ACTION_CONFIRMATION);
@@ -455,6 +486,7 @@ local void update_and_render_character_equipment_screen(struct game_state* state
             x_character_spinner = lerp_f32(-100, 100, 1-effective_t);
             x_ui_widget         = lerp_f32(framebuffer->width*2, framebuffer->width, 1-effective_t);
 
+            /* NOTE need to generic menu */
             if (equipment_screen_state.animation_timer >= MAX_T+0.1) {
                 struct ui_pause_menu* menu_state = &game_state->ui_pause;
                 menu_state->animation_state     = UI_PAUSE_MENU_TRANSITION_IN;
@@ -469,8 +501,9 @@ local void update_and_render_character_equipment_screen(struct game_state* state
     do_spinning_preview_of_character(x_character_spinner, 240, framebuffer, target_entity);
 
     do_entity_stat_information_panel(framebuffer, x_ui_widget - TILE_UNIT_SIZE*13, 30, target_entity);
-    do_entity_select_equipment_panel(framebuffer, x_ui_widget - TILE_UNIT_SIZE*6, framebuffer->height-TILE_UNIT_SIZE*6, target_entity, allow_input);
+    do_entity_select_equipment_panel(framebuffer, x_ui_widget - TILE_UNIT_SIZE*6, framebuffer->height-TILE_UNIT_SIZE*6.5, target_entity, allow_input);
     do_entity_equipment_panel(framebuffer, x_ui_widget - TILE_UNIT_SIZE*6, 30, target_entity, allow_input);
+    draw_equipment_tooltips(framebuffer, framebuffer->height);
 
     equipment_update_character_spinner(dt);
 }
