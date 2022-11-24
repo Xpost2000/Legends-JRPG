@@ -665,7 +665,6 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
         } break;
 
         case BATTLE_UI_SUBMODE_USING_ITEM: {
-            unimplemented("using items is not done");
         } break;
 
         case BATTLE_UI_SUBMODE_MOVING: {

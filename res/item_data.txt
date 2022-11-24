@@ -12,17 +12,17 @@
 
 ("item_trout_fish_5"
 "Dead Trout(?)"
-"I found this at the bottom of the river. Still tastes good"
+"(+20 HP) I found this at the bottom of the river. Still tastes good"
 (type 'consumable)
-(restores-health 5)
+(restores-health 20)
 (value 5)
 (max-stack 20))
 
 ("item_sardine_fish_5"
 "Dead Sardine(?)"
-"Something about a rule number one..."
+"(+35 HP) Rich in omega-3 fatty acids. Whatever that is."
 (type 'consumable)
-(restores-health 5)
+(restores-health 35)
 (value 5)
 (max-stack 20))
 

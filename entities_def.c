@@ -100,7 +100,7 @@ enum entity_flags {
 };
 
 /* generousity is well rewarded */
-#define MAX_PARTY_ITEMS (5000) /*lol*/
+#define MAX_PARTY_ITEMS (1000) /*lol*/
 struct player_party_inventory {
     s32           item_count;
     struct item_instance items[MAX_PARTY_ITEMS];

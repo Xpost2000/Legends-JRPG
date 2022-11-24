@@ -1527,7 +1527,7 @@ f32 lightmask_buffer_lit_percent(struct lightmask_buffer* buffer, s32 x, s32 y) 
 bool lightmask_buffer_is_lit(struct lightmask_buffer* buffer, s32 x, s32 y) {
     u32 index = y * buffer->width + x;
 
-    if (buffer->mask_buffer[index] != 0) {
+    if (buffer->mask_buffer[index] == 255) {
         return 1;
     }
 

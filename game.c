@@ -19,7 +19,6 @@ void serialize_tile(struct binary_serializer* serializer, s32 version, struct ti
     switch (version) {
         default:
         case CURRENT_LEVEL_AREA_VERSION: {
-            _debugprintf("Tile id is :%d", tile->id);
             serialize_s32(serializer, &tile->id);
             serialize_u32(serializer, &tile->flags);
             serialize_s16(serializer, &tile->x);
@@ -876,6 +875,7 @@ void _serialize_level_area(struct memory_arena* arena, struct binary_serializer*
         if (level->version >= 6) {
             _debugprintf("loading lights");
             serialize_s32(serializer, &level->light_count);
+            _debugprintf("seeing %d lights to load", level->light_count);
             level->lights = memory_arena_push(arena, sizeof(*level->lights) * level->light_count);
             for (s32 light_index = 0; light_index < level->light_count; ++light_index) {
                 serialize_light(serializer, level->version, level->lights + light_index);
