@@ -720,6 +720,11 @@ void entity_snap_to_grid_position(struct entity* entity) {
     position.y       = roundf(position.y / TILE_UNIT_SIZE) * TILE_UNIT_SIZE;
     entity->position = position;
 }
+v2f32 grid_snapped_v2f32(v2f32 in) {
+    in.x = roundf(in.x/TILE_UNIT_SIZE)*TILE_UNIT_SIZE;
+    in.y = roundf(in.y/TILE_UNIT_SIZE)*TILE_UNIT_SIZE;
+    return in;
+}
 
 void entity_clear_all_abilities(struct entity* entity);
 void entity_add_ability_by_name(struct entity* entity, string id);

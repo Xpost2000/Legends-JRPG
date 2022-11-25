@@ -386,6 +386,32 @@ local void recalculate_targeted_entities_by_ability(struct entity_ability* abili
             if (should_add_to_targets_list) {
                 global_battle_ui_state.selected_entities_for_abilities[global_battle_ui_state.selected_entities_for_abilities_count++] = entities.current_id;
             }
+
+            /* sort them by distance to the active player, insertion sort again */
+            {
+                v2f32 attacker_position = user->position;
+
+                for (s32 first_index = 1; first_index < global_battle_ui_state.selected_entities_for_abilities_count; ++first_index) {
+                    s32 insertion_index = 0;
+                    entity_id key_entity = global_battle_ui_state.selected_entities_for_abilities[first_index];
+                    v2f32 key_position = game_dereference_entity(game_state, key_entity)->position;
+
+                    f32   key_distance_sq = v2f32_distance_sq(key_position, attacker_position);
+                    for (insertion_index = first_index; insertion_index > 0; --insertion_index) {
+                        entity_id key_entity2 = global_battle_ui_state.selected_entities_for_abilities[insertion_index-1];
+                        v2f32 key_position2 = game_dereference_entity(game_state, key_entity2)->position;
+                        f32 distance_sq = v2f32_distance_sq(attacker_position, key_position2);
+
+                        if (distance_sq < key_distance_sq) {
+                            break;
+                        } else {
+                            global_battle_ui_state.selected_entities_for_abilities[insertion_index] = global_battle_ui_state.selected_entities_for_abilities[insertion_index-1];
+                        }
+                    }
+
+                    global_battle_ui_state.selected_entities_for_abilities[insertion_index] = key_entity;
+                }
+            }
         }
     } else {
         for (struct entity* potential_target = entity_iterator_begin(&entities); !entity_iterator_finished(&entities); potential_target = entity_iterator_advance(&entities)) {

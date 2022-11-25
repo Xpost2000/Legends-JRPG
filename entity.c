@@ -1600,7 +1600,7 @@ void entity_combat_submit_attack_action(struct entity* entity, entity_id target_
     entity->waiting_on_turn                     = 0;
     entity->ai.attack_animation_timer              = 0;
     entity->ai.attack_animation_phase              = ENTITY_ATTACK_ANIMATION_PHASE_MOVE_TO_TARGET;
-    entity->ai.attack_animation_preattack_position = entity->position;
+    entity->ai.attack_animation_preattack_position = grid_snapped_v2f32(entity->position);
     {
         struct entity* target_entity = game_dereference_entity(game_state, target_id);
         entity_look_at(entity, target_entity->position);
@@ -1781,7 +1781,6 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
                 v2f32 displacement_to_point = v2f32_sub(point, tile_position);
                 v2f32 direction_to_point    = v2f32_normalize(displacement_to_point); 
 
-
                 bool already_at_next_point = false;
                 
                 {
@@ -1802,6 +1801,7 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
                 } else {
                     target_entity->position.x = target_entity->ai.navigation_path.path_points[target_entity->ai.current_path_point_index].x * TILE_UNIT_SIZE;
                     target_entity->position.y = target_entity->ai.navigation_path.path_points[target_entity->ai.current_path_point_index].y * TILE_UNIT_SIZE;
+                    entity_snap_to_grid_position(target_entity);
 
                     target_entity->ai.current_path_point_index++;
 
@@ -2131,6 +2131,7 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
                     if (effective_t < 0) effective_t = 0;
 
                     if (target_entity->ai.attack_animation_timer >= MAX_T) {
+                        target_entity->position = grid_snapped_v2f32(target_entity->ai.attack_animation_preattack_position);
                         target_entity->ai.current_action = 0;
                         /* TODO snap to grid valid position to make sure no bugs happen */
                     }
