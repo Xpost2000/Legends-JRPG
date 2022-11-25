@@ -310,8 +310,8 @@ local void save_serialize_record_entry(struct save_area_record_chunk* entry_chun
         } break;
             /* The default case is meant to generally be forward compatible with everything in the future... */
             /* If it fails to work, I can analyze the specific structures and drop down */
-        case CURRENT_SAVE_RECORD_VERSION: {
-        default:
+        case CURRENT_SAVE_RECORD_VERSION:
+        default: {
             struct save_record* current_entry = entry_chunk->records + record_to_consume;
             serialize_u32(serializer, &current_entry->type);
 

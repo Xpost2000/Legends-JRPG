@@ -1,4 +1,4 @@
-/* #define NO_POSTPROCESSING */
+#define NO_POSTPROCESSING
 /* #define RELEASE */
 /* #define NO_FANCY_FADEIN_INTRO */
 #define EXPERIMENTAL_VFS
@@ -27,9 +27,14 @@
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
+/* EMCC does not allow me to specify -D flags??? WHAT THE FUCK? */
+/* so I have to define this crap here... */
+/* #define RELEASE */
+/* #define NOAUDIO */
+
 #else
-#define USE_SIMD_OPTIMIZATIONS
 #define MULTITHREADED_EXPERIMENTAL
+#define USE_SIMD_OPTIMIZATIONS
 #endif
 
 #include <SDL2/SDL.h>
@@ -66,8 +71,8 @@ local bool SCREEN_IS_FULLSCREEN = false;
 /* real res */
 /* consider a better way to decouple this from the editor logic. */
 /* game logic is okay because we don't use the mouse for UI. (I mean I probably should allow it, but whatever.) */
-local u32 REAL_SCREEN_WIDTH  = 640*2;
-local u32 REAL_SCREEN_HEIGHT = 480*2;
+local u32 REAL_SCREEN_WIDTH  = 640;
+local u32 REAL_SCREEN_HEIGHT = 480;
 /* local u32 REAL_SCREEN_WIDTH  = 640; */
 /* local u32 REAL_SCREEN_HEIGHT = 480; */
 /* local u32 REAL_SCREEN_WIDTH  = 1280; */
@@ -111,7 +116,13 @@ local bool is_widescreen_resolution(void) {
 #include "input.c"
 #include "sdl_scancode_table.c"
 #include "graphics.c"
+
+#ifdef NOAUDIO
+#include "audio_none.c"
+#else
 #include "audio_sdl2_mixer.c"
+#endif
+
 #include "bigfilemaker/bigfile_unpacker.c"
 
 const char* _build_flags =
@@ -339,10 +350,33 @@ void handle_sdl_events(void) {
 
         while (SDL_PollEvent(&current_event)) {
             switch (current_event.type) {
+                /* why is emscripten so painful to work with?? */
+                local string window_event_string_table[] = {
+                    [SDL_WINDOWEVENT_NONE] = string_literal("NONE"),
+                    [SDL_WINDOWEVENT_SHOWN] = string_literal("SHOWN"),
+                    [SDL_WINDOWEVENT_HIDDEN] = string_literal("HIDDEN"),
+                    [SDL_WINDOWEVENT_EXPOSED] = string_literal("EXPOSED"),
+                    [SDL_WINDOWEVENT_MOVED] = string_literal("MOVED"),
+                    [SDL_WINDOWEVENT_RESIZED] = string_literal("RESIZED"),
+                    [SDL_WINDOWEVENT_SIZE_CHANGED] = string_literal("SIZE_CHANGED"),
+                    [SDL_WINDOWEVENT_MINIMIZED] = string_literal("MINIMIZED"),
+                    [SDL_WINDOWEVENT_MAXIMIZED] = string_literal("MAXIMIZED"),
+                    [SDL_WINDOWEVENT_ENTER] = string_literal("ENTER"),
+                    [SDL_WINDOWEVENT_LEAVE] = string_literal("LEAVE"),
+                    [SDL_WINDOWEVENT_FOCUS_GAINED] = string_literal("FOCUS_GAINED"),
+                    [SDL_WINDOWEVENT_FOCUS_LOST] = string_literal("FOCUS_LOST"),
+                    [SDL_WINDOWEVENT_CLOSE] = string_literal("CLOSE"),
+                    [SDL_WINDOWEVENT_TAKE_FOCUS] = string_literal("TAKE_FOCUS"),
+                    [SDL_WINDOWEVENT_HIT_TEST] = string_literal("HIT_TEST"),
+                    [SDL_WINDOWEVENT_ICCPROF_CHANGED] = string_literal("ICCPROF_CHANGED"),
+                    [SDL_WINDOWEVENT_DISPLAY_CHANGED] = string_literal("DISPLAY_CHANGED"),
+                };
                 case SDL_WINDOWEVENT: {
+                    _debugprintf("SDL window event? (%.*s)", window_event_string_table[current_event.window.event].length, window_event_string_table[current_event.window.event].data);
                     switch (current_event.window.event) {
                         case SDL_WINDOWEVENT_RESIZED:
                         case SDL_WINDOWEVENT_SIZE_CHANGED: {
+                            _debugprintf("Size change event... Reevaluating framebuffers");
                             s32 new_width  = current_event.window.data1;
                             s32 new_height = current_event.window.data2;
 
@@ -426,12 +460,23 @@ local void initialize(void) {
 
     audio_initialize();
 
+    u32 flags = SDL_WINDOW_HIDDEN | SDL_WINDOW_ALLOW_HIGHDPI;
+#ifdef __EMSCRIPTEN__
+    flags &= ~(SDL_WINDOW_HIDDEN);
+    flags |= SDL_WINDOW_RESIZABLE;
+#endif
+
     global_game_window          = SDL_CreateWindow("Legends RPG",
                                                    SDL_WINDOWPOS_CENTERED,
                                                    SDL_WINDOWPOS_CENTERED,
                                                    REAL_SCREEN_WIDTH,
                                                    REAL_SCREEN_HEIGHT,
-                                                   SDL_WINDOW_HIDDEN | SDL_WINDOW_ALLOW_HIGHDPI);
+                                                   flags);
+
+#ifdef __EMSCRIPTEN__
+    /* toggle_fullscreen(); */
+#endif
+
     global_game_sdl_renderer    = SDL_CreateRenderer(global_game_window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
     /* global_game_sdl_renderer    = SDL_CreateRenderer(global_game_window, -1, SDL_RENDERER_ACCELERATED); */
 
@@ -467,7 +512,7 @@ void deinitialize(void) {
     if (system_heap_memory_leak_check())
         _debugprintf("no leaked memory");
     else
-        _debugprintf("leaked memory somewhere: %llu bytes", system_heap_currently_allocated_amount());
+        _debugprintf("leaked memory somewhere: %zu bytes", system_heap_currently_allocated_amount());
     /* assertion(system_heap_memory_leak_check()); */
 }
 
@@ -479,7 +524,6 @@ void engine_main_loop() {
     char window_name_title_buffer[256] = {};
     u32 start_frame_time = SDL_GetTicks();
 
-    lightmask_buffer_clear(&global_lightmask_buffer);
     begin_input_frame();
     {
         handle_sdl_events();
@@ -509,6 +553,7 @@ void engine_main_loop() {
                 _did_window_intro_fade_in = true;
             }
         } else {
+            lightmask_buffer_clear(&global_lightmask_buffer);
             update_and_render_game(&global_default_framebuffer, last_elapsed_delta_time);
         }
     }

@@ -707,8 +707,8 @@ struct file_buffer read_entire_file(IAllocator allocator, string path) {
 #endif
 }
 
-#ifdef EXPERIMENTAL_VFS
 local void mount_bigfile_archive(struct memory_arena* arena, string path) {
+#ifdef EXPERIMENTAL_VFS
     if (file_exists(path)) {
         s32 current_archive                      = global_mounted_bigfile_count;
         global_mounted_bigfiles[current_archive] = bigfile_load_blob(memory_arena_allocator(arena), path);
@@ -724,8 +724,8 @@ local void mount_bigfile_archive(struct memory_arena* arena, string path) {
 
         assertion(global_mounted_bigfile_count < MAX_MOUNTABLE_BIGFILES && "Too many mounted bigfile archives!");
     }
-}
 #endif
+}
 
 /* there is no VFS variation because bigfiles are read only */
 void write_entire_file(string path, u8* buffer, size_t buffer_length) {

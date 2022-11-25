@@ -122,6 +122,7 @@ void initialize_thread_pool(void) {
 
     if (global_thread_count > MAX_POSSIBLE_THREADS) global_thread_count = MAX_POSSIBLE_THREADS;
     for (s32 index = 0; index < global_thread_count; ++index) {
+        _debugprintf("Trying to make thread %d", index);
         global_thread_pool_arenas[index] = memory_arena_create_from_heap("thread pool", Kilobyte(256));
         global_thread_pool[index]        = SDL_CreateThread(_thread_job_executor, format_temp("slave%d", index), &global_thread_pool_arenas[index]);
     }
