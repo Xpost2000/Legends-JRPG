@@ -63,11 +63,14 @@ local void decode_sequence_action_target_entity(struct lisp_form* focus_target_f
         entity_target->entity_target_type  = ENTITY_TARGET_ID_TARGET;
         entity_target->entity_target_index = -1;
     } else if (focus_target_form->type == LISP_FORM_LIST) {
+        _debugprintf("Focused target entity decoding");
+
         struct lisp_form* first_arg = lisp_list_nth(focus_target_form, 0);
         if (lisp_form_symbol_matching(*first_arg, string_literal("target"))) {
             struct lisp_form* second_arg = lisp_list_nth(focus_target_form, 1);
             s32 target_index = 0;
             assertion(lisp_form_get_s32(*second_arg, &target_index) && "???? bad number for target index??");
+            entity_target->entity_target_type  = ENTITY_TARGET_ID_TARGET;
             entity_target->entity_target_index = target_index;
         }
     } else {
@@ -113,6 +116,42 @@ void entity_ability_compile_animation_sequence(struct memory_arena* arena, struc
 
                         struct lisp_form* focus_target = lisp_list_nth(&action_form_rest_arguments, 0);
                         decode_sequence_action_target_entity(focus_target, &action_data->focus_camera.target);
+                    } else if (lisp_form_symbol_matching(*action_form_header, string_literal("look-at"))) {
+                        struct sequence_action_look_at* look_at = &action_data->look_at;
+
+                        struct lisp_form* to_look_target             = lisp_list_nth(&action_form_rest_arguments, 0);
+                        struct lisp_form* look_target                = lisp_list_nth(&action_form_rest_arguments, 1);
+
+                        action_data->type = SEQUENCE_ACTION_LOOK_AT;
+
+                        decode_sequence_action_target_entity(to_look_target, &look_at->to_look);
+                        if (lisp_form_symbol_matching(*look_target, string_literal("left"))) {
+                            look_at->look_target_type = LOOK_TARGET_TYPE_DIRECTION; 
+                            look_at->direction_target = DIRECTION_LEFT;
+                        } else if (lisp_form_symbol_matching(*look_target, string_literal("right"))) {
+                            look_at->look_target_type = LOOK_TARGET_TYPE_DIRECTION; 
+                            look_at->direction_target = DIRECTION_RIGHT;
+                        } else if (lisp_form_symbol_matching(*look_target, string_literal("down"))) {
+                            look_at->look_target_type = LOOK_TARGET_TYPE_DIRECTION; 
+                            look_at->direction_target = DIRECTION_DOWN;
+                        } else if (lisp_form_symbol_matching(*look_target, string_literal("up"))) {
+                            look_at->look_target_type = LOOK_TARGET_TYPE_DIRECTION; 
+                            look_at->direction_target = DIRECTION_UP;
+                        } else if (lisp_form_symbol_matching(*look_target, string_literal("behind"))) {
+                            look_at->look_target_type = LOOK_TARGET_TYPE_RELATIVE_DIRECTION; 
+                            look_at->direction_target = 3;
+                        } else if (lisp_form_symbol_matching(*look_target, string_literal("turn-90"))) {
+                            look_at->look_target_type = LOOK_TARGET_TYPE_RELATIVE_DIRECTION; 
+                            look_at->direction_target = 1;
+                        } else if (lisp_form_symbol_matching(*look_target, string_literal("turn-90cw"))) {
+                            look_at->look_target_type = LOOK_TARGET_TYPE_RELATIVE_DIRECTION; 
+                            look_at->direction_target = 2;
+                        } else {
+                            look_at->look_target_type = LOOK_TARGET_TYPE_ENTITY; 
+                            decode_sequence_action_target_entity(to_look_target, &look_at->look_target);
+                        }
+
+                        decode_sequence_action_target_entity(look_target, &look_at->to_look);
                     } else if (lisp_form_symbol_matching(*action_form_header, string_literal("move-to"))) {
                         struct sequence_action_move_to* move_to = &action_data->move_to;
 
@@ -247,6 +286,7 @@ void entity_ability_compile_animation_sequence(struct memory_arena* arena, struc
                                 }
                             }
                         }
+                        _debugprintf("Wrote %d entity targets", require_block->required_entity_count);
                     } else {
                         successfully_parsed = false;
                     } 

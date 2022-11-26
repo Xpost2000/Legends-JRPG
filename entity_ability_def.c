@@ -47,6 +47,7 @@ enum entity_ability_selection_mask {
 enum sequence_action_type {
     SEQUENCE_ACTION_FOCUS_CAMERA,
     SEQUENCE_ACTION_MOVE_TO,
+    SEQUENCE_ACTION_LOOK_AT,
     SEQUENCE_ACTION_HURT,
     SEQUENCE_ACTION_DO_HARDCODED_ANIM,
     SEQUENCE_ACTION_START_SPECIAL_FX,
@@ -90,13 +91,13 @@ enum move_target_type {
     MOVE_TARGET_RELATIVE_DIRECTION_TO,
 };
 struct sequence_action_move_to {
-    struct sequence_action_target_entity to_move;
+    struct sequence_action_target_entity to_move; /* TODO: UNUSED */
 
     s32 interpolation_type;
     s32 move_target_type;
 
     /*  in TILE_UNIT_SIZES */
-    f32 desired_velocity_magnitude;
+    f32 desired_velocity_magnitude; /* add interpolation max time field, since it's always by one */
 
     union {
         struct {
@@ -104,6 +105,18 @@ struct sequence_action_move_to {
             s32    move_past;
         } entity;
     } move_target;
+};
+
+enum look_target_type {
+    LOOK_TARGET_TYPE_DIRECTION,
+    LOOK_TARGET_TYPE_RELATIVE_DIRECTION,
+    LOOK_TARGET_TYPE_ENTITY,
+};
+struct sequence_action_look_at {
+    struct sequence_action_target_entity to_look; /* TODO: UNUSED */
+    s32 look_target_type;
+    s32 direction_target;
+    struct sequence_action_target_entity look_target;
 };
 
 struct sequence_action_explosion {
@@ -162,6 +175,7 @@ struct entity_ability_sequence_action {
         struct sequence_action_special_fx          special_fx;
         struct sequence_action_hardcoded_animation hardcoded_anim;
         struct sequence_action_explosion           explosion;
+        struct sequence_action_look_at             look_at;
         struct sequence_action_require_block       require_block;
     };
 };

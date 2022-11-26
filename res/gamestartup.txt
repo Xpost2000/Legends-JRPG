@@ -30,6 +30,7 @@
 (entity_add_item '(entity player) "item_bass_5")
 (entity_add_item '(entity player) "item_wine")
 (entity_add_item '(entity player) "item_trout_fish_5")
+(entity_add_item '(entity player) "item_weapon_broken_sword")
 (entity_add_item '(entity player) "item_trout_fish_5")
 (entity_add_item '(entity player) "item_sardine_fish_5")
 (entity_add_item '(entity player) "item_weapon_club")

@@ -46,13 +46,13 @@
 
 (
 (focus-camera user)
-(move-to user (direction-relative-to last-target by -1) linear-ease 0.6)
-(move-to user (past last-target by 1) back-ease-out 2)
+(move-to user (direction-relative-to last-target by -1) linear-ease 30)
+(move-to user (past last-target by 1) back-ease-out 15)
 (start-special-effects 1)
 (wait-special-effects)
 (hurt all-selected) # uses damage formula
 (stop-special-effects)
-(move-to user start linear-ease 1)
+(move-to user start linear-ease 35)
 )
 )
 
@@ -86,43 +86,46 @@
 # Need a way to parameterize the attack animation
 
 (requires (target 0))
-(move-to user (direction-relative-to (target 0) by -1) linear-ease 0.2)
-(move-to user (past (target 0) by 1) back-ease-out 0.2)
+(look-at user (target 0))
+(move-to user (direction-relative-to (target 0) by -1) linear-ease 16)
+(move-to user (past (target 0) by 1) back-ease-out 16)
 (start-special-effects 1)
 (wait-special-effects)
 (stop-special-effects)
 (hurt (target 0)) # uses damage formula
-(move-to user start linear-ease 0.1)
+(move-to user start linear-ease 16)
 
 (requires (target 1))
-(move-to user (direction-relative-to (target 1) by -1) linear-ease 0.2)
-(move-to user (past (target 1) by 1) back-ease-out 0.2)
+(look-at user (target 1))
+(move-to user (direction-relative-to (target 1) by -1) linear-ease 16)
+(move-to user (past (target 1) by 1) back-ease-out 16)
 (start-special-effects 1)
 (wait-special-effects)
 (stop-special-effects)
 (hurt (target 1)) # uses damage formula
-(move-to user start linear-ease 0.1)
+(move-to user start linear-ease 16)
 
 (requires (target 2))
-(move-to user (direction-relative-to (target 2) by -1) linear-ease 0.2)
-(move-to user (past (target 2) by 1) back-ease-out 0.2)
+(look-at user (target 2))
+(move-to user (direction-relative-to (target 2) by -1) linear-ease 16)
+(move-to user (past (target 2) by 1) back-ease-out 4)
 (start-special-effects 1)
 (wait-special-effects)
 (stop-special-effects)
 (hurt (target 2)) # uses damage formula
-(move-to user start linear-ease 0.1)
+(move-to user start linear-ease 16)
 
 (requires (target 3))
-(move-to user (direction-relative-to (target 3) by -1) linear-ease 0.2)
-(move-to user (past (target 3) by 1) back-ease-out 0.2)
+(look-at user (target 3))
+(move-to user (direction-relative-to (target 3) by -1) linear-ease 16)
+(move-to user (past (target 3) by 1) back-ease-out 16)
 (start-special-effects 1)
 (wait-special-effects)
 (stop-special-effects)
 (hurt (target 3)) # uses damage formula
 
 (requires nothing)
-(move-to user start linear-ease 0.1)
-
+(move-to user start linear-ease 20)
 )
 )
 
