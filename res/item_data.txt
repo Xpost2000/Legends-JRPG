@@ -100,10 +100,26 @@
 (type 'weapon)
 (equip-slot 'weapon)
 (value 5)
+(ability-class-group 2)
 (stat-block
-        (strength 50)
-        (speed    -10)
-        (agility  -10)
+        (strength 40)
+        (speed    -30)
+        (agility  -30)
+        (intelligence  -20)
+)
+(max-stack 1))
+
+("item_weapon_broken_sword"
+"Broken Sword"
+"Are you sure this is a sword?"
+(type 'weapon)
+(equip-slot 'weapon)
+(value 5)
+(ability-class-group 1)
+(stat-block
+        (strength 24)
+        (speed    10)
+        (agility  15)
         (intelligence  -10)
 )
 (max-stack 1))

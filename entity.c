@@ -1561,11 +1561,28 @@ void entity_inventory_equip_item(struct entity_inventory* inventory, s32 limits,
     _debugprintf("equipping: %.*s", item_base->name.length, item_base->name.data);
 
     if (item_base->type == ITEM_TYPE_WEAPON || item_base->type == ITEM_TYPE_EQUIPMENT) {
-
         item_id* equip_slot = target->equip_slots + equipment_index;
+
         entity_inventory_unequip_item(inventory, limits, equipment_index, target);
         *equip_slot = item_to_equip->item;
         entity_inventory_remove_item(inventory, item_index, false);
+
+        /* register any abilities that the item has */
+        {
+            for (s32 item_ability_index = 0; item_ability_index < item_base->ability_count; ++item_ability_index) {
+                entity_add_ability_by_id(target, item_base->abilities[item_ability_index]);
+            }
+
+            if (item_base->ability_class_group_id != 0) {
+                for (s32 entity_ability_index = 0; entity_ability_index < game_state->entity_database.ability_count; ++entity_ability_index) {
+                    struct entity_ability* current_ability = game_state->entity_database.abilities + entity_ability_index;
+
+                    if (current_ability->item_class_group == item_base->ability_class_group_id) {
+                        entity_add_ability_by_id(target, entity_ability_index);
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -3019,24 +3036,32 @@ void entity_clear_all_abilities(struct entity* entity) {
     entity->ability_count = 0;
 }
 
-void entity_add_ability_by_name(struct entity* entity, string id) {
+void entity_add_ability_by_id(struct entity* entity, s32 id) {
     if (entity->ability_count < ENTITY_MAX_ABILITIES) {
         struct entity_ability_slot* ability_slot = &entity->abilities[entity->ability_count++];
-        ability_slot->ability                    = entity_database_ability_find_id_by_name(&game_state->entity_database, id);
+        ability_slot->ability                    = id;
     }
 }
 
-void entity_remove_ability_by_name(struct entity* entity, string id) {
-    s32 ability_id = entity_database_ability_find_id_by_name(&game_state->entity_database, id);
-
+void entity_remove_ability_by_id(struct entity* entity, s32 id) {
     for (s32 ability_index = entity->ability_count-1; ability_index >= 0; --ability_index) {
         struct entity_ability_slot* ability_slot = &entity->abilities[entity->ability_count++];
 
-        if (ability_id == ability_slot->ability) {
+        if (id == ability_slot->ability) {
             entity->abilities[ability_index] = entity->abilities[--entity->ability_count];
             return;
         }
     }
+}
+
+void entity_add_ability_by_name(struct entity* entity, string id) {
+    s32 real_id = entity_database_ability_find_id_by_name(&game_state->entity_database, id);
+    entity_add_ability_by_id(entity, real_id);
+}
+
+void entity_remove_ability_by_name(struct entity* entity, string id) {
+    s32 ability_id = entity_database_ability_find_id_by_name(&game_state->entity_database, id);
+    entity_remove_ability_by_id(entity, ability_id);
 }
 
 /* NOTE: we need to assert we don't already have the same action, but that *can't* happen on the player menu */

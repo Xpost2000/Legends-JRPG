@@ -730,6 +730,8 @@ v2f32 grid_snapped_v2f32(v2f32 in) {
 }
 
 void entity_clear_all_abilities(struct entity* entity);
+void entity_add_ability_by_id(struct entity* entity, s32 id);
+void entity_remove_ability_by_id(struct entity* entity, s32 id);
 void entity_add_ability_by_name(struct entity* entity, string id);
 void entity_remove_ability_by_name(struct entity* entity, string id);
 void entity_do_level_up(struct entity* entity);
