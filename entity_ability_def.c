@@ -6,11 +6,15 @@
 #define ENTITY_ABILITY_SELECTION_FIELD_MAX_X (8+1)
 #define ENTITY_ABILITY_SELECTION_FIELD_MAX_Y (8+1)
 
+#define ENTITY_ABILITY_MAX_SELECTABLE_ENTITIES (ENTITY_ABILITY_SELECTION_FIELD_MAX_X * ENTITY_ABILITY_SELECTION_FIELD_MAX_Y)
+
 #define ENTITY_ABILITY_SELECTION_FIELD_CENTER_X (ENTITY_ABILITY_SELECTION_FIELD_MAX_X/2)
 #define ENTITY_ABILITY_SELECTION_FIELD_CENTER_Y (ENTITY_ABILITY_SELECTION_FIELD_MAX_Y/2)
 
 /* The preallocation really hurts, but it's not as if I wasn't going to use that memory anyways... */
 #define ENTITY_ABILITY_SELECTION_MAX_TARGETTABLE (ENTITY_ABILITY_SELECTION_FIELD_MAX_X*ENTITY_ABILITY_SELECTION_FIELD_MAX_Y)
+
+/* Require (PARALLELS) block, which requires the next n blocks to execute in sequence without waiting */
 
 enum entity_ability_selection_type {
     ABILITY_SELECTION_TYPE_ATTACK_RANGE, /* NOTE: unused */
@@ -49,6 +53,7 @@ enum sequence_action_type {
     SEQUENCE_ACTION_STOP_SPECIAL_FX,
     SEQUENCE_ACTION_WAIT_SPECIAL_FX_TO_FINISH,
     SEQUENCE_ACTION_EXPLOSION,
+    SEQUENCE_ACTION_REQUIRE_BLOCK,
 };
 
 /* does not allow ally targetting */
@@ -127,7 +132,7 @@ struct sequence_action_hurt {
 
     s32 target_count;
     /* you use this only if you want to do something more cinematic */
-    struct sequence_action_target_entity targets[ENTITY_ABILITY_SELECTION_FIELD_MAX_X*ENTITY_ABILITY_SELECTION_FIELD_MAX_Y];
+    struct sequence_action_target_entity targets[ENTITY_ABILITY_MAX_SELECTABLE_ENTITIES];
 };
 
 /*
@@ -142,6 +147,12 @@ struct sequence_action_special_fx {
     s32 effect_id;
 };
 
+struct sequence_action_require_block {
+    bool                                 needed;
+    s32                                  required_entity_count;
+    struct sequence_action_target_entity required_entities[ENTITY_ABILITY_MAX_SELECTABLE_ENTITIES];
+};
+
 struct entity_ability_sequence_action {
     s32 type;
     union {
@@ -151,6 +162,7 @@ struct entity_ability_sequence_action {
         struct sequence_action_special_fx          special_fx;
         struct sequence_action_hardcoded_animation hardcoded_anim;
         struct sequence_action_explosion           explosion;
+        struct sequence_action_require_block       require_block;
     };
 };
 struct entity_ability_sequence {

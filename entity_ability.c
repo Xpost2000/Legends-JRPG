@@ -67,7 +67,7 @@ local void decode_sequence_action_target_entity(struct lisp_form* focus_target_f
         if (lisp_form_symbol_matching(*first_arg, string_literal("target"))) {
             struct lisp_form* second_arg = lisp_list_nth(focus_target_form, 1);
             s32 target_index = 0;
-            assertion(lisp_form_get_s32(*second_arg, &target_index) && "???? bad number??");
+            assertion(lisp_form_get_s32(*second_arg, &target_index) && "???? bad number for target index??");
             entity_target->entity_target_index = target_index;
         }
     } else {
@@ -227,6 +227,26 @@ void entity_ability_compile_animation_sequence(struct memory_arena* arena, struc
                         action_data->type = SEQUENCE_ACTION_STOP_SPECIAL_FX;
                     } else if (lisp_form_symbol_matching(*action_form_header, string_literal("wait-special-effects"))) {
                         action_data->type = SEQUENCE_ACTION_WAIT_SPECIAL_FX_TO_FINISH;
+                    } else if (lisp_form_symbol_matching(*action_form_header, string_literal("requires"))) {
+                        action_data->type = SEQUENCE_ACTION_REQUIRE_BLOCK;
+                        struct sequence_action_require_block* require_block = &action_data->require_block;
+
+                        for (s32 dependency_index = 0; dependency_index < action_form_rest_arguments.list.count; ++dependency_index) {
+                            struct lisp_form* dependency_form                 = lisp_list_nth(&action_form_rest_arguments, dependency_index);
+
+                            if (dependency_form->type == LISP_FORM_SYMBOL && lisp_form_symbol_matching(*dependency_form, string_literal("nothing"))) {
+                                require_block->needed = false;
+                                break;
+                            } else {
+                                require_block->needed = true;
+                                struct lisp_form* dependency_form_header          = lisp_list_nth(dependency_form, 0);
+                                struct lisp_form  dependency_form_rest_parameters = lisp_list_sliced(*dependency_form, 1, -1);
+
+                                if (lisp_form_symbol_matching(*dependency_form_header, string_literal("target"))) {
+                                    decode_sequence_action_target_entity(dependency_form, &require_block->required_entities[require_block->required_entity_count++]);
+                                }
+                            }
+                        }
                     } else {
                         successfully_parsed = false;
                     } 
