@@ -563,6 +563,9 @@ void engine_main_loop() {
     swap_framebuffers_onto_screen();
 
     last_elapsed_delta_time = (SDL_GetTicks() - start_frame_time) / 1000.0f;
+#ifdef __EMSCRIPTEN__
+    _debugprintf("dt %f", last_elapsed_delta_time);
+#endif
     global_elapsed_time    += last_elapsed_delta_time;
     add_frametime_sample(last_elapsed_delta_time);
 

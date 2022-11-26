@@ -796,6 +796,79 @@ struct entity_iterator game_entity_iterator(struct game_state* state) {
     return result;
 }
 
+/* Slow, but gets called only once rarely. */
+s32 entity_get_usable_ability_indices(struct entity* entity, s32 max_limit, s32* ability_indices) {
+    s32 wrote = 0;
+
+    if (max_limit == -1) {
+        max_limit = ENTITY_MAX_ABILITIES;
+    }
+
+    for (s32 ability_index = 0; ability_index < entity->ability_count; ++ability_index) {
+        struct entity_ability_slot* current_ability_slot = entity->abilities + ability_index;
+        bool                        usable               = true;
+        s32                         ability_id           = current_ability_slot->ability;
+        struct entity_ability*      ability_to_use       = entity_database_ability_find_by_index(&game_state->entity_database, ability_id);
+
+        {
+            if (!ability_to_use->innate) {
+                s32                      ability_class_group = ability_to_use->item_class_group;
+                usable                                       = false;
+                struct entity_inventory* inventory_target    = NULL;
+                if (entity->flags & ENTITY_FLAGS_PLAYER_CONTROLLED) {
+                    inventory_target = (struct entity_inventory*)(&game_state->inventory);
+                } else {
+                    inventory_target = (struct entity_inventory*)(&entity->inventory);
+                }
+
+                /* check if an item provides the ability directly, which bypasses innate lock */
+                {
+                    for (s32 item_index = 0; item_index < inventory_target->count && !usable; ++item_index) {
+                        struct item_instance* item_slot = inventory_target->items + item_index;
+                        struct item_def*      item_base = item_database_find_by_id(item_slot->item);
+
+                        for (s32 item_ability_index = 0; item_ability_index < item_base->ability_count && !usable; ++item_ability_index) {
+                            if (item_base->abilities[item_ability_index] == ability_id) {
+                                usable = true;
+                            }
+                        }
+                    }
+                }
+                /* check if an item provides item group unlock */
+                {
+                    if (ability_class_group != 0) {
+                        for (s32 item_index = 0; item_index < inventory_target->count && !usable; ++item_index) {
+                            struct item_instance* item_slot = inventory_target->items + item_index;
+                            struct item_def*      item_base = item_database_find_by_id(item_slot->item);
+
+                            if (item_base->ability_class_group_id == ability_class_group) {
+                                usable = true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+
+        if (usable) {
+            if (wrote < max_limit) {
+                if (ability_indices) {
+                    ability_indices[wrote++] = ability_index;
+                } else {
+                    wrote += 1;
+                }
+            }
+        }
+    }
+
+    return wrote;
+}
+
+s32 entity_usable_ability_count(struct entity* entity) {
+    return entity_get_usable_ability_indices(entity, -1, NULL);
+}
+
 void update_entities(struct game_state* state, f32 dt, struct entity_iterator it, struct level_area* area) {
     for (struct entity* current_entity = entity_iterator_begin(&it); !entity_iterator_finished(&it); current_entity = entity_iterator_advance(&it)) {
         if (!(current_entity->flags & ENTITY_FLAGS_ACTIVE)) {

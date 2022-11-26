@@ -100,6 +100,10 @@ struct item_def {
     /* armor stat calculations DR */
     s32 defensive_value;
 
+    s32  ability_class_group_id;
+    s32  ability_count;
+    s32* abilities;
+
     /* TODO: not flags anymore */
     u8 equipment_slot_flags;
 

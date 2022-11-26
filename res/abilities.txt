@@ -55,6 +55,68 @@
 )
 
 (
+"ability_wildstrikes"
+"Wild Strikes"
+"Lashout and hit indiscriminately around you!"
+1
+('field 0)
+(
+        (
+        (0 0 0 0 0 0 0 0 0)
+        (0 0 0 0 0 0 0 0 0)
+        (0 0 0 0 0 0 0 0 0)
+        (0 0 0 0 1 0 0 0 0)
+        (0 0 0 1 0 1 0 0 0)
+        (0 0 0 0 1 0 0 0 0)
+        (0 0 0 0 0 0 0 0 0)
+        (0 0 0 0 0 0 0 0 0)
+        (0 0 0 0 0 0 0 0 0)
+        )
+)
+
+(
+(focus-camera user)
+
+# We don't have for loops lol, and I'm not hacking support in.
+# these will just execute if it's possible without exception
+# Need a way to parameterize the attack animation
+
+(move-to user (direction-relative-to (target 0) by -1) linear-ease 0.2)
+(move-to user (past (target 0) by 1) back-ease-out 0.2)
+(start-special-effects 1)
+(wait-special-effects)
+(stop-special-effects)
+(hurt (target 0)) # uses damage formula
+(move-to user start linear-ease 0.1)
+
+(move-to user (direction-relative-to (target 1) by -1) linear-ease 0.2)
+(move-to user (past (target 1) by 1) back-ease-out 0.2)
+(start-special-effects 1)
+(wait-special-effects)
+(stop-special-effects)
+(hurt (target 1)) # uses damage formula
+(move-to user start linear-ease 0.1)
+
+(move-to user (direction-relative-to (target 2) by -1) linear-ease 0.2)
+(move-to user (past (target 2) by 1) back-ease-out 0.2)
+(start-special-effects 1)
+(wait-special-effects)
+(stop-special-effects)
+(hurt (target 2)) # uses damage formula
+(move-to user start linear-ease 0.1)
+
+(move-to user (direction-relative-to (target 3) by -1) linear-ease 0.2)
+(move-to user (past (target 3) by 1) back-ease-out 0.2)
+(start-special-effects 1)
+(wait-special-effects)
+(stop-special-effects)
+(hurt (target 3)) # uses damage formula
+(move-to user start linear-ease 0.1)
+
+)
+)
+
+(
 "ability_detonate_self"
 "Martyrdom"
 "Die for a cause you believe in!"

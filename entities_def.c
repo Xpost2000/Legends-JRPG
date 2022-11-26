@@ -527,7 +527,7 @@ enum entity_equip_slot_index {
     ENTITY_EQUIP_SLOT_INDEX_COUNT,
 };
 
-#define ENTITY_MAX_ABILITIES (256)
+#define ENTITY_MAX_ABILITIES (1024)
 
 /* time information I guess */
 /* mostly used by animation sequences or whatever we need to animate */
@@ -702,6 +702,9 @@ struct entity {
     s32                           interacted_script_trigger_write_index;
     s32                           interacted_script_trigger_ids[32];
 };
+
+s32  entity_get_usable_ability_indices(struct entity* entity, s32 max_limit, s32* ability_indices);
+s32  entity_usable_ability_count(struct entity* entity);
 
 /* should not be using pointers in the future, but whatever... */
 void entity_add_used_battle_action(struct entity* entity, struct used_battle_action action);

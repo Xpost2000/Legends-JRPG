@@ -118,6 +118,23 @@ static void initialize_items_database(void) {
                     } else if (lisp_form_symbol_matching(*slot_param, string_literal("weapon"))) {
                         current_item_definition->equipment_slot_flags = EQUIPMENT_SLOT_FLAG_WEAPON;
                     }
+                } else if (lisp_form_symbol_matching(*parameter_name, string_literal("abilities"))) {
+                    s32 ability_count = parameter_form->list.count-1;
+                    if (ability_count > 0) {
+                        current_item_definition->ability_count = ability_count;
+                        current_item_definition->abilities     = memory_arena_push(&game_arena, sizeof(*current_item_definition->abilities) * ability_count);
+
+                        for (s32 ability_name_index = 0; ability_name_index < ability_count; ++ability_name_index) {
+                            struct lisp_form* name_form                            = lisp_list_nth(&parameter_arguments, ability_name_index);
+                            string            name                                 = {};
+                            assertion(lisp_form_get_string(*name_form, &name) && "Ability name should be a string!");
+                            s32               found_id                             = entity_database_ability_find_id_by_name(&game_state->entity_database, name);
+                            current_item_definition->abilities[ability_name_index] = found_id;
+                        }
+                    }
+                } else if (lisp_form_symbol_matching(*parameter_name, string_literal("ability-class-group"))) {
+                    struct lisp_form* value = lisp_list_nth(&parameter_arguments, 0);
+                    assertion(lisp_form_get_s32(*value, &current_item_definition->ability_class_group_id) && "ability-class-group should be an integer?");
                 }
                 /* CONSUMABLE ITEM FIELDS */
                 {

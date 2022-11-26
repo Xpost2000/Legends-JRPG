@@ -182,12 +182,14 @@ struct entity_ability {
     string id_name;
     string name;
     string description;
-    u8 selection_type;
+    u8     selection_type;
 
     u8 moving_field;   /* Disgaea style selection. Whether the selection field is planted or movable */
     u8 max_move_units_x;
     u8 max_move_units_y;
 
+    bool innate;
+    s32  item_class_group; /* an identifier to share amongst all similar abilities */
     bool requires_no_obstructions;
 
     /* Should support reflection of 90 degrees for all fields... */

@@ -454,6 +454,55 @@ local void recalculate_targeted_entities_by_ability(struct entity_ability* abili
     }
 }
 
+local void battle_ui_determine_disabled_actions(entity_id id, bool* disabled_actions) {
+    struct game_state_combat_state* combat_state = &game_state->combat_state;
+    struct entity*                  entity       = game_dereference_entity(game_state, id); 
+
+    /* disable selecting attack if we don't have anyone within attack range */
+    {
+        if (entity_already_used(entity, LAST_USED_ENTITY_ACTION_MOVEMENT)) {
+            disabled_actions[BATTLE_MOVE]   = true;
+        }
+        if (entity_already_used(entity, LAST_USED_ENTITY_ACTION_DEFEND)) {
+            disabled_actions[BATTLE_DEFEND] = true;
+        }
+        if (entity_already_used(entity, LAST_USED_ENTITY_ACTION_ITEM_USAGE)) {
+            disabled_actions[BATTLE_ITEM]   = true;
+        }
+    }
+
+    {
+        f32 attack_radius = DEFAULT_ENTITY_ATTACK_RADIUS;
+        struct entity_query_list nearby_potential_targets = find_entities_within_radius(&scratch_arena, game_state, entity->position, attack_radius * TILE_UNIT_SIZE);
+
+        s32 living_targets = 0;
+
+        for (s32 index = 0; index < nearby_potential_targets.count; ++index) {
+            struct entity* potential_target = game_dereference_entity(game_state, nearby_potential_targets.ids[index]);
+
+            if (!(potential_target->flags & ENTITY_FLAGS_PLAYER_CONTROLLED)) {
+                if ((potential_target->flags & ENTITY_FLAGS_ALIVE)) {
+                    living_targets += 1;
+                }
+            }
+        }
+
+        if (living_targets <= 0) 
+            disabled_actions[BATTLE_ATTACK] = true;
+    }
+    {
+        /* when the user is ability locked... TODO */
+        s32 usable_ability_count = entity_usable_ability_count(entity);
+        {
+            if (usable_ability_count > 0) {
+                disabled_actions[BATTLE_ABILITY] = false;
+            } else  {
+                disabled_actions[BATTLE_ABILITY] = true;   
+            }
+        }
+    }
+}
+
 local void do_battle_selection_menu(struct game_state* state, struct software_framebuffer* framebuffer, f32 x, f32 y, bool allow_input, f32 dt) {
     struct game_state_combat_state* combat_state            = &state->combat_state;
     struct entity*                  active_combatant_entity = game_dereference_entity(state, combat_state->participants[combat_state->active_combatant]);
@@ -516,48 +565,7 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
             draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, v2f32(x, y), 8, 18, ui_color);
 
             bool disabled_actions[array_count(battle_menu_main_options)] = {};
-            /* disable selecting attack if we don't have anyone within attack range */
-            {
-                if (entity_already_used(active_combatant_entity, LAST_USED_ENTITY_ACTION_MOVEMENT)) {
-                    disabled_actions[BATTLE_MOVE]   = true;
-                }
-                if (entity_already_used(active_combatant_entity, LAST_USED_ENTITY_ACTION_DEFEND)) {
-                    disabled_actions[BATTLE_DEFEND] = true;
-                }
-                if (entity_already_used(active_combatant_entity, LAST_USED_ENTITY_ACTION_ITEM_USAGE)) {
-                    disabled_actions[BATTLE_ITEM]   = true;
-                }
-            }
-
-            {
-                f32 attack_radius = DEFAULT_ENTITY_ATTACK_RADIUS;
-                struct entity_query_list nearby_potential_targets = find_entities_within_radius(&scratch_arena, state, active_combatant_entity->position, attack_radius * TILE_UNIT_SIZE);
-
-                s32 living_targets = 0;
-
-                for (s32 index = 0; index < nearby_potential_targets.count; ++index) {
-                    struct entity* potential_target = game_dereference_entity(state, nearby_potential_targets.ids[index]);
-
-                    if (!(potential_target->flags & ENTITY_FLAGS_PLAYER_CONTROLLED)) {
-                        if ((potential_target->flags & ENTITY_FLAGS_ALIVE)) {
-                            living_targets += 1;
-                        }
-                    }
-                }
-
-                if (living_targets <= 0) 
-                    disabled_actions[BATTLE_ATTACK] = true;
-            }
-            {
-                /* when the user is ability locked... TODO */
-                struct entity* user = game_get_player(state);
-
-                {
-                    if (user->ability_count > 0) disabled_actions[BATTLE_ABILITY] = false;
-                    else                         disabled_actions[BATTLE_ABILITY] = true;
-                }
-            }
-
+            battle_ui_determine_disabled_actions(combat_state->participants[combat_state->active_combatant], disabled_actions);
 
             for (unsigned index = 0; index < array_count(battle_menu_main_options); ++index) {
                 struct font_cache* painting_font = normal_font;
