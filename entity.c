@@ -2525,17 +2525,23 @@ void entity_database_initialize_abilities(struct entity_database* database) {
             struct lisp_form* name_form                     = lisp_list_nth(current_ability_form, outer_form_index++);
             struct lisp_form* description_form              = lisp_list_nth(current_ability_form, outer_form_index++);
             struct lisp_form* requires_no_obstructions_form = lisp_list_nth(current_ability_form, outer_form_index++);
+            struct lisp_form* ability_class_id              = lisp_list_nth(current_ability_form, outer_form_index++);
+            struct lisp_form* innate_ability_flag           = lisp_list_nth(current_ability_form, outer_form_index++);
             {
                 string id_name_string     = {};
                 string name_string        = {};
                 string description_string = {};
 
-                lisp_form_get_string(*id_name_form, &id_name_string);
-                lisp_form_get_string(*name_form, &name_string);
-                lisp_form_get_string(*description_form, &description_string);
-                lisp_form_get_boolean(*requires_no_obstructions_form, &current_ability->requires_no_obstructions);
+                assertion(lisp_form_get_string(*id_name_form, &id_name_string) && "ability format needs nameid string!");
+                assertion(lisp_form_get_string(*name_form, &name_string) && "ability format needs name string");
+                assertion(lisp_form_get_string(*description_form, &description_string) && "ability format needs description string");
+                assertion(lisp_form_get_boolean(*requires_no_obstructions_form, &current_ability->requires_no_obstructions) && "ability needs requires_no_obstruction flag");
+                assertion(lisp_form_get_s32(*ability_class_id, &current_ability->item_class_group) && "ability format requires item_class_group s32");
+                assertion(lisp_form_get_boolean(*innate_ability_flag, &current_ability->innate) && "ability format requires innate flag");
 
                 _debugprintf("No obstructions? : %d", current_ability->requires_no_obstructions);
+                _debugprintf("Innate?: %d", current_ability->innate);
+                _debugprintf("Ability Class ID?: %d", current_ability->item_class_group);
 
                 id_name_string     = string_clone(arena, id_name_string);
                 name_string        = string_clone(arena, name_string);

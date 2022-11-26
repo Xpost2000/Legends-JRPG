@@ -1,11 +1,12 @@
-# lmao blam
-
+# I sort of wish these fields could be specified out of order like items but it's not a big deal
 
 (
 "ability_shock"
 "Shock"
 "Electrocute your enemies."
 0
+0 # NO CLASS ID
+1 # INNATE
 # selection_type, moving_field, max_move_units_{x,y}
 ('field-shape 0)
 
@@ -26,6 +27,8 @@
 "Sword Rush"
 "Move in a flash, slashing your enemies!"
 1
+1 # SWORD CLASS ID
+0 # NOT INNATE
 ('field 0)
 
 (
@@ -59,6 +62,8 @@
 "Wild Strikes"
 "Lashout and hit indiscriminately around you!"
 1
+2 # CLUB CLASS ID
+0 # NOT INNATE
 ('field 0)
 (
         (
@@ -121,6 +126,8 @@
 "Martyrdom"
 "Die for a cause you believe in!"
 0
+0 # NO CLASS ID
+1 # INNATE
 ('field 0)
 ('all-filled)
 
