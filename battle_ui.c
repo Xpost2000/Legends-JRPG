@@ -101,9 +101,12 @@ struct battle_ui_state {
 
     entity_id currently_selected_entity_id;
 
-    /* This should really be a part of the entities themselves  */
+    /* This should really be a part of the entities themselves, since entities will soon be able to also execute abilities */
     entity_id  selected_entities_for_abilities[MAX_SELECTED_ENTITIES_FOR_ABILITIES];
     s32        selected_entities_for_abilities_count;
+
+    s32        usable_abilities[ENTITY_MAX_ABILITIES];
+    s32        usable_ability_count;
 
     /* read their loot tables when combat finishes, and distribute */
     /* also I really mean by the player and their friends. */
@@ -116,6 +119,12 @@ struct battle_ui_state {
 
     struct battle_ui_item_state item_use;
 } global_battle_ui_state;
+
+local void battle_ui_calculate_usable_abilities(void) {
+    struct game_state_combat_state* combat_state            = &game_state->combat_state;
+    struct entity*                  active_combatant_entity = game_dereference_entity(game_state, combat_state->participants[combat_state->active_combatant]);
+    entity_get_usable_ability_indices(active_combatant_entity, array_count(global_battle_ui_state.usable_abilities), global_battle_ui_state.usable_abilities);
+}
 
 local void setup_item_use_menu(void) {
     struct battle_ui_item_state* item_use = &global_battle_ui_state.item_use;
@@ -333,10 +342,12 @@ local void cancel_ability_selections(void) {
 }
 
 local void recalculate_targeted_entities_by_ability(struct entity_ability* ability, u8* selection_field, struct game_state* state) {
+    struct game_state_combat_state* combat_state            = &game_state->combat_state;
+    struct entity*                  active_combatant_entity = game_dereference_entity(game_state, combat_state->participants[combat_state->active_combatant]);
     /* TODO: This only targets level entities, */
     /* this isn't a hard fix since we only need ids in the list but just an FYI. */
     struct level_area* area = &state->loaded_area;
-    struct entity*     user = game_get_player(state);
+    struct entity*     user = active_combatant_entity;
     const f32          SMALL_ENOUGH_EPISILON = 0.03;
 
     cancel_ability_selections();
@@ -635,6 +646,7 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                             } break;
                             case BATTLE_ABILITY: {
                                 global_battle_ui_state.submode = BATTLE_UI_SUBMODE_USING_ABILITY;
+                                battle_ui_calculate_usable_abilities();
                             } break;
                             case BATTLE_ITEM: {
                                 global_battle_ui_state.submode = BATTLE_UI_SUBMODE_USING_ITEM;
@@ -665,7 +677,7 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
             /* TODO make attacking highlight the target obviously! Or focus on the target would work too. */
         case BATTLE_UI_SUBMODE_ATTACKING: {
             f32 attack_radius = 3;
-            struct entity_query_list nearby_potential_targets = find_entities_within_radius(&scratch_arena, state, game_get_player(state)->position, attack_radius * TILE_UNIT_SIZE);
+            struct entity_query_list nearby_potential_targets = find_entities_within_radius(&scratch_arena, state, active_combatant_entity->position, attack_radius * TILE_UNIT_SIZE);
 
             /* I mean, there's no battle this large... Ever */
             s32 target_list_count                      = 0;
@@ -747,7 +759,7 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
         } break;
 
         case BATTLE_UI_SUBMODE_USING_ITEM: {
-            struct entity*               user     = game_get_player(state);
+            struct entity*               user     = active_combatant_entity;
             struct battle_ui_item_state* item_use = &global_battle_ui_state.item_use;
 
             const s32 FIRST_SCROLLING_Y     = 3;
@@ -933,7 +945,7 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
         } break;
 
         case BATTLE_UI_SUBMODE_USING_ABILITY: {
-            struct entity* user = game_get_player(state);
+            struct entity* user = active_combatant_entity;
             s32 BOX_WIDTH  = 8;
             s32 BOX_HEIGHT = 1 + 2 * user->ability_count;
 
@@ -977,9 +989,9 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                 }
 
                 f32 y_cursor = ui_box_position.y + 10;
-                for (s32 ability_index = 0; ability_index < user->ability_count; ++ability_index) {
+                for (s32 ability_index = 0; ability_index < global_battle_ui_state.usable_ability_count; ++ability_index) {
                     struct font_cache* painting_font = normal_font;
-                    struct entity_ability_slot slot = user->abilities[ability_index];
+                    struct entity_ability_slot slot = user->abilities[global_battle_ui_state.usable_abilities[ability_index]];
                     /* should keep track of ability count. */
                     struct entity_ability*     ability = entity_database_ability_find_by_index(&game_state->entity_database, slot.ability);
 
@@ -1035,7 +1047,7 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                 bool recalculate_selection_field   = false;
                 bool recalculate_targetted_entities = false;
 
-                struct entity_ability_slot slot = user->abilities[global_battle_ui_state.selection];
+                struct entity_ability_slot slot = user->abilities[global_battle_ui_state.usable_abilities[global_battle_ui_state.selection]];
                 struct entity_ability*     ability = entity_database_ability_find_by_index(&game_state->entity_database, slot.ability);
 
                 if (ability->selection_type == ABILITY_SELECTION_TYPE_FIELD && !ability->moving_field) {
@@ -1093,7 +1105,7 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                 if (selection_confirm) {
                     if (global_battle_ui_state.selected_entities_for_abilities_count > 0) {
                         global_battle_ui_state.submode = BATTLE_UI_SUBMODE_NONE;
-                        entity_combat_submit_ability_action(active_combatant_entity, global_battle_ui_state.selected_entities_for_abilities, global_battle_ui_state.selected_entities_for_abilities_count, global_battle_ui_state.selection);
+                        entity_combat_submit_ability_action(active_combatant_entity, global_battle_ui_state.selected_entities_for_abilities, global_battle_ui_state.selected_entities_for_abilities_count, global_battle_ui_state.usable_abilities[global_battle_ui_state.selection]);
                         global_battle_ui_state.selecting_ability_target = false;
                         cancel_ability_selections();
                     }
