@@ -15,3 +15,13 @@ sound_id load_sound(string filepath, bool streamed) {
 
 void play_sound(sound_id sound) {
 }
+
+void play_sound_fadein(sound_id sound, s32 fadein_ms) {
+    
+}
+void stop_music_fadeout(s32 fadeout_ms) {
+    
+}
+bool music_playing(void) {
+    return false;
+}

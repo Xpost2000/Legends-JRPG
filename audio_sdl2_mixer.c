@@ -95,10 +95,26 @@ void play_sound(sound_id sound) {
     }
 
     if (sound.streaming) {
-        _debugprintf("HI: %p", loaded_streams[sound.index-1]);
-        Mix_PlayMusic(loaded_streams[sound.index-1], -1);
+        s32 status = Mix_PlayMusic(loaded_streams[sound.index-1], -1);
+        _debugprintf("HI music?: %p (%s)", loaded_streams[sound.index-1], Mix_GetError());
     } else {
-        _debugprintf("HI: %p (%d)", loaded_samples[sound.index-1], sound.index);
         Mix_PlayChannel(ANY_CHANNEL, loaded_samples[sound.index-1], 0);
+        _debugprintf("HI: %p (%d)", loaded_samples[sound.index-1], sound.index);
     }
+}
+
+bool music_playing(void) {
+    return Mix_PlayingMusic();
+}
+
+void play_sound_fadein(sound_id sound, s32 fadein_ms) {
+    if (sound.streaming) {
+        Mix_FadeInMusic(loaded_streams[sound.index-1], -1, fadein_ms);
+        _debugprintf("HI music?: %p (%s)", loaded_streams[sound.index-1], Mix_GetError());
+    } else {
+        Mix_FadeInChannel(ANY_CHANNEL, loaded_samples[sound.index-1], 0, fadein_ms);
+    }
+}
+void stop_music_fadeout(s32 fadeout_ms) {
+    Mix_FadeOutMusic(fadeout_ms);
 }

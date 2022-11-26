@@ -490,8 +490,17 @@ struct ui_save_menu {
     s32 phase;
     f32 effects_timer;
 };
+
+enum current_theme_track_type {
+    THEME_SAFE_TRACK,
+    THEME_BATTLE_TRACK,
+};
+
 struct game_state {
     struct memory_arena* arena;
+
+    u32 current_theme_track_type;
+    u32 last_theme_track_type;
 
     /* NOTE main menu, or otherwise menus that occur in different states are not ui states. */
     u32 last_ui_state;

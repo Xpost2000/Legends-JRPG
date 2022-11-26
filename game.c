@@ -89,7 +89,9 @@ image_id drop_shadow           = {};
 image_id ui_battle_defend_icon = {};
 sound_id ui_blip               = {};
 sound_id ui_blip_bad           = {};
-sound_id test_mus              = {};
+
+sound_id test_safe_music = {};
+sound_id test_battle_music = {};
 
 /* compile out */
 #ifdef USE_EDITOR
@@ -267,6 +269,43 @@ void draw_nine_patch_ui(struct graphics_assets* graphics_assets, struct software
 /* only used in the render command system which is smart enough to apply this stuff */
 local struct tile_data_definition* tile_table_data;
 local struct autotile_table*       auto_tile_info;
+
+local void fadein_track(u32 track) {
+    const u32 FADEIN_TIME = 250;
+    switch (track) {
+        case THEME_SAFE_TRACK: {
+            /* the safe theme track should be settable */
+            play_sound_fadein(test_safe_music, FADEIN_TIME);
+        } break;
+        case THEME_BATTLE_TRACK: {
+            /* the battle theme track should be settable */
+            play_sound_fadein(test_battle_music, FADEIN_TIME);
+        } break;
+    }
+}
+
+local void set_theme_track(u32 new_theme_track) {
+    if (game_state->current_theme_track_type != new_theme_track) {
+        game_state->last_theme_track_type    = game_state->current_theme_track_type;
+        game_state->current_theme_track_type = new_theme_track;
+        fadein_track(new_theme_track);
+    }
+}
+
+local void game_continue_music(void) {
+    if (!music_playing()) {
+        switch (game_state->current_theme_track_type) {
+            case THEME_SAFE_TRACK: {
+                /* the safe theme track should be settable */
+                play_sound(test_safe_music);
+            } break;
+            case THEME_BATTLE_TRACK: {
+                /* the battle theme track should be settable */
+                play_sound(test_battle_music);
+            } break;
+        }
+    }
+}
 
 #include "region_change_presentation.c"
 local void game_attempt_to_change_area_name(struct game_state* state, string name, string subtitle) {
@@ -1082,6 +1121,9 @@ void load_level_from_file(struct game_state* state, string filename) {
 
     state->loaded_area.on_enter_triggered = false;
 
+    set_theme_track(THEME_SAFE_TRACK);
+    fadein_track(THEME_SAFE_TRACK);
+
     string fullpath = string_concatenate(&scratch_arena, string_literal("areas/"), filename);
     if (file_exists(fullpath)) {
 #ifdef EXPERIMENTAL_VFS
@@ -1561,7 +1603,9 @@ void game_initialize(void) {
 
     ui_blip     = load_sound(string_literal(GAME_DEFAULT_RESOURCE_PATH "snds/ui_select.wav"), false);
     ui_blip_bad = load_sound(string_literal(GAME_DEFAULT_RESOURCE_PATH "snds/ui_bad.wav"), false);
-    test_mus    = load_sound(string_literal(GAME_DEFAULT_RESOURCE_PATH "snds/medieval.ogg"), true);
+
+    test_battle_music = load_sound(string_literal(GAME_DEFAULT_RESOURCE_PATH "snds/battleThemeA.ogg"), true);
+    test_safe_music   = load_sound(string_literal(GAME_DEFAULT_RESOURCE_PATH "snds/field_of_dreams.ogg"), true);
     /* play_sound(test_mus); */
 
     for (unsigned index = 0; index < array_count(menu_font_variation_string_names); ++index) {
@@ -2013,6 +2057,16 @@ local void update_and_render_ingame_game_menu_ui(struct game_state* state, struc
                 bad_case;
         }
     }
+
+    /* decide playing_music */
+    {
+        if (game_state->combat_state.active_combat) {
+            set_theme_track(THEME_BATTLE_TRACK);
+        } else {
+            set_theme_track(THEME_SAFE_TRACK);
+        }
+    }
+    game_continue_music();
 
     /* I'm aware this causes a lot of pop in, which is okay. I can manually code transitions for those... but whatever */
     /* okay, here I can render the normal game UI stuff */
