@@ -1815,6 +1815,11 @@ struct entity* decode_sequence_action_target_entity_into_entity(struct game_stat
                 target->entity_target_index = self->ai.targeted_entity_count + target->entity_target_index;
             }
 
+            if (target->entity_target_index >= self->ai.targeted_entity_count || target->entity_target_index < 0) {
+                _debugprintf("warning: invalid entity handle");
+                return NULL;
+            } 
+
             entity_id target_id = self->ai.targeted_entities[target->entity_target_index];
             struct entity* result = game_dereference_entity(state, target_id);
 
@@ -1929,6 +1934,27 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
 
             assertion(sequence_action     && "The action is bad?   That can't be true!");
 
+            bool should_continue = true;
+
+            {
+                struct sequence_action_require_block requirements = sequence_state->current_requirements;
+                if (requirements.needed) {
+                    for (s32 required_entity_index = 0; requirements.required_entity_count && should_continue; ++required_entity_index) {
+                        struct sequence_action_target_entity* current_target_entity_handle = requirements.required_entities + required_entity_index;
+                        struct entity* actual_entity = decode_sequence_action_target_entity_into_entity(game_state, target_entity, current_target_entity_handle);
+
+                        if (actual_entity) {
+                            should_continue = false;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (!should_continue) {
+                entity_advance_ability_sequence(target_entity);
+            }
+
             switch (sequence_action->type) {
                 case SEQUENCE_ACTION_MOVE_TO: {
                     struct sequence_action_move_to* move_to = &sequence_action->move_to;
@@ -2042,6 +2068,7 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
                         }
                     }
                 } break;
+
                 case SEQUENCE_ACTION_FOCUS_CAMERA: {
                     struct sequence_action_focus_camera* focus_camera = &sequence_action->focus_camera;
                     struct entity* focus_entity = decode_sequence_action_target_entity_into_entity(state, target_entity, &focus_camera->target);
@@ -2049,6 +2076,7 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
                     battle_ui_stalk_entity_with_camera(focus_entity);
                     entity_advance_ability_sequence(target_entity);
                 } break;
+
                 case SEQUENCE_ACTION_HURT: {
                     struct sequence_action_hurt* hurt_sequence = &sequence_action->hurt;
 
@@ -2095,21 +2123,25 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
                     }
                     entity_advance_ability_sequence(target_entity);
                 } break;
+
                 case SEQUENCE_ACTION_START_SPECIAL_FX: {
                     struct sequence_action_special_fx* special_fx = &sequence_action->special_fx;
                     s32 effect_id = special_fx->effect_id; 
                     handle_specialfx_sequence_action(effect_id);
                     entity_advance_ability_sequence(target_entity);
                 } break;
+
                 case SEQUENCE_ACTION_DO_HARDCODED_ANIM: {
                     struct sequence_action_hardcoded_animation* hardcoded_anim = &sequence_action->hardcoded_anim;
                     s32 effect_id = hardcoded_anim->id;
                     handle_hardcoded_animation_sequence_action(effect_id, entity);
                 } break;
+
                 case SEQUENCE_ACTION_STOP_SPECIAL_FX: {
                     special_effect_stop_effects();
                     entity_advance_ability_sequence(target_entity);
                 } break;
+
                 case SEQUENCE_ACTION_WAIT_SPECIAL_FX_TO_FINISH: {
                     if (special_effects_active()) {
                         /*...*/
@@ -2117,6 +2149,7 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
                         entity_advance_ability_sequence(target_entity);
                     }
                 } break;
+
                 case SEQUENCE_ACTION_EXPLOSION: {
                     struct sequence_action_explosion* explosion = &sequence_action->explosion;
                     struct entity* start_explosion_at           = decode_sequence_action_target_entity_into_entity(game_state, target_entity, &explosion->where_to_explode);
@@ -2127,6 +2160,12 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
                     game_produce_damaging_explosion(v2f32_scale(start_explosion_at->position, 1.0/TILE_UNIT_SIZE), explosion_radius, explosion_effect_id, explosion_damage, 0, 0);
                     entity_advance_ability_sequence(target_entity);
                 } break;
+
+                case SEQUENCE_ACTION_REQUIRE_BLOCK: {
+                    struct sequence_action_require_block* requirements = &sequence_action->require_block;
+                    sequence_state->current_requirements               = *requirements;
+                } break;
+
                 default: {
                     entity_advance_ability_sequence(target_entity);
                 } break;

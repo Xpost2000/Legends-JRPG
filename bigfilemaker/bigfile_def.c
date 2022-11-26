@@ -1,3 +1,7 @@
+/* NOTE: Should provide a streamed version */
+/* as the current version of the API copies the entire archive into memory which is kind of bad */
+/* we only need to load the header at any given moment, but the game engine copies all relevant data from the archive so yeah. */
+
 #ifndef BIGFILE_DEF_C
 #define BIGFILE_DEF_C
 

@@ -17,6 +17,18 @@
 
 #include <math.h>
 
+/*
+  METAPROGRAMMING MARKERS
+ */
+
+/* mark these on structs? To allow for autogeneration of serialization code */
+#define STRUCTVERSION(x)
+#define SERIALIZESTRUCT
+
+/*
+  END OF METAPROGRAMMING MARKERS
+ */
+
 #define assertion(x) assert(x)
 #define unimplemented(x) assertion(false && x);
 #define bad_case         default: { unimplemented ("no case"); } break

@@ -123,7 +123,8 @@ struct battle_ui_state {
 local void battle_ui_calculate_usable_abilities(void) {
     struct game_state_combat_state* combat_state            = &game_state->combat_state;
     struct entity*                  active_combatant_entity = game_dereference_entity(game_state, combat_state->participants[combat_state->active_combatant]);
-    entity_get_usable_ability_indices(active_combatant_entity, array_count(global_battle_ui_state.usable_abilities), global_battle_ui_state.usable_abilities);
+    s32 wrote_count = entity_get_usable_ability_indices(active_combatant_entity, array_count(global_battle_ui_state.usable_abilities), global_battle_ui_state.usable_abilities);
+    global_battle_ui_state.usable_ability_count = wrote_count;
 }
 
 local void setup_item_use_menu(void) {
@@ -504,6 +505,7 @@ local void battle_ui_determine_disabled_actions(entity_id id, bool* disabled_act
     {
         /* when the user is ability locked... TODO */
         s32 usable_ability_count = entity_usable_ability_count(entity);
+        _debugprintf("usable ability count: %d", usable_ability_count);
         {
             if (usable_ability_count > 0) {
                 disabled_actions[BATTLE_ABILITY] = false;
@@ -958,12 +960,12 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                     play_sound(ui_blip);
                     global_battle_ui_state.selection--;
                     if (global_battle_ui_state.selection < 0) {
-                        global_battle_ui_state.selection = user->ability_count-1;
+                        global_battle_ui_state.selection = global_battle_ui_state.usable_ability_count-1;
                     }
                 } else if (selection_down) {
                     play_sound(ui_blip);
                     global_battle_ui_state.selection++;
-                    if (global_battle_ui_state.selection >= user->ability_count) {
+                    if (global_battle_ui_state.selection >= global_battle_ui_state.usable_ability_count) {
                         global_battle_ui_state.selection = 0;
                     }
                 }

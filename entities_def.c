@@ -548,6 +548,8 @@ struct entity_sequence_state {
     /* primarily using for interpolation */
     f32 time;
     s32 current_sequence_index;
+
+    struct sequence_action_require_block current_requirements;
 };
 
 /*

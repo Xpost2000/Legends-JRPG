@@ -1,4 +1,4 @@
-#define NO_POSTPROCESSING
+/* #define NO_POSTPROCESSING */
 /* #define RELEASE */
 /* #define NO_FANCY_FADEIN_INTRO */
 #define EXPERIMENTAL_VFS
