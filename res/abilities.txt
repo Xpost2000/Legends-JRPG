@@ -92,7 +92,6 @@
 (start-special-effects 1)
 (wait-special-effects)
 (stop-special-effects)
-(hurt (target 0)) # uses damage formula
 (move-to user start linear-ease 16)
 
 (requires (target 1))
@@ -102,7 +101,6 @@
 (start-special-effects 1)
 (wait-special-effects)
 (stop-special-effects)
-(hurt (target 1)) # uses damage formula
 (move-to user start linear-ease 16)
 
 (requires (target 2))
@@ -112,7 +110,6 @@
 (start-special-effects 1)
 (wait-special-effects)
 (stop-special-effects)
-(hurt (target 2)) # uses damage formula
 (move-to user start linear-ease 16)
 
 (requires (target 3))
@@ -122,10 +119,14 @@
 (start-special-effects 1)
 (wait-special-effects)
 (stop-special-effects)
-(hurt (target 3)) # uses damage formula
 
 (requires nothing)
 (move-to user start linear-ease 20)
+
+(hurt (target 0)) # uses damage formula
+(hurt (target 1)) # uses damage formula
+(hurt (target 2)) # uses damage formula
+(hurt (target 3)) # uses damage formula
 )
 )
 

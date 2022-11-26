@@ -764,13 +764,10 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
             struct entity*               user     = active_combatant_entity;
             struct battle_ui_item_state* item_use = &global_battle_ui_state.item_use;
 
-            const s32 FIRST_SCROLLING_Y     = 3;
-            const s32 MAX_DISPLAYABLE_ITEMS = 5;
-
             s32 BOX_WIDTH  = nine_patch_estimate_fitting_extents_width(ui_chunky, 1,
                                                                        font_cache_text_width(game_get_font(MENU_FONT_COLOR_GOLD), string_literal("(x 999) "), 2)
                                                                        + item_database_longest_string_name(game_get_font(MENU_FONT_COLOR_GOLD), 2));
-            s32 BOX_HEIGHT = roundf(MAX_DISPLAYABLE_ITEMS * 1.6);
+            s32 BOX_HEIGHT = roundf(5 * 1.6);
 
             v2f32 ui_box_size     = nine_patch_estimate_extents(ui_chunky, 1, BOX_WIDTH, BOX_HEIGHT);
             v2f32 ui_box_position = v2f32(framebuffer->width*0.94-ui_box_size.x, 20);
@@ -790,25 +787,9 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                 }
             }
 
-            s32 bottom_index = item_use->selection-MAX_DISPLAYABLE_ITEMS/2;
-            s32 top_index    = item_use->selection+MAX_DISPLAYABLE_ITEMS/2+1;
-
-            if (item_use->selectable_item_count <= MAX_DISPLAYABLE_ITEMS) {
-                bottom_index = 0;
-                top_index    = MAX_DISPLAYABLE_ITEMS;
-            } else {
-                for (s32 selection = 0; selection < FIRST_SCROLLING_Y; ++selection) {
-                    if (item_use->selection == selection) {
-                        bottom_index = 0;
-                        top_index    = MAX_DISPLAYABLE_ITEMS;
-                        break;
-                    }
-                }
-
-                if (top_index >= item_use->selectable_item_count) {
-                    top_index = item_use->selectable_item_count;
-                }
-            }
+            s32 bottom_index;
+            s32 top_index   ;
+            set_scrollable_ui_bounds(item_use->selection, &bottom_index, &top_index, item_use->selectable_item_count, 3, 5);
 
             f32 x_cursor = ui_box_position.x + 15;
             f32 y_cursor = ui_box_position.y + 15;

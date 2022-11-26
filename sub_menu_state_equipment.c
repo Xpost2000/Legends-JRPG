@@ -28,7 +28,6 @@ struct {
     /* I can just preallocate this. */
     s16  inventory_filtered_size;
     s16  inventory_item_slice[MAX_PARTY_ITEMS];
-    s16  inventory_item_scroll_y;
 
     /* As I lack a real UI system I don't consume events in an automated way so I'll just do it here. */
     /* easier to do this and less code anyhow. */
@@ -54,7 +53,6 @@ local void open_equipment_screen(entity_id target_id) {
 
 local void equipment_screen_build_new_filtered_item_list(s32 filter_mask) {
     equipment_screen_state.inventory_filtered_size  = 0;
-    equipment_screen_state.inventory_item_scroll_y  = 0;
     for (s32 index = 0; index < game_state->inventory.item_count; ++index) {
         struct item_instance* instance = game_state->inventory.items + index;
         item_id item_handle = instance->item;
@@ -339,7 +337,6 @@ local void do_entity_equipment_panel(struct software_framebuffer* framebuffer, f
 }
 
 /* TODO: draw icons */
-/* TODO: scrolling behavior! I simply don't have enough items to trigger any bugs right now so I don't know! */
 local void do_entity_select_equipment_panel(struct software_framebuffer* framebuffer, f32 x, f32 y, struct entity* entity, bool allow_input) {
     if (equipment_screen_state.inventory_filtered_size == 0) return;
 
@@ -363,12 +360,11 @@ local void do_entity_select_equipment_panel(struct software_framebuffer* framebu
 
     draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, v2f32(x,y), 5*2, 5*2, ui_color);
 
-    s32 ITEMS_PER_PAGE = 4;
-    /* s32 pages_of_items = (equipment_screen_state.inventory_filtered_size / ITEMS_PER_PAGE)+1; */
-
-    /* s32 currently_scrolled_page = (pages_of_items)/(equipment_screen_state.inventory_item_scroll_y+1); */
-    s32 lower_limit             = equipment_screen_state.inventory_item_scroll_y;
-    s32 upper_limit             = equipment_screen_state.inventory_filtered_size;
+    s32 lower_limit;
+    s32 upper_limit;
+    
+    set_scrollable_ui_bounds(equipment_screen_state.inventory_slot_selection, &lower_limit, &upper_limit, equipment_screen_state.inventory_filtered_size, 1, 4);
+    _debugprintf("%d lower, %d upper", lower_limit, upper_limit);
 
     struct font_cache* value_font        = game_get_font(MENU_FONT_COLOR_STEEL);
     struct font_cache* select_value_font = game_get_font(MENU_FONT_COLOR_ORANGE);
@@ -386,20 +382,22 @@ local void do_entity_select_equipment_panel(struct software_framebuffer* framebu
             struct font_cache* painting_font = value_font;
             if (index == equipment_screen_state.inventory_slot_selection) {
                 painting_font = select_value_font;
-                software_framebuffer_draw_text(framebuffer, painting_font, font_scale, v2f32(x+15, y_cursor), string_from_cstring(format_temp("%.*s (x%d)", item->name.length, item->name.data, instance->count)), mod_color, BLEND_MODE_ALPHA);
-                y_cursor += font_height;
             }
+            software_framebuffer_draw_text(framebuffer, painting_font, font_scale, v2f32(x+15, y_cursor), string_from_cstring(format_temp("%.*s (x%d)", item->name.length, item->name.data, instance->count)), mod_color, BLEND_MODE_ALPHA);
+            y_cursor += font_height;
         }
     }
 
     if (equipment_screen_state.inventory_pick_mode) {
         if (action_move_down) {
+            play_sound(ui_blip);
             equipment_screen_state.inventory_slot_selection += 1;
 
             if (equipment_screen_state.inventory_slot_selection >= equipment_screen_state.inventory_filtered_size) {
                 equipment_screen_state.inventory_slot_selection = 0;
             }
         } else if (action_move_up) {
+            play_sound(ui_blip);
             equipment_screen_state.inventory_slot_selection -= 1;
 
             if (equipment_screen_state.inventory_slot_selection < 0) {

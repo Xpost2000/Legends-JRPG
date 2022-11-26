@@ -3,7 +3,7 @@
 
 /* These are some more specialized types of effects that require lots of perverse insertions */
 #define INVERSION_TIME_BETWEEN_FLASHES (0.07)
-#define INVERSION_FLASH_MAX            (12)
+#define INVERSION_FLASH_MAX            (2)
 
 enum special_effect_id {
     SPECIAL_EFFECT_NONE,

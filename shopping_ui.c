@@ -407,7 +407,11 @@ local void do_shopping_menu(struct software_framebuffer* framebuffer, f32 x, boo
         y_cursor += 10;
 
         /* It would be nice to have essentially matching pointers to make dereferencing easier. */
-        for (s32 item_index = 0; item_index < shopping_ui.shop_filtered_array_count; ++item_index) {
+        s32 lower_limit;
+        s32 upper_limit;
+        set_scrollable_ui_bounds(shopping_ui.shopping_item_index, &lower_limit, &upper_limit, shopping_ui.shop_filtered_array_count, 4, 8);
+
+        for (s32 item_index = lower_limit; item_index < upper_limit; ++item_index) {
             s32                lookup_index  = shopping_ui.shop_filtered_array[item_index];
             struct font_cache* painting_text = normal_font;
 

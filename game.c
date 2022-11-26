@@ -16,6 +16,36 @@
 
 #include "fade_transitions.c"
 
+local void set_scrollable_ui_bounds(s32 selection, s32* bottom_index, s32* top_index, s32 max_limit, s32 FIRST_SCROLLING_Y, s32 MAX_DISPLAYABLE_ITEMS) {
+    assertion(bottom_index && top_index && "need pointers for those values");
+    if ((MAX_DISPLAYABLE_ITEMS % 2) == 0) {
+        *bottom_index = selection-MAX_DISPLAYABLE_ITEMS/2;
+        *top_index    = selection+MAX_DISPLAYABLE_ITEMS/2;
+    } else {
+        *bottom_index = selection-MAX_DISPLAYABLE_ITEMS/2;
+        *top_index    = selection+MAX_DISPLAYABLE_ITEMS/2+1;
+    }
+
+    if (max_limit <= MAX_DISPLAYABLE_ITEMS) {
+        *bottom_index = 0;
+        *top_index    = MAX_DISPLAYABLE_ITEMS;
+    } else {
+        for (s32 selection_index = 0; selection_index < FIRST_SCROLLING_Y; ++selection_index) {
+            if (selection == selection_index) {
+                *bottom_index = 0;
+                *top_index    = MAX_DISPLAYABLE_ITEMS;
+                break;
+            }
+        }
+    }
+
+    if (*top_index >= max_limit) {
+        *top_index = max_limit;
+    }
+
+    return;
+}
+
 void serialize_tile(struct binary_serializer* serializer, s32 version, struct tile* tile) {
     switch (version) {
         default:
