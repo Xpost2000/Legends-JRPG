@@ -37,7 +37,7 @@ sound_id load_sound(string filepath, bool streamed) {
         }
 
         if (load_required) {
-            struct file_buffer filebuffer = read_entire_file(memory_arena_allocator(&scratch_arena), filepath);
+            struct file_buffer filebuffer = read_entire_file(memory_arena_allocator(&game_arena), filepath);
             SDL_RWops*         rw         = SDL_RWFromConstMem(filebuffer.buffer, filebuffer.length);
             /* Mix_Music* new_stream = Mix_LoadMUS(filepath.data); */
             Mix_Music* new_stream = Mix_LoadMUS_RW(rw, 1);
@@ -110,7 +110,7 @@ bool music_playing(void) {
 void play_sound_fadein(sound_id sound, s32 fadein_ms) {
     if (sound.streaming) {
         Mix_FadeInMusic(loaded_streams[sound.index-1], -1, fadein_ms);
-        _debugprintf("HI music?: %p (%s)", loaded_streams[sound.index-1], Mix_GetError());
+        _debugprintf("fadein HI music?: %p (%s)", loaded_streams[sound.index-1], Mix_GetError());
     } else {
         Mix_FadeInChannel(ANY_CHANNEL, loaded_samples[sound.index-1], 0, fadein_ms);
     }

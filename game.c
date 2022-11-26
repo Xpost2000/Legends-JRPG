@@ -88,7 +88,12 @@ local bool         disable_game_input = false;
 image_id drop_shadow           = {};
 image_id ui_battle_defend_icon = {};
 sound_id ui_blip               = {};
+sound_id hit_sounds[3]         = {};
 sound_id ui_blip_bad           = {};
+
+local void play_random_hit_sound(void) {
+    play_sound(hit_sounds[random_ranged_integer(&game_state->rng, 0, 1)]);
+}
 
 sound_id test_safe_music = {};
 sound_id test_battle_music = {};
@@ -270,42 +275,40 @@ void draw_nine_patch_ui(struct graphics_assets* graphics_assets, struct software
 local struct tile_data_definition* tile_table_data;
 local struct autotile_table*       auto_tile_info;
 
-local void fadein_track(u32 track) {
-    const u32 FADEIN_TIME = 250;
-    switch (track) {
+local sound_id get_current_sound_theme(void) {
+    switch (game_state->current_theme_track_type) {
         case THEME_SAFE_TRACK: {
             /* the safe theme track should be settable */
-            play_sound_fadein(test_safe_music, FADEIN_TIME);
+            return test_safe_music;
         } break;
         case THEME_BATTLE_TRACK: {
             /* the battle theme track should be settable */
-            play_sound_fadein(test_battle_music, FADEIN_TIME);
+            return test_battle_music;
         } break;
     }
+    return test_battle_music;
+}
+
+const u32 FADEIN_TIME  = 2000;
+const u32 FADEOUT_TIME = 2000;
+
+local void fadein_track(void) {
+    game_state->music_fadein_timer = FADEIN_TIME/1000.0f;
+    game_state->started_fading_in = false;
 }
 
 local void set_theme_track(u32 new_theme_track) {
     if (game_state->current_theme_track_type != new_theme_track) {
         game_state->last_theme_track_type    = game_state->current_theme_track_type;
         game_state->current_theme_track_type = new_theme_track;
-        fadein_track(new_theme_track);
+
+        game_state->music_fadeout_timer = FADEOUT_TIME/1000.0f;
+        game_state->started_fading_out = false;
+        _debugprintf("set new theme track");
     }
 }
 
-local void game_continue_music(void) {
-    if (!music_playing()) {
-        switch (game_state->current_theme_track_type) {
-            case THEME_SAFE_TRACK: {
-                /* the safe theme track should be settable */
-                play_sound(test_safe_music);
-            } break;
-            case THEME_BATTLE_TRACK: {
-                /* the battle theme track should be settable */
-                play_sound(test_battle_music);
-            } break;
-        }
-    }
-}
+local void game_continue_music(f32 dt);
 
 #include "region_change_presentation.c"
 local void game_attempt_to_change_area_name(struct game_state* state, string name, string subtitle) {
@@ -1122,7 +1125,7 @@ void load_level_from_file(struct game_state* state, string filename) {
     state->loaded_area.on_enter_triggered = false;
 
     set_theme_track(THEME_SAFE_TRACK);
-    fadein_track(THEME_SAFE_TRACK);
+    fadein_track();
 
     string fullpath = string_concatenate(&scratch_arena, string_literal("areas/"), filename);
     if (file_exists(fullpath)) {
@@ -1603,6 +1606,9 @@ void game_initialize(void) {
 
     ui_blip     = load_sound(string_literal(GAME_DEFAULT_RESOURCE_PATH "snds/ui_select.wav"), false);
     ui_blip_bad = load_sound(string_literal(GAME_DEFAULT_RESOURCE_PATH "snds/ui_bad.wav"), false);
+    hit_sounds[0] = load_sound(string_literal(GAME_DEFAULT_RESOURCE_PATH "snds/hit1.wav"), false);
+    hit_sounds[1] = load_sound(string_literal(GAME_DEFAULT_RESOURCE_PATH "snds/hit2.wav"), false);
+    hit_sounds[2] = load_sound(string_literal(GAME_DEFAULT_RESOURCE_PATH "snds/hitcrit.wav"), false);
 
     test_battle_music = load_sound(string_literal(GAME_DEFAULT_RESOURCE_PATH "snds/battleThemeA.ogg"), true);
     test_safe_music   = load_sound(string_literal(GAME_DEFAULT_RESOURCE_PATH "snds/field_of_dreams.ogg"), true);
@@ -2066,7 +2072,7 @@ local void update_and_render_ingame_game_menu_ui(struct game_state* state, struc
             set_theme_track(THEME_SAFE_TRACK);
         }
     }
-    game_continue_music();
+    game_continue_music(dt);
 
     /* I'm aware this causes a lot of pop in, which is okay. I can manually code transitions for those... but whatever */
     /* okay, here I can render the normal game UI stuff */
@@ -3024,6 +3030,33 @@ local void update_and_render_save_game_menu_ui(struct game_state* state, struct 
     }
 
     return;
+}
+
+local void game_continue_music(f32 dt) {
+    if (global_game_initiated_death_ui) {
+        stop_music();
+        return;
+    }
+
+    if (game_state->music_fadeout_timer > 0) {
+        if (!game_state->started_fading_out) {
+            game_state->started_fading_out = true;
+            stop_music_fadeout(FADEOUT_TIME);
+        }
+
+        game_state->music_fadeout_timer -= dt;
+    } else if (game_state->music_fadein_timer > 0) {
+        if (!game_state->started_fading_in) {
+            game_state->started_fading_in = true;
+            play_sound_fadein(get_current_sound_theme(), FADEIN_TIME);
+        }
+
+        game_state->music_fadein_timer -= dt;
+    } else {
+        if (!music_playing()) {
+            play_sound(get_current_sound_theme());
+        }
+    }
 }
 
 #include "game_script.c"

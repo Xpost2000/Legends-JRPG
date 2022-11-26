@@ -42,7 +42,7 @@ local s32 entity_get_physical_damage_raw(struct entity* entity) {
 local s32 entity_get_physical_damage(struct entity* entity) {
     /* TODO special effects for critical */
     s32 raw               = entity_get_physical_damage_raw(entity);
-    f32 random_percentage = random_ranged_integer(&game_state->rng, 0.4, 0.6);
+    f32 random_percentage = random_ranged_float(&game_state->rng, 0.4, 0.6);
     s32 raw2              = entity_get_physical_damage_raw(entity)*random_percentage;
 
     s32 variance_random = random_ranged_integer(&game_state->rng, -raw2, raw2);
@@ -1765,6 +1765,7 @@ void entity_do_physical_hurt(struct entity* entity, s32 damage) {
 
     notify_damage(v2f32_sub(entity->position, v2f32(0, TILE_UNIT_SIZE)), damage);
     (entity_validate_death(entity));
+    play_random_hit_sound();
 }
 
 /* NOTE: does not really do turns. */
@@ -1977,6 +1978,7 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
                             } break;
                             case LOOK_TARGET_TYPE_ENTITY: {
                                 struct entity* look_target_entity = decode_sequence_action_target_entity_into_entity(state, target_entity, &look_at->look_target);
+                                _debugprintf("look at not working");
                                 entity_look_at(target_entity, look_target_entity->position);
                             } break;
                             case LOOK_TARGET_TYPE_DIRECTION: {

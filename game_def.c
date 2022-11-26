@@ -499,6 +499,13 @@ enum current_theme_track_type {
 struct game_state {
     struct memory_arena* arena;
 
+    /* This can't be guaranteed to be synchronized to whatever audio parallel crap I need */
+    /* but I need this state here, which is useful for when I migrate to OpenAL */
+    f32 music_fadein_timer;
+    f32 music_fadeout_timer;
+    bool started_fading_out;
+    bool started_fading_in;
+
     u32 current_theme_track_type;
     u32 last_theme_track_type;
 
