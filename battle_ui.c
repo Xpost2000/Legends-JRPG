@@ -973,7 +973,7 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                 if (selection_confirm) {
                     global_battle_ui_state.selecting_ability_target = true;
 
-                    struct entity_ability_slot slot = user->abilities[global_battle_ui_state.selection];
+                    struct entity_ability_slot slot = user->abilities[global_battle_ui_state.usable_abilities[global_battle_ui_state.selection]];
                     struct entity_ability*     ability = entity_database_ability_find_by_index(&game_state->entity_database, slot.ability);
 
                     if (ability->selection_type == ABILITY_SELECTION_TYPE_FIELD_SHAPE) {
@@ -1018,7 +1018,7 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                     f32 square_size            = ui_box_size.x / ENTITY_ABILITY_SELECTION_FIELD_MAX_X;
                     f32 nearest_perfect_square = (square_size + 2);
 
-                    struct entity_ability_slot slot = user->abilities[global_battle_ui_state.selection];
+                    struct entity_ability_slot slot = user->abilities[global_battle_ui_state.usable_abilities[global_battle_ui_state.selection]];
                     struct entity_ability*     ability = entity_database_ability_find_by_index(&game_state->entity_database, slot.ability);
 
                     for (s32 y_index = 0; y_index < ENTITY_ABILITY_SELECTION_FIELD_MAX_Y; ++y_index) {

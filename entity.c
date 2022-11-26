@@ -812,24 +812,22 @@ s32 entity_get_usable_ability_indices(struct entity* entity, s32 max_limit, s32*
 
         {
             if (!ability_to_use->innate) {
+                _debugprintf("This ability is not innate. Need to check for qualification");
                 s32                      ability_class_group = ability_to_use->item_class_group;
                 usable                                       = false;
-                struct entity_inventory* inventory_target    = NULL;
-                if (entity->flags & ENTITY_FLAGS_PLAYER_CONTROLLED) {
-                    inventory_target = (struct entity_inventory*)(&game_state->inventory);
-                } else {
-                    inventory_target = (struct entity_inventory*)(&entity->inventory);
-                }
 
                 /* check if an item provides the ability directly, which bypasses innate lock */
                 {
-                    for (s32 item_index = 0; item_index < inventory_target->count && !usable; ++item_index) {
-                        struct item_instance* item_slot = inventory_target->items + item_index;
-                        struct item_def*      item_base = item_database_find_by_id(item_slot->item);
+                    for (s32 item_index = 0; item_index < ENTITY_EQUIP_SLOT_INDEX_COUNT && !usable; ++item_index) {
+                        struct item_id        item_id = entity->equip_slots[item_index];
+                        struct item_def*      item_base = item_database_find_by_id(item_id);
 
-                        for (s32 item_ability_index = 0; item_ability_index < item_base->ability_count && !usable; ++item_ability_index) {
-                            if (item_base->abilities[item_ability_index] == ability_id) {
-                                usable = true;
+                        if (item_base) {
+                            for (s32 item_ability_index = 0; item_ability_index < item_base->ability_count && !usable; ++item_ability_index) {
+                                if (item_base->abilities[item_ability_index] == ability_id) {
+                                    usable = true;
+                                    _debugprintf("This ability was found on this item.");
+                                }
                             }
                         }
                     }
@@ -837,12 +835,16 @@ s32 entity_get_usable_ability_indices(struct entity* entity, s32 max_limit, s32*
                 /* check if an item provides item group unlock */
                 {
                     if (ability_class_group != 0) {
-                        for (s32 item_index = 0; item_index < inventory_target->count && !usable; ++item_index) {
-                            struct item_instance* item_slot = inventory_target->items + item_index;
-                            struct item_def*      item_base = item_database_find_by_id(item_slot->item);
+                        _debugprintf("This ability has a class... Let's look for it");
+                        for (s32 item_index = 0; item_index < ENTITY_EQUIP_SLOT_INDEX_COUNT && !usable; ++item_index) {
+                            struct item_id        item_id = entity->equip_slots[item_index];
+                            struct item_def*      item_base = item_database_find_by_id(item_id);
 
-                            if (item_base->ability_class_group_id == ability_class_group) {
-                                usable = true;
+                            if (item_base) {
+                                if (item_base->ability_class_group_id == ability_class_group) {
+                                    usable = true;
+                                    _debugprintf("Item class matching found.");
+                                }
                             }
                         }
                     }
@@ -854,6 +856,7 @@ s32 entity_get_usable_ability_indices(struct entity* entity, s32 max_limit, s32*
         if (usable) {
             if (wrote < max_limit) {
                 if (ability_indices) {
+                    _debugprintf("Can add ability");
                     ability_indices[wrote++] = ability_index;
                 } else {
                     wrote += 1;
@@ -1574,10 +1577,13 @@ void entity_inventory_equip_item(struct entity_inventory* inventory, s32 limits,
             }
 
             if (item_base->ability_class_group_id != 0) {
+                _debugprintf("Trying to learn ability with class: %d", item_base->ability_class_group_id);
                 for (s32 entity_ability_index = 0; entity_ability_index < game_state->entity_database.ability_count; ++entity_ability_index) {
                     struct entity_ability* current_ability = game_state->entity_database.abilities + entity_ability_index;
 
+                    _debugprintf("Ability class group: %d", current_ability->item_class_group);
                     if (current_ability->item_class_group == item_base->ability_class_group_id) {
+                        _debugprintf("Okay! I should be adding an ability!");
                         entity_add_ability_by_id(target, entity_ability_index);
                     }
                 }
@@ -3076,6 +3082,12 @@ void entity_clear_all_abilities(struct entity* entity) {
 }
 
 void entity_add_ability_by_id(struct entity* entity, s32 id) {
+    for (s32 existing_ability_index = 0; existing_ability_index < entity->ability_count; ++existing_ability_index) {
+        if (entity->abilities[existing_ability_index].ability == id) {
+            return;
+        }
+    }
+
     if (entity->ability_count < ENTITY_MAX_ABILITIES) {
         struct entity_ability_slot* ability_slot = &entity->abilities[entity->ability_count++];
         ability_slot->ability                    = id;
