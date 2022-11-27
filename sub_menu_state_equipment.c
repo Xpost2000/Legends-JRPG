@@ -117,6 +117,7 @@ local void do_entity_stat_information_panel(struct software_framebuffer* framebu
         string_literal("SPD:"),
         string_literal("INT:"),
         string_literal("LCK:"),
+        string_literal("CNTR:"),
     };
 
     f32 largest_label_width = 0;

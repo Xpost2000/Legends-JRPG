@@ -33,6 +33,8 @@ local void parse_stat_form(struct item_def* item_definition, struct lisp_form* s
         Read_Into_Stat(intelligence);
     } else if (lisp_form_symbol_matching(*stat_name, string_literal("luck"))) {
         Read_Into_Stat(luck);
+    } else if (lisp_form_symbol_matching(*stat_name, string_literal("counter"))) {
+        Read_Into_Stat(counter);
     }
 
 #undef Read_Into_Stat

@@ -1728,6 +1728,19 @@ void entity_combat_submit_attack_action(struct entity* entity, entity_id target_
     _debugprintf("attacku");
 }
 
+/* LOLOLOLOLOL THIS IS SLOW */
+entity_id game_find_id_for_entity(struct entity* entity) {
+    struct entity_iterator it = game_entity_iterator(game_state);
+
+    for (struct entity* current_entity = entity_iterator_begin(&it); !entity_iterator_finished(&it); current_entity = entity_iterator_advance(&it)) {
+        if (current_entity == entity) {
+            return it.current_id;
+        }
+    }
+
+    return it.current_id;
+}
+
 void entity_combat_submit_ability_action(struct entity* entity, entity_id* targets, s32 target_count, s32 user_ability_index) {
     if (entity->ai.current_action != ENTITY_ACTION_NONE)
         return;
@@ -2304,6 +2317,14 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
                                         /* maybe not a good idea right now, but okay. */
                                         battle_notify_killed_entity(target_entity->ai.attack_target_id);
                                     }
+                                } else {
+                                    /* TODO more involved invariants for counter attacking */
+                                    struct entity* targeted_entity = game_dereference_entity(game_state, target_entity->ai.attack_target_id);
+
+                                    if (targeted_entity->ai.used_counter_attacks < entity_find_effective_stat_value(targeted_entity, STAT_COUNTER)) {
+                                        add_counter_attack_entry(target_entity->ai.attack_target_id, game_find_id_for_entity(target_entity));
+                                        targeted_entity->ai.used_counter_attacks += 1;
+                                    }
                                 }
                             }
                         }
@@ -2392,6 +2413,12 @@ s32 entity_find_effective_stat_value(struct entity* entity, s32 stat_index) {
             struct item_def* item_base       = item_database_find_by_id(equip_slot_item);
 
             if (item_base) base_value += item_base->stats.values[stat_index];
+        }
+    }
+
+    if (stat_index == STAT_COUNTER) {
+        if (entity_is_in_defense_stance(entity)) {
+            base_value /= 2;
         }
     }
 
@@ -2590,6 +2617,8 @@ local void entity_database_initialize_entities(struct entity_database* database)
                             lisp_form_get_s32(*param, &current_entity->stats.intelligence);
                         } else if (lisp_form_symbol_matching(*stat_name, string_literal("luck"))) {
                             lisp_form_get_s32(*param, &current_entity->stats.luck);
+                        } else if (lisp_form_symbol_matching(*stat_name, string_literal("counter"))) {
+                            lisp_form_get_s32(*param, &current_entity->stats.counter);
                         }
                     }
                 }

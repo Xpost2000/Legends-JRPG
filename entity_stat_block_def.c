@@ -10,21 +10,23 @@ enum stat_id {
     STAT_SPEED,
     STAT_INTELLIGENCE,
     STAT_LUCK,
+    STAT_COUNTER,
     STAT_COUNT
 };
-#define Entity_Stat_Block_Base(TYPE) \
-    union {                          \
-        struct {                     \
-            TYPE vigor;              \
-            TYPE strength;           \
-            TYPE constitution;       \
-            TYPE willpower;          \
-            TYPE agility;            \
-            TYPE speed;              \
-            TYPE intelligence;       \
-            TYPE luck;               \
-        };                           \
-        TYPE values[8];              \
+#define Entity_Stat_Block_Base(TYPE)            \
+    union {                                     \
+        struct {                                \
+            TYPE vigor;                         \
+            TYPE strength;                      \
+            TYPE constitution;                  \
+            TYPE willpower;                     \
+            TYPE agility;                       \
+            TYPE speed;                         \
+            TYPE intelligence;                  \
+            TYPE luck;                          \
+            TYPE counter;                       \
+        };                                      \
+        TYPE     values[STAT_COUNT];            \
     }
 
 local string entity_stat_name_strings[] = {
@@ -36,6 +38,7 @@ local string entity_stat_name_strings[] = {
     string_literal("Speed"),
     string_literal("Intelligence"),
     string_literal("Luck"),
+    string_literal("Counter"),
 };
 local string entity_stat_description_strings[] = {
     string_literal("One's robustness. Determines initial HP and HP gain on level up."),
@@ -46,6 +49,7 @@ local string entity_stat_description_strings[] = {
     string_literal("One's hastiness. Determines movement, and likelihood to dodge."),
     string_literal("One's mind. Determines magic attack."),
     string_literal("One's fortune. Helps in the most unexpected ways."),
+    string_literal("One's ability to retaliate. Determines maximum counter-attacks."),
 };
 
 struct entity_stat_block {
@@ -79,6 +83,7 @@ static struct entity_stat_block_modifiers entity_stat_block_modifiers_identity =
         .speed                                                      = 100,
         .intelligence                                               = 100,
         .luck                                                       = 100,
+        .counter                                                    = 0,
     };
 
 #endif

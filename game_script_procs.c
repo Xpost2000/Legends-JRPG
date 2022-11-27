@@ -762,6 +762,7 @@ GAME_LISP_FUNCTION(SET_AGILITY);
 GAME_LISP_FUNCTION(SET_SPEED);
 GAME_LISP_FUNCTION(SET_INTELLIGENCE);
 GAME_LISP_FUNCTION(SET_LUCK);
+GAME_LISP_FUNCTION(SET_COUNTER);
 #endif
 
 #define Define_Stat_Accessors(STAT_NAME, STAT_FIELD)                    \
@@ -790,6 +791,7 @@ Define_Stat_Accessors(AGILITY,      agility);
 Define_Stat_Accessors(SPEED,        speed);
 Define_Stat_Accessors(INTELLIGENCE, intelligence);
 Define_Stat_Accessors(LUCK,         luck);
+Define_Stat_Accessors(COUNTER,      counter);
 
 GAME_LISP_FUNCTION(HEALTH) {
     Required_Argument_Count(HEALTH, 1);

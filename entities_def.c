@@ -506,6 +506,7 @@ struct entity_ai_data {
 
     /* DEBUG TODO */
     f32 wait_timer;
+    s32 used_counter_attacks;
 };
 
 struct entity_animation_state {

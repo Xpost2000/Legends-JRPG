@@ -103,6 +103,19 @@ local struct entity* find_current_combatant(struct game_state* state) {
     return game_dereference_entity(state, active_combatant_id);
 }
 
+local void add_counter_attack_entry(entity_id attacker, entity_id attacked) {
+    struct game_state_combat_state* combat_state = &game_state->combat_state;
+
+    if (combat_state->counter_attack_LIFO_count >= MAX_STORED_COUNTER_ATTACKS) {
+        return;
+    }
+
+    struct combat_counter_attack_action* current_entry = &combat_state->counter_attack_LIFO[combat_state->counter_attack_LIFO_count++];
+    current_entry->attacker = attacker;
+    current_entry->attacked = attacked;
+    current_entry->engaged  = false;
+}
+
 void update_combat(struct game_state* state, f32 dt) {
     struct game_state_combat_state* combat_state = &state->combat_state;
     struct entity* combatant = find_current_combatant(state);
@@ -127,13 +140,30 @@ void update_combat(struct game_state* state, f32 dt) {
                 entity_think_combat_actions(combatant, state, dt);
             } else {
                 if (!combatant->ai.current_action) {
-                    combat_state->active_combatant += 1;
+                    if (combat_state->counter_attack_LIFO_count > 0) {
+                        struct combat_counter_attack_action* current_entry   = &combat_state->counter_attack_LIFO[combat_state->counter_attack_LIFO_count-1];
+                        struct entity*                       attacker_entity = game_dereference_entity(game_state, current_entry->attacker);
+                        struct entity*                       attacked_entity = game_dereference_entity(game_state, current_entry->attacked);
 
-                    /* I would also love to animate this, but I don't have to animate */
-                    /* *everything* */
-                    if (combat_state->active_combatant >= combat_state->count) {
-                        add_all_combat_participants(state);
-                        battle_ui_trigger_end_turn();
+                        if (!current_entry->engaged) {
+                            /* COUNTER ATTACK MESSAGE TODO! */
+                            _debugprintf("Counter attack engaged!");
+                            entity_combat_submit_attack_action(attacker_entity, current_entry->attacked);
+                            current_entry->engaged = true;
+                        } else {
+                            if (!attacker_entity->ai.current_action) {
+                                combat_state->counter_attack_LIFO_count -= 1;
+                            }
+                        }
+                    } else {
+                        combat_state->active_combatant += 1;
+
+                        /* I would also love to animate this, but I don't have to animate */
+                        /* *everything* */
+                        if (combat_state->active_combatant >= combat_state->count) {
+                            add_all_combat_participants(state);
+                            battle_ui_trigger_end_turn();
+                        }
                     }
                 }
             }

@@ -431,12 +431,29 @@ static string interactable_type_strings[] = {
 };
 
 #define MAX_STORED_COMBAT_PARTICIPANTS (256)
+#define MAX_STORED_COUNTER_ATTACKS     (16)
+/* ^ this number is small since it's mostly back to back the same counters. (We can add more attacks later I suppose) */
+struct combat_counter_attack_action {
+    /*
+      NOTE:
+      such a small part to use pointers in... That's honestly a bit of a mistake on my part, but the current architecture makes it a pain for that.
+
+      Thankfully pointers are very stable... (exempting level loads)
+    */
+    entity_id attacker;
+    entity_id attacked;
+    bool engaged;
+};
+local void add_counter_attack_entry(entity_id attacker, entity_id attacked);
 struct game_state_combat_state {
     bool      active_combat;
     s32       count;
     /* sorted by initiative */
     entity_id participants[MAX_STORED_COMBAT_PARTICIPANTS];
     s32       participant_priorities[MAX_STORED_COMBAT_PARTICIPANTS];
+
+    struct combat_counter_attack_action counter_attack_LIFO[MAX_STORED_COUNTER_ATTACKS];
+    s32                                 counter_attack_LIFO_count;
 
     /* crying for all the animation state */
     s32       active_combatant;
