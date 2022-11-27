@@ -122,10 +122,13 @@
 
 (requires nothing)
 (move-to user start linear-ease 20)
-
+(requires (target 0))
 (hurt (target 0)) # uses damage formula
+(requires (target 1))
 (hurt (target 1)) # uses damage formula
+(requires (target 2))
 (hurt (target 2)) # uses damage formula
+(requires (target 3))
 (hurt (target 3)) # uses damage formula
 )
 )

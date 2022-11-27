@@ -150,8 +150,6 @@ void entity_ability_compile_animation_sequence(struct memory_arena* arena, struc
                             look_at->look_target_type = LOOK_TARGET_TYPE_ENTITY; 
                             decode_sequence_action_target_entity(to_look_target, &look_at->look_target);
                         }
-
-                        decode_sequence_action_target_entity(look_target, &look_at->to_look);
                     } else if (lisp_form_symbol_matching(*action_form_header, string_literal("move-to"))) {
                         struct sequence_action_move_to* move_to = &action_data->move_to;
 

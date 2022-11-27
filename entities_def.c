@@ -509,6 +509,7 @@ struct entity_ai_data {
 };
 
 struct entity_animation_state {
+    char   name_buffer[255];
     string name; /* look up name */
 
     s32    current_frame_index;
@@ -719,12 +720,7 @@ struct used_battle_action battle_action_movement(struct entity* entity);
 struct used_battle_action battle_action_defend(struct entity* entity);
 struct used_battle_action battle_action_item_usage(struct entity* entity, s32 item_use_index);
 
-void entity_snap_to_grid_position(struct entity* entity) {
-    v2f32 position   = entity->position;
-    position.x       = roundf(position.x / TILE_UNIT_SIZE) * TILE_UNIT_SIZE;
-    position.y       = roundf(position.y / TILE_UNIT_SIZE) * TILE_UNIT_SIZE;
-    entity->position = position;
-}
+void entity_snap_to_grid_position(struct entity* entity);
 v2f32 grid_snapped_v2f32(v2f32 in) {
     in.x = roundf(in.x/TILE_UNIT_SIZE)*TILE_UNIT_SIZE;
     in.y = roundf(in.y/TILE_UNIT_SIZE)*TILE_UNIT_SIZE;

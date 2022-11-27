@@ -1,5 +1,7 @@
 #include "entities_def.c"
 
+/* TODO: remove checking for active entities since the iterator should take care of it now */
+
 /*
   NOTE:
 
@@ -429,7 +431,6 @@ void _debug_print_id(entity_id id) {
 }
 
 void entity_play_animation(struct entity* entity, string name, bool with_direction) {
-
     if (with_direction) {
         string facing_direction_string = facing_direction_strings_normal[entity->facing_direction];
         string directional_counterpart = format_temp_s("%.*s_%.*s", name.length, name.data, facing_direction_string.length, facing_direction_string.data);
@@ -443,7 +444,13 @@ void entity_play_animation(struct entity* entity, string name, bool with_directi
         return;
     }
 
-    entity->animation.name                = name;
+    s32 smaller_length = name.length;
+    if (smaller_length >= array_count(entity->animation.name_buffer)) {
+        smaller_length = array_count(entity->animation.name_buffer);
+    }
+    cstring_copy(name.data, entity->animation.name_buffer, smaller_length);
+
+    entity->animation.name                = string_from_cstring(entity->animation.name_buffer);
     entity->animation.current_frame_index = 0;
     entity->animation.iterations          = 0;
     entity->animation.timer               = 0;
@@ -466,6 +473,18 @@ struct rectangle_f32 entity_rectangle_collision_bounds(struct entity* entity) {
                          entity->scale.y-10);
 }
 
+void entity_snap_to_grid_position(struct entity* entity) {
+    struct rectangle_f32 rectangle = entity_rectangle_collision_bounds(entity);
+
+    v2f32 position   = entity->position;
+    position.x      += rectangle.w/2; /* center position */
+    position.y      += rectangle.h/2; /* hopefully this looks better when snapping */
+    position.x       = floorf((position.x) / TILE_UNIT_SIZE) * TILE_UNIT_SIZE;
+    position.y       = floorf((position.y) / TILE_UNIT_SIZE) * TILE_UNIT_SIZE;
+    entity->position = position;
+}
+
+
 void entity_look_at(struct entity* entity, v2f32 position) {
     v2f32 position_delta = v2f32_direction(entity->position, position);
 
@@ -483,6 +502,11 @@ void entity_look_at(struct entity* entity, v2f32 position) {
             entity->facing_direction = DIRECTION_DOWN;
         }
     }
+}
+/* weirdo */
+void entity_look_at_and_set_animation_state(struct entity* entity, v2f32 position) {
+    entity_look_at(entity, position);
+    entity_play_animation_with_direction(entity, string_literal("idle"));
 }
 
 struct entity_list entity_list_create(struct memory_arena* arena, s32 capacity, u8 store_mark) {
@@ -1699,8 +1723,7 @@ void entity_combat_submit_attack_action(struct entity* entity, entity_id target_
     entity->ai.attack_animation_preattack_position = grid_snapped_v2f32(entity->position);
     {
         struct entity* target_entity = game_dereference_entity(game_state, target_id);
-        entity_look_at(entity, target_entity->position);
-        entity_play_animation_with_direction(entity, string_literal("idle"));
+        entity_look_at_and_set_animation_state(entity, target_entity->position);
     }
     _debugprintf("attacku");
 }
@@ -1906,7 +1929,6 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
                 } else {
                     target_entity->position.x = target_entity->ai.navigation_path.path_points[target_entity->ai.current_path_point_index].x * TILE_UNIT_SIZE;
                     target_entity->position.y = target_entity->ai.navigation_path.path_points[target_entity->ai.current_path_point_index].y * TILE_UNIT_SIZE;
-                    entity_snap_to_grid_position(target_entity);
 
                     target_entity->ai.current_path_point_index++;
 
@@ -1950,6 +1972,7 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
             if (sequence_action->type != SEQUENCE_ACTION_REQUIRE_BLOCK) {
                 struct sequence_action_require_block requirements = sequence_state->current_requirements;
                 if (requirements.needed) {
+                    _debugprintf("checking execution requirements");
                     _debugprintf("Needs %d entities to be present", requirements.required_entity_count);
                     for (s32 required_entity_index = 0; required_entity_index < requirements.required_entity_count && should_continue; ++required_entity_index) {
                         struct sequence_action_target_entity* current_target_entity_handle = requirements.required_entities + required_entity_index;
@@ -1978,8 +2001,8 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
                             } break;
                             case LOOK_TARGET_TYPE_ENTITY: {
                                 struct entity* look_target_entity = decode_sequence_action_target_entity_into_entity(state, target_entity, &look_at->look_target);
-                                _debugprintf("look at not working");
-                                entity_look_at(target_entity, look_target_entity->position);
+                                _debugprintf("Trying to look at entity %p looktarget, %p self", target_entity, look_target_entity);
+                                entity_look_at_and_set_animation_state(target_entity, look_target_entity->position);
                             } break;
                             case LOOK_TARGET_TYPE_DIRECTION: {
                                 unimplemented("LOOK_TARGET_TYPE_DIRECTION");
@@ -2151,7 +2174,7 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
                             struct entity* entity_to_hurt    = game_dereference_entity(game_state, entity_to_hurt_id);
 
                             /* TODO: REPLACE */
-                            entity_do_physical_hurt(entity_to_hurt, 9999);
+                            entity_do_physical_hurt(entity_to_hurt, 2500);
                             battle_notify_killed_entity(entity_to_hurt_id);
                         }
                         entity_advance_ability_sequence(target_entity);
@@ -2268,7 +2291,6 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
                         target_entity->ai.attack_animation_phase = ENTITY_ATTACK_ANIMATION_PHASE_RECOVER_FROM_HIT;
 
                         {
-                            /* TODO: REPLACE */
                             s32 damage = entity_get_physical_damage(target_entity);
                             entity_do_physical_hurt(attacked_entity, damage);
 
@@ -2873,20 +2895,26 @@ bool entity_iterator_finished(struct entity_iterator* iterator) {
 
 /* TODO: this is slightly wrong. Not in the mood to do correctly. So there is a hack. */
 struct entity* entity_iterator_advance(struct entity_iterator* iterator) {
-    struct entity_list* current_iteration_list  = iterator->entity_lists[iterator->index];
-    struct entity*      current_iterated_entity = current_iteration_list->entities + iterator->entity_list_index;
-    iterator->current_id                        = entity_list_get_id(current_iteration_list, iterator->entity_list_index);
+    struct entity_list* current_iteration_list  ;
+    struct entity*      current_iterated_entity ;
+    iterator->current_id                        ;
 
-    iterator->entity_list_index += 1;
+    do {
+        current_iteration_list  = iterator->entity_lists[iterator->index];
+        current_iterated_entity = current_iteration_list->entities + iterator->entity_list_index;
+        iterator->current_id    = entity_list_get_id(current_iteration_list, iterator->entity_list_index);
 
-    if (iterator->entity_list_index >= current_iteration_list->capacity) {
-        iterator->index += 1;
-        iterator->entity_list_index = 0;
-    }
+        iterator->entity_list_index += 1;
 
-    if (iterator->index >= iterator->list_count) {
-        iterator->done = true;
-    }
+        if (iterator->entity_list_index >= current_iteration_list->capacity) {
+            iterator->index += 1;
+            iterator->entity_list_index = 0;
+        }
+
+        if (iterator->index >= iterator->list_count) {
+            iterator->done = true;
+        }
+    } while (!(current_iterated_entity->flags & ENTITY_FLAGS_ACTIVE) && !iterator->done);
 
     return current_iterated_entity;
 }

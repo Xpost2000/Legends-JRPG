@@ -358,6 +358,10 @@ local void recalculate_targeted_entities_by_ability(struct entity_ability* abili
     bool encountered_any_collision  = false;
     if (ability->selection_type == ABILITY_SELECTION_TYPE_FIELD && !ability->moving_field) {
         for (struct entity* potential_target = entity_iterator_begin(&entities); !entity_iterator_finished(&entities); potential_target = entity_iterator_advance(&entities)) {
+            if (!(potential_target->flags & ENTITY_FLAGS_ACTIVE)) {
+                continue;
+            }
+
             if (potential_target == user) {
                 continue;
             }
@@ -427,6 +431,10 @@ local void recalculate_targeted_entities_by_ability(struct entity_ability* abili
         }
     } else {
         for (struct entity* potential_target = entity_iterator_begin(&entities); !entity_iterator_finished(&entities); potential_target = entity_iterator_advance(&entities)) {
+            if (!(potential_target->flags & ENTITY_FLAGS_ACTIVE)) {
+                continue;
+            }
+
             if (potential_target == user) {
                 continue;
             }
