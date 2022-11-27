@@ -2163,7 +2163,11 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
                             }
                         } else {
                             for (s32 target_index = 0; target_index < hurt_sequence->target_count; ++target_index) {
-                                entity_id attacked_target_id = target_entity->ai.targeted_entities[hurt_sequence->targets[target_index].entity_target_index];
+                                s32 proposed_target_index = hurt_sequence->targets[target_index].entity_target_index;
+                                if (proposed_target_index >= target_entity->ai.targeted_entity_count) {
+                                    break;
+                                }
+                                entity_id attacked_target_id = target_entity->ai.targeted_entities[proposed_target_index];
                                 memory_arena_push(&scratch_arena, sizeof(*attacking_entity_ids));
                                 attacking_entity_ids[entities_to_hurt++] = attacked_target_id;
                             }

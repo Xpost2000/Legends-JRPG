@@ -1855,7 +1855,7 @@ void game_display_and_update_message_notifications(struct render_commands* comma
                 if (notifier->alternative_color) painting_font = game_get_font(MENU_FONT_COLOR_ORANGE);
 
                 if (notifier->amount == 0) {
-                    render_commands_push_text(commands, painting_font, 4, draw_position, string_literal("RESIST!"), color32f32_WHITE, BLEND_MODE_ALPHA);
+                    render_commands_push_text(commands, painting_font, 4, draw_position, string_literal("NO DMG!"), color32f32_WHITE, BLEND_MODE_ALPHA);
                 } else {
                     string tmp = format_temp_s("%d!", notifier->amount);
                     string tmp2 = memory_arena_push_string(&scratch_arena, tmp);
