@@ -61,11 +61,18 @@ struct battle_ui_item_state {
     s32 selectable_items[MAX_SELECTABLE_ITEMS];
 };
 
+struct battle_ui_action_message {
+    string message;
+    f32    timer;
+};
+
 struct battle_ui_state {
     f32 timer;
     u32 phase;
 
     s32 selection;
+
+    struct battle_ui_action_message message;
 
     /* Can be animated? */
     s32 submode;
@@ -119,6 +126,11 @@ struct battle_ui_state {
 
     struct battle_ui_item_state item_use;
 } global_battle_ui_state;
+
+local void announce_battle_action(struct entity_id who, string what) {
+    global_battle_ui_state.message.message = what;
+    global_battle_ui_state.message.timer   = 1.2f;
+}
 
 local void battle_ui_calculate_usable_abilities(void) {
     struct game_state_combat_state* combat_state            = &game_state->combat_state;
@@ -1474,6 +1486,24 @@ local void update_and_render_battle_ui(struct game_state* state, struct software
             draw_turn_panel(state, framebuffer, 10, 100);
             do_battle_selection_menu(state, framebuffer, framebuffer->width - BATTLE_SELECTIONS_WIDTH + 15, 100, is_player_turn, dt);
             draw_battle_tooltips(state, framebuffer, dt, framebuffer->height, is_player_turn);
+
+            {
+                struct battle_ui_action_message* message = &global_battle_ui_state.message;
+                if (message->timer > 0) {
+                    struct font_cache* normal_font      = game_get_font(MENU_FONT_COLOR_GOLD);
+                    union color32f32 modulation_color = color32f32_WHITE;
+                    union color32f32 ui_color         = UI_BATTLE_COLOR;
+
+                    v2f32 ui_box_size     = nine_patch_estimate_extents(ui_chunky, 1, 18, 1);
+                    v2f32 ui_box_position = v2f32(framebuffer->width/2 - ui_box_size.x/2, 40);
+                    {
+                        draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, ui_box_position, 18, 1, ui_color);
+                        f32 text_width = font_cache_text_width(normal_font, message->message, 2);
+                        draw_ui_breathing_text(framebuffer, v2f32(ui_box_position.x + (ui_box_size.x/2)-text_width/2, ui_box_position.y+10), normal_font, 2, message->message, 0, modulation_color);
+                    }
+                    message->timer -= dt;
+                }
+            }
         } break;
 
         case BATTLE_UI_FLASH_IN_END_TURN_TEXT: {

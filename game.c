@@ -16,6 +16,8 @@
 
 #include "fade_transitions.c"
 
+local void announce_battle_action(struct entity_id who, string what);
+
 local void set_scrollable_ui_bounds(s32 selection, s32* bottom_index, s32* top_index, s32 max_limit, s32 FIRST_SCROLLING_Y, s32 MAX_DISPLAYABLE_ITEMS) {
     assertion(bottom_index && top_index && "need pointers for those values");
     if ((MAX_DISPLAYABLE_ITEMS % 2) == 0) {

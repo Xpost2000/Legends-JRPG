@@ -29,6 +29,9 @@ bool entity_bad_ref(struct entity* e);
 void entity_do_healing(struct entity* entity, s32 healing);
 void entity_do_physical_hurt(struct entity* entity, s32 damage);
 
+/* LOLOLOLOLOL THIS IS SLOW */
+entity_id game_find_id_for_entity(struct entity* entity);
+
 local s32 entity_get_physical_damage_raw(struct entity* entity) {
     s32 strength = entity_find_effective_stat_value(entity, STAT_STRENGTH);
     s32 agility  = entity_find_effective_stat_value(entity, STAT_AGILITY);
@@ -1725,20 +1728,8 @@ void entity_combat_submit_attack_action(struct entity* entity, entity_id target_
         struct entity* target_entity = game_dereference_entity(game_state, target_id);
         entity_look_at_and_set_animation_state(entity, target_entity->position);
     }
+    announce_battle_action(game_find_id_for_entity(entity), string_literal("Attack"));
     _debugprintf("attacku");
-}
-
-/* LOLOLOLOLOL THIS IS SLOW */
-entity_id game_find_id_for_entity(struct entity* entity) {
-    struct entity_iterator it = game_entity_iterator(game_state);
-
-    for (struct entity* current_entity = entity_iterator_begin(&it); !entity_iterator_finished(&it); current_entity = entity_iterator_advance(&it)) {
-        if (current_entity == entity) {
-            return it.current_id;
-        }
-    }
-
-    return it.current_id;
 }
 
 void entity_combat_submit_ability_action(struct entity* entity, entity_id* targets, s32 target_count, s32 user_ability_index) {
@@ -1758,6 +1749,10 @@ void entity_combat_submit_ability_action(struct entity* entity, entity_id* targe
         entity->ai.targeted_entities[target_index] = targets[target_index];
     }
 
+    {
+        struct entity_ability* ability = entity_database_ability_find_by_index(&game_state->entity_database, entity->abilities[user_ability_index].ability);
+        announce_battle_action(game_find_id_for_entity(entity), ability->name);
+    }
     entity->waiting_on_turn = 0;
     _debugprintf("ability");
 }
@@ -3523,6 +3518,18 @@ struct entity_stat_block entity_find_effective_stat_block(struct entity* entity)
     }
 
     return result;
+}
+
+entity_id game_find_id_for_entity(struct entity* entity) {
+    struct entity_iterator it = game_entity_iterator(game_state);
+
+    for (struct entity* current_entity = entity_iterator_begin(&it); !entity_iterator_finished(&it); current_entity = entity_iterator_advance(&it)) {
+        if (current_entity == entity) {
+            return it.current_id;
+        }
+    }
+
+    return it.current_id;
 }
 
 #include "entity_ability.c"
