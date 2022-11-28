@@ -65,6 +65,18 @@ bool is_action_down(s32 action);
 bool is_action_down_with_repeat(s32 action);
 bool is_action_pressed(s32 action);
 
+/*
+  NOTE:
+  It's a little late to use this in certain parts of the code, since there are no
+  input layers in the engine. Which results in some frankly weird input handling.
+
+  But I can use this to slowly rewrite some stuff if I feel like it.
+*/
+bool is_action_down_consume(s32 action);
+bool is_action_down_with_repeat_consume(s32 action);
+bool is_action_pressed_consume(s32 action);
+void consume_all_actions(void);
+
 void input_mapper_write_out_controls_to(string filename);
 bool input_mapper_read_controls_from(string filename);
 

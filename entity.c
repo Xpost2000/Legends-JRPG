@@ -1288,9 +1288,9 @@ local void sortable_entity_draw_entity(struct render_commands* commands, struct 
         }
 
 #ifndef RELEASE
-#if 0
+#if 1
         struct rectangle_f32 collision_bounds = entity_rectangle_collision_bounds(current_entity);
-        render_commands_push_quad(commands, collision_bounds, color32u8(255, 0, 0, 64), BLEND_MODE_ALPHA);
+        render_commands_push_quad(commands, collision_bounds, color32u8(255, 0, 0, 128), BLEND_MODE_ALPHA);
         render_commands_set_shader(commands, game_foreground_things_shader, NULL);
 #endif
 #endif

@@ -68,6 +68,16 @@ bool is_action_down_with_repeat(s32 action) {
     
 }
 
+s32 string_to_input_action(string input_string) {
+    for (s32 string_index = 0; string_index < array_count(input_action_strings); ++string_index) {
+        if (string_equal(input_string, input_action_strings[string_index])) {
+            return string_index;
+        }
+    }
+
+    return INPUT_ACTION_NULL;
+}
+
 bool is_action_pressed(s32 action) {
     assertion(action >= 0 && action < INPUT_ACTION_COUNT && "this is bad for some reason");
     struct input_binding* binding = global_input_mapper.bindings + action;
@@ -87,16 +97,6 @@ bool is_action_pressed(s32 action) {
 
     return result;
 }
-
-s32 string_to_input_action(string input_string) {
-    for (s32 string_index = 0; string_index < array_count(input_action_strings); ++string_index) {
-        if (string_equal(input_string, input_action_strings[string_index])) {
-            return string_index;
-        }
-    }
-
-    return INPUT_ACTION_NULL;
-};
 
 string input_action_to_string(s32 action) {
     if (action >= 0 && action < array_count(input_action_strings))

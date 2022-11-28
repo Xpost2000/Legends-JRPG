@@ -4,12 +4,13 @@
 CC=gcc
 CFLAGS=-Werror -Wno-unused -Wno-unused-but-set-variable -Wall -std=c99
 CLIBS=-Dmain=SDL_main -lmingw32 -L./dependencies/x86-64/lib/ -L./dependencies/x86-64/bin/ -I./dependencies/ -I./dependencies/x86-64/include/ -lSDL2main -lSDL2 -lSDL2_mixer -msse4
+ITCHPROJECT=xpost2000/untitled-project
 
 SOURCE_FILE_MODULES= main.c
 EMCC=emcc
 
-.PHONY: all build-run-tree clean gen-asm gen-asm-debug cloc run run-debug run-from-runtree run-debug-from-runtree
-all: build-run-tree packer.exe depack.exe game.exe game-debug.exe
+.PHONY: package-all-builds package-windows-build all build-run-tree clean gen-asm gen-asm-debug cloc run run-debug run-from-runtree run-debug-from-runtree package-web web-experimental
+all: package-all-builds build-run-tree packer.exe depack.exe game.exe game-debug.exe
 
 data.bigfile: pack.exe
 	./pack $@ areas dlg res scenes shops
@@ -31,11 +32,16 @@ gamex86.exe: metagen.exe $(wildcard *.c *.h)
 gamex86-debug.exe: metagen.exe $(wildcard *.c *.h)
 	./metagen.exe
 	$(CC) $(SOURCE_FILE_MODULES) -DUSE_EDITOR -o $@ $(CFLAGS) $(CLIBS) -m32 -ggdb3
-web-experimental: $(wildcard *.c *.h)
-	$(EMCC) $(SOURCE_FILE_MODULES) -DRELEASE -s USE_SDL=2 -s USE_WEBGL2=1 -o game.html $(CFLAGS) $(CLIBS) -s INITIAL_MEMORY=127MB --preload-file res --preload-file scenes --preload-file areas
+web-build/index.html: $(wildcard *.c *.h) shell_minimal.html
+	-mkdir web-build/
+	$(EMCC) main.c -O2 -lSDL2_mixer -lSDL2 -s USE_SDL_MIXER=2 -s USE_SDL=2 -s USE_WEBGL2=1 -I./dependencies/ --shell-file shell_minimal.html  -o web-build/game.html -s INITIAL_MEMORY=128MB --preload-file res --preload-file areas --preload-file shops --preload-file dlg --preload-file scenes -DRELEASE
+	mv web-build/game.html web-build/index.html
+package-web: web-build/index.html
+	cd web-build && zip gamewebpackage.zip index.html game.data game.js game.wasm && butler push gamewebpackage.zip $(ITCHPROJECT):wasm
 build-run-tree: clean game-debug.exe game.exe data.bigfile
 	-mkdir run-tree
 	cp game-debug.exe game.exe data.bigfile run-tree/
+web-experimental: game.html
 run: game.exe
 	./game.exe
 run-debug: game-debug.exe
@@ -44,6 +50,8 @@ run-from-runtree: build-run-tree
 	./run-tree/game.exe
 run-debug-from-runtree: build-run-tree
 	./run-tree/game-debug.exe
+package-windows-build: build-run-tree
+	butler push run-tree $(ITCHPROJECT):windows-64bit
 gen-asm-debug: $(wildcard *.c *.h)
 	-mkdir asm
 	$(CC) $(SOURCE_FILE_MODULES) $(CFLAGS) $(CLIBS) -S -masm=intel -ggdb3 -fverbose-asm -o asm/debug.s
@@ -61,4 +69,7 @@ clean:
 	-rm game.data
 	-rm game-debug.exe
 	-rm pack.exe
+	-rm run-tree/*
+	-rm web-build/*
 	-rm depack.exe
+package-all-builds: package-windows-build package-web

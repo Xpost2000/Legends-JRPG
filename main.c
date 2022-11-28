@@ -1,4 +1,3 @@
-/* #define NO_POSTPROCESSING */
 /* #define RELEASE */
 /* #define NO_FANCY_FADEIN_INTRO */
 #define EXPERIMENTAL_VFS
@@ -27,11 +26,6 @@
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
-/* EMCC does not allow me to specify -D flags??? WHAT THE FUCK? */
-/* so I have to define this crap here... */
-/* #define RELEASE */
-/* #define NOAUDIO */
-
 #else
 #define MULTITHREADED_EXPERIMENTAL
 #define USE_SIMD_OPTIMIZATIONS
