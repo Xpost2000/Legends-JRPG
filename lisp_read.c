@@ -4,8 +4,9 @@
 
   Not too big of a deal, it's not super duper confusing, just not what you might
   expect at first for API usage.
-  
+ 
   TODO: parenthesis breaks string parsing? check later. Not affecting any existing scripts so far.
+  11/28 :   Investigate  L105 (lexer_try_to_eat_list)
  */
 /*
   A lisp style form reader, and
@@ -109,6 +110,7 @@ struct lexer_token lexer_try_to_eat_list(struct lexer* lexer) {
     while (!lexer_done(lexer)) {
         char eaten = lexer_eat_next_character(lexer);
 
+        /* NOTE: This is incorrect! We fail to filter out comments or other strings! Or comments even! */
         switch (eaten) {
             case '(': {
                 balancer++;

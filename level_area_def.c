@@ -92,6 +92,7 @@ struct level_area_savepoint {
 };
 
 /* need to determine how to make an accurate id system for this */
+/* I should honestly reduce the size, but on average these things(The level_areas on disk) are small anyways, so I'm not going to be too concerned about this */
 #define ENTITY_BASENAME_LENGTH_MAX (64)
 
 /*

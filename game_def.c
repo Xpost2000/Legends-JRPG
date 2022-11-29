@@ -26,7 +26,7 @@
  */
 
 #include "game_config_defines.c"
-#define GAME_MAX_PERMENANT_ENTITIES (128)
+#define GAME_MAX_PERMENANT_ENTITIES (64)
 
 /* TODO */
 /*

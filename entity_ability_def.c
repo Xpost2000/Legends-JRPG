@@ -63,8 +63,8 @@ enum sequence_action_entity_target_type {
     ENTITY_TARGET_ID_TARGET,
 };
 struct sequence_action_target_entity {
-    s32 entity_target_type;
-    s32 entity_target_index; /* store the target list in the attacker and use this to figure stuff out */
+    s16 entity_target_type;
+    s16 entity_target_index; /* store the target list in the attacker and use this to figure stuff out */
 };
 
 /* force the game camera to do things, lots of state overriding going to scare me. */
@@ -161,8 +161,8 @@ struct sequence_action_special_fx {
 };
 
 struct sequence_action_require_block {
-    bool                                 needed;
-    s32                                  required_entity_count;
+    u8                                   needed;
+    s16                                  required_entity_count;
     struct sequence_action_target_entity required_entities[ENTITY_ABILITY_MAX_SELECTABLE_ENTITIES];
 };
 

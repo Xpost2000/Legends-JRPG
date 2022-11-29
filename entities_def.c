@@ -9,7 +9,7 @@
 #ifndef ENTITY_DEF_C
 #define ENTITY_DEF_C
 
-#define MAX_SELECTED_ENTITIES_FOR_ABILITIES (GAME_MAX_PERMENANT_ENTITIES + 256)
+#define MAX_SELECTED_ENTITIES_FOR_ABILITIES (GAME_MAX_PERMENANT_ENTITIES + 32)
 
 #include "entity_stat_block_def.c"
 #define MAX_ENTITY_LIST_COUNT (8)
@@ -408,17 +408,17 @@ struct entity_navigation_path {
     v2f32 end_point; /* so we can refetch the path if need be. */
     s32   full_path_count;
 #endif
-    s32   count;
     /* paths are supposed to be based on tile coordinates anyways... */
     /* although hopefully we aren't using this up... */
-    v2f32 path_points[64];
+    v2f32 path_points[16];
+    s32   count;
 };
 
 struct entity_ai_attack_tracker {
     entity_id attacker;
     u16       times;
 };
-#define MAXIMUM_REMEMBERED_ATTACKERS (32)
+#define MAXIMUM_REMEMBERED_ATTACKERS (8)
 
 enum entity_combat_action {
     ENTITY_ACTION_NONE,
@@ -459,27 +459,25 @@ struct entity_ai_data {
       This should not actually be combat actions... However I'm not using
       it for anything else right now.
     */
-    s32                           current_action;
-
-    u32                           flags;
-    entity_id                     attack_target_id;
-
-    /* for item usage */
-    bool sourced_from_player_inventory;
-    s32 used_item_index;
-
-    /* for movement */
-    bool                          following_path;
     struct entity_navigation_path navigation_path;
     s32                           current_path_point_index;
 
-    /* TODO, unused! */
+    entity_id attack_target_id;
+    s32       current_action;
+    s32       used_item_index;
+    u32       flags;
+
+    /* for item usage */
+    u8 sourced_from_player_inventory;
+    u8 following_path;
+
+    /* for movement */
     s32                             tracked_attacker_write_cursor;
-    struct entity_ai_attack_tracker tracked_attackers[MAXIMUM_REMEMBERED_ATTACKERS];
+    struct entity_ai_attack_tracker tracked_attackers[MAXIMUM_REMEMBERED_ATTACKERS]; /* TODO, unused! */
 
     /* for abilities */
-    s32                             targeted_entity_count;
     entity_id                       targeted_entities[MAX_SELECTED_ENTITIES_FOR_ABILITIES];
+    s32                             targeted_entity_count;
     s32                             using_ability_index;
 
     /* TODO, unused used for determining when to aggro. */
@@ -501,16 +499,13 @@ struct entity_ai_data {
     s32 death_animation_phase;
     f32 death_animation_kneel_linger_timer;
 
-    /* NOTE: for ANIMATION_SEQUENCE_ACTION_ANIM_BUILTIN if I need it */
-    s32 anim_param[8];
-
-    /* DEBUG TODO */
     f32 wait_timer;
     s32 used_counter_attacks;
+    s32 anim_param[3];
 };
 
 struct entity_animation_state {
-    char   name_buffer[255];
+    char   name_buffer[32];
     string name; /* look up name */
 
     s32    current_frame_index;
@@ -529,7 +524,7 @@ enum entity_equip_slot_index {
     ENTITY_EQUIP_SLOT_INDEX_COUNT,
 };
 
-#define ENTITY_MAX_ABILITIES (1024)
+#define ENTITY_MAX_ABILITIES (512)
 
 /* time information I guess */
 /* mostly used by animation sequences or whatever we need to animate */
@@ -744,7 +739,11 @@ void entity_set_dialogue_file(struct entity* entity, string str) {
     }
 
     entity->has_dialogue = true;
-    cstring_copy(str.data, entity->dialogue_file, 64);
+    s32 minimum_count = str.length;
+    if (minimum_count > array_count(entity->dialogue_file)) {
+        minimum_count = array_count(entity->dialogue_file);
+    }
+    cstring_copy(str.data, entity->dialogue_file, minimum_count);
 }
 
 #define ENTITY_MAX_LOOT_TABLE_ENTRIES (32)

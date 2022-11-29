@@ -1563,7 +1563,14 @@ local void game_VFS_mount_archives(void) {
         _memory_arena_peak_usages(ARENA);       \
     } while (0)
 
+#define PrintStructSize(s) _debugprintf(#s " is %d bytes", (s32)sizeof(s))
 void game_initialize(void) {
+    PrintStructSize(struct entity);
+    PrintStructSize(struct entity_sequence_state);
+    PrintStructSize(struct entity_animation_state);
+    PrintStructSize(struct entity_actor_inventory);
+    PrintStructSize(struct entity_ai_data);
+    PrintStructSize(struct used_battle_action_stack);
     game_arena   = memory_arena_create_from_heap("Game Memory", Megabyte(64));
     scratch_arena = memory_arena_create_from_heap("Scratch Buffer", Megabyte(8));
 #ifdef USE_EDITOR
@@ -2801,6 +2808,7 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                     software_framebuffer_run_shader(framebuffer, rectangle_f32(0, 0, framebuffer->width, framebuffer->height), lighting_shader, area);
                 }
                 game_postprocess_blur_ingame(framebuffer, 2, 0.63, BLEND_MODE_ALPHA);
+                /* game_postprocess_blur_ingame(framebuffer, 1, 0.65, BLEND_MODE_ALPHA); */
 
                 {
                     struct render_commands commands = render_commands(&scratch_arena, 1024, game_state->camera);

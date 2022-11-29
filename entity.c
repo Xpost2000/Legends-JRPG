@@ -1653,7 +1653,7 @@ local void entity_copy_path_array_into_navigation_data(struct entity* entity, v2
     if (path_count < array_count(entity->ai.navigation_path.path_points)) {
         minimum_count = path_count;
     } else {
-        array_count(entity->ai.navigation_path.path_points);
+        minimum_count = array_count(entity->ai.navigation_path.path_points);
     }
 
     entity->ai.navigation_path.count = minimum_count;
