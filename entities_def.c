@@ -558,6 +558,8 @@ struct entity_sequence_state {
 
   Item usage doesn't count because items will only do a fixed or otherwise
   deterministic amount of damage without any rolls.
+
+  [NOTE: this can change in the future, so I might specifically filter out specific things]
 */
 enum used_battle_action_type {
     LAST_USED_ENTITY_ACTION_NONE,
@@ -589,19 +591,14 @@ struct used_battle_action_defend {
 */
 /* While particles may remain dormant, that's not too big of a deal to me. */
 /* NOTE: Allocated at the top of the game_arena (the same place I store the level data) */
-struct used_battle_action_item_usage {
-    /* I'll add stuff here as things are affected. */
+struct used_battle_action_restoration_state {
     s64 memory_arena_marker;
-    s32 inventory_item_index; /* this might not be needed, but I'm recording it anyways */
-
-    /* This is pretty heavy doc! */
     struct player_party_inventory*      inventory_state;
     struct entity_list                  permenant_entity_state;
     struct entity_particle_emitter_list permenant_particle_emitter_state;
     /* These are not a list type unfortunately lol, have to copy this myself right now */
     struct light_def*                   permenant_lights_state;
     s32                                 permenant_light_count_state;
-
     struct entity_list                  level_entity_state;
 #if 0
     /* NOTE:
@@ -612,6 +609,12 @@ struct used_battle_action_item_usage {
 #endif
     struct light_def*                   level_lights_state;
     s32                                 level_light_count_state;
+};
+
+struct used_battle_action_item_usage {
+    /* I'll add stuff here as things are affected. */
+    s32                                         inventory_item_index; /* this might not be needed, but I'm recording it anyways */
+    struct used_battle_action_restoration_state restoration_state;
 };
 
 struct used_battle_action {
