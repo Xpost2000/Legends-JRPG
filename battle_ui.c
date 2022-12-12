@@ -280,6 +280,12 @@ local string battle_menu_main_option_descriptions[] = {
     [BATTLE_THROW_OR_PICKUP] = string_literal("Pickup an object and toss it around for tactical advantage."),
     [BATTLE_WAIT]            = string_literal("finish turn"),
 };
+        /*
+         * 
+         5 * 16
+         8 * 20
+         */
+        /*                                                                             tw  th  ar ac */
 
 local void start_combat_ui(void) {
     zero_memory(&global_battle_ui_state, sizeof(global_battle_ui_state));
@@ -492,18 +498,6 @@ local void battle_ui_determine_disabled_actions(entity_id id, bool* disabled_act
 
     /* disable selecting attack if we don't have anyone within attack range */
     {
-        if (entity_already_used(entity, LAST_USED_ENTITY_ACTION_MOVEMENT)) {
-            disabled_actions[BATTLE_MOVE]   = true;
-        }
-        if (entity_already_used(entity, LAST_USED_ENTITY_ACTION_DEFEND)) {
-            disabled_actions[BATTLE_DEFEND] = true;
-        }
-        if (entity_already_used(entity, LAST_USED_ENTITY_ACTION_ITEM_USAGE)) {
-            disabled_actions[BATTLE_ITEM]   = true;
-        }
-    }
-
-    {
         f32 attack_radius = DEFAULT_ENTITY_ATTACK_RADIUS;
         struct entity_query_list nearby_potential_targets = find_entities_within_radius(&scratch_arena, game_state, entity->position, attack_radius * TILE_UNIT_SIZE);
 
@@ -532,6 +526,24 @@ local void battle_ui_determine_disabled_actions(entity_id id, bool* disabled_act
             } else  {
                 disabled_actions[BATTLE_ABILITY] = true;   
             }
+        }
+    }
+    {
+        if (entity_already_used(entity, LAST_USED_ENTITY_ACTION_MOVEMENT)) {
+            disabled_actions[BATTLE_MOVE]   = true;
+        }
+
+        if (entity_already_used(entity, LAST_USED_ENTITY_ACTION_DEFEND)) {
+            disabled_actions[BATTLE_DEFEND]          = true;
+            disabled_actions[BATTLE_ITEM]            = true;
+            disabled_actions[BATTLE_THROW_OR_PICKUP] = true;
+            disabled_actions[BATTLE_MOVE]            = true;
+            disabled_actions[BATTLE_ABILITY]         = true;
+            disabled_actions[BATTLE_ATTACK]          = true;
+        }
+
+        if (entity_already_used(entity, LAST_USED_ENTITY_ACTION_ITEM_USAGE)) {
+            disabled_actions[BATTLE_ITEM]   = true;
         }
     }
 }
