@@ -360,6 +360,141 @@ local void cancel_ability_selections(void) {
     }
 }
 
+local v2s32 get_grid_position_for_ability(struct entity_ability* ability) {
+    struct game_state_combat_state* combat_state            = &game_state->combat_state;
+    struct entity*                  active_combatant_entity = game_dereference_entity(game_state, combat_state->participants[combat_state->active_combatant]);
+    struct entity*                  user                    = active_combatant_entity;
+    s32                             grid_x                  = 0;
+    s32                             grid_y                  = 0;
+
+    if (ability->selection_type == ABILITY_SELECTION_TYPE_FIELD_SHAPE) {
+        grid_x = user->position.x / TILE_UNIT_SIZE;
+        grid_y = user->position.y / TILE_UNIT_SIZE;
+    } else if (ability->selection_type == ABILITY_SELECTION_TYPE_FIELD) {
+        grid_x = global_battle_ui_state.ability_target_x;
+        grid_y = global_battle_ui_state.ability_target_y;
+    }
+
+    /* Coordinate centering. */
+    grid_x -= ENTITY_ABILITY_SELECTION_FIELD_CENTER_X;
+    grid_y -= ENTITY_ABILITY_SELECTION_FIELD_CENTER_Y;
+    return v2s32(grid_x,grid_y);
+}
+
+local void filter_ability_selection_field(struct entity_ability* ability, u8* selection_field, struct game_state* state) {
+    struct game_state_combat_state*                                          combat_state                                                                                  = &game_state->combat_state;
+    struct entity*                                                           active_combatant_entity                                                                       = game_dereference_entity(game_state, combat_state->participants[combat_state->active_combatant]);
+    struct entity*                                                           user                                                                                          = active_combatant_entity;
+    struct level_area*                                                       area                                                                                          = &state->loaded_area;
+    v2s32                                                                    grid_xy                                                                                       = get_grid_position_for_ability(ability);
+    s32                                                                      grid_x                                                                                        = grid_xy.x;
+    s32                                                                      grid_y                                                                                        = grid_xy.y;
+    bool                                                                     selectable_blocks[ENTITY_ABILITY_SELECTION_FIELD_MAX_Y][ENTITY_ABILITY_SELECTION_FIELD_MAX_X] = {};
+    bool                                                                     searched_blocks[ENTITY_ABILITY_SELECTION_FIELD_MAX_Y][ENTITY_ABILITY_SELECTION_FIELD_MAX_X]   = {};
+    v2s32 selection_block_search_list[ENTITY_ABILITY_SELECTION_FIELD_MAX_Y * ENTITY_ABILITY_SELECTION_FIELD_MAX_X]                                                         = {};
+    s32                                                                      selection_block_search_list_size                                                              = 0;
+
+    struct entity* does_not_count_as_obstacle[] = {
+        user,
+    };
+    s32 does_not_count_as_obstacle_count = 1;
+
+    /* NOTE: for now only allows the user as not an obstacle */
+    if (!ability->requires_no_obstructions) {
+        for (s32 y = 0; y < ENTITY_ABILITY_SELECTION_FIELD_MAX_Y; ++y) {
+            for (s32 x = 0; x < ENTITY_ABILITY_SELECTION_FIELD_MAX_X; ++x) {
+                if (selection_field[y * ENTITY_ABILITY_SELECTION_FIELD_MAX_X + x]) {
+                    selectable_blocks[y][x] = true;
+                }
+            }
+        }
+    } else {
+        bool is_at_user_foot = false; /* if an ability is not at the user foot, we'll have a simpler selection field method, which is just copying the original selection field. */
+        {
+            s32 x = ENTITY_ABILITY_SELECTION_FIELD_CENTER_X;
+            s32 y = ENTITY_ABILITY_SELECTION_FIELD_CENTER_Y;
+
+            if (!level_area_any_obstructions_at(area, grid_x+x,grid_y+y)) {
+                selection_block_search_list[selection_block_search_list_size++] = v2s32(x, y);
+                searched_blocks[y][x]                                           = true;
+                is_at_user_foot                                                 = true;
+            }
+        }
+
+        if (is_at_user_foot) {
+            while (selection_block_search_list_size) {
+                v2s32 current_position                                     = selection_block_search_list[selection_block_search_list_size-1];
+                selection_block_search_list_size                          -= 1;
+                searched_blocks[current_position.y][current_position.x]    = true;
+                selectable_blocks[current_position.y][current_position.x]  = true;
+                _debugprintf("current position: %d, %d", current_position.x, current_position.y);
+
+                {
+                    local v2s32 neighbor_offsets[] = {
+                        v2s32(-1, 0),
+                        v2s32(1, 0),
+                        v2s32(0, -1),
+                        v2s32(0, 1),
+                    };
+
+                    for (s32 neighbor_offset_index = 0; neighbor_offset_index < array_count(neighbor_offsets); ++neighbor_offset_index) {
+                        {
+                            v2s32 neighbor_offset = neighbor_offsets[neighbor_offset_index];
+                            s32   x               = neighbor_offset.x + current_position.x;
+                            s32   y               = neighbor_offset.y + current_position.y;
+                            bool  do_not_search   = false;
+
+                            _debugprintf("Considering neighbor: %d, %d", neighbor_offset.x, neighbor_offset.y);
+
+                            if (!do_not_search &&
+                                (x >= ENTITY_ABILITY_SELECTION_FIELD_MAX_X || x < 0 ||
+                                 y >= ENTITY_ABILITY_SELECTION_FIELD_MAX_Y || y < 0)) {
+                                do_not_search = true;
+                                _debugprintf("Do not search : %d, %d", x, y);
+                            }
+
+                            _debugprintf("Ability field at %d, %d? : %d", x, y, ability->selection_field[y][x]);
+                            if (!do_not_search && selection_field[y * ENTITY_ABILITY_SELECTION_FIELD_MAX_X + x] == 0) {
+                                do_not_search = true;
+                                _debugprintf("Field is empty. Do not search : %d, %d", x, y);
+                            }
+
+                            if (do_not_search) {
+                                continue;
+                            }
+
+                            if (!searched_blocks[y][x]) {
+                                if (!level_area_any_obstructions_at(area, grid_x+x,grid_y+y)) {
+                                    searched_blocks[y][x] = true;
+                                    selection_block_search_list[selection_block_search_list_size++] = v2s32(x, y);
+                                    _debugprintf("adding %d, %d to search", x, y);
+                                } else {
+                                    _debugprintf("Do not search : %d, %d (hit something?)", x, y);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } else {
+            for (s32 y = 0; y < ENTITY_ABILITY_SELECTION_FIELD_MAX_Y; ++y) {
+                for (s32 x = 0; x < ENTITY_ABILITY_SELECTION_FIELD_MAX_X; ++x) {
+                    if (selection_field[y * ENTITY_ABILITY_SELECTION_FIELD_MAX_X + x]) {
+                        selectable_blocks[y][x] = true;
+                    }
+                }
+            }
+        }
+    }
+
+    _debugprintf("copy results");
+    for (s32 y = 0; y < ENTITY_ABILITY_SELECTION_FIELD_MAX_Y; ++y) {
+        for (s32 x = 0; x < ENTITY_ABILITY_SELECTION_FIELD_MAX_X; ++x) {
+            global_battle_ui_state.selection_field[y][x] = selectable_blocks[y][x];
+        }
+    }
+}
+
 /* TODO: this doesn't quite work right now! Need to sync this to what you can see! */
 local void recalculate_targeted_entities_by_ability(struct entity_ability* ability, u8* selection_field, struct game_state* state) {
     struct game_state_combat_state* combat_state            = &game_state->combat_state;
@@ -369,7 +504,7 @@ local void recalculate_targeted_entities_by_ability(struct entity_ability* abili
     const f32                       SMALL_ENOUGH_EPISILON   = 0.03;
 
     cancel_ability_selections();
-
+    filter_ability_selection_field(ability, selection_field, state);
     struct entity_iterator entities = game_entity_iterator(state);
 
     bool encountered_any_collision  = false;
@@ -393,7 +528,6 @@ local void recalculate_targeted_entities_by_ability(struct entity_ability* abili
             {
                 _debugprintf("Okay... Looking at %p", potential_target);
 
-                /* TODO: This is fucking broken right now */
                 for (s32 selection_grid_y = 0; selection_grid_y < ENTITY_ABILITY_SELECTION_FIELD_MAX_Y && !should_add_to_targets_list; ++selection_grid_y) {
                     for (s32 selection_grid_x = 0; selection_grid_x < ENTITY_ABILITY_SELECTION_FIELD_MAX_X && !should_add_to_targets_list; ++selection_grid_x) {
                         if (global_battle_ui_state.selection_field[selection_grid_y][selection_grid_x]) {
@@ -985,7 +1119,7 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                 if (selection_confirm) {
                     global_battle_ui_state.selecting_ability_target = true;
 
-                    struct entity_ability_slot slot = user->abilities[global_battle_ui_state.usable_abilities[global_battle_ui_state.selection]];
+                    struct entity_ability_slot slot    = user->abilities[global_battle_ui_state.usable_abilities[global_battle_ui_state.selection]];
                     struct entity_ability*     ability = entity_database_ability_find_by_index(&game_state->entity_database, slot.ability);
 
                     if (ability->selection_type == ABILITY_SELECTION_TYPE_FIELD_SHAPE) {
@@ -1617,229 +1751,12 @@ local void render_combat_area_information(struct game_state* state, struct rende
         struct level_area* area = &state->loaded_area;
 
         if (global_battle_ui_state.selecting_ability_target) {
-            struct entity_ability* ability = entity_database_ability_find_by_index(&game_state->entity_database, user->abilities[global_battle_ui_state.selection].ability);
+            struct entity_ability_slot slot = user->abilities[global_battle_ui_state.usable_abilities[global_battle_ui_state.selection]];
+            struct entity_ability*     ability = entity_database_ability_find_by_index(&game_state->entity_database, slot.ability);
 
-            s32 grid_x = 0;
-            s32 grid_y = 0;
-
-            if (ability->selection_type == ABILITY_SELECTION_TYPE_FIELD_SHAPE) {
-                grid_x = user->position.x / TILE_UNIT_SIZE;
-                grid_y = user->position.y / TILE_UNIT_SIZE;
-            } else if (ability->selection_type == ABILITY_SELECTION_TYPE_FIELD) {
-                grid_x = global_battle_ui_state.ability_target_x;
-                grid_y = global_battle_ui_state.ability_target_y;
-            }
-
-            /* Coordinate centering. */
-            grid_x -= ENTITY_ABILITY_SELECTION_FIELD_CENTER_X;
-            grid_y -= ENTITY_ABILITY_SELECTION_FIELD_CENTER_Y;
-
-#if 0
-            bool first_collision = true;
-            s32 user_direction = user->facing_direction;
-
-            s32 start_y  = 0;
-            s32 target_y = ENTITY_ABILITY_SELECTION_FIELD_MAX_Y;
-            s32 start_x  = 0;
-            s32 target_x = ENTITY_ABILITY_SELECTION_FIELD_MAX_X;
-            s32 sign_x   = 1;
-            s32 sign_y   = 1;
-
-            switch (user_direction) {
-                case DIRECTION_DOWN: {} break;
-                case DIRECTION_RIGHT: {} break;
-
-                case DIRECTION_UP: {
-                    Swap(start_y, target_y, s32);
-                    start_y-=1;
-                    sign_y = -1;
-                } break;
-
-                case DIRECTION_LEFT: {
-                    Swap(start_x, target_x, s32);
-                    start_x-=1;
-                    sign_x = -1;
-                } break;
-            }
-
-            bool found_first_collision = false;
-            s32 first_collision_relative_x = 0;
-            s32 first_collision_relative_y = 0;
-
-            /* This humungous motherfucker is slightly buggy. I wonder why? */
-            /* Honestly I think the right answer is to "floodfill" the grid. */
-            /* So I'll do that later! TODO: that I'm actually going to do since it's noticable!
-               Seems to be difficult to trigger though. */
-
-            for (s32 y_index = start_y; _comparison_predicate(sign_y, y_index, target_y) && !found_first_collision; y_index += sign_y) {
-                for (s32 x_index = start_x; _comparison_predicate(sign_x, x_index, target_x) && !found_first_collision; x_index += sign_x) {
-                    if (global_battle_ui_state.selection_field[y_index][x_index]) {
-                        if (level_area_any_obstructions_at(area, grid_x+x_index, grid_y+y_index)) {
-                            found_first_collision = true;
-                            first_collision_relative_x = x_index;
-                            first_collision_relative_y = y_index;
-                        }
-                    }
-                }
-            }
-
-            for (s32 y_index = 0; y_index < ENTITY_ABILITY_SELECTION_FIELD_MAX_Y; y_index++) {
-                for (s32 x_index = 0; x_index < ENTITY_ABILITY_SELECTION_FIELD_MAX_X; x_index++) {
-                    if (global_battle_ui_state.selection_field[y_index][x_index]) {
-                        union color32u8 color = color32u8(0, 0, 255, 128);
-
-                        if (ability->selection_type == ABILITY_SELECTION_TYPE_FIELD_SHAPE) {
-                            if (global_battle_ui_state.ability_target_x == x_index && global_battle_ui_state.ability_target_y == y_index) {
-                                color = color32u8(255, 0, 0, 128);
-                            }
-                        }
-
-                        bool reject = false;
-
-                        /* Obstruction rendering for ability path */
-                        {
-                            if (found_first_collision && ability->requires_no_obstructions) {
-                                switch (user_direction) {
-                                    case DIRECTION_DOWN: {
-                                        if (y_index <= first_collision_relative_y) {
-                                            if (y_index != first_collision_relative_y) {
-                                            } else {
-                                                if (ability->selection_type == ABILITY_SELECTION_TYPE_FIELD) {
-                                                    color = color32u8(255, 0, 0, 128);
-                                                }
-                                            }
-                                        } else {
-                                            reject = true;
-                                        }
-                                    } break;
-                                    case DIRECTION_RIGHT: {
-                                        if (x_index <= first_collision_relative_x) {
-                                            if (x_index != first_collision_relative_x) {
-                                            } else {
-                                                if (ability->selection_type == ABILITY_SELECTION_TYPE_FIELD) {
-                                                    color = color32u8(255, 0, 0, 128);
-                                                }
-                                            }
-                                        } else {
-                                            reject = true;
-                                        }
-                                    } break;
-                                    case DIRECTION_UP: {
-                                        if (y_index >= first_collision_relative_y) {
-                                            if (y_index != first_collision_relative_y) {
-                                            } else {
-                                                if (ability->selection_type == ABILITY_SELECTION_TYPE_FIELD) {
-                                                    color = color32u8(255, 0, 0, 128);
-                                                }
-                                            }
-                                        } else {
-                                            reject = true;
-                                        }
-                                    } break;
-                                    case DIRECTION_LEFT: {
-                                        if (x_index >= first_collision_relative_x) {
-                                            if (x_index != first_collision_relative_x) {
-                                            } else {
-                                                if (ability->selection_type == ABILITY_SELECTION_TYPE_FIELD) {
-                                                    color = color32u8(255, 0, 0, 128);
-                                                }
-                                            }
-                                        } else {
-                                            reject = true;
-                                        }
-                                    } break;
-                                }
-                            }
-                        }
-
-                        if (!reject) render_commands_push_quad(commands,
-                                                               rectangle_f32(grid_x * TILE_UNIT_SIZE + x_index * TILE_UNIT_SIZE,
-                                                                             grid_y * TILE_UNIT_SIZE + y_index * TILE_UNIT_SIZE,
-                                                                             TILE_UNIT_SIZE, TILE_UNIT_SIZE), color, BLEND_MODE_ALPHA);
-                    }
-                }
-            }
-#else
-            bool  selectable_blocks[ENTITY_ABILITY_SELECTION_FIELD_MAX_Y][ENTITY_ABILITY_SELECTION_FIELD_MAX_X]            = {};
-            bool  searched_blocks[ENTITY_ABILITY_SELECTION_FIELD_MAX_Y][ENTITY_ABILITY_SELECTION_FIELD_MAX_X]              = {};
-            v2s32 selection_block_search_list[ENTITY_ABILITY_SELECTION_FIELD_MAX_Y * ENTITY_ABILITY_SELECTION_FIELD_MAX_X] = {};
-            s32   selection_block_search_list_size                                                                         = 0;
-
-            struct entity* does_not_count_as_obstacle[] = {
-                user,
-            };
-            s32 does_not_count_as_obstacle_count = 1;
-
-            /* NOTE: for now only allows the user as not an obstacle */
-            if (!ability->requires_no_obstructions) {
-                for (s32 y = 0; y < ENTITY_ABILITY_SELECTION_FIELD_MAX_Y; ++y) {
-                    for (s32 x = 0; x < ENTITY_ABILITY_SELECTION_FIELD_MAX_X; ++x) {
-                        if (ability->selection_field[y][x]) {
-                            selectable_blocks[y][x] = true;
-                        }
-                    }
-                }
-            } else {
-                {
-                    s32 x = ENTITY_ABILITY_SELECTION_FIELD_CENTER_X;
-                    s32 y = ENTITY_ABILITY_SELECTION_FIELD_CENTER_Y;
-
-                    if (!game_any_entity_at_tile_point_except(v2f32(grid_x+x, grid_y+y), does_not_count_as_obstacle, does_not_count_as_obstacle_count)) {
-                        selection_block_search_list[selection_block_search_list_size++] = v2s32(x, y);
-                        searched_blocks[y][x] = true;
-                    }
-                }
-
-                while (selection_block_search_list_size) {
-                    v2s32 current_position                                     = selection_block_search_list[selection_block_search_list_size-1];
-                    selection_block_search_list_size                          -= 1;
-                    searched_blocks[current_position.y][current_position.x]    = true;
-                    selectable_blocks[current_position.y][current_position.x]  = true;
-                    _debugprintf("current position: %d, %d", current_position.x, current_position.y);
-
-                    {
-                        local v2s32 neighbor_offsets[] = {
-                            v2s32(-1, 0),
-                            v2s32(1, 0),
-                            v2s32(0, -1),
-                            v2s32(0, 1),
-                        };
-
-                        for (s32 neighbor_offset_index = 0; neighbor_offset_index < array_count(neighbor_offsets); ++neighbor_offset_index) {
-                            {
-                                v2s32 neighbor_offset = neighbor_offsets[neighbor_offset_index];
-                                s32   x               = neighbor_offset.x + current_position.x;
-                                s32   y               = neighbor_offset.y + current_position.y;
-                                bool  do_not_search   = false;
-
-                                if (x >= ENTITY_ABILITY_SELECTION_FIELD_MAX_X || x < 0 ||
-                                    y >= ENTITY_ABILITY_SELECTION_FIELD_MAX_Y || y < 0) {
-                                    do_not_search = true;
-                                    _debugprintf("Do not search : %d, %d", x, y);
-                                }
-
-                                if (ability->selection_field[y-current_position.y][x-current_position.x] == 0) {
-                                    do_not_search = true;
-                                }
-
-                                if (do_not_search) {
-                                    continue;
-                                }
-
-                                if (!searched_blocks[y][x]) {
-                                    if (!game_any_entity_at_tile_point_except(v2f32(grid_x+x, grid_y+y), does_not_count_as_obstacle, does_not_count_as_obstacle_count)) {
-                                        searched_blocks[y][x] = true;
-                                        selection_block_search_list[selection_block_search_list_size++] = v2s32(x, y);
-                                    } else {
-                                        _debugprintf("Do not search : %d, %d (hit something?)", x, y);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
+            v2s32 grid_xy = get_grid_position_for_ability(ability);
+            s32   grid_x  = grid_xy.x;
+            s32   grid_y  = grid_xy.y;
 
             for (s32 y = 0; y < ENTITY_ABILITY_SELECTION_FIELD_MAX_Y; ++y) {
                 for (s32 x = 0; x < ENTITY_ABILITY_SELECTION_FIELD_MAX_X; ++x) {
@@ -1851,20 +1768,14 @@ local void render_combat_area_information(struct game_state* state, struct rende
                         }
                     }
 
-                    if (selectable_blocks[y][x]) {
+                    if (global_battle_ui_state.selection_field[y][x]) {
                         render_commands_push_quad(commands,
                                                   rectangle_f32(grid_x * TILE_UNIT_SIZE + x * TILE_UNIT_SIZE,
                                                                 grid_y * TILE_UNIT_SIZE + y * TILE_UNIT_SIZE,
                                                                 TILE_UNIT_SIZE, TILE_UNIT_SIZE), color, BLEND_MODE_ALPHA);
-                    } else {
-                        render_commands_push_quad(commands,
-                                                  rectangle_f32(grid_x * TILE_UNIT_SIZE + x * TILE_UNIT_SIZE,
-                                                                grid_y * TILE_UNIT_SIZE + y * TILE_UNIT_SIZE,
-                                                                TILE_UNIT_SIZE, TILE_UNIT_SIZE), color32u8(0, 255, 0, 200), BLEND_MODE_ALPHA);
                     }
                 }
             }
-#endif
         }
     }
 }
