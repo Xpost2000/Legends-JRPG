@@ -2173,7 +2173,7 @@ local void update_game_camera_exploration_mode(struct game_state* state, f32 dt)
     /*
       In reality, I want to do more with the camera, but right now I'm just going to leave this hacky code in
       here so I can do stuff later.
-     */
+    */
     if (!(game_get_player(state)->flags & ENTITY_FLAGS_ALIVE)) {
         camera->xy.y -= dt * 25;
         return;
@@ -2187,27 +2187,29 @@ local void update_game_camera_exploration_mode(struct game_state* state, f32 dt)
       NOTE(jerry):
       Make a separate cutscene camera.
     */
-    if (!cutscene_viewing_separate_area())
-    {
+    if (!cutscene_viewing_separate_area()) {
         /* kind of like a project on everythign */
         v2f32                projected_rectangle_position = camera_project(camera, v2f32(camera->travel_bounds.x, camera->travel_bounds.y), SCREEN_WIDTH, SCREEN_HEIGHT);
         struct rectangle_f32 projected_rectangle          = rectangle_f32(projected_rectangle_position.x, projected_rectangle_position.y, camera->travel_bounds.w / camera->zoom, camera->travel_bounds.h / camera->zoom);
         struct rectangle_f32 player_rectangle             = entity_rectangle_collision_bounds(player);
-
-        f32 new_w = projected_rectangle.w * 0.73;
-        f32 new_h = projected_rectangle.h * 0.7;
-        f32 delta_w = projected_rectangle.w - new_w;
-        f32 delta_h = projected_rectangle.w - new_h;
+        f32                  new_w                        = projected_rectangle.w * 0.6;
+        f32                  new_h                        = projected_rectangle.h * 0.6;
+        f32                  delta_w                      = projected_rectangle.w - new_w;
+        f32                  delta_h                      = projected_rectangle.w - new_h;
 
         projected_rectangle.x += delta_w/2;
         projected_rectangle.y += delta_h/2;
         projected_rectangle.w = new_w;
         projected_rectangle.h = new_h;
+/* #define OLD_CAMERA_BEHAVIOR */
 
+        bool pushing_left_edge   = (player_rectangle.x < projected_rectangle.x);
+        bool pushing_right_edge  = (player_rectangle.x + player_rectangle.w > projected_rectangle.x + projected_rectangle.w);
+        bool pushing_top_edge    = (player_rectangle.y < projected_rectangle.y);
+        bool pushing_bottom_edge = (player_rectangle.y + player_rectangle.h > projected_rectangle.y + projected_rectangle.h);
+
+#ifdef OLD_CAMERA_BEHAVIOR
         if (!camera->try_interpolation[0]) {
-            bool pushing_left_edge  = (player_rectangle.x < projected_rectangle.x);
-            bool pushing_right_edge = (player_rectangle.x + player_rectangle.w > projected_rectangle.x + projected_rectangle.w);
-
             if (pushing_right_edge || pushing_left_edge) {
                 camera->interpolation_t[0] = 0;
                 camera->try_interpolation[0] = true;
@@ -2216,16 +2218,32 @@ local void update_game_camera_exploration_mode(struct game_state* state, f32 dt)
         }
 
         if (!camera->try_interpolation[1]) {
-            bool pushing_top_edge    = (player_rectangle.y < projected_rectangle.y);
-            bool pushing_bottom_edge = (player_rectangle.y + player_rectangle.h > projected_rectangle.y + projected_rectangle.h);
-
             if (pushing_bottom_edge || pushing_top_edge) {
                 camera->interpolation_t[1] = 0;
                 camera->try_interpolation[1] = true;
                 camera->start_interpolation_values[1] = camera->xy.y;
             }
         }
+#else
+
+        if (pushing_right_edge) {
+            camera->xy.x += DEFAULT_VELOCITY*dt;
+        }
+
+        if (pushing_left_edge) {
+            camera->xy.x -= DEFAULT_VELOCITY*dt;
+        }
+
+
+        if (pushing_bottom_edge) {
+            camera->xy.y += DEFAULT_VELOCITY*dt;
+        }
+
+        if (pushing_top_edge) {
+            camera->xy.y -= DEFAULT_VELOCITY*dt;
+        }
     }
+#endif
 }
 
 local void update_game_camera(struct game_state* state, f32 dt) {

@@ -3,7 +3,7 @@
 
   Not lights apparently. Those don't count for some reason!
 */
-
+#define DEFAULT_VELOCITY (TILE_UNIT_SIZE * 5)
 #define DEFAULT_ENTITY_ATTACK_RADIUS (2.5)
 
 #ifndef ENTITY_DEF_C

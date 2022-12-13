@@ -660,7 +660,6 @@ local bool entity_is_dead(struct entity* entity) {
 /* requires tilemap world... */
 /* TODO fix implicit decls, linker hasn't killed game yet */
 void player_handle_radial_interactables(struct game_state* state, struct entity* entity, f32 dt);
-#define DEFAULT_VELOCITY (TILE_UNIT_SIZE * 5)
 
 void entity_handle_player_controlled(struct game_state* state, struct entity* entity, f32 dt) {
     /* all the input blockers. */
