@@ -1304,7 +1304,22 @@ local void sortable_entity_draw_entity(struct render_commands* commands, struct 
                                                  real_dimensions.y*(1 - height_trim)),
                                    rectangle_f32(0, 0, sprite_dimensions.x, sprite_dimensions.y * (1 - height_trim)),
                                    modulation_color, NO_FLAGS, BLEND_MODE_ALPHA);
-        render_commands_set_shader(commands, game_foreground_things_shader, NULL);
+        if (current_entity->ai.hurt_animation_phase == ENTITY_HURT_ANIMATION_ON) {
+            if ((current_entity->ai.hurt_animation_shakes % 2) == 0) {
+                struct image_buffer* used_image = graphics_assets_get_image_by_id(assets, sprite_to_use);
+                struct rectangle_f32 rectangle  = rectangle_f32(current_entity->position.x - alignment_offset.x + other_offsets.x,
+                                                                current_entity->position.y - alignment_offset.y + other_offsets.y,
+                                                                real_dimensions.x,
+                                                                real_dimensions.y*(1 - height_trim));
+                v2f32 rectangle_position_transformed = v2f32(rectangle.x, rectangle.y);
+                rectangle_position_transformed       = camera_transform(&commands->camera, rectangle_position_transformed, SCREEN_WIDTH, SCREEN_HEIGHT);
+                rectangle.x                          = rectangle_position_transformed.x;
+                rectangle.y                          = rectangle_position_transformed.y;
+
+                lightmask_buffer_blit_image(&global_lightmask_buffer, used_image, rectangle, RECTANGLE_F32_NULL, LIGHTMASK_BLEND_OR, BLEND_MODE_ALPHA, 255);
+            }
+        }
+        render_commands_set_shader(commands, game_foreground_entity_things_shader, current_entity);
 
         if (entity_is_in_defense_stance(current_entity)) {
             struct image_buffer* used_image = graphics_assets_get_image_by_id(assets, ui_battle_defend_icon);
@@ -1320,7 +1335,7 @@ local void sortable_entity_draw_entity(struct render_commands* commands, struct 
             rectangle.x                          = rectangle_position_transformed.x;
             rectangle.y                          = rectangle_position_transformed.y;
 
-            lightmask_buffer_blit_image(&global_lightmask_buffer, used_image, rectangle, RECTANGLE_F32_NULL, LIGHTMASK_BLEND_OR, BLEND_MODE_ALPHA, 200);
+            lightmask_buffer_blit_image(&global_lightmask_buffer, used_image, rectangle, RECTANGLE_F32_NULL, LIGHTMASK_BLEND_OR, BLEND_MODE_ALPHA, 255);
             render_commands_set_shader(commands, game_foreground_things_shader, NULL);
         }
 
@@ -1487,11 +1502,15 @@ void render_entities(struct game_state* state, struct sortable_draw_entities* dr
 }
 
 struct entity_query_list find_entities_within_radius(struct memory_arena* arena, struct game_state* state, v2f32 position, f32 radius, bool obstacle) {
+    return find_entities_within_radius_without_obstacles(arena, state, position, radius);
+    /* buggy */
+#if 0 
     if (obstacle) {
         return find_entities_within_radius_with_obstacles(arena, state, position, radius);
     } else {
         return find_entities_within_radius_without_obstacles(arena, state, position, radius);
     }
+#endif
 }
 
 struct entity_query_list find_entities_within_radius_without_obstacles(struct memory_arena* arena, struct game_state* state, v2f32 position, f32 radius) {
@@ -1520,6 +1539,7 @@ struct entity_query_list find_entities_within_radius_without_obstacles(struct me
 }
 
 /* NOTE: Need to special case spears or projectiles which can go over entities, or add versions with filters */
+/* NOTE: not accurate enough? This is lightly broken */
 struct entity_query_list find_entities_within_radius_with_obstacles(struct memory_arena* arena, struct game_state* state, v2f32 position, f32 radius) {
     struct entity_query_list result          = {};
     struct entity_iterator   it              = game_entity_iterator(state);
@@ -1545,9 +1565,10 @@ struct entity_query_list find_entities_within_radius_with_obstacles(struct memor
 
     struct entity* whoeverisonme = game_any_entity_at_tile_point(v2f32_scale(position, 1.0/TILE_UNIT_SIZE));
     for (s32 candidate_index = 0; candidate_index < candidate_count; ++candidate_index) {
-        entity_id      candidate  = candidates[candidate_index];
-        struct entity* entity     = game_dereference_entity(game_state, candidate);
-        v2f32          direction  = v2f32_direction(position, entity->position);
+        entity_id      candidate = candidates[candidate_index];
+        struct entity* entity    = game_dereference_entity(game_state, candidate);
+
+        v2f32          direction = v2f32_direction(position, entity->position);
         direction.x              *= TILE_UNIT_SIZE;
         direction.y              *= TILE_UNIT_SIZE;
 
@@ -1824,9 +1845,9 @@ void entity_combat_submit_attack_action(struct entity* entity, entity_id target_
         return;
     }
 
-    entity->ai.current_action                   = ENTITY_ACTION_ATTACK;
-    entity->ai.attack_target_id                 = target_id;
-    entity->waiting_on_turn                     = 0;
+    entity->ai.current_action                      = ENTITY_ACTION_ATTACK;
+    entity->ai.attack_target_id                    = target_id;
+    entity->waiting_on_turn                        = 0;
     entity->ai.attack_animation_timer              = 0;
     entity->ai.attack_animation_phase              = ENTITY_ATTACK_ANIMATION_PHASE_MOVE_TO_TARGET;
     entity->ai.attack_animation_preattack_position = grid_snapped_v2f32(entity->position);
@@ -2483,10 +2504,10 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
                         target_entity->position = grid_snapped_v2f32(target_entity->ai.attack_animation_preattack_position);
                         target_entity->ai.current_action = 0;
                         /* TODO snap to grid valid position to make sure no bugs happen */
+                    } else {
+                        target_entity->position.x = lerp_f32(target_entity->ai.attack_animation_interpolation_start_position.x, target_entity->ai.attack_animation_interpolation_end_position.x, effective_t);
+                        target_entity->position.y = lerp_f32(target_entity->ai.attack_animation_interpolation_start_position.y, target_entity->ai.attack_animation_interpolation_end_position.y, effective_t);
                     }
-                    
-                    target_entity->position.x = lerp_f32(target_entity->ai.attack_animation_interpolation_start_position.x, target_entity->ai.attack_animation_interpolation_end_position.x, effective_t);
-                    target_entity->position.y = lerp_f32(target_entity->ai.attack_animation_interpolation_start_position.y, target_entity->ai.attack_animation_interpolation_end_position.y, effective_t);
 
                     target_entity->ai.attack_animation_timer += dt;
                 } break;
@@ -3553,7 +3574,8 @@ void entity_particle_emitter_list_copy(struct entity_particle_emitter_list* sour
 /* copy of battle_ui.c relevant targetting code, need more usage examples before factoring out. */
 local void entity_think_basic_zombie_combat_actions(struct entity* entity, struct game_state* state) {
     f32 attack_radius = DEFAULT_ENTITY_ATTACK_RADIUS;
-    struct entity_query_list nearby_potential_targets = find_entities_within_radius(&scratch_arena, state, game_get_player(state)->position, attack_radius*TILE_UNIT_SIZE, true);
+    struct entity_query_list nearby_potential_targets = find_entities_within_radius(&scratch_arena, state, entity->position, attack_radius*2*TILE_UNIT_SIZE, false);
+    /* struct entity_query_list nearby_potential_targets = find_entities_within_radius(&scratch_arena, state, entity->position, attack_radius*2*TILE_UNIT_SIZE, true); */
 
     entity_id closest_valid_entity = {};
     f32 closest_distance           = INFINITY;
@@ -3625,6 +3647,8 @@ local void entity_think_basic_zombie_combat_actions(struct entity* entity, struc
                                                                &state->loaded_area,
                                                                v2f32(entity->position.x / TILE_UNIT_SIZE, entity->position.y / TILE_UNIT_SIZE),
                                                                target_entity_position_next_best);
+        const s32 max_path = 4;
+        if (new_path.count > max_path) new_path.count = max_path;
         if (new_path.success) {
             entity_combat_submit_movement_action(entity, new_path.points, new_path.count);
         } else {

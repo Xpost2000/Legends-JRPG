@@ -3009,8 +3009,8 @@ struct entity* game_any_entity_at_tile_point_except(v2f32 xy, struct entity** fi
             continue;
         }
         
-        if (fabs(position.x - xy.x) <= 0.1 &&
-            fabs(position.y - xy.y) <= 0.1) {
+        if (fabs(position.x - xy.x) <= 0.15 &&
+            fabs(position.y - xy.y) <= 0.15) {
             bool passed_filter = true;
 
             for (s32 filtered_entity_index = 0; filtered_entity_index < filter_count; ++filtered_entity_index) {

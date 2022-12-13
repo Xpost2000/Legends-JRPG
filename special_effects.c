@@ -114,3 +114,19 @@ union color32f32 game_foreground_things_shader(struct software_framebuffer* fram
     }
     return source_pixel;
 }
+
+union color32f32 game_foreground_entity_things_shader(struct software_framebuffer* framebuffer, union color32f32 source_pixel, v2f32 pixel_position, void* context) {
+    struct entity* entity = (struct entity*)context;
+    if (entity->ai.hurt_animation_phase == ENTITY_HURT_ANIMATION_ON) {
+        if ((entity->ai.hurt_animation_shakes % 2) == 0) {
+            if (source_pixel.a > 0.1) {
+                return color32f32(1,1,1,1);
+            } else {
+                return source_pixel;
+            }
+        } else {
+            game_foreground_things_shader(framebuffer, source_pixel, pixel_position, 0);
+        }
+    }
+    return source_pixel;
+}

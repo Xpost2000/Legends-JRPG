@@ -237,6 +237,7 @@ struct light_def {
 /* also some of these will have code designated for things like entities */
 union color32f32 game_background_things_shader(struct software_framebuffer* framebuffer, union color32f32 source_pixel, v2f32 pixel_position, void* context);
 union color32f32 game_foreground_things_shader(struct software_framebuffer* framebuffer, union color32f32 source_pixel, v2f32 pixel_position, void* context);
+union color32f32 game_foreground_entity_things_shader(struct software_framebuffer* framebuffer, union color32f32 source_pixel, v2f32 pixel_position, void* context);
 
 #include "entity_model_def.c"
 #include "entities_def.c"
