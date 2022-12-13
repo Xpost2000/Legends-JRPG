@@ -5,6 +5,7 @@
 #define TILE_UNIT_SIZE                      (32) /* measured with a reference of 640x480 */
 #define REFERENCE_TILE_UNIT_SIZE            (16) /* What most tiles should be */
 #define GAME_COMMAND_CONSOLE_LINE_INPUT_MAX (512)
+#include "rich_text_def.c"
 #include "cutscene_def.c"
 #include "game_def.c"
 #include "save_data_def.c"
@@ -1811,7 +1812,11 @@ bool game_display_and_update_messages(struct software_framebuffer* framebuffer, 
 
         {
             draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 2, v2f32(message_region.x, message_region.y), (s32)estimated_nine_patch_size.x, (s32)estimated_nine_patch_size.y, UI_DEFAULT_COLOR);
-            software_framebuffer_draw_text_bounds(framebuffer, font, 2, v2f32(message_region.x+10, message_region.y+10), framebuffer->width * 0.5, message_str, color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+            #if 1
+            game_ui_render_rich_text_wrapped(framebuffer, message_str, v2f32(message_region.x+10, message_region.y+10), framebuffer->width * 0.5);
+            #else
+            /* software_framebuffer_draw_text_bounds(framebuffer, font, 2, v2f32(message_region.x+10, message_region.y+10), framebuffer->width * 0.5, message_str, color32f32(1,1,1,1), BLEND_MODE_ALPHA); */
+            #endif
         }
 
         /* dismiss current message */
@@ -3090,3 +3095,4 @@ local void game_continue_music(f32 dt) {
 #include "shop.c"
 #include "cutscene.c"
 #include "special_effects.c"
+#include "rich_text.c"

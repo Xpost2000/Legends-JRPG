@@ -7,30 +7,6 @@
 /* Honestly this is more than can actually show up to the game anyways. */
 #define RICH_TEXT_CONVERSATION_UI_MAX_LENGTH (512)
 
-struct rich_text_state {
-    f32 tallest_glyph_height_on_line;
-
-    f32 breath_magnitude;
-    f32 breath_speed;
-    s32 font_id;
-    f32 text_scale;
-
-#if 1
-    /* Do later, not sure how to work this one out honestly. */
-    f32 delay_timer;
-    f32 text_type_speed;
-    f32 type_trauma;
-#endif
-};
-
-struct rich_glyph {
-    f32  scale;
-    f32  breath_magnitude;
-    f32  breath_speed;
-    char character;
-    s32  font_id;
-};
-
 struct {
     f32 speak_timer;
     s32 visible_characters;
@@ -42,18 +18,6 @@ struct {
 
     struct rich_text_state rich_text_state;
 } dialogue_ui;
-
-struct rich_text_state rich_text_state_default(void) {
-    return (struct rich_text_state) {
-        .breath_speed     = 0,
-        .breath_magnitude = 0,
-        .delay_timer      = 0,
-        .text_type_speed  = DIALOGUE_UI_CHARACTER_TYPE_TIMER,
-        .font_id          = MENU_FONT_COLOR_YELLOW,
-        .text_scale       = 2,
-        .type_trauma      = 0,
-    };
-}
 
 /* I would like to vary dialogue, but that takes a lot of extra mark up and rewriting... */
 /* for now just keep it like this. */
@@ -79,102 +43,6 @@ void dialogue_ui_set_target_node(u32 id) {
     }
 }
 
-s32 fontname_string_to_id(string name) {
-    local struct {
-        string first;
-        s32    result;
-    } string_table_mapping_to_font_id[] = {
-        {string_literal("gold"),     MENU_FONT_COLOR_GOLD},
-        {string_literal("orange"),   MENU_FONT_COLOR_ORANGE},
-        {string_literal("lime"),     MENU_FONT_COLOR_LIME},
-        {string_literal("skyblue"),  MENU_FONT_COLOR_SKYBLUE},
-        {string_literal("purple"),   MENU_FONT_COLOR_PURPLE},
-        {string_literal("blue"),     MENU_FONT_COLOR_BLUE},
-        {string_literal("steel"),    MENU_FONT_COLOR_STEEL},
-        {string_literal("white"),    MENU_FONT_COLOR_WHITE},
-        {string_literal("yellow"),   MENU_FONT_COLOR_YELLOW},
-        {string_literal("bloodred"), MENU_FONT_COLOR_BLOODRED},
-        {string_literal("red"),      MENU_FONT_COLOR_BLOODRED},
-    };
-
-    for (s32 mapping_index = 0; mapping_index < array_count(string_table_mapping_to_font_id); ++mapping_index) {
-        if (string_equal(name, string_table_mapping_to_font_id[mapping_index].first)) {
-            return string_table_mapping_to_font_id[mapping_index].result;
-        }
-    }
-
-    return MENU_FONT_COLOR_GOLD;
-}
-
-local void parse_markup_details(struct rich_text_state* rich_text_state, string text_data, bool skipping_mode) {
-    /* lisp forms */ 
-    struct lisp_list markup_forms = lisp_read_string_into_forms(&scratch_arena, text_data);
-
-    /* NOTE: no error checking */
-    for (s32 markup_form_index = 0; markup_form_index < markup_forms.count; ++markup_form_index) {
-        struct lisp_form* current_form  = markup_forms.forms + markup_form_index;
-        struct lisp_form* name_part     = lisp_list_nth(current_form, 0);
-        struct lisp_form* argument_part = lisp_list_nth(current_form, 1);
-
-        { /* Purely visual or non-affecting actions */
-            if (lisp_form_symbol_matching(*name_part, string_literal("font"))) {
-                string font_name = {};
-                assertion(lisp_form_get_string(*argument_part, &font_name) && "Bad font string");
-                s32 new_font_id = fontname_string_to_id(font_name);
-                rich_text_state->font_id = new_font_id;
-            } else if (lisp_form_symbol_matching(*name_part, string_literal("breath_speed"))) {
-                assertion(lisp_form_get_f32(*argument_part, &rich_text_state->breath_speed) && "Bad breath speed value");
-            } else if (lisp_form_symbol_matching(*name_part, string_literal("breath_magnitude"))) {
-                assertion(lisp_form_get_f32(*argument_part, &rich_text_state->breath_magnitude) && "Bad breath magnitude value");
-            } else if (lisp_form_symbol_matching(*name_part, string_literal("text_scale"))) {
-                assertion(lisp_form_get_f32(*argument_part, &rich_text_state->text_scale) && "Bad text scale value");
-            } else if (lisp_form_symbol_matching(*name_part, string_literal("reset"))) {
-                *rich_text_state = rich_text_state_default();
-            } else if (lisp_form_symbol_matching(*name_part, string_literal("type_speed"))) {
-                assertion(lisp_form_get_f32(*argument_part, &rich_text_state->text_type_speed) && "Bad type speed");
-            }
-        }
-
-        if (!skipping_mode) { /* Affecting actions */
-            if (lisp_form_symbol_matching(*name_part, string_literal("delay_timer"))) {
-                assertion(lisp_form_get_f32(*argument_part, &rich_text_state->delay_timer) && "Bad delay timer");
-            } else if (lisp_form_symbol_matching(*name_part, string_literal("type_trauma"))) {
-                assertion(lisp_form_get_f32(*argument_part, &rich_text_state->type_trauma) && "Bad trauma value");
-            }
-        }
-    }
-    
-}
-
-local s32 text_length_without_dialogue_rich_markup_length(string text) {
-    s32 length = 0;
-    for (s32 character_index = 0; character_index < text.length; ++character_index) {
-        switch (text.data[character_index]) {
-            case '\\': {
-                character_index += 2;
-                length          += 1;
-            } break;
-            case '[': {
-                s32 bracket_counter = 1;
-                character_index++;
-                while (bracket_counter > 0) {
-                    if (text.data[character_index] == '[') {
-                        bracket_counter += 1;
-                    } else if (text.data[character_index] == ']') {
-                        bracket_counter -= 1;
-                        character_index--;
-                    }
-                    character_index++;
-                }
-            } break;
-            default: {
-                length += 1;
-            } break;
-        }
-    }
-    return length;
-}
-
 /* returns amount of characters to read */
 local s32 conversation_ui_advance_character(bool skipping_mode) {
     struct conversation*      conversation              = &game_state->current_conversation;
@@ -192,53 +60,14 @@ local s32 conversation_ui_advance_character(bool skipping_mode) {
         camera_traumatize(&game_state->camera, dialogue_ui.rich_text_state.type_trauma);
     }
 
-#ifdef RICHTEXT_EXPERIMENTAL
-    /* NOTE: This doesn't do correct bounds checks */
-    if (current_conversation_node->text.data[dialogue_ui.parse_character_cursor] == '\\') {
-        dialogue_ui.parse_character_cursor++;
-    } else if (current_conversation_node->text.data[dialogue_ui.parse_character_cursor] == '[') {
-        s32 bracket_count = 1;
-
-        dialogue_ui.parse_character_cursor += 1;
-
-        s32 start_of_rich_markup = dialogue_ui.parse_character_cursor;
-
-        while (bracket_count > 0) {
-            if (current_conversation_node->text.data[dialogue_ui.parse_character_cursor] == '[') {
-                bracket_count += 1;
-            } else if (current_conversation_node->text.data[dialogue_ui.parse_character_cursor] == ']') {
-                bracket_count -= 1;
-            }
-
-            dialogue_ui.parse_character_cursor += 1;
-        }
-
-        s32 end_of_rich_markup = dialogue_ui.parse_character_cursor-1;
-
-        string markup_text = string_slice(current_conversation_node->text, start_of_rich_markup, end_of_rich_markup);
-        parse_markup_details(&dialogue_ui.rich_text_state, markup_text, skipping_mode);
-    }
-
-    { /* rich text render path, this is adding / updating glyphs */
+    {
         {
-            struct rich_text_state* rich_state = &dialogue_ui.rich_text_state;
-            bool skip_glyph    = false;
-
-            string current_character_string = string_slice(current_conversation_node->text,
-                                                           dialogue_ui.parse_character_cursor, dialogue_ui.parse_character_cursor+1);
-            /* char  current_character         =  */
-
             struct rich_glyph* current_rich_glyph = &dialogue_ui.rich_text[dialogue_ui.rich_text_length++];
             assertion(dialogue_ui.rich_text_length <= RICH_TEXT_CONVERSATION_UI_MAX_LENGTH && "Your text is too big!");
-
-            current_rich_glyph->scale            = rich_state->text_scale;
-            current_rich_glyph->breath_magnitude = rich_state->breath_magnitude;
-            current_rich_glyph->breath_speed     = rich_state->breath_speed;
-            current_rich_glyph->character        = current_character_string.data[0];
-            current_rich_glyph->font_id          = rich_state->font_id;
+            *current_rich_glyph = rich_text_parse_next_glyph(&dialogue_ui.rich_text_state, current_conversation_node->text,
+                                                             &dialogue_ui.parse_character_cursor, skipping_mode);
         }
     }
-#endif
     dialogue_ui.visible_characters     += 1;
     dialogue_ui.parse_character_cursor += 1;
 
