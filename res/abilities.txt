@@ -22,6 +22,33 @@
 )
 
 (
+"ability_ignis"
+"Ignis"
+"Ignite your enemies in flames!"
+0
+0 # NO CLASS ID
+1 # INNATE
+# selection_type, moving_field, max_move_units_{x,y}
+('field-shape 0)
+
+
+# 9x9 selection field
+# or some keywords
+('all-filled)
+
+# list of animation sequences that will be compiled down.
+(
+# this is the simplest case of movement
+(start-special-effects 1)
+(wait-special-effects)
+(camera-trauma 0.5)
+# NEW FORM
+# apply-status target type &rest params)
+(apply-status target 'ignite 25 3)
+)
+)
+
+(
 "ability_sword_rush"
 "Sword Rush"
 "Move in a flash, slashing your enemies!"

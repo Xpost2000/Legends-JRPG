@@ -1,3 +1,4 @@
+#define REAL_SECONDS_FOR_GAME_TURN (2.5)
 /* NOTE
    proposal, to work with the amount of scripting that is inevitable in RPGS,
    I think I should start pushing more of the work to my scripting language.

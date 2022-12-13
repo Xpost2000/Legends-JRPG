@@ -264,6 +264,15 @@ void entity_ability_compile_animation_sequence(struct memory_arena* arena, struc
                         action_data->type = SEQUENCE_ACTION_STOP_SPECIAL_FX;
                     } else if (lisp_form_symbol_matching(*action_form_header, string_literal("wait-special-effects"))) {
                         action_data->type = SEQUENCE_ACTION_WAIT_SPECIAL_FX_TO_FINISH;
+                    } else if (lisp_form_symbol_matching(*action_form_header, string_literal("apply-status"))) {
+                        action_data->type = SEQUENCE_ACTION_APPLY_STATUS;
+                        struct sequence_action_apply_status* apply_status = &action_data->apply_status;
+                        unimplemented("Not done yet");
+                    } else if (lisp_form_symbol_matching(*action_form_header, string_literal("camera-trauma"))) {
+                        action_data->type = SEQUENCE_ACTION_CAMERA_TRAUMA;
+                        struct sequence_action_camera_trauma* camera_trauma = &action_data->camera_trauma;
+                        struct lisp_form* amount_arg = lisp_list_nth(&action_form_rest_arguments, 0);
+                        assertion(lisp_form_get_f32(*amount_arg, &camera_trauma->amount) && "Camera trauma amount is not a floating point?");
                     } else if (lisp_form_symbol_matching(*action_form_header, string_literal("requires"))) {
                         action_data->type = SEQUENCE_ACTION_REQUIRE_BLOCK;
                         struct sequence_action_require_block* require_block = &action_data->require_block;

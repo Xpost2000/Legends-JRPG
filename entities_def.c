@@ -104,6 +104,7 @@ struct entity*     entity_list_dereference_entity(struct entity_list* entities, 
 void               entity_list_clear(struct entity_list* entities);
 bool               entity_bad_ref(struct entity* e);
 
+#include "entity_status_effects_def.c"
 #include "entity_ability_def.c"
 /* forward decl */
 void battle_notify_killed_entity(entity_id);
@@ -653,6 +654,7 @@ struct used_battle_action_stack {
 };
 
 #define ENTITY_TALK_INTERACTIVE_RADIUS ((f32)1.9565 * TILE_UNIT_SIZE)
+
 struct entity {
     string name;
     /* This is unique per entity! */
@@ -724,7 +726,17 @@ struct entity {
     /* this is just so I can zero out this thing and have expected behavior. */
     s32                           interacted_script_trigger_write_index;
     s32                           interacted_script_trigger_ids[32];
+
+    struct entity_status_effect status_effects[MAX_ENTITY_STATUS_EFFECTS];
+    s32                         status_effect_count;
+    f32                         status_effect_tic_timer; /* TODO */
 };
+
+void entity_add_status_effect(struct entity* entity, struct entity_status_effect effect);
+void entity_update_all_status_effects_for_a_turn(struct entity* entity);
+void entity_remove_first_status_effect_of_type(struct entity* entity, s32 type);
+void entity_remove_all_status_effect_of_type(struct entity* entity, s32 type);
+bool entity_has_any_status_effect_of_type(struct entity* entity, s32 type);
 
 s32  entity_get_usable_ability_indices(struct entity* entity, s32 max_limit, s32* ability_indices);
 s32  entity_usable_ability_count(struct entity* entity);

@@ -28,6 +28,8 @@ local void entity_advance_ability_sequence(struct entity* entity);
 bool entity_bad_ref(struct entity* e);
 void entity_do_healing(struct entity* entity, s32 healing);
 void entity_do_physical_hurt(struct entity* entity, s32 damage);
+/* some status effects may have non-local effects so those are handled elsewhere. */
+void entity_update_all_status_effects(struct entity* entity, f32 dt);
 
 /* LOLOLOLOLOL THIS IS SLOW */
 entity_id game_find_id_for_entity(struct entity* entity);
@@ -1515,20 +1517,6 @@ struct entity_query_list find_entities_within_radius_without_obstacles(struct me
     return result;
 }
 
-/* this is a slow look up but this is not intended to happen frequently for the record. */
-/* NOTE: maybe store the entity id within the entity itself for simpler look up */
-entity_id find_entity_id_from_pointer(struct entity* entity) {
-    struct entity_iterator   it     = game_entity_iterator(game_state);
-
-    for (struct entity* target = entity_iterator_begin(&it); !entity_iterator_finished(&it); target = entity_iterator_advance(&it)) {
-        if (entity == target) {
-            return it.current_id;
-        }
-    }
-
-    return it.current_id;
-}
-
 /* NOTE: Need to special case spears or projectiles which can go over entities, or add versions with filters */
 struct entity_query_list find_entities_within_radius_with_obstacles(struct memory_arena* arena, struct game_state* state, v2f32 position, f32 radius) {
     struct entity_query_list result          = {};
@@ -1574,7 +1562,7 @@ struct entity_query_list find_entities_within_radius_with_obstacles(struct memor
                 if (first_entity && first_entity != whoeverisonme) {
                     _debugprintf("hit guy that is not me [%p %p]", whoeverisonme, first_entity);
                     memory_arena_push(arena, sizeof(*result.ids));
-                    result.ids[result.count++] = find_entity_id_from_pointer(first_entity);
+                    result.ids[result.count++] = game_find_id_for_entity(first_entity);
                     break;
                 }
             }
@@ -2117,6 +2105,14 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
                 entity_advance_ability_sequence(target_entity);
             } else {
                 switch (sequence_action->type) {
+                    case SEQUENCE_ACTION_APPLY_STATUS: {
+                        /* TODO */
+                        struct sequence_action_apply_status* apply_status = &sequence_action->apply_status;
+                    } break;
+                    case SEQUENCE_ACTION_CAMERA_TRAUMA: {
+                        struct sequence_action_camera_trauma* camera_trauma = &sequence_action->camera_trauma;
+                        camera_traumatize(&game_state->camera, camera_trauma->amount);
+                    } break;
                     case SEQUENCE_ACTION_LOOK_AT: {
                         struct sequence_action_look_at* look_at = &sequence_action->look_at;
                         switch (look_at->look_target_type) {
@@ -3658,4 +3654,87 @@ entity_id game_find_id_for_entity(struct entity* entity) {
     return it.current_id;
 }
 
+void entity_add_status_effect(struct entity* entity, struct entity_status_effect effect) {
+    if (entity->status_effect_count < MAX_ENTITY_STATUS_EFFECTS) {
+        struct entity_status_effect* current_status_effect = &entity->status_effects[entity->status_effect_count++];
+        assertion(entity->status_effect_count < MAX_ENTITY_STATUS_EFFECTS && "Too many status effects?");
+        *current_status_effect = effect;
+    }
+}
+
+local void entity_remove_status_effect_at(struct entity* entity, s32 index) {
+    struct entity_status_effect* to_remove = entity->status_effects + index;
+    switch (to_remove->type) { /* cleanup code */
+    }
+    struct entity_particle_emitter* emitter = entity_particle_emitter_dereference(&game_state->permenant_particle_emitters, to_remove->particle_emitter_id);
+    {
+        entity_particle_emitter_stop_emitting(&game_state->permenant_particle_emitters, to_remove->particle_emitter_id);
+        entity_particle_emitter_kill(&game_state->permenant_particle_emitters, to_remove->particle_emitter_id);
+    }
+    entity->status_effects[index] = entity->status_effects[--entity->status_effect_count];
+}
+
+void entity_remove_first_status_effect_of_type(struct entity* entity, s32 type) {
+    for (s32 index = 0; index < entity->status_effect_count; ++index) {
+        struct entity_status_effect* current_status_effect = entity->status_effects + index;
+        if (current_status_effect->type == type) {
+            entity_remove_status_effect_at(entity, index);
+            return;
+        }
+    }
+}
+
+void entity_remove_all_status_effect_of_type(struct entity* entity, s32 type) {
+    for (s32 index = 0; index < entity->status_effect_count; ++index) {
+        struct entity_status_effect* current_status_effect = entity->status_effects + index;
+        if (current_status_effect->type == type) {
+            entity_remove_status_effect_at(entity, index);
+        }
+    }
+}
+
+void entity_update_all_status_effects(struct entity* entity, f32 dt) {
+    { /* maintain particles and stuff like that I suppose */
+        for (s32 status_index = 0; status_index < entity->status_effect_count; ++status_index) {
+            struct entity_status_effect* current_effect = entity->status_effects + status_index;
+            entity_particle_emitter_start_emitting(&game_state->permenant_particle_emitters, current_effect->particle_emitter_id);
+        }
+    }
+
+    if (game_state->combat_state.active_combat) {
+        /* nothing, update_combat will handle that */
+        return;
+    } else {
+        entity->status_effect_tic_timer += dt;
+        if (entity->status_effect_tic_timer >= REAL_SECONDS_FOR_GAME_TURN) {
+            entity->status_effect_tic_timer = 0;
+            entity_update_all_status_effects_for_a_turn(entity);
+        }
+    }
+}
+
+void entity_update_all_status_effects_for_a_turn(struct entity* entity) {
+    for (s32 status_index = 0; status_index < entity->status_effect_count; ++status_index) {
+        struct entity_status_effect* current_effect = entity->status_effects + status_index;
+        switch (current_effect->type) {
+            case ENTITY_STATUS_EFFECT_TYPE_IGNITE: {
+                    
+            } break;
+            case ENTITY_STATUS_EFFECT_TYPE_POISON: {
+                    
+            } break;
+        }
+    }
+}
+
+bool entity_has_any_status_effect_of_type(struct entity* entity, s32 type) {
+    for (s32 status_index = 0; status_index < entity->status_effect_count; ++status_index) {
+        struct entity_status_effect* current_effect = entity->status_effects + status_index;
+        if (current_effect->type == type) {
+            return true;
+        }
+    }
+
+    return false;
+}
 #include "entity_ability.c"

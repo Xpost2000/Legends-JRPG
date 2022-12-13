@@ -54,6 +54,8 @@ enum sequence_action_type {
     SEQUENCE_ACTION_MOVE_TO,
     SEQUENCE_ACTION_LOOK_AT,
     SEQUENCE_ACTION_HURT,
+    SEQUENCE_ACTION_CAMERA_TRAUMA,
+    SEQUENCE_ACTION_APPLY_STATUS,
     SEQUENCE_ACTION_DO_HARDCODED_ANIM,
     SEQUENCE_ACTION_START_SPECIAL_FX,
     SEQUENCE_ACTION_STOP_SPECIAL_FX,
@@ -75,6 +77,16 @@ struct sequence_action_target_entity {
 /* force the game camera to do things, lots of state overriding going to scare me. */
 struct sequence_action_focus_camera {
     struct sequence_action_target_entity target;
+};
+
+struct sequence_action_camera_trauma {
+    f32 amount;
+};
+
+struct sequence_action_apply_status {
+    /* refer to status effect in entities_def */
+    /* TODO: needs to generally match parity  */
+    struct entity_status_effect effect;
 };
 
 enum sequence_interpolation_type {
@@ -182,6 +194,8 @@ struct entity_ability_sequence_action {
         struct sequence_action_explosion           explosion;
         struct sequence_action_look_at             look_at;
         struct sequence_action_require_block       require_block;
+        struct sequence_action_camera_trauma       camera_trauma;
+        struct sequence_action_apply_status        apply_status;
     };
 };
 struct entity_ability_sequence {
