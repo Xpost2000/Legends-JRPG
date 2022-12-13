@@ -2501,11 +2501,31 @@ void handle_entity_scriptable_trigger_interactions(struct game_state* state, str
 }
 
 local void unmark_any_interactables(struct game_state* state) {
+    switch (state->interactable_state.interactable_type) {
+        case INTERACTABLE_TYPE_ENTITY_SAVEPOINT: {
+            struct entity_savepoint* savepoint = state->interactable_state.context;
+            savepoint->player_ontop            = false;
+        } break;
+        default: {
+            
+        } break;
+    }
+
     state->interactable_state.interactable_type = 0;
     state->interactable_state.context           = NULL;
 }
 
 local void mark_interactable(struct game_state* state, s32 type, void* ptr) {
+    switch (type) {
+        case INTERACTABLE_TYPE_ENTITY_SAVEPOINT: {
+            struct entity_savepoint* savepoint = ptr;
+            savepoint->player_ontop            = true;
+        } break;
+        default: {
+            
+        } break;
+    }
+
     if (state->interactable_state.interactable_type == type &&
         state->interactable_state.context == ptr) {
         _debugprintf("same interactable!");

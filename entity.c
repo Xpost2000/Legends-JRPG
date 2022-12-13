@@ -400,14 +400,10 @@ struct entity_particle_emitter* entity_particle_emitter_dereference(struct entit
 }
 /* PARTICLES END */
 
-void entity_savepoint_initialize(struct entity_savepoint* savepoint) {
-    /* initialize particle systems here */
-    savepoint->particle_emitter_id          = entity_particle_emitter_allocate(&game_state->permenant_particle_emitters);
-    struct entity_particle_emitter* emitter = entity_particle_emitter_dereference(&game_state->permenant_particle_emitters, savepoint->particle_emitter_id);
+void entity_savepoint_active_particle_emitter(struct entity_particle_emitter* emitter) {
     /* ideally I'd like a more advanced effect but this will do for now. I'll tweak it once I can get it to work. */
     {
         emitter->time_per_spawn                  = 0.05;
-        emitter->position                        = savepoint->position;
         emitter->burst_amount                    = 128;
         emitter->max_spawn_per_batch             = 1024;
         emitter->max_spawn_batches               = -1;
@@ -418,13 +414,44 @@ void entity_savepoint_initialize(struct entity_savepoint* savepoint) {
         emitter->starting_velocity_variance      = v2f32(1.3, 0);
         emitter->lifetime                        = 0.6;
         emitter->lifetime_variance               = 0.35;
+        emitter->spawn_shape                     = emitter_spawn_shape_circle(v2f32(0,0), 0.5, 0.03, true);
 
         /* emitter->particle_type = ENTITY_PARTICLE_TYPE_FIRE; */
         emitter->particle_feature_flags = ENTITY_PARTICLE_FEATURE_FLAG_FLAMES;
 
-        emitter->scale_uniform = 0.2;
-        emitter->scale_variance_uniform = 0.12;
+        emitter->scale_uniform = 0.09;
+        emitter->scale_variance_uniform = 0.05;
     }
+}
+void entity_savepoint_inactive_particle_emitter(struct entity_particle_emitter* emitter) {
+    /* ideally I'd like a more advanced effect but this will do for now. I'll tweak it once I can get it to work. */
+    {
+        emitter->time_per_spawn                  = 0.15;
+        emitter->burst_amount                    = 24;
+        emitter->max_spawn_per_batch             = 512;
+        emitter->max_spawn_batches               = -1;
+        emitter->color                           = color32u8(34, 88, 226, 255);
+        emitter->target_color                    = color32u8(59, 59, 56, 127);
+        emitter->starting_acceleration           = v2f32(0, -4.6);
+        emitter->starting_acceleration_variance  = v2f32(1.2, 1.2);
+        emitter->starting_velocity_variance      = v2f32(1.3, 0);
+        emitter->lifetime                        = 0.6;
+        emitter->lifetime_variance               = 0.55;
+        emitter->spawn_shape                     = emitter_spawn_shape_circle(v2f32(0,0), 0.7, 0.05, false);
+
+        /* emitter->particle_type = ENTITY_PARTICLE_TYPE_FIRE; */
+        emitter->particle_feature_flags = ENTITY_PARTICLE_FEATURE_FLAG_FLAMES;
+
+        emitter->scale_uniform = 0.04;
+        emitter->scale_variance_uniform = 0.03;
+    }
+}
+void entity_savepoint_initialize(struct entity_savepoint* savepoint) {
+    /* initialize particle systems here */
+    savepoint->particle_emitter_id          = entity_particle_emitter_allocate(&game_state->permenant_particle_emitters);
+    struct entity_particle_emitter* emitter = entity_particle_emitter_dereference(&game_state->permenant_particle_emitters, savepoint->particle_emitter_id);
+    emitter->position                       = savepoint->position;
+    entity_savepoint_inactive_particle_emitter(emitter);
 }
 
 void battle_ui_stalk_entity_with_camera(struct entity*);
@@ -1060,6 +1087,13 @@ void update_entities(struct game_state* state, f32 dt, struct entity_iterator it
         Array_For_Each(it, struct entity_savepoint, area->savepoints, area->entity_savepoint_count) {
             struct entity_particle_emitter* emitter_object = entity_particle_emitter_dereference(&game_state->permenant_particle_emitters, it->particle_emitter_id);
             emitter_object->position                       = it->position;
+
+            if (it->player_ontop) {
+                entity_savepoint_active_particle_emitter(emitter_object);
+            } else {
+                entity_savepoint_inactive_particle_emitter(emitter_object);
+            }
+
             entity_particle_emitter_start_emitting(&game_state->permenant_particle_emitters, it->particle_emitter_id);
         }
     }

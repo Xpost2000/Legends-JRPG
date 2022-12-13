@@ -193,6 +193,7 @@ struct entity_savepoint {
     v2f32 position;
     u32   flags;
     s32   particle_emitter_id;
+    bool  player_ontop;
 };
 
 void entity_savepoint_initialize(struct entity_savepoint* savepoint);
