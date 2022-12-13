@@ -619,6 +619,7 @@ local void game_begin_shopping(string storename) {
 }
 
 struct entity* game_any_entity_at_tile_point(v2f32 xy);
+struct entity* game_any_entity_at_tile_point_except(v2f32 xy, struct entity** filter, s32 filter_count);
 
 /* This is just going to start as a breadth first search */
 /* NOTE: add a version with obstacle parameters, since the AI doesn't obey those rules! */
@@ -754,14 +755,11 @@ struct navigation_path navigation_path_find(struct memory_arena* arena, struct l
                 /* might have to make four neighbors. We can configure it anyhow */
                 /* _debugprintf("try to find neighbors"); */
                 {
-                    local struct {
-                        s32 x;
-                        s32 y;
-                    }  neighbor_offsets[] = {
-                        {1, 0},
-                        {0, 1},
-                        {-1, 0},
-                        {0, -1},
+                    local v2s32 neighbor_offsets[] = {
+                        v2s32(1, 0),
+                        v2s32(0, 1),
+                        v2s32(-1, 0),
+                        v2s32(0, -1),
                     };
 
                     for (s32 index = 0; index < array_count(neighbor_offsets); ++index) {
@@ -2947,8 +2945,9 @@ void game_variables_clear_all_state(void) {
     }
 }
 
-struct entity* game_any_entity_at_tile_point(v2f32 xy) {
+struct entity* game_any_entity_at_tile_point_except(v2f32 xy, struct entity** filter, s32 filter_count) {
     struct entity_iterator iterator = game_entity_iterator(game_state);
+
     for (struct entity* current_entity = entity_iterator_begin(&iterator); !entity_iterator_finished(&iterator); current_entity = entity_iterator_advance(&iterator)) {
         v2f32 position = current_entity->position;
         position.x /= TILE_UNIT_SIZE;
@@ -2963,11 +2962,27 @@ struct entity* game_any_entity_at_tile_point(v2f32 xy) {
         
         if (fabs(position.x - xy.x) <= 0.1 &&
             fabs(position.y - xy.y) <= 0.1) {
-            return current_entity;
+            bool passed_filter = true;
+
+            for (s32 filtered_entity_index = 0; filtered_entity_index < filter_count; ++filtered_entity_index) {
+                if (filter[filtered_entity_index] == current_entity) {
+                    passed_filter = false;
+                }
+            }
+
+            if (passed_filter) {
+                return current_entity;
+            } else {
+                continue;
+            }
         }
     }
 
     return NULL;
+}
+
+struct entity* game_any_entity_at_tile_point(v2f32 xy) {
+    return game_any_entity_at_tile_point_except(xy, 0, 0);
 }
 
 local void update_and_render_save_game_menu_ui(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {

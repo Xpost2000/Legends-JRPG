@@ -5,8 +5,13 @@ typedef union {
     struct { f32 x, y; };
     f32 xy[2];
 } v2f32;
+typedef union {
+    struct { s32 x, y; };
+    s32 xy[2];
+} v2s32;
 
 #define v2f32(X,Y) (v2f32){.x = X, .y = Y}
+#define v2s32(X,Y) (v2s32){.x = X, .y = Y}
 
 v2f32 v2f32_add(v2f32 a, v2f32 b);
 v2f32 v2f32_sub(v2f32 a, v2f32 b);

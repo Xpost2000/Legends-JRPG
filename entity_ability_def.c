@@ -1,3 +1,8 @@
+/*
+  NOTE: there are a few niche ability types that are just not implemented yet, or
+  some edge-cases for abilities that are just never used, since it never occured to me
+  what would happen if they existed...
+ */
 #ifndef ENTITY_ABILITY_DEF_C
 #define ENTITY_ABILITY_DEF_C
 
