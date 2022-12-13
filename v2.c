@@ -60,3 +60,10 @@ v2f32 v2f32_direction(v2f32 a, v2f32 b) {
     v2f32 delta = v2f32_sub(b, a);
     return v2f32_normalize(delta);
 }
+
+v2s32 v2f32_to_v2s32(v2f32 a) {
+    return v2s32(a.x, a.y);
+}
+v2f32 v2s32_to_v2f32(v2s32 a) {
+    return v2f32(a.x, a.y);
+}

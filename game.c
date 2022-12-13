@@ -1355,7 +1355,7 @@ local void game_produce_damaging_explosion(v2f32 where, f32 radius, s32 effect_e
     }
 
     { /* should be extracted else where later? */
-        struct entity_query_list potential_targets = find_entities_within_radius(&scratch_arena, game_state, v2f32_scale(where, TILE_UNIT_SIZE), radius * TILE_UNIT_SIZE);
+        struct entity_query_list potential_targets = find_entities_within_radius(&scratch_arena, game_state, v2f32_scale(where, TILE_UNIT_SIZE), radius * TILE_UNIT_SIZE, true);
 
         for (u32 entity_id_index = 0; entity_id_index < potential_targets.count; ++entity_id_index) {
             struct entity* current_entity = game_dereference_entity(game_state, potential_targets.ids[entity_id_index]);

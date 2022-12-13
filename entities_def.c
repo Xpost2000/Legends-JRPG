@@ -4,7 +4,7 @@
   Not lights apparently. Those don't count for some reason!
 */
 #define DEFAULT_VELOCITY (TILE_UNIT_SIZE * 5)
-#define DEFAULT_ENTITY_ATTACK_RADIUS (2.5)
+#define DEFAULT_ENTITY_ATTACK_RADIUS (3)
 
 #ifndef ENTITY_DEF_C
 #define ENTITY_DEF_C
@@ -880,7 +880,9 @@ struct entity_query_list {
     entity_id* ids;
     s32        count;
 };
-struct entity_query_list find_entities_within_radius(struct memory_arena* arena, struct game_state* state, v2f32 position, f32 radius);
+struct entity_query_list find_entities_within_radius_without_obstacles(struct memory_arena* arena, struct game_state* state, v2f32 position, f32 radius);
+struct entity_query_list find_entities_within_radius_with_obstacles(struct memory_arena* arena, struct game_state* state, v2f32 position, f32 radius);
+struct entity_query_list find_entities_within_radius(struct memory_arena* arena, struct game_state* state, v2f32 position, f32 radius, bool obstacle);
 
 /*
   NOTE: I should be using my sort keys API however it's not very useful IMO, since most things know their

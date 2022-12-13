@@ -1482,7 +1482,15 @@ void render_entities(struct game_state* state, struct sortable_draw_entities* dr
     render_entities_from_area_and_iterator(draw_entities, iterator, area);
 }
 
-struct entity_query_list find_entities_within_radius(struct memory_arena* arena, struct game_state* state, v2f32 position, f32 radius) {
+struct entity_query_list find_entities_within_radius(struct memory_arena* arena, struct game_state* state, v2f32 position, f32 radius, bool obstacle) {
+    if (obstacle) {
+        return find_entities_within_radius_with_obstacles(arena, state, position, radius);
+    } else {
+        return find_entities_within_radius_without_obstacles(arena, state, position, radius);
+    }
+}
+
+struct entity_query_list find_entities_within_radius_without_obstacles(struct memory_arena* arena, struct game_state* state, v2f32 position, f32 radius) {
     struct entity_query_list result = {};
     struct entity_iterator   it     = game_entity_iterator(state);
 
@@ -1501,6 +1509,81 @@ struct entity_query_list find_entities_within_radius(struct memory_arena* arena,
             memory_arena_push(arena, sizeof(*result.ids));
             _debug_print_id(it.current_id);
             result.ids[result.count++] = it.current_id;
+        }
+    }
+
+    return result;
+}
+
+/* this is a slow look up but this is not intended to happen frequently for the record. */
+/* NOTE: maybe store the entity id within the entity itself for simpler look up */
+entity_id find_entity_id_from_pointer(struct entity* entity) {
+    struct entity_iterator   it     = game_entity_iterator(game_state);
+
+    for (struct entity* target = entity_iterator_begin(&it); !entity_iterator_finished(&it); target = entity_iterator_advance(&it)) {
+        if (entity == target) {
+            return it.current_id;
+        }
+    }
+
+    return it.current_id;
+}
+
+/* NOTE: Need to special case spears or projectiles which can go over entities, or add versions with filters */
+struct entity_query_list find_entities_within_radius_with_obstacles(struct memory_arena* arena, struct game_state* state, v2f32 position, f32 radius) {
+    struct entity_query_list result          = {};
+    struct entity_iterator   it              = game_entity_iterator(state);
+    entity_id*               candidates      = memory_arena_push(arena, 0);
+    s32                      candidate_count = 0;
+    f32                      radius_sq       = radius * radius;
+
+    for (struct entity* target = entity_iterator_begin(&it); !entity_iterator_finished(&it); target = entity_iterator_advance(&it)) {
+        if (!(target->flags & ENTITY_FLAGS_ACTIVE))
+            continue;
+
+        f32 entity_distance_sq = v2f32_distance_sq(position, target->position);
+
+        if (entity_distance_sq <= radius_sq) {
+            memory_arena_push(arena, sizeof(*candidates));
+            candidates[candidate_count++] = it.current_id;
+        }
+    }
+
+    /* marker pointer */
+    result.ids = memory_arena_push(arena, 0);
+    struct level_area* area = &state->loaded_area;
+
+    struct entity* whoeverisonme = game_any_entity_at_tile_point(v2f32_scale(position, 1.0/TILE_UNIT_SIZE));
+    for (s32 candidate_index = 0; candidate_index < candidate_count; ++candidate_index) {
+        entity_id      candidate  = candidates[candidate_index];
+        struct entity* entity     = game_dereference_entity(game_state, candidate);
+        v2f32          direction  = v2f32_direction(position, entity->position);
+        direction.x              *= TILE_UNIT_SIZE;
+        direction.y              *= TILE_UNIT_SIZE;
+
+        s32 iteration_count = (s32)ceilf(radius/TILE_UNIT_SIZE);
+
+        struct entity* first_entity = 0;
+        for (s32 iteration = 0; iteration < iteration_count; ++iteration) {
+            v2f32 current_position = v2f32_add(position, v2f32_scale(direction, iteration+1));
+            v2f32 tile_position    = v2f32_scale(current_position, 1.0 / TILE_UNIT_SIZE);
+
+            if (!first_entity) {
+                first_entity = game_any_entity_at_tile_point(tile_position);
+
+                if (first_entity && first_entity != whoeverisonme) {
+                    _debugprintf("hit guy that is not me [%p %p]", whoeverisonme, first_entity);
+                    memory_arena_push(arena, sizeof(*result.ids));
+                    result.ids[result.count++] = find_entity_id_from_pointer(first_entity);
+                    break;
+                }
+            }
+
+            {
+                if (level_area_any_obstructions_at(area, tile_position.x, tile_position.y)) {
+                    break;
+                }
+            }
         }
     }
 
@@ -3444,7 +3527,7 @@ void entity_particle_emitter_list_copy(struct entity_particle_emitter_list* sour
 /* copy of battle_ui.c relevant targetting code, need more usage examples before factoring out. */
 local void entity_think_basic_zombie_combat_actions(struct entity* entity, struct game_state* state) {
     f32 attack_radius = DEFAULT_ENTITY_ATTACK_RADIUS;
-    struct entity_query_list nearby_potential_targets = find_entities_within_radius(&scratch_arena, state, game_get_player(state)->position, attack_radius * TILE_UNIT_SIZE);
+    struct entity_query_list nearby_potential_targets = find_entities_within_radius(&scratch_arena, state, game_get_player(state)->position, attack_radius*TILE_UNIT_SIZE, true);
 
     entity_id closest_valid_entity = {};
     f32 closest_distance           = INFINITY;

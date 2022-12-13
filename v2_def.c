@@ -12,6 +12,8 @@ typedef union {
 
 #define v2f32(X,Y) (v2f32){.x = X, .y = Y}
 #define v2s32(X,Y) (v2s32){.x = X, .y = Y}
+v2s32 v2f32_to_v2s32(v2f32 a);
+v2f32 v2s32_to_v2f32(v2s32 a);
 
 v2f32 v2f32_add(v2f32 a, v2f32 b);
 v2f32 v2f32_sub(v2f32 a, v2f32 b);

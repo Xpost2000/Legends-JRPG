@@ -125,6 +125,9 @@ struct battle_ui_state {
     s32                  loot_result_count;
 
     struct battle_ui_item_state item_use;
+
+    entity_id targetable_entities[512];
+    s32       targetable_entity_count;
 } global_battle_ui_state;
 
 local void announce_battle_action(struct entity_id who, string what) {
@@ -629,25 +632,26 @@ local void battle_ui_determine_disabled_actions(entity_id id, bool* disabled_act
     struct game_state_combat_state* combat_state = &game_state->combat_state;
     struct entity*                  entity       = game_dereference_entity(game_state, id); 
 
-    /* disable selecting attack if we don't have anyone within attack range */
+    /* disable selecting attack if we don't have anyone within attack range, also cache it. */
     {
         f32 attack_radius = DEFAULT_ENTITY_ATTACK_RADIUS;
-        struct entity_query_list nearby_potential_targets = find_entities_within_radius(&scratch_arena, game_state, entity->position, attack_radius * TILE_UNIT_SIZE);
-
-        s32 living_targets = 0;
-
+        struct entity_query_list nearby_potential_targets = find_entities_within_radius(&scratch_arena, game_state, entity->position, attack_radius * TILE_UNIT_SIZE, true);
+        global_battle_ui_state.targetable_entity_count = 0;
         for (s32 index = 0; index < nearby_potential_targets.count; ++index) {
             struct entity* potential_target = game_dereference_entity(game_state, nearby_potential_targets.ids[index]);
 
             if (!(potential_target->flags & ENTITY_FLAGS_PLAYER_CONTROLLED)) {
                 if ((potential_target->flags & ENTITY_FLAGS_ALIVE)) {
-                    living_targets += 1;
+                    global_battle_ui_state.targetable_entities[global_battle_ui_state.targetable_entity_count++] = nearby_potential_targets.ids[index];
+                } else {
                 }
+            } else {
             }
         }
 
-        if (living_targets <= 0) 
+        if (global_battle_ui_state.targetable_entity_count <= 0)  {
             disabled_actions[BATTLE_ATTACK] = true;
+        }
     }
     {
         /* when the user is ability locked... TODO */
@@ -843,15 +847,14 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
             
             /* TODO make attacking highlight the target obviously! Or focus on the target would work too. */
         case BATTLE_UI_SUBMODE_ATTACKING: {
-            f32 attack_radius = 3;
-            struct entity_query_list nearby_potential_targets = find_entities_within_radius(&scratch_arena, state, active_combatant_entity->position, attack_radius * TILE_UNIT_SIZE);
-
+            f32 attack_radius = DEFAULT_ENTITY_ATTACK_RADIUS;
             /* I mean, there's no battle this large... Ever */
             s32 target_list_count                      = 0;
             entity_id target_display_list_indices[512] = {};
 
-            for (s32 index = 0; index < nearby_potential_targets.count; ++index) {
-                struct entity* current_entity = game_dereference_entity(state, nearby_potential_targets.ids[index]);
+            for (s32 index = 0; index < global_battle_ui_state.targetable_entity_count; ++index) {
+                entity_id current_id = global_battle_ui_state.targetable_entities[index];
+                struct entity* current_entity = game_dereference_entity(state, current_id);
 
                 if (current_entity == game_get_player(state)) {
                     continue;
@@ -861,9 +864,7 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                     continue;
                 }
 
-                _debugprintf("Qualification!");
-                _debug_print_id(nearby_potential_targets.ids[index]);
-                target_display_list_indices[target_list_count++] = nearby_potential_targets.ids[index];
+                target_display_list_indices[target_list_count++] = current_id;
             }
 
             s32 BOX_WIDTH  = 8;
