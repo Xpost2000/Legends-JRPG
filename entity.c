@@ -1901,6 +1901,10 @@ void entity_do_physical_hurt(struct entity* entity, s32 damage) {
         damage *= 0.865;
     }
 
+    if (entity_has_any_status_effect_of_type(entity, ENTITY_STATUS_EFFECT_TYPE_IGNITE)) {
+        damage *= 1.25;
+    }
+
     damage -= damage_reduction;
 
     if (damage < 0) {
@@ -3559,21 +3563,9 @@ local void entity_think_basic_zombie_combat_actions(struct entity* entity, struc
         entity_id      current_target_id = nearby_potential_targets.ids[target_index];
         struct entity* target_entity     = game_dereference_entity(state, current_target_id);
 
-#if 0 /* ideally, but I don't have this done yet and I want to test npc AI first... */
-        /* check team */
-        if (target_entity == entity) {
-            continue;
-        }
-
-        /* cannot target entities with some matching team flags. */
-        if (target_entity->team_flags & entity->team_flags) {
-            continue;
-        }
-#else
         if (target_entity != game_get_player(state)) {
             continue;
         }
-#endif
 
         if (!(target_entity->flags & ENTITY_FLAGS_ALIVE)) {
             continue;
