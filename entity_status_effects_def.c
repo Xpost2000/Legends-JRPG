@@ -35,4 +35,6 @@ struct entity_status_effect {
     s32 particle_emitter_id;
 };
 
+struct entity_status_effect status_effect_ignite(s32 turn_duration);
+struct entity_status_effect status_effect_poison(s32 turn_duration);
 #endif

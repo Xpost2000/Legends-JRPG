@@ -28,6 +28,7 @@ local void entity_advance_ability_sequence(struct entity* entity);
 bool entity_bad_ref(struct entity* e);
 void entity_do_healing(struct entity* entity, s32 healing);
 void entity_do_physical_hurt(struct entity* entity, s32 damage);
+void entity_do_absolute_hurt(struct entity* entity, s32 damage);
 /* some status effects may have non-local effects so those are handled elsewhere. */
 void entity_update_all_status_effects(struct entity* entity, f32 dt);
 
@@ -1054,6 +1055,7 @@ void update_entities(struct game_state* state, f32 dt, struct entity_iterator it
                 }
             } else {
                 /* animation state will be controlled by the action while it happens */
+                entity_update_all_status_effects(current_entity, dt);
                 if (!current_entity->ai.current_action) {
                     if (current_entity->velocity.x != 0 || current_entity->velocity.y != 0) {
                         entity_play_animation_with_direction(current_entity, string_literal("walk"));
@@ -1876,6 +1878,19 @@ void entity_do_healing(struct entity* entity, s32 healing) {
     notify_healing(v2f32_sub(entity->position, v2f32(0, TILE_UNIT_SIZE)), healing);
 }
 
+local void entity_on_hurt_finish(struct entity* entity, s32 damage) {
+    entity->health.value -= damage;
+
+    /* not sure why this doesn't work */
+    entity->ai.hurt_animation_timer              = 0;
+    entity->ai.hurt_animation_shakes             = 0;
+    entity->ai.hurt_animation_phase              = ENTITY_HURT_ANIMATION_ON;
+
+    notify_damage(v2f32_sub(entity->position, v2f32(0, TILE_UNIT_SIZE)), damage);
+    (entity_validate_death(entity));
+    play_random_hit_sound();
+}
+
 void entity_do_physical_hurt(struct entity* entity, s32 damage) {
     /* maybe do a funny animation */
     s32 constitution = entity_find_effective_stat_value(entity, STAT_CONSTITUTION);
@@ -1892,15 +1907,11 @@ void entity_do_physical_hurt(struct entity* entity, s32 damage) {
         damage = 0;
     }
 
-    entity->health.value -= damage;
+    entity_on_hurt_finish(entity, damage);
+}
 
-    entity->ai.hurt_animation_timer              = 0;
-    entity->ai.hurt_animation_shakes             = 0;
-    entity->ai.hurt_animation_phase              = ENTITY_HURT_ANIMATION_ON;
-
-    notify_damage(v2f32_sub(entity->position, v2f32(0, TILE_UNIT_SIZE)), damage);
-    (entity_validate_death(entity));
-    play_random_hit_sound();
+void entity_do_absolute_hurt(struct entity* entity, s32 damage) {
+    entity_on_hurt_finish(entity, damage);
 }
 
 /* NOTE: does not really do turns. */
@@ -3696,7 +3707,9 @@ void entity_remove_all_status_effect_of_type(struct entity* entity, s32 type) {
 void entity_update_all_status_effects(struct entity* entity, f32 dt) {
     { /* maintain particles and stuff like that I suppose */
         for (s32 status_index = 0; status_index < entity->status_effect_count; ++status_index) {
-            struct entity_status_effect* current_effect = entity->status_effects + status_index;
+            struct entity_status_effect*    current_effect = entity->status_effects + status_index;
+            struct entity_particle_emitter* emitter        = entity_particle_emitter_dereference(&game_state->permenant_particle_emitters, current_effect->particle_emitter_id);
+            emitter->position                              = v2f32_scale(entity->position, 1.0/TILE_UNIT_SIZE);
             entity_particle_emitter_start_emitting(&game_state->permenant_particle_emitters, current_effect->particle_emitter_id);
         }
     }
@@ -3716,13 +3729,36 @@ void entity_update_all_status_effects(struct entity* entity, f32 dt) {
 void entity_update_all_status_effects_for_a_turn(struct entity* entity) {
     for (s32 status_index = 0; status_index < entity->status_effect_count; ++status_index) {
         struct entity_status_effect* current_effect = entity->status_effects + status_index;
+
         switch (current_effect->type) {
             case ENTITY_STATUS_EFFECT_TYPE_IGNITE: {
-                    
+                f32 proposed_damage = entity->health.max;
+                proposed_damage *= 0.05;
+                if (proposed_damage < 30) {
+                    proposed_damage = 30;
+                } else if (proposed_damage >= 250) {
+                    proposed_damage = 250;
+                }
+                entity_do_absolute_hurt(entity, proposed_damage);
             } break;
             case ENTITY_STATUS_EFFECT_TYPE_POISON: {
-                    
+                f32 proposed_damage = entity->health.max;
+                proposed_damage *= 0.10;
+                entity_do_absolute_hurt(entity, proposed_damage);
             } break;
+            default: {
+                unimplemented("???? Don't know what status effect this is");
+            } break;
+        }
+
+        current_effect->turn_duration -= 1;
+    }
+
+    for (s32 status_index = entity->status_effect_count-1; status_index >= 0; --status_index) {
+        struct entity_status_effect* current_effect = entity->status_effects + status_index;
+
+        if (current_effect->turn_duration <= 0) {
+            entity_remove_status_effect_at(entity, status_index);
         }
     }
 }
@@ -3737,4 +3773,65 @@ bool entity_has_any_status_effect_of_type(struct entity* entity, s32 type) {
 
     return false;
 }
+
+struct entity_status_effect status_effect_ignite(s32 turn_duration) {
+    s32                             particle_emitter_id = entity_particle_emitter_allocate(&game_state->permenant_particle_emitters);
+    struct entity_particle_emitter* emitter             = entity_particle_emitter_dereference(&game_state->permenant_particle_emitters, particle_emitter_id);
+    {
+        emitter->time_per_spawn                  = 0.05;
+        emitter->burst_amount                    = 128;
+        emitter->max_spawn_per_batch             = 1024;
+        emitter->max_spawn_batches               = -1;
+        emitter->color                           = color32u8(34, 88, 226, 255);
+        emitter->target_color                    = color32u8(59, 59, 56, 127);
+        emitter->starting_acceleration           = v2f32(0, -15.6);
+        emitter->starting_acceleration_variance  = v2f32(1.2, 1.2);
+        emitter->starting_velocity_variance      = v2f32(1.3, 0);
+        emitter->lifetime                        = 0.6;
+        emitter->lifetime_variance               = 0.35;
+
+        /* emitter->particle_type = ENTITY_PARTICLE_TYPE_FIRE; */
+        emitter->particle_feature_flags = ENTITY_PARTICLE_FEATURE_FLAG_FLAMES;
+
+        emitter->scale_uniform = 0.2;
+        emitter->scale_variance_uniform = 0.12;
+    }
+
+    return (struct entity_status_effect) {
+        .type = ENTITY_STATUS_EFFECT_TYPE_IGNITE,
+        .turn_duration = turn_duration,
+        .particle_emitter_id = particle_emitter_id,
+    };
+}
+
+struct entity_status_effect status_effect_poison(s32 turn_duration) {
+    s32                             particle_emitter_id = entity_particle_emitter_allocate(&game_state->permenant_particle_emitters);
+    struct entity_particle_emitter* emitter             = entity_particle_emitter_dereference(&game_state->permenant_particle_emitters, particle_emitter_id);
+    {
+        emitter->time_per_spawn                  = 0.30;
+        emitter->burst_amount                    = 16;
+        emitter->max_spawn_per_batch             = 1024;
+        emitter->max_spawn_batches               = -1;
+        emitter->color                           = color32u8(0, 0, 255, 255);
+        emitter->target_color                    = color32u8(0, 0, 128, 127);
+        emitter->starting_acceleration           = v2f32(0, -4);
+        emitter->starting_acceleration_variance  = v2f32(1.2, 1.2);
+        emitter->starting_velocity_variance      = v2f32(1.3, 0);
+        emitter->lifetime                        = 0.3;
+        emitter->lifetime_variance               = 0.45;
+
+        /* emitter->particle_type = ENTITY_PARTICLE_TYPE_FIRE; */
+        emitter->particle_feature_flags = ENTITY_PARTICLE_FEATURE_FLAG_FLAMES;
+
+        emitter->scale_uniform = 0.1;
+        emitter->scale_variance_uniform = 0.1;
+    }
+
+    return (struct entity_status_effect) {
+        .type = ENTITY_STATUS_EFFECT_TYPE_POISON,
+        .turn_duration = turn_duration,
+        .particle_emitter_id = particle_emitter_id,
+    };
+}
+
 #include "entity_ability.c"

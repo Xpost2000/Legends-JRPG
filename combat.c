@@ -163,6 +163,9 @@ void update_combat(struct game_state* state, f32 dt) {
                         if (combat_state->active_combatant >= combat_state->count) {
                             add_all_combat_participants(state);
                             battle_ui_trigger_end_turn();
+                        } else {
+                            /* trigger their per frame start actions */
+                            entity_update_all_status_effects_for_a_turn(find_current_combatant(state));
                         }
                     }
                 }
