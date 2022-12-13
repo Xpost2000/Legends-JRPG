@@ -41,10 +41,10 @@
 # this is the simplest case of movement
 (start-special-effects 1)
 (wait-special-effects)
-(camera-trauma 0.5)
+(camera-trauma 0.1)
 # NEW FORM
-# apply-status target type &rest params)
-(apply-status target 'ignite 25 3)
+# apply-status target type &rest params
+(apply-status target "ignite" 3)
 )
 )
 

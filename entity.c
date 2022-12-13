@@ -2117,12 +2117,27 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
             } else {
                 switch (sequence_action->type) {
                     case SEQUENCE_ACTION_APPLY_STATUS: {
-                        /* TODO */
-                        struct sequence_action_apply_status* apply_status = &sequence_action->apply_status;
+                        struct sequence_action_apply_status* apply_status               = &sequence_action->apply_status;
+                        struct entity*                       apply_status_target_entity = decode_sequence_action_target_entity_into_entity(state, target_entity, &apply_status->target);
+
+                        /* probably redundant but whatever, it works right now */
+                        struct entity_status_effect actual_effect;
+                        switch (apply_status->effect.type) {
+                            case ENTITY_STATUS_EFFECT_TYPE_IGNITE: {
+                                actual_effect = status_effect_ignite(apply_status->effect.turn_duration);
+                            } break;
+                            case ENTITY_STATUS_EFFECT_TYPE_POISON: {
+                                actual_effect = status_effect_poison(apply_status->effect.turn_duration);
+                            } break;
+                        }
+
+                        entity_add_status_effect(apply_status_target_entity, actual_effect);
+                        entity_advance_ability_sequence(target_entity);
                     } break;
                     case SEQUENCE_ACTION_CAMERA_TRAUMA: {
                         struct sequence_action_camera_trauma* camera_trauma = &sequence_action->camera_trauma;
                         camera_traumatize(&game_state->camera, camera_trauma->amount);
+                        entity_advance_ability_sequence(target_entity);
                     } break;
                     case SEQUENCE_ACTION_LOOK_AT: {
                         struct sequence_action_look_at* look_at = &sequence_action->look_at;
@@ -3710,6 +3725,7 @@ void entity_update_all_status_effects(struct entity* entity, f32 dt) {
             struct entity_status_effect*    current_effect = entity->status_effects + status_index;
             struct entity_particle_emitter* emitter        = entity_particle_emitter_dereference(&game_state->permenant_particle_emitters, current_effect->particle_emitter_id);
             emitter->position                              = v2f32_scale(entity->position, 1.0/TILE_UNIT_SIZE);
+            emitter->position.x += 0.5;
             entity_particle_emitter_start_emitting(&game_state->permenant_particle_emitters, current_effect->particle_emitter_id);
         }
     }
@@ -3778,17 +3794,19 @@ struct entity_status_effect status_effect_ignite(s32 turn_duration) {
     s32                             particle_emitter_id = entity_particle_emitter_allocate(&game_state->permenant_particle_emitters);
     struct entity_particle_emitter* emitter             = entity_particle_emitter_dereference(&game_state->permenant_particle_emitters, particle_emitter_id);
     {
-        emitter->time_per_spawn                  = 0.05;
-        emitter->burst_amount                    = 128;
+        emitter->time_per_spawn                  = 0.07;
+        emitter->burst_amount                    = 32;
         emitter->max_spawn_per_batch             = 1024;
         emitter->max_spawn_batches               = -1;
-        emitter->color                           = color32u8(34, 88, 226, 255);
+        emitter->color                           = color32u8(226, 88, 34, 255);
         emitter->target_color                    = color32u8(59, 59, 56, 127);
+
         emitter->starting_acceleration           = v2f32(0, -15.6);
         emitter->starting_acceleration_variance  = v2f32(1.2, 1.2);
         emitter->starting_velocity_variance      = v2f32(1.3, 0);
         emitter->lifetime                        = 0.6;
         emitter->lifetime_variance               = 0.35;
+        emitter->spawn_shape                     = emitter_spawn_shape_rectangle(v2f32(0,0), v2f32(0.5, 1), 1, false);
 
         /* emitter->particle_type = ENTITY_PARTICLE_TYPE_FIRE; */
         emitter->particle_feature_flags = ENTITY_PARTICLE_FEATURE_FLAG_FLAMES;
@@ -3819,6 +3837,7 @@ struct entity_status_effect status_effect_poison(s32 turn_duration) {
         emitter->starting_velocity_variance      = v2f32(1.3, 0);
         emitter->lifetime                        = 0.3;
         emitter->lifetime_variance               = 0.45;
+        emitter->spawn_shape                     = emitter_spawn_shape_rectangle(v2f32(0.05,0), v2f32(0.5, 1), 1, false);
 
         /* emitter->particle_type = ENTITY_PARTICLE_TYPE_FIRE; */
         emitter->particle_feature_flags = ENTITY_PARTICLE_FEATURE_FLAG_FLAMES;

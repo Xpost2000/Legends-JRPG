@@ -18,6 +18,7 @@
 (set_luck '(entity player) 120)
 
 (entity_add_ability '(entity player) "ability_shock")
+(entity_add_ability '(entity player) "ability_ignis")
 (entity_add_ability '(entity player) "ability_sword_rush")
 (entity_add_ability '(entity player) "ability_detonate_self")
 

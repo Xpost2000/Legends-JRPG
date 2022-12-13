@@ -267,7 +267,24 @@ void entity_ability_compile_animation_sequence(struct memory_arena* arena, struc
                     } else if (lisp_form_symbol_matching(*action_form_header, string_literal("apply-status"))) {
                         action_data->type = SEQUENCE_ACTION_APPLY_STATUS;
                         struct sequence_action_apply_status* apply_status = &action_data->apply_status;
-                        unimplemented("Not done yet");
+
+                        struct lisp_form* focus_target = lisp_list_nth(&action_form_rest_arguments, 0);
+                        struct lisp_form* status_type  = lisp_list_nth(&action_form_rest_arguments, 1);
+                        decode_sequence_action_target_entity(focus_target, &apply_status->target);
+                        string status_string_name = {};
+                        assertion(lisp_form_get_string(*status_type, &status_string_name) && "Bad status string?");
+                        apply_status->effect.type = entity_status_effect_type_from_string(status_string_name);
+
+                        switch (apply_status->effect.type) {
+                            case ENTITY_STATUS_EFFECT_TYPE_IGNITE:
+                            case ENTITY_STATUS_EFFECT_TYPE_POISON: {
+                                struct lisp_form* turn_duration_form  = lisp_list_nth(&action_form_rest_arguments, 2);
+                                assertion(lisp_form_get_s32(*turn_duration_form, &apply_status->effect.turn_duration) && "Turn duration is not a number?");
+                            } break;
+                            default: {
+                                assertion(!"Impossible to parse? Bad status type");
+                            } break;
+                        }
                     } else if (lisp_form_symbol_matching(*action_form_header, string_literal("camera-trauma"))) {
                         action_data->type = SEQUENCE_ACTION_CAMERA_TRAUMA;
                         struct sequence_action_camera_trauma* camera_trauma = &action_data->camera_trauma;

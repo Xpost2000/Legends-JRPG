@@ -86,6 +86,7 @@ struct sequence_action_camera_trauma {
 struct sequence_action_apply_status {
     /* refer to status effect in entities_def */
     /* TODO: needs to generally match parity  */
+    struct sequence_action_target_entity target;
     struct entity_status_effect effect;
 };
 
