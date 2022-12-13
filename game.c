@@ -1688,6 +1688,14 @@ local void game_clear_party_inventory(void) {
     zero_memory(&game_state->inventory, sizeof(game_state->inventory));
 }
 
+bool game_entity_is_party_member(struct entity* entity) {
+    if (entity == game_get_player(game_state)) {
+        return true;
+    }
+
+    return false;
+}
+
 void game_initialize_game_world(void) {
     game_clear_party_inventory();
     game_kill_all_dynamic_lights();

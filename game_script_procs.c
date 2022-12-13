@@ -509,7 +509,7 @@ GAME_LISP_FUNCTION(ENTITY_REMOVE_ITEM) {
     struct entity_inventory* inventory_target = (struct entity_inventory*)&entity->inventory;
     int                      inventory_limits = MAX_ACTOR_AVALIABLE_ITEMS;
 
-    if (game_get_player(game_state) == entity) {
+    if (game_entity_is_party_member(entity)) {
         inventory_target = (struct entity_inventory*)&game_state->inventory;
         inventory_limits = MAX_PARTY_ITEMS;
     }
@@ -558,7 +558,7 @@ GAME_LISP_FUNCTION(ENTITY_ADD_ITEM) {
     struct entity_inventory* inventory_target = (struct entity_inventory*)&entity->inventory;
     int                      inventory_limits = MAX_ACTOR_AVALIABLE_ITEMS;
 
-    if (game_get_player(game_state) == entity) {
+    if (game_entity_is_party_member(entity)) {
         inventory_target = (struct entity_inventory*)&game_state->inventory;
         inventory_limits = MAX_PARTY_ITEMS;
     }
@@ -901,6 +901,88 @@ GAME_LISP_FUNCTION(ENGINEFORCESAVE) {
         save_slot = 0;
     }
     game_write_save_slot(save_slot);
+    return LISP_nil;
+}
+GAME_LISP_FUNCTION(ENTITY_FIND_FIRST_ITEM) {
+    Required_Argument_Count(ENTITY_FIND_FIRST_ITEM, 2);
+    struct game_script_typed_ptr ptr = game_script_object_handle_decode(arguments[0]);
+    Fatal_Script_Error(ptr.type == GAME_SCRIPT_TARGET_ENTITY && "Whoops! Don't know how to make non-entities follow paths!");
+    struct entity* target_entity = game_dereference_entity(state, ptr.entity_id);
+    assertion(target_entity && "no entity?");
+
+    struct lisp_form string_name_of_item = arguments[1];
+    string string_name;
+    assertion(lisp_form_get_string(string_name_of_item, &string_name) && "string name of item is not a string");
+
+    struct entity_inventory* inventory = NULL;
+    if (game_entity_is_party_member(target_entity)) {
+        inventory = (struct entity_inventory*)&game_state->inventory;
+    } else {
+        inventory = (struct entity_inventory*)&target_entity->inventory;
+    }
+
+    s32 index_of_first_item;
+    for (s32 item_index = 0; item_index < inventory->count; ++item_index) {
+        struct item_instance current_item = inventory->items[item_index];
+        struct item_def*     item_base    = item_database_find_by_id(current_item.item);
+
+        if (string_equal(item_base->name, string_name)) {
+            index_of_first_item = item_index;
+            break;
+        }
+    }
+
+    return lisp_form_integer(index_of_first_item);
+}
+/* only from inventory! */
+/* NOTE: these are currently untested */
+GAME_LISP_FUNCTION(ENTITY_EQUIP_ITEM) {
+    Required_Argument_Count(ENTITY_EQUIP_ITEM, 3);
+    struct game_script_typed_ptr ptr = game_script_object_handle_decode(arguments[0]);
+    Fatal_Script_Error(ptr.type == GAME_SCRIPT_TARGET_ENTITY && "Whoops! Don't know how to make non-entities follow paths!");
+    struct entity* target_entity = game_dereference_entity(state, ptr.entity_id);
+    assertion(target_entity && "no entity?");
+    struct lisp_form equip_slot_symbol = arguments[1];
+    string equip_slot;
+    assertion(lisp_form_get_string(equip_slot_symbol, &equip_slot) && "entity equip slot string not a string!");
+    s32 equip_slot_index = entity_equip_slot_index_from_string(equip_slot);
+    assertion(equip_slot_index != -1 && "well that's bad, this is an invalid index for equip slots!");
+    struct lisp_form index_of_item = arguments[2];
+    s32 index;
+    assertion(lisp_form_get_s32(index_of_item, &index) && "entity equip item needs to be an integer");
+
+    struct entity_inventory* inventory_target = (struct entity_inventory*)&target_entity->inventory;
+    int                      inventory_limits = MAX_ACTOR_AVALIABLE_ITEMS;
+
+    if (game_entity_is_party_member(target_entity)) {
+        inventory_target = (struct entity_inventory*)&game_state->inventory;
+        inventory_limits = MAX_PARTY_ITEMS;
+    }
+    
+    entity_inventory_equip_item(inventory_target, inventory_limits, index, equip_slot_index, target_entity);
+    return LISP_nil;
+}
+GAME_LISP_FUNCTION(ENTITY_UNEQUIP_ITEM) {
+    Required_Argument_Count(ENTITY_UNEQUIP_ITEM, 1);
+    struct game_script_typed_ptr ptr = game_script_object_handle_decode(arguments[0]);
+    Fatal_Script_Error(ptr.type == GAME_SCRIPT_TARGET_ENTITY && "Whoops! Don't know how to make non-entities follow paths!");
+    struct entity* target_entity = game_dereference_entity(state, ptr.entity_id);
+    assertion(target_entity && "no entity?");
+    struct lisp_form equip_slot_symbol = arguments[1];
+    string equip_slot;
+    assertion(lisp_form_get_string(equip_slot_symbol, &equip_slot) && "entity equip slot string not a string!");
+    s32 equip_slot_index = entity_equip_slot_index_from_string(equip_slot);
+    assertion(equip_slot_index != -1 && "well that's bad, this is an invalid index for equip slots!");
+
+    struct entity_inventory* inventory_target = (struct entity_inventory*)&target_entity->inventory;
+    int                      inventory_limits = MAX_ACTOR_AVALIABLE_ITEMS;
+
+    if (game_entity_is_party_member(target_entity)) {
+        inventory_target = (struct entity_inventory*)&game_state->inventory;
+        inventory_limits = MAX_PARTY_ITEMS;
+    }
+    
+    entity_inventory_unequip_item(inventory_target, inventory_limits, equip_slot_index, target_entity);
     return LISP_nil;
 }
 

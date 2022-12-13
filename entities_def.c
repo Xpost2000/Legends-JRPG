@@ -524,6 +524,26 @@ enum entity_equip_slot_index {
     ENTITY_EQUIP_SLOT_INDEX_COUNT,
 };
 
+local string entity_equip_slot_index_strings[] = {
+    [ENTITY_EQUIP_SLOT_INDEX_HEAD]       = string_literal("head"),
+    [ENTITY_EQUIP_SLOT_INDEX_CHEST]      = string_literal("chest"),
+    [ENTITY_EQUIP_SLOT_INDEX_HANDS]      = string_literal("hands"),
+    [ENTITY_EQUIP_SLOT_INDEX_LEGS]       = string_literal("legs"),
+    [ENTITY_EQUIP_SLOT_INDEX_ACCESSORY1] = string_literal("accessory1"),
+    [ENTITY_EQUIP_SLOT_INDEX_ACCESSORY2] = string_literal("accessory2"),
+    [ENTITY_EQUIP_SLOT_INDEX_WEAPON1]    = string_literal("weapon1"),
+};
+
+s32 entity_equip_slot_index_from_string(string id) {
+    for (s32 index = 0; index < array_count(entity_equip_slot_index_strings); ++index) {
+        if (string_equal(id, entity_equip_slot_index_strings[index])) {
+            return index;
+        }
+    }
+
+    return -1;
+}
+
 #define ENTITY_MAX_ABILITIES (512)
 
 /* time information I guess */
