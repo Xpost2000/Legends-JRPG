@@ -94,8 +94,8 @@ local s32 conversation_ui_advance_character(bool skipping_mode) {
 }
 
 local void update_and_render_conversation_ui(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
-    const u32 BOX_WIDTH                      = 36;
-    const u32 BOX_HEIGHT                     = 8;
+    const u32 BOX_WIDTH                      = nine_patch_estimate_fitting_extents_width(ui_chunky, 1, SCREEN_WIDTH*0.85);
+    const u32 BOX_HEIGHT                     = nine_patch_estimate_fitting_extents_height(ui_chunky, 1, SCREEN_HEIGHT*0.266667);
     const f32 MAX_DIALOGUE_UI_ANIMATION_TIME = 0.45;
     switch (dialogue_ui.phase) {
         case DIALOGUE_UI_PHASE_OPEN_UP: {
@@ -127,13 +127,8 @@ local void update_and_render_conversation_ui(struct game_state* state, struct so
             v2f32 dialogue_box_start_position = v2f32(SCREEN_WIDTH/2 - dialogue_box_extents.x/2, (SCREEN_HEIGHT * 0.9) - dialogue_box_extents.y);
             {
                 draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, dialogue_box_start_position, BOX_WIDTH, BOX_HEIGHT, UI_DEFAULT_COLOR);
-                draw_ui_breathing_text(framebuffer, v2f32(dialogue_box_start_position.x + 20, dialogue_box_start_position.y + 15), font2, 3, current_conversation_node->speaker_name, 0, color32f32(1,1,1,1));
-#ifndef RICHTEXT_EXPERIMENTAL
-                {
-                    draw_ui_breathing_text_word_wrapped(framebuffer, v2f32(dialogue_box_start_position.x + 30, dialogue_box_start_position.y + 50), dialogue_box_extents.x * 0.76, font, 2, string_slice(current_conversation_node->text, 0, dialogue_ui.visible_characters), 1492, color32f32(1,1,1,1));
-                }
-#else
-                /* NOTE: this can be moved out when I'm "done" */
+                draw_ui_breathing_text(framebuffer, v2f32(dialogue_box_start_position.x + TILE_UNIT_SIZE, dialogue_box_start_position.y + TILE_UNIT_SIZE/2), font2, 2, current_conversation_node->speaker_name, 0, color32f32(1,1,1,1));
+
                 f32 start_x_cursor        = dialogue_box_start_position.x + 30;
                 f32 start_y_cursor        = dialogue_box_start_position.y + 50;
                 f32 x_cursor              = start_x_cursor;
@@ -209,7 +204,6 @@ local void update_and_render_conversation_ui(struct game_state* state, struct so
                         x_cursor += glyph_width;
                     }
                 }
-#endif
 
                 if (dialogue_ui.visible_characters < text_length_without_dialogue_rich_markup_length(current_conversation_node->text)) {
                     if (dialogue_ui.rich_text_state.delay_timer > 0) {
