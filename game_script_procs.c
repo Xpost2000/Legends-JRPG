@@ -921,7 +921,7 @@ GAME_LISP_FUNCTION(ENTITY_FIND_FIRST_ITEM) {
         inventory = (struct entity_inventory*)&target_entity->inventory;
     }
 
-    s32 index_of_first_item;
+    s32 index_of_first_item = 0;
     for (s32 item_index = 0; item_index < inventory->count; ++item_index) {
         struct item_instance current_item = inventory->items[item_index];
         struct item_def*     item_base    = item_database_find_by_id(current_item.item);
@@ -943,12 +943,12 @@ GAME_LISP_FUNCTION(ENTITY_EQUIP_ITEM) {
     struct entity* target_entity = game_dereference_entity(state, ptr.entity_id);
     assertion(target_entity && "no entity?");
     struct lisp_form equip_slot_symbol = arguments[1];
-    string equip_slot;
+    string equip_slot = {};
     assertion(lisp_form_get_string(equip_slot_symbol, &equip_slot) && "entity equip slot string not a string!");
     s32 equip_slot_index = entity_equip_slot_index_from_string(equip_slot);
     assertion(equip_slot_index != -1 && "well that's bad, this is an invalid index for equip slots!");
     struct lisp_form index_of_item = arguments[2];
-    s32 index;
+    s32 index = 0;
     assertion(lisp_form_get_s32(index_of_item, &index) && "entity equip item needs to be an integer");
 
     struct entity_inventory* inventory_target = (struct entity_inventory*)&target_entity->inventory;
@@ -969,7 +969,7 @@ GAME_LISP_FUNCTION(ENTITY_UNEQUIP_ITEM) {
     struct entity* target_entity = game_dereference_entity(state, ptr.entity_id);
     assertion(target_entity && "no entity?");
     struct lisp_form equip_slot_symbol = arguments[1];
-    string equip_slot;
+    string equip_slot = {};
     assertion(lisp_form_get_string(equip_slot_symbol, &equip_slot) && "entity equip slot string not a string!");
     s32 equip_slot_index = entity_equip_slot_index_from_string(equip_slot);
     assertion(equip_slot_index != -1 && "well that's bad, this is an invalid index for equip slots!");

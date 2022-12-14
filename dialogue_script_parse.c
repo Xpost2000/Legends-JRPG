@@ -210,6 +210,7 @@ local void game_open_conversation_file(struct game_state* state, string filename
     */
 
     state->is_conversation_active             = true;
+    start_dialogue_ui();
     state->before_conversation_camera         = state->camera; 
     struct conversation* conversation = &state->current_conversation;
     conversation->node_count = 0;
