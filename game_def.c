@@ -66,13 +66,38 @@ enum menu_font_variation {
 
 enum entity_game_script_target_types {
     GAME_SCRIPT_TARGET_TRIGGER,
+    /* EVENTS
+       ON-TOUCH
+     */
+    GAME_SCRIPT_TARGET_TRANSITION_TRIGGER,
+    /* EVENTS
+       ON-TOUCH
+     */
+    GAME_SCRIPT_TARGET_LIGHT,
+    /* EVENTS
+       NONE
+     */
     GAME_SCRIPT_TARGET_ENTITY,
-    GAME_SCRIPT_TARGET_CHEST, /* add an "on-loot" trigger */
+    /* EVENTS
+       ON-DEATH
+       ROUTINE
+     */
+    GAME_SCRIPT_TARGET_SAVEPOINT,
+    /* EVENTS
+       NONE
+     */
+    GAME_SCRIPT_TARGET_CHEST, 
+    /* EVENTS
+       ON_LOOT
+     */
 };
 local string entity_game_script_target_type_name[] = {
-    string_literal("trigger"),
-    string_literal("entity"),
-    string_literal("chest"),
+    [GAME_SCRIPT_TARGET_TRIGGER] = string_literal("trigger"),
+    [GAME_SCRIPT_TARGET_ENTITY]  = string_literal("entity"),
+    [GAME_SCRIPT_TARGET_CHEST]   = string_literal("chest"),
+    [GAME_SCRIPT_TARGET_TRIGGER] = string_literal("transition-trigger"),
+    [GAME_SCRIPT_TARGET_ENTITY]  = string_literal("savepoint"),
+    [GAME_SCRIPT_TARGET_CHEST]   = string_literal("light"),
 };
 
 enum activation_type {
@@ -83,10 +108,10 @@ enum activation_type {
 };
 
 local string activation_type_strings[] = {
-    string_literal("(on-touch)"),
-    string_literal("(on-activate)"),
-    string_literal("(on-hit?)"),
-    string_literal("(count)"),
+    [ACTIVATION_TYPE_TOUCH]    = string_literal("(on-touch)"),
+    [ACTIVATION_TYPE_ACTIVATE] = string_literal("(on-activate)"),
+    [ACTIVATION_TYPE_HIT]      = string_literal("(on-hit)"),
+    [ACTIVATION_TYPE_COUNT]    = string_literal("(count)"),
 };
 
 enum ui_state {
@@ -97,9 +122,11 @@ enum ui_state {
     UI_STATE_COUNT,
 };
 static string ui_state_strings[] = {
-    string_literal("ingame"),
-    string_literal("paused"),
-    string_literal("(count)"),
+    [UI_STATE_INGAME]   = string_literal("ingame"),
+    [UI_STATE_PAUSE]    = string_literal("paused"),
+    [UI_STATE_SAVEGAME] = string_literal("save-game"),
+    [UI_STATE_GAMEOVER] = string_literal("game-over"),
+    [UI_STATE_COUNT]    = string_literal("(count)"),
 };
 
 
@@ -219,6 +246,10 @@ bool special_effects_active(void);
 void special_effect_start_inversion(void);
 void special_effect_stop_effects(void);
 
+enum light_flags {
+    LIGHT_FLAGS_NONE = 0,
+    LIGHT_FLAGS_HIDDEN = BIT(31),
+};
 struct light_def {
 /*
   NOTE Version 9 forgot

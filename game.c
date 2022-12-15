@@ -1258,6 +1258,10 @@ union color32f32 lighting_shader(struct software_framebuffer* framebuffer, union
 
     for (s32 light_index = 0; light_index < loaded_area->light_count; ++light_index) {
         struct light_def* current_light = loaded_area->lights + light_index;
+        if (current_light->flags & LIGHT_FLAGS_HIDDEN) {
+            continue;
+        }
+
         v2f32 light_screenspace_position = current_light->position;
         /* recentering lights */
         light_screenspace_position.x += 0.5;
@@ -1279,6 +1283,10 @@ union color32f32 lighting_shader(struct software_framebuffer* framebuffer, union
 
     for (s32 light_index = 0; light_index < game_state->dynamic_light_count; ++light_index) {
         struct light_def* current_light = game_state->dynamic_lights + light_index;
+        if (current_light->flags & LIGHT_FLAGS_HIDDEN) {
+            continue;
+        }
+
         v2f32 light_screenspace_position = current_light->position;
         /* recentering lights */
         light_screenspace_position.x += 0.5;

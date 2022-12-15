@@ -817,7 +817,9 @@ struct lisp_form game_script_evaluate_form(struct memory_arena* arena, struct ga
 
 struct game_script_typed_ptr game_script_object_handle_decode(struct lisp_form object_handle) {
     assertion(object_handle.type == LISP_FORM_LIST && "lisp object handle is not a list??? Oh no");
+#if 0
     assertion(object_handle.list.count == 2 && "lisp representations of object handles should be like (TYPE ID)");
+#endif
     struct game_script_typed_ptr result = {};
 #if 0 
     _debugprintf("Decoding object handle: ");
@@ -843,6 +845,18 @@ struct game_script_typed_ptr game_script_object_handle_decode(struct lisp_form o
     {
         struct level_area* area = &game_state->loaded_area;
         switch (type_id) {
+            case GAME_SCRIPT_TARGET_LIGHT: {
+                if (!lisp_form_get_s32(*id_form, &real_id)) {
+                    return result;
+                }
+                result.ptr = area->lights + real_id;
+            } break;
+            case GAME_SCRIPT_TARGET_TRANSITION_TRIGGER: {
+                if (!lisp_form_get_s32(*id_form, &real_id)) {
+                    return result;
+                }
+                result.ptr = area->trigger_level_transitions + real_id;
+            } break;
             case GAME_SCRIPT_TARGET_TRIGGER: {
                 if (!lisp_form_get_s32(*id_form, &real_id)) {
                     return result;
@@ -863,7 +877,26 @@ struct game_script_typed_ptr game_script_object_handle_decode(struct lisp_form o
                 */
                 if (lisp_form_symbol_matching(*id_form, string_literal("player"))) {
                     _debugprintf("found player");
-                    result.entity_id = player_id;
+                    switch (object_handle.list.count) {
+                        case 2: {
+                            result.entity_id = player_id; /* this is the "active player leader" */
+                        } break;
+                        case 3: {
+#if 0
+                            struct lisp_form* third_argument = lisp_list_nth(&object_handle, 2);
+                            s32    player_index       = 0;
+                            string player_basename_id = {};
+                            if (lisp_form_get_s32(*third_argument, &player_index)) {
+                                result.entity_id = ; /* party member index */
+                            } else {
+                                result.entity_id = ; /* party member find based off of basename */
+                            }
+#else
+                            unimplemented("Multiple party member support");
+#endif
+                        } break;
+                            bad_case;
+                    }
                 } else {
                     string script_name_string;
 
@@ -897,6 +930,13 @@ struct game_script_typed_ptr game_script_object_handle_decode(struct lisp_form o
                         assertion(false && "Invalid id type for entity");
                     }
                 }
+                return result;
+            } break;
+            case GAME_SCRIPT_TARGET_SAVEPOINT: {
+                if (!lisp_form_get_s32(*id_form, &real_id)) {
+                    return result;
+                }
+                result.ptr = area->savepoints + real_id;
                 return result;
             } break;
             case GAME_SCRIPT_TARGET_CHEST: {

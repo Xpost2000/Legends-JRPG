@@ -1485,7 +1485,7 @@ void render_entities_from_area_and_iterator(struct sortable_draw_entities* draw_
                 continue;
             }
             
-            if (current_flags->entity & ENTITY_FLAGS_HIDDEN) {
+            if (current_entity->flags & ENTITY_FLAGS_HIDDEN) {
                 return;
             }
 
