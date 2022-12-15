@@ -42,11 +42,20 @@ local string save_record_type_strings[] = {
     [SAVE_RECORD_TYPE_ENTITY_CHEST]  = string_literal("RECORD_CHEST"),
 };
 
-struct save_record_entity_chest {
-    /*
-      conceivably chests... should really only be looted or not...
-     */
+/*
+  I still don't know if I want to write that metaprogrammer thing yet.
+
+  I can probably safely test it's implementation on the save files since it's simple,
+  but I don't know if I trust my level formats quite yet...
+
+  Though it would be very useful
+struct save_record_entity_chest_V4 {
     u32 target_entity;
+};
+*/
+struct save_record_entity_chest {
+    u32 target_entity;
+    u32 entity_flags;
 };
 
 enum save_record_entity_field_flags {
@@ -55,6 +64,7 @@ enum save_record_entity_field_flags {
     SAVE_RECORD_ENTITY_FIELD_FLAGS_POSITION     = BIT(1),
     SAVE_RECORD_ENTITY_FIELD_FLAGS_DIRECTION    = BIT(2),
     SAVE_RECORD_ENTITY_FIELD_FLAGS_ENTITY_FLAGS = BIT(3),
+    SAVE_RECORD_ENTITY_FIELD_FLAGS_RECORD_EVERYTHING = 0xFFFF,
 };
 struct save_record_entity_entity {
     entity_id id;
@@ -310,6 +320,36 @@ local void save_serialize_record_entry(struct save_area_record_chunk* entry_chun
         } break;
             /* The default case is meant to generally be forward compatible with everything in the future... */
             /* If it fails to work, I can analyze the specific structures and drop down */
+        case 4: {
+            struct save_record* current_entry = entry_chunk->records + record_to_consume;
+            serialize_u32(serializer, &current_entry->type);
+
+            /* this compresses our save files I guess (it's a stream now :! ) */
+            _debugprintf("Current record type: %d %s", current_entry->type, save_record_type_strings[current_entry->type].data);
+            switch (current_entry->type) {
+                case SAVE_RECORD_TYPE_NIL: {
+                    
+                } break;
+                case SAVE_RECORD_TYPE_ENTITY_ENTITY: {
+                    struct save_record_entity_entity* entity_record = &current_entry->entity_record;
+
+                    serialize_entity_id(serializer, save_version, &entity_record->id);
+
+                    serialize_u32(serializer, &entity_record->entity_field_flags);
+                    serialize_u32(serializer, &entity_record->entity_flags);
+
+                    serialize_f32(serializer, &entity_record->position.x);
+                    serialize_f32(serializer, &entity_record->position.y);
+
+                    serialize_s32(serializer, &entity_record->health);
+                    serialize_u8(serializer,  &entity_record->direction);
+                } break;
+                case SAVE_RECORD_TYPE_ENTITY_CHEST: {
+                    struct save_record_entity_chest* chest_record = &current_entry->chest_record;
+                    serialize_u32(serializer, &chest_record->target_entity);
+                } break;
+            }
+        } break;
         case CURRENT_SAVE_RECORD_VERSION:
         default: {
             struct save_record* current_entry = entry_chunk->records + record_to_consume;
@@ -338,6 +378,7 @@ local void save_serialize_record_entry(struct save_area_record_chunk* entry_chun
                 case SAVE_RECORD_TYPE_ENTITY_CHEST: {
                     struct save_record_entity_chest* chest_record = &current_entry->chest_record;
                     serialize_u32(serializer, &chest_record->target_entity);
+                    serialize_u32(serializer, &chest_record->entity_flags);
                 } break;
             }
         } break;
@@ -684,7 +725,7 @@ void save_data_register_entity(entity_id id) {
     new_record->type                                = SAVE_RECORD_TYPE_ENTITY_ENTITY;
     struct save_record_entity_entity* entity_record = &new_record->entity_record;
 
-    entity_record->entity_field_flags = BIT(0) | BIT(1) | BIT(2) | BIT(3);
+    entity_record->entity_field_flags = SAVE_RECORD_ENTITY_FIELD_FLAGS_RECORD_EVERYTHING;
     entity_record->id                 = id;
     entity_record->entity_flags       = entity_object->flags;
     entity_record->position           = entity_object->position;

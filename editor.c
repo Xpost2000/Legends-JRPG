@@ -1139,7 +1139,7 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
                                            graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_GOLD]),
                                            1, v2f32(0,y_cursor), string_from_cstring(tmp_text), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
         }
-        switch (editor_state->tool_mode) {
+        switch (editor_state->tool_mode) { /* PROPERTY MENU */
             case EDITOR_TOOL_TILE_PAINTING: {
                 y_cursor += 12;
                 {
@@ -1216,7 +1216,9 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
             } else {
                 switch (editor_state->tool_mode) {
                     /* I would show images, but this is easier for now */
-                    case EDITOR_TOOL_TILE_PAINTING: {} break;
+                    case EDITOR_TOOL_TILE_PAINTING: {
+                        editor_state->tab_menu_open = 0;
+                    } break;
                     case EDITOR_TOOL_TRIGGER_PLACEMENT: {
                         switch (editor_state->trigger_placement_type) {
                             case TRIGGER_PLACEMENT_TYPE_LEVEL_TRANSITION: {
@@ -1257,6 +1259,9 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
                                         trigger->activation_method = 0;
                                     }
                                 }
+                            } break;
+                            default: {
+                                editor_state->tab_menu_open = 0;
                             } break;
                         }
                     } break;
@@ -1467,6 +1472,15 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
                                         editor_state->chest_property_menu.adding_item        = true;
                                         editor_state->chest_property_menu.item_list_scroll_y = 0;
                                     }
+                                    {
+                                        string s = string_clone(&scratch_arena, string_from_cstring(format_temp("hidden: %s", cstr_yesno[(chest->flags & ENTITY_FLAGS_HIDDEN) > 0])));
+                                        if(EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(270, 10), s)) {
+                                            /* pop up should just replace the menu */
+                                            /* for now just add a test item */
+                                            /* entity_inventory_add(&chest->inventory, 16, item_id_make(string_literal("item_sardine_fish_5"))); */
+                                            chest->flags ^= ENTITY_FLAGS_HIDDEN;
+                                        }
+                                    }
                                 }
                             } break;
                             case ENTITY_PLACEMENT_TYPE_light: {
@@ -1482,6 +1496,28 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
                                 EDITOR_imgui_text_edit_u8(framebuffer, font, highlighted_font, 2, v2f32(15, draw_cursor_y), string_literal("Light B: "), &current_light->color.b);
                                 draw_cursor_y += 16 * 2.5;
                                 EDITOR_imgui_text_edit_u8(framebuffer, font, highlighted_font, 2, v2f32(15, draw_cursor_y), string_literal("Light A: "), &current_light->color.a);
+                                draw_cursor_y += 16 * 2.5;
+                                {
+                                    string s = string_clone(&scratch_arena, string_from_cstring(format_temp("hidden: %s", cstr_yesno[(current_light->flags & ENTITY_FLAGS_HIDDEN) > 0])));
+                                    if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(10, draw_cursor_y), s)) {
+                                        current_light->flags ^= ENTITY_FLAGS_HIDDEN;
+                                    }
+                                    draw_cursor_y += 16 * 2.5;
+                                }
+                            } break;
+                            case ENTITY_PLACEMENT_TYPE_savepoint: {
+                                f32 draw_cursor_y = 70;
+                                struct entity_savepoint* current_savepoint = editor_state->last_selected;
+                                {
+                                    string s = string_clone(&scratch_arena, string_from_cstring(format_temp("hidden: %s", cstr_yesno[(current_savepoint->flags & ENTITY_FLAGS_HIDDEN) > 0])));
+                                    if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(10, draw_cursor_y), s)) {
+                                        current_savepoint->flags ^= ENTITY_FLAGS_HIDDEN;
+                                    }
+                                    draw_cursor_y += 16 * 2.5;
+                                }
+                            } break;
+                            default: {
+                                editor_state->tab_menu_open = 0;
                             } break;
                         }
                     } break;

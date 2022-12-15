@@ -1,7 +1,7 @@
 #ifndef SAVE_DATA_DEF_C
 #define SAVE_DATA_DEF_C
 
-#define CURRENT_SAVE_RECORD_VERSION (4)
+#define CURRENT_SAVE_RECORD_VERSION (5)
 
 void initialize_save_data(void);
 void apply_save_data(struct game_state* state);
@@ -13,6 +13,10 @@ void finish_save_data(void);
 string filename_from_saveslot_id(s32 id);
 void   save_data_register_chest_looted(u32 chest_id);
 void   save_data_register_entity(entity_id id);
+#if 0
+void   save_data_register_light(u32 savepoint_id);
+void   save_data_register_savepoint(u32 savepoint_id);
+#endif
 
 struct save_data_description {
     bool good;
