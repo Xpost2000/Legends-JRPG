@@ -934,6 +934,10 @@ void update_entities(struct game_state* state, f32 dt, struct entity_iterator it
             continue;
         }
 
+        if (current_entity->flags & ENTITY_FLAGS_HIDDEN) {
+            continue;
+        }
+
         {
             if (!(current_entity->flags & ENTITY_FLAGS_NOCLIP)) {
                 /* _debugprintf("cx: %f, %f\n", current_entity->velocity.x, current_entity->velocity.y); */
@@ -1480,16 +1484,27 @@ void render_entities_from_area_and_iterator(struct sortable_draw_entities* draw_
             if (!(current_entity->flags & ENTITY_FLAGS_ACTIVE)) {
                 continue;
             }
+            
+            if (current_flags->entity & ENTITY_FLAGS_HIDDEN) {
+                return;
+            }
+
             sortable_draw_entities_push_entity(draw_entities, current_entity->position.y, it.current_id);
         }
     }
 
     {
         Array_For_Each(it, struct entity_chest, area->chests, area->entity_chest_count) {
+            if (it->flags & ENTITY_FLAGS_HIDDEN) {
+                continue;
+            }
             sortable_draw_entities_push_chest(draw_entities, it->position.y*TILE_UNIT_SIZE, it);
         }
 
         Array_For_Each(it, struct entity_savepoint, area->savepoints, area->entity_savepoint_count) {
+            if (it->flags & ENTITY_FLAGS_HIDDEN) {
+                continue;
+            }
             sortable_draw_entities_push_savepoint(draw_entities, it->position.y*TILE_UNIT_SIZE, it);
         }
     }

@@ -56,7 +56,7 @@ struct tile {
 };
 void serialize_tile(struct binary_serializer* serializer, s32 version, struct tile* tile);
 
-struct trigger_level_transition {
+struct trigger_level_transition { /* TODO: Allow these to also be registered "on-trigger" events, except these can return a final value (T/F) for whether you can allow the transition */
     /* assume to be in tile coordinates. */
     struct rectangle_f32 bounds;
     /* for binary structs, I need cstrings unfortunately. Otherwise they are a little too inconvenient to serialize...*/

@@ -850,6 +850,17 @@ struct game_script_typed_ptr game_script_object_handle_decode(struct lisp_form o
                 result.ptr = area->script_triggers + real_id;
             } break;
             case GAME_SCRIPT_TARGET_ENTITY: {
+                /*
+                  TODO:
+                  Update this for multiple Party Members.
+
+                  For the player form
+
+                  accept the following forms
+
+                  (entity player INDEX)    ;; This is obvious...
+                  (entity player BASENAME) ;; All entities *should* have unique basenames in the player party
+                */
                 if (lisp_form_symbol_matching(*id_form, string_literal("player"))) {
                     _debugprintf("found player");
                     result.entity_id = player_id;

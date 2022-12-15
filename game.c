@@ -2547,6 +2547,10 @@ void player_handle_radial_interactables(struct game_state* state, struct entity*
     {
         Array_For_Each(it, struct entity_chest, area->chests, area->entity_chest_count) {
             f32 distance_sq = v2f32_distance_sq(entity->position, v2f32_scale(it->position, TILE_UNIT_SIZE));
+            if (it->flags & ENTITY_CHEST_FLAGS_HIDDEN) {
+                continue;
+            }
+
             if (it->flags & ENTITY_CHEST_FLAGS_UNLOCKED) {
                 continue;   
             }
@@ -2567,6 +2571,14 @@ void player_handle_radial_interactables(struct game_state* state, struct entity*
         struct entity_iterator iterator = game_entity_iterator(state);
 
         for (struct entity* current_entity = entity_iterator_begin(&iterator); !entity_iterator_finished(&iterator); current_entity = entity_iterator_advance(&iterator)) {
+            if (!(current_entity->flags & ENTITY_FLAGS_ALIVE)) {
+                continue;
+            }
+
+            if (current_entity->flags & ENTITY_FLAGS_HIDDEN) {
+                continue;
+            }
+
             f32 distance_sq = v2f32_distance_sq(entity->position, current_entity->position);
 
             if (distance_sq <= (ENTITY_TALK_INTERACTIVE_RADIUS*ENTITY_TALK_INTERACTIVE_RADIUS)) {
@@ -3008,6 +3020,10 @@ struct entity* game_any_entity_at_tile_point_except(v2f32 xy, struct entity** fi
         position.y = roundf(position.y);
 
         if (!(current_entity->flags & ENTITY_FLAGS_ALIVE)) {
+            continue;
+        }
+
+        if (current_entity->flags & ENTITY_FLAGS_HIDDEN) {
             continue;
         }
         
