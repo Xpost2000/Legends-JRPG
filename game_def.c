@@ -69,6 +69,15 @@ enum entity_game_script_target_types {
     /* EVENTS
        ON-TOUCH
      */
+    GAME_SCRIPT_TARGET_ENTITY,
+    /* EVENTS
+       ON-DEATH
+       ROUTINE
+     */
+    GAME_SCRIPT_TARGET_CHEST, 
+    /* EVENTS
+       ON_LOOT
+     */
     GAME_SCRIPT_TARGET_TRANSITION_TRIGGER,
     /* EVENTS
        ON-TOUCH
@@ -77,27 +86,18 @@ enum entity_game_script_target_types {
     /* EVENTS
        NONE
      */
-    GAME_SCRIPT_TARGET_ENTITY,
-    /* EVENTS
-       ON-DEATH
-       ROUTINE
-     */
     GAME_SCRIPT_TARGET_SAVEPOINT,
     /* EVENTS
        NONE
-     */
-    GAME_SCRIPT_TARGET_CHEST, 
-    /* EVENTS
-       ON_LOOT
      */
 };
 local string entity_game_script_target_type_name[] = {
     [GAME_SCRIPT_TARGET_TRIGGER] = string_literal("trigger"),
     [GAME_SCRIPT_TARGET_ENTITY]  = string_literal("entity"),
     [GAME_SCRIPT_TARGET_CHEST]   = string_literal("chest"),
-    [GAME_SCRIPT_TARGET_TRIGGER] = string_literal("transition-trigger"),
-    [GAME_SCRIPT_TARGET_ENTITY]  = string_literal("savepoint"),
-    [GAME_SCRIPT_TARGET_CHEST]   = string_literal("light"),
+    [GAME_SCRIPT_TARGET_TRANSITION_TRIGGER] = string_literal("transition-trigger"),
+    [GAME_SCRIPT_TARGET_SAVEPOINT]  = string_literal("savepoint"),
+    [GAME_SCRIPT_TARGET_LIGHT]   = string_literal("light"),
 };
 
 enum activation_type {
