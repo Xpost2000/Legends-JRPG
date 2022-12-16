@@ -97,6 +97,50 @@ local v2f32 editor_get_world_space_mouse_location(void) {
 
 #include "editor_imgui.c"
 
+void editor_deallocate_tilemap_object_tile(s32 index) {
+    struct level_area_tilemap_tile* tile = editor_state->tilemap_object_tile_pool + index;
+    tile->id = 0;
+}
+s32 editor_allocate_tilemap_object_tile(void) {
+    for (s32 index = 0; index < editor_state->tilemap_object_tile_pool_capacity; ++index) {
+        struct level_area_tilemap_tile* tile = editor_state->tilemap_object_tile_pool + index;
+        if (tile->id == 0) {
+            return index;
+        }
+    }
+
+    return -1;
+}
+/* TODO: need to serialize, display and allow edits */
+void editor_add_tilemap_object_tile_at(struct level_area_tilemap_object_editor* tilemap_object, s32 x, s32 y, s32 id) {
+    assertion(id != 0);
+    for (s32 index = 0; index < tilemap_object->tile_count; ++index) {
+        struct level_area_tilemap_tile* tile = editor_state->tilemap_object_tile_pool + tilemap_object->tiles[index];
+        if (tile->x == x && tile->y == y) {
+            tile->id = id;
+            return;
+        }
+    }
+
+    s32*                            new_tile = &tilemap_object->tiles[tilemap_object->tile_count++];
+    *new_tile                                = editor_allocate_tilemap_object_tile();
+    struct level_area_tilemap_tile* tile     = editor_state->tilemap_object_tile_pool + *new_tile;
+    tile->x                                  = x;
+    tile->y                                  = y;
+    tile->id                                 = id;
+}
+void editor_remove_tilemap_object_tile_at(struct level_area_tilemap_object_editor* tilemap_object, s32 x, s32 y) {
+    for (s32 index = 0; index < tilemap_object->tile_count; ++index) {
+        struct level_area_tilemap_tile* tile = editor_state->tilemap_object_tile_pool + tilemap_object->tiles[index];
+        if (tile->x == x && tile->y == y) {
+            tilemap_object->tiles[index] = tilemap_object->tiles[--tilemap_object->tile_count];
+            editor_deallocate_tilemap_object_tile(index);
+            return;
+        }
+    }
+    return;
+}
+
 void editor_clear_all_allocations(struct editor_state* state) {
     zero_array(state->tile_counts);
     state->trigger_level_transition_count = 0;
