@@ -20,6 +20,8 @@ local void close_dialogue_ui(void);
 #include "fade_transitions.c"
 
 local void announce_battle_action(struct entity_id who, string what);
+local struct level_area_battle_zone_bounding_box* level_area_find_current_battle_zone(struct level_area* level, s32 x, s32 y);
+local bool level_area_battle_zone_bounding_box_is_safe_battle_block(struct level_area* level, struct level_area_battle_zone_bounding_box* zone, s32 x, s32 y);
 
 local void set_scrollable_ui_bounds(s32 selection, s32* bottom_index, s32* top_index, s32 max_limit, s32 FIRST_SCROLLING_Y, s32 MAX_DISPLAYABLE_ITEMS) {
     assertion(bottom_index && top_index && "need pointers for those values");
@@ -327,11 +329,22 @@ local void render_tile_layer(struct render_commands* commands, struct level_area
         struct tile_data_definition* tile_data = tile_table_data + tile_id;
         image_id tex = get_tile_image_id(tile_data);
 
+        union color32f32 color = color32f32(1, 1, 1, 1);
+        {
+            if (game_state->combat_state.active_combat) {
+                struct level_area_battle_zone_bounding_box* current_battle_zone = level_area_find_current_battle_zone(area, area->tile_layers[layer][index].x, area->tile_layers[layer][index].y);
+                if (!current_battle_zone ||
+                    !level_area_battle_zone_bounding_box_is_safe_battle_block(area, current_battle_zone, area->tile_layers[layer][index].x, area->tile_layers[layer][index].y)) {
+                    color.r = color.g = color.b = lerp_f32(1, 0.3, game_state->combat_state.battle_zone_dark_fade_t);
+                }
+            }
+        }
+
         render_commands_push_image(commands,
                                    graphics_assets_get_image_by_id(&graphics_assets, tex),
                                    rectangle_f32(area->tile_layers[layer][index].x * TILE_UNIT_SIZE, area->tile_layers[layer][index].y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE),
                                    tile_data->sub_rectangle,
-                                   color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
+                                   color, NO_FLAGS, BLEND_MODE_ALPHA);
 
         switch (layer) {
             case TILE_LAYER_GROUND: {
@@ -818,6 +831,32 @@ local void level_area_clear_movement_visibility_map(struct level_area* level) {
     }
 }
 
+
+local struct level_area_battle_zone_bounding_box* level_area_find_current_battle_zone(struct level_area* level, s32 x, s32 y) {
+    for (struct level_area_battle_zone_bounding_box* existing_zone = level->first_battle_zone; existing_zone; existing_zone = existing_zone->next) {
+        if (existing_zone->min_x <= x &&
+            existing_zone->max_x >= x &&
+            existing_zone->min_y <= y &&
+            existing_zone->max_y >= y) {
+            return existing_zone;
+        }
+    }
+
+    return NULL;
+}
+
+local bool level_area_battle_zone_bounding_box_is_safe_battle_block(struct level_area* level, struct level_area_battle_zone_bounding_box* zone, s32 x, s32 y) {
+    /* assume we're already in the zone */
+    for (s32 block_index = 0; block_index < zone->square_count; ++block_index) {
+        struct level_area_battle_safe_square* square = zone->squares[block_index] + level->battle_safe_squares;
+        if (square->x == x && square->y == y) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 local void level_area_build_movement_visibility_map(struct memory_arena* arena, struct level_area* level, s32 x, s32 y, s32 radius) {
     /* not a BFS, just brute force checkings... */
     struct level_area_navigation_map* navigation_map          = &level->navigation_data;
@@ -825,6 +864,10 @@ local void level_area_build_movement_visibility_map(struct memory_arena* arena, 
     s32                               map_height              = navigation_map->height;
 
     f32 radius_sq = radius*radius;
+
+    /* figure out which battle zone we're situated in... */
+    struct level_area_battle_zone_bounding_box* battle_zone = level_area_find_current_battle_zone(level, x, y);
+    assertion(battle_zone && "Check the level! This isn't supposed be a combat zone? Please tell the map maker!");
 
     for (s32 y_cursor = navigation_map->min_y; y_cursor < navigation_map->max_y; ++y_cursor) {
         for (s32 x_cursor = navigation_map->min_x; x_cursor < navigation_map->max_x; ++x_cursor) {
@@ -837,6 +880,8 @@ local void level_area_build_movement_visibility_map(struct memory_arena* arena, 
                 if (t) {
                     struct tile_data_definition* tile_data_entry = &tile_table_data[t->id];
 
+                    if (!level_area_battle_zone_bounding_box_is_safe_battle_block(level, battle_zone, x_cursor, y_cursor))
+                        continue;
                     if (tile_data_entry->flags & TILE_DATA_FLAGS_SOLID)
                         continue;
 

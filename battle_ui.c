@@ -1579,6 +1579,9 @@ local void update_and_render_battle_ui(struct game_state* state, struct software
             f32 t = global_battle_ui_state.timer / max_t;
             if (t > 1.0) t = 1.0;
 
+            if (global_battle_ui_state.phase == BATTLE_UI_FADE_IN_DARK) {
+                state->combat_state.battle_zone_dark_fade_t = t;
+            }
             software_framebuffer_draw_quad(framebuffer, rectangle_f32(0,0,SCREEN_WIDTH,SCREEN_HEIGHT), color32u8(0,0,0, 128 * t), BLEND_MODE_ALPHA);
 
             global_battle_ui_state.timer += dt;

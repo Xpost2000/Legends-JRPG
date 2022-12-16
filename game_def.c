@@ -491,6 +491,9 @@ struct game_state_combat_state {
     s32       turn_number;
     /* crying for all the animation state */
     s32       active_combatant;
+
+    /* visual effect */
+    f32 battle_zone_dark_fade_t;
 };
 
 enum game_screen_mode {
