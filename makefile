@@ -16,23 +16,24 @@ data.bigfile: pack.exe
 	./pack $@ areas dlg res scenes shops
 pack.exe: bigfilemaker/bigfile_packer.c bigfilemaker/bigfile_def.c
 	$(CC) bigfilemaker/bigfile_packer.c -o $@ -O2
-metagen.exe: metagen.c
-	$(CC) metagen.c -g -w -o $@
+gamescript_metagen.exe: gamescript_metagen.c
+	$(CC) gamescript_metagen.c -g -w -o $@
 depack.exe: bigfilemaker/depacker.c bigfilemaker/bigfile_unpacker.c bigfilemaker/bigfile_def.c
 	$(CC) bigfilemaker/depacker.c -o $@ -O2
-game.exe: clean data.bigfile metagen.exe $(wildcard *.c *.h)
-	./metagen.exe
+game.exe: clean data.bigfile gamescript_metagen.exe $(wildcard *.c *.h)
+	./gamescript_metagen.exe
 	$(CC) $(SOURCE_FILE_MODULES) -DUSE_EDITOR  -DRELEASE -o $@ $(CFLAGS) $(CLIBS) -m64 -O2 -mwindows
-game-debug.exe: metagen.exe $(wildcard *.c *.h)
-	./metagen.exe
+game-debug.exe: gamescript_metagen.exe $(wildcard *.c *.h)
+	./gamescript_metagen.exe
 	$(CC) $(SOURCE_FILE_MODULES) -DUSE_EDITOR -o $@ $(CFLAGS) $(CLIBS) -m64 -ggdb3
 gamex86.exe: metagen.exe $(wildcard *.c *.h)
-	./metagen.exe
+	./gamescript_metagen.exe
 	$(CC) $(SOURCE_FILE_MODULES) -DUSE_EDITOR  -DRELEASE -o $@ $(CFLAGS) $(CLIBS) -m32 -O2 -mwindows
-gamex86-debug.exe: metagen.exe $(wildcard *.c *.h)
-	./metagen.exe
+gamex86-debug.exe: ./gamescript_metagen.exe $(wildcard *.c *.h)
+	./gamescript_metagen.exe
 	$(CC) $(SOURCE_FILE_MODULES) -DUSE_EDITOR -o $@ $(CFLAGS) $(CLIBS) -m32 -ggdb3
-web-build/index.html: $(wildcard *.c *.h) shell_minimal.html
+web-build/index.html: ./gamescript_metagen.exe $(wildcard *.c *.h) shell_minimal.html
+	./gamescript_metagen.exe
 	-mkdir web-build/
 	$(EMCC) main.c -O2 -lSDL2_mixer -lSDL2 -s USE_SDL_MIXER=2 -s USE_SDL=2 -s USE_WEBGL2=1 -I./dependencies/ --shell-file shell_minimal.html  -o web-build/game.html -s INITIAL_MEMORY=128MB --preload-file res --preload-file areas --preload-file shops --preload-file dlg --preload-file scenes -DRELEASE
 	mv web-build/game.html web-build/index.html
@@ -63,6 +64,7 @@ cloc:
 clean:
 	-rm data.bigfile
 	-rm game.exe
+	-rm gamescript_metagen.c
 	-rm game.js
 	-rm game.html
 	-rm game.wasm
