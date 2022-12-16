@@ -678,6 +678,9 @@ struct entity {
     v2f32 velocity;
     u32   flags;
 
+    /* one for each turn */
+    s32 burning_char_effect_level;
+
     /*
       TODO: store a team data block to identify across factions.
      */

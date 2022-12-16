@@ -566,6 +566,7 @@ void game_add_party_member(string basename) {
     struct entity_base_data* base_data = entity_database_find_by_name(&game_state->entity_database, basename);
     entity_base_data_unpack(&game_state->entity_database, base_data, new_guy);
     new_guy->flags &= ~(ENTITY_FLAGS_HIDDEN);
+    _debugprintf("ability count %d", new_guy->ability_count);
 }
 void game_remove_party_member(s32 index) {
     struct entity* to_remove  = game_dereference_entity(game_state, game_state->party_members[index]);
@@ -1753,9 +1754,6 @@ void game_initialize(void) {
             /* *id = entity_list_create_player(&game_state->permenant_entities, v2f32(140, 300)); */
             *id = entity_list_create_party_member(&game_state->permenant_entities);
         }
-        game_add_party_member(string_literal("player"));
-        game_add_party_member(string_literal("brother"));
-        game_state->leader_index       = 0;
     }
 
     game_state->camera.rng = &game_state->rng;
@@ -1818,6 +1816,12 @@ void game_initialize_game_world(void) {
     particle_list_kill_all_particles(&global_particle_list);
 
     {
+        game_state->party_member_count = 0;
+
+        game_add_party_member(string_literal("player"));
+        game_add_party_member(string_literal("brother"));
+        game_state->leader_index       = 0;
+
         for (s32 party_member_index = 0; party_member_index < game_state->party_member_count; ++party_member_index) {
             struct entity* player = game_dereference_entity(game_state, game_state->party_members[party_member_index]);
             player->health.value = player->health.max;

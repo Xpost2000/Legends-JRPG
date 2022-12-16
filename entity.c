@@ -882,6 +882,7 @@ s32 entity_get_usable_ability_indices(struct entity* entity, s32 max_limit, s32*
         max_limit = ENTITY_MAX_ABILITIES;
     }
 
+    _debugprintf("Counting : %d", entity->ability_count);
     for (s32 ability_index = 0; ability_index < entity->ability_count; ++ability_index) {
         struct entity_ability_slot* current_ability_slot = entity->abilities + ability_index;
         bool                        usable               = true;
@@ -1299,6 +1300,20 @@ local void sortable_entity_draw_entity(struct render_commands* commands, struct 
 
         union color32f32 modulation_color = color32f32_WHITE;
 
+        /* fire hurts */
+        switch (current_entity->burning_char_effect_level) {
+            case 1:
+            case 2: {
+                modulation_color.r = modulation_color.g = modulation_color.b = 0.75;
+            } break;
+            case 3: {
+                modulation_color.r = modulation_color.g = modulation_color.b = 0.50;
+            } break;
+            case 4: {
+                modulation_color.r = modulation_color.g = modulation_color.b = 0.34;
+            } break;
+        }
+
         /* Highlighted for target selection */
         {
             bool me = is_entity_under_ability_selection(id) || current_entity->under_selection;
@@ -1357,7 +1372,7 @@ local void sortable_entity_draw_entity(struct render_commands* commands, struct 
         }
         render_commands_set_shader(commands, game_foreground_entity_things_shader, current_entity);
 
-        if (entity_is_in_defense_stance(current_entity)) {
+        if (current_entity->flags & ENTITY_FLAGS_ALIVE && entity_is_in_defense_stance(current_entity)) {
             struct image_buffer* used_image = graphics_assets_get_image_by_id(assets, ui_battle_defend_icon);
             struct rectangle_f32 rectangle  = rectangle_f32(current_entity->position.x - alignment_offset.x,
                                                             current_entity->position.y - alignment_offset.y - TILE_UNIT_SIZE*1.2 + (sinf(global_elapsed_time * 1.7) * TILE_UNIT_SIZE * 0.2),
@@ -1947,16 +1962,17 @@ void entity_do_healing(struct entity* entity, s32 healing) {
 }
 
 local void entity_on_hurt_finish(struct entity* entity, s32 damage) {
-    entity->health.value -= damage;
+    if (entity->flags & ENTITY_FLAGS_ALIVE) {
+        entity->health.value -= damage;
 
-    /* not sure why this doesn't work */
-    entity->ai.hurt_animation_timer              = 0;
-    entity->ai.hurt_animation_shakes             = 0;
-    entity->ai.hurt_animation_phase              = ENTITY_HURT_ANIMATION_ON;
+        entity->ai.hurt_animation_timer              = 0;
+        entity->ai.hurt_animation_shakes             = 0;
+        entity->ai.hurt_animation_phase              = ENTITY_HURT_ANIMATION_ON;
 
-    notify_damage(v2f32_sub(entity->position, v2f32(0, TILE_UNIT_SIZE)), damage);
-    (entity_validate_death(entity));
-    play_random_hit_sound();
+        notify_damage(v2f32_sub(entity->position, v2f32(0, TILE_UNIT_SIZE)), damage);
+        (entity_validate_death(entity));
+        play_random_hit_sound();
+    }
 }
 
 void entity_do_physical_hurt(struct entity* entity, s32 damage) {
@@ -2745,6 +2761,7 @@ local void entity_database_initialize_entities(struct entity_database* database)
 
     database->entity_count = entity_count;
 
+    _debugprintf("NOTE: ability count : %d", database->ability_count);
     for (s32 entity_form_index = 0; entity_form_index < data_file_forms.count; ++entity_form_index) {
         struct entity_base_data* current_entity      = (database->entities+1) + entity_form_index;
         struct lisp_form*        current_entity_form = data_file_forms.forms + entity_form_index;
@@ -2840,7 +2857,8 @@ local void entity_database_initialize_entities(struct entity_database* database)
                         s32               ability_usage_level = 0;
                         assertion(lisp_form_get_string(*ability_string_form, &ability_string_name) && "Ability string name not found?");
                         assertion(lisp_form_get_s32(*ability_level_form, &ability_usage_level) && "Ability usage level not found?");
-                        s32                                   new_ability  = entity_database_ability_find_id_by_name(&game_state->entity_database, ability_string_name);
+                        s32                                   new_ability  = entity_database_ability_find_id_by_name(database, ability_string_name);
+                        _debugprintf("%.*s trying to find ability", ability_string_name.length, ability_string_name.data);
                         struct entity_base_data_ability_slot* current_slot = &current_entity->abilities[current_entity->ability_count++];
                         current_slot->ability                              = new_ability;
                         current_slot->level                                = ability_usage_level;
@@ -2968,8 +2986,11 @@ struct entity_database entity_database_create(struct memory_arena* arena) {
     struct entity_database result = {};
     result.arena = arena;
 
+    _debugprintf("INIT LOOTTABLES");
     entity_database_initialize_loot_tables(&result);
+    _debugprintf("INIT ABILITIES");
     entity_database_initialize_abilities(&result);
+    _debugprintf("INIT ENTITIES");
     entity_database_initialize_entities(&result);
 
     return result;
@@ -3815,6 +3836,8 @@ void entity_update_all_status_effects(struct entity* entity, f32 dt) {
 }
 
 void entity_update_all_status_effects_for_a_turn(struct entity* entity) {
+    bool found_flame = false;
+
     for (s32 status_index = 0; status_index < entity->status_effect_count; ++status_index) {
         struct entity_status_effect* current_effect = entity->status_effects + status_index;
 
@@ -3828,6 +3851,8 @@ void entity_update_all_status_effects_for_a_turn(struct entity* entity) {
                     proposed_damage = 250;
                 }
                 entity_do_absolute_hurt(entity, proposed_damage);
+                found_flame = true;
+                entity->burning_char_effect_level += 1;
             } break;
             case ENTITY_STATUS_EFFECT_TYPE_POISON: {
                 f32 proposed_damage = entity->health.max;
@@ -3840,6 +3865,13 @@ void entity_update_all_status_effects_for_a_turn(struct entity* entity) {
         }
 
         current_effect->turn_duration -= 1;
+    }
+
+    if (!found_flame) {
+        entity->burning_char_effect_level -= 1;
+        if (entity->burning_char_effect_level < 0) {
+            entity->burning_char_effect_level = 0;
+        }
     }
 
     for (s32 status_index = entity->status_effect_count-1; status_index >= 0; --status_index) {

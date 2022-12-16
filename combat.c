@@ -55,6 +55,9 @@ local void add_all_combat_participants(struct game_state* state) {
                 combat_state->participant_priorities[combat_state->count] = priority;
                 combat_state->count++;
             }
+        } else {
+            /* to get rid of the visual effects eventually */
+            entity_update_all_status_effects_for_a_turn(current_entity);
         }
         index++;
     }
@@ -137,7 +140,7 @@ void update_combat(struct game_state* state, f32 dt) {
 
         if (global_battle_ui_state.phase == BATTLE_UI_IDLE) {
             if (combatant->waiting_on_turn) {
-                if (global_battle_ui_state.submode != BATTLE_UI_SUBMODE_LOOKING ||
+                if (global_battle_ui_state.submode != BATTLE_UI_SUBMODE_LOOKING &&
                     global_battle_ui_state.submode != BATTLE_UI_SUBMODE_ATTACKING) {
                     battle_ui_stalk_entity_with_camera(combatant);
                 } else {

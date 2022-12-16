@@ -44,7 +44,7 @@
 (camera-trauma 0.1)
 # NEW FORM
 # apply-status target type &rest params
-(apply-status target "ignite" 3)
+(apply-status target "ignite" 8)
 )
 )
 
