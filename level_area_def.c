@@ -286,7 +286,7 @@ enum level_area_tilemap_object_flags {
     LEVEL_AREA_TILEMAP_OBJECT_INVISIBLE = BIT(30), /* not the same as hidden, IE these are still collidable. */
     LEVEL_AREA_TILEMAP_OBJECT_HIDDEN    = BIT(31),
 };
-struct level_area_tilemap_object { 
+struct level_area_tilemap_object {
     v2f32                           position;
     s32                             tile_count;
     struct level_area_tilemap_tile* tiles;
@@ -303,6 +303,13 @@ struct level_area_tilemap_object {
 
     v2f32 velocity;
     v2f32 acceleration;
+};
+struct level_area_tilemap_object_editor {
+    v2f32                                  position;
+    s32                                    tile_count;
+    u32                                    flags;
+    s8                                     layer;
+    s32*                                   tiles; /* indices into a pool these have a fixed capacity of 1024 */
 };
 
 struct level_area { /* this cannot be automatically serialized because of the unpack stage. I can use macros to reduce the burden though */
@@ -397,6 +404,7 @@ bool level_area_any_obstructions_at(struct level_area* area, s32 x, s32 y) {
 /* this thing is variably sized, so it needs an arena */
 /* also because the game doesn't use dynamic memory often, there has to be a slightly different allocator and container for the editor version */
 void serialize_tilemap_object(struct binary_serializer* serializer, s32 version, struct level_area_tilemap_object* tilemap_object, struct memory_arena* arena);
+void serialize_tilemap_object_editor(struct binary_serializer* serializer, s32 version, struct level_area_tilemap_object_editor* tilemap_object);
 void initialize_tilemap_object(struct level_area_tilemap_object* tilemap_object);
 struct rectangle_f32 tilemap_object_bounding_box(struct level_area_tilemap_object* tilemap_object);
 /* void serialize_tilemap_object_level_editor(struct binary_serializer* serializer, s32 version, struct level_area_tilemap_object* tilemap_object, struct memory_arena* arena); */

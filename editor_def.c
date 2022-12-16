@@ -97,27 +97,33 @@ struct editor_state {
 #endif
     s32                              current_tile_layer;
 
-    s32                                   trigger_level_transition_count;
-    s32                                   trigger_level_transition_capacity;
-    struct trigger_level_transition*      trigger_level_transitions;
-    s32                                   entity_chest_count;
-    s32                                   entity_chest_capacity;
-    struct entity_chest*                  entity_chests;
-    s32                                   generic_trigger_count;
-    s32                                   generic_trigger_capacity;
-    struct trigger*                       generic_triggers;
-    s32                                   entity_count;
-    s32                                   entity_capacity;
-    struct level_area_entity*             entities;
-    s32                                   light_capacity;
-    s32                                   light_count;
-    s32                                   entity_savepoint_count;
-    s32                                   entity_savepoint_capacity;
-    struct level_area_savepoint*          entity_savepoints;
-    struct light_def*                     lights;
-    s32                                   battle_safe_square_capacity;
-    s32                                   battle_safe_square_count;
-    struct level_area_battle_safe_square* battle_safe_squares;
+    s32                                      trigger_level_transition_count;
+    s32                                      trigger_level_transition_capacity;
+    struct trigger_level_transition*         trigger_level_transitions;
+    s32                                      entity_chest_count;
+    s32                                      entity_chest_capacity;
+    struct entity_chest*                     entity_chests;
+    s32                                      generic_trigger_count;
+    s32                                      generic_trigger_capacity;
+    struct trigger*                          generic_triggers;
+    s32                                      entity_count;
+    s32                                      entity_capacity;
+    struct level_area_entity*                entities;
+    s32                                      light_capacity;
+    s32                                      light_count;
+    s32                                      entity_savepoint_count;
+    s32                                      entity_savepoint_capacity;
+    struct level_area_savepoint*             entity_savepoints;
+    struct light_def*                        lights;
+    s32                                      battle_safe_square_capacity;
+    s32                                      battle_safe_square_count;
+    struct level_area_battle_safe_square*    battle_safe_squares;
+    s32                                      tilemap_object_capacity;
+    s32                                      tilemap_object_count;
+    struct level_area_tilemap_object_editor* tilemap_objects;
+
+    s32                                      tilemap_object_tile_pool_capacity;
+    struct level_area_tilemap_tile*          tilemap_object_tile_pool;
 
     bool fullbright;
     
