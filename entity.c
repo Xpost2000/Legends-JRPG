@@ -695,6 +695,7 @@ void entity_handle_player_controlled(struct game_state* state, struct entity* en
     /* all the input blockers. */
     {
         if (game_get_party_leader() != entity) {
+            _debugprintf("I am not the leader?");
             f32            flock_radius    = TILE_UNIT_SIZE*0.85 * game_get_party_number(entity)*1.12;
             f32            flock_radius_sq = flock_radius*flock_radius;
             struct entity* leader          = game_get_party_leader();
@@ -707,6 +708,8 @@ void entity_handle_player_controlled(struct game_state* state, struct entity* en
             }
             entity_look_at(entity, leader->position);
             return;
+        } else {
+            _debugprintf("I am the leader");
         }
 
         if (game_command_console_enabled) {
@@ -863,6 +866,13 @@ struct entity_iterator game_entity_iterator(struct game_state* state) {
 
     entity_iterator_push(&result, &state->permenant_entities);
     entity_iterator_push(&result, &state->loaded_area.entities);
+
+    return result;
+}
+struct entity_iterator game_permenant_entity_iterator(struct game_state* state) {
+    struct entity_iterator result = {};
+
+    entity_iterator_push(&result, &state->permenant_entities);
 
     return result;
 }
@@ -1501,7 +1511,7 @@ void render_entities_from_area_and_iterator(struct sortable_draw_entities* draw_
             }
             
             if (current_entity->flags & ENTITY_FLAGS_HIDDEN) {
-                return;
+                continue;
             }
 
             sortable_draw_entities_push_entity(draw_entities, current_entity->position.y, it.current_id);

@@ -440,6 +440,24 @@ entity_id entity_list_create_player(struct entity_list* entities, v2f32 position
 
     return result;
 }
+entity_id entity_list_create_party_member(struct entity_list* entities) {
+    entity_id      result  = entity_list_create_entity(entities);
+    struct entity* player  = entity_list_dereference_entity(entities, result);
+
+    assertion(player->flags & ENTITY_FLAGS_ACTIVE);
+    player->flags    |= ENTITY_FLAGS_ALIVE;
+    player->flags    |= ENTITY_FLAGS_PLAYER_CONTROLLED;
+    player->flags    |= ENTITY_FLAGS_HIDDEN;
+    player->health.value = 100;
+    player->health.min = 100;
+    player->health.max = 100;
+    /* align collision boxes a bit better later :) */
+    player->scale.x = TILE_UNIT_SIZE*0.8;
+    player->scale.y = TILE_UNIT_SIZE*0.8;
+
+    player->name    = string_literal("Lloyd Irving");
+    return result;
+}
 entity_id entity_list_create_niceguy(struct entity_list* entities, v2f32 position) {
     entity_id result = entity_list_create_entity(entities);
     struct entity* e = entity_list_dereference_entity(entities, result);
@@ -477,6 +495,12 @@ entity_id entity_list_create_badguy(struct entity_list* entities, v2f32 position
 }
 
 /* used to gauge the "flock distance" */
+void game_set_all_party_members_to(v2f32 where) {
+    for (s32 party_member_index = 0; party_member_index < game_state->party_member_count; ++party_member_index) {
+        struct entity* party_member = game_dereference_entity(game_state, game_state->party_members[party_member_index]);
+        party_member->position      = where;
+    }
+}
 s32 game_get_party_index(struct entity* entity) {
     for (s32 party_member_index = 0; party_member_index < game_state->party_member_count; ++party_member_index) {
         struct entity* party_member = game_dereference_entity(game_state, game_state->party_members[party_member_index]);
@@ -500,7 +524,47 @@ s32 game_get_party_number(struct entity* entity) {
     }
     return n;
 }
+/*
+  Party Members don't know how to handle dismissing unless I store where entities used to exist, which is possible to do by updating the save record,
+  I suppose.
 
+  I really just need to store party member deltas...
+*/
+struct entity_iterator game_permenant_entity_iterator(struct game_state* state);
+local struct entity* game_allocate_new_party_member(void) {
+    struct entity_iterator iterator = game_permenant_entity_iterator(game_state);
+
+    for (struct entity* current_entity = entity_iterator_begin(&iterator); !entity_iterator_finished(&iterator); current_entity = entity_iterator_advance(&iterator)) {
+        if (!(current_entity->flags & ENTITY_FLAGS_ACTIVE)) {
+            continue;
+        }
+        if (current_entity->flags & ENTITY_FLAGS_HIDDEN) {
+            game_state->party_members[game_state->party_member_count++] = iterator.current_id;
+            break;
+        }
+    }
+
+    entity_id new_id = game_state->party_members[game_state->party_member_count-1];
+    struct entity* party_member = game_dereference_entity(game_state, new_id);
+    return party_member;
+}
+void game_add_party_member_from_existing(struct entity* entity, bool remove_from_world) {
+    unimplemented("copy from the world, but selectively!");
+}
+void game_add_party_member(string basename) {
+    struct entity* new_guy = game_allocate_new_party_member();
+    struct entity_base_data* base_data = entity_database_find_by_name(&game_state->entity_database, basename);
+    entity_base_data_unpack(&game_state->entity_database, base_data, new_guy);
+    new_guy->flags &= ~(ENTITY_FLAGS_HIDDEN);
+}
+void game_remove_party_member(s32 index) {
+    struct entity* to_remove  = game_dereference_entity(game_state, game_state->party_members[index]);
+    to_remove->flags         |= ENTITY_FLAGS_HIDDEN;
+    for (s32 other_index = index; other_index < game_state->party_member_count; ++other_index) {
+        game_state->party_members[other_index] = game_state->party_members[other_index+1];
+    }
+    game_state->party_member_count--;
+}
 void game_set_party_leader(s32 index) {
     struct entity* last_leader = game_dereference_entity(game_state, game_state->party_members[game_state->leader_index]);
     struct entity* new_leader  = game_dereference_entity(game_state, game_state->party_members[game_state->leader_index]);
@@ -1008,8 +1072,10 @@ void serialize_level_area(struct game_state* state, struct binary_serializer* se
     _serialize_level_area(state->arena, serializer, level, ENTITY_LIST_STORAGE_TYPE_PER_LEVEL);
     struct entity* player = game_get_player(game_state);
     if (use_default_spawn) {
-        player->position.x             = level->default_player_spawn.x;
-        player->position.y             = level->default_player_spawn.y;
+        game_set_all_party_members_to(v2f32(
+                                          level->default_player_spawn.x,
+                                          level->default_player_spawn.y,
+                                      ));
     }
 
     state->camera.xy.x = player->position.x;
@@ -1672,25 +1738,15 @@ void game_initialize(void) {
     Report_Memory_Status_Region(&game_arena, "Permenant entity pools");
 
     {
-        
-        game_state->leader_index       = 0;
         game_state->party_member_count = 2;
         for (s32 party_member_index = 0; party_member_index < MAX_PARTY_MEMBERS; ++party_member_index) {
             entity_id* id = game_state->party_members + party_member_index;
-            *id = entity_list_create_player(&game_state->permenant_entities, v2f32(70, 70));
+            /* *id = entity_list_create_player(&game_state->permenant_entities, v2f32(140, 300)); */
+            *id = entity_list_create_party_member(&game_state->permenant_entities);
         }
-        {
-            struct entity* a = game_dereference_entity(game_state, game_state->party_members[0]);
-            a->name =string_literal("Calamir");
-        }
-        {
-            struct entity* a = game_dereference_entity(game_state, game_state->party_members[1]);
-            a->name =string_literal("Frimor");
-        }
-        {
-            struct entity* a = game_dereference_entity(game_state, game_state->party_members[2]);
-            a->name =string_literal("Pyrrha");
-        }
+        game_add_party_member(string_literal("player"));
+        game_add_party_member(string_literal("brother"));
+        game_state->leader_index       = 0;
     }
 
     game_state->camera.rng = &game_state->rng;
@@ -2427,8 +2483,10 @@ void load_level_queued_for_transition(void* callback_data) {
     load_level_from_file_with_setup(game_state, assembled_string);
 
     if (!data->use_default_spawn_location) {
-        player->position.x = data->spawn_location.x * TILE_UNIT_SIZE;
-        player->position.y = data->spawn_location.y * TILE_UNIT_SIZE;
+        game_set_all_party_members_to(v2f32(
+                                          data->spawn_location.x * TILE_UNIT_SIZE,
+                                          data->spawn_location.y * TILE_UNIT_SIZE,
+                                      ));
     }
 
     if (data->new_facing_direction != DIRECTION_RETAINED) {
