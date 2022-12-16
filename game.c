@@ -993,6 +993,15 @@ struct navigation_path navigation_path_find(struct memory_arena* arena, struct l
                         new_point->y = y1;
 
                         s32 tile_type = level_area_navigation_map_tile_type_at(area, new_point->x, new_point->y);
+                        {
+                            if (game_state->combat_state.active_combat) {
+                                struct level_area_battle_zone_bounding_box* current_battle_zone = level_area_find_current_battle_zone(area, new_point->x, new_point->y);
+                                if (!current_battle_zone ||
+                                    !level_area_battle_zone_bounding_box_is_safe_battle_block(area, current_battle_zone, new_point->x, new_point->y)) {
+                                    can_bresenham_trace = false;
+                                }
+                            }
+                        }
                         if (tile_type != 0) {
                             can_bresenham_trace = false;
                         }
@@ -1077,6 +1086,16 @@ struct navigation_path navigation_path_find(struct memory_arena* arena, struct l
                             s32 tile_type = level_area_navigation_map_tile_type_at(area, proposed_point.x, proposed_point.y);
 
                             if (tile_type == 0 && !game_any_entity_at_tile_point(proposed_point)) {
+                                {
+                                    if (game_state->combat_state.active_combat) {
+                                        struct level_area_battle_zone_bounding_box* current_battle_zone = level_area_find_current_battle_zone(area, proposed_point.x, proposed_point.y);
+                                        if (!current_battle_zone || !level_area_battle_zone_bounding_box_is_safe_battle_block(area, current_battle_zone, proposed_point.x, proposed_point.y)) {
+                                            continue;
+                                        }
+                                    }
+                                }
+
+                                
                                 if (!(explored_points[((s32)proposed_point.y - navigation_map->min_y) * map_width + ((s32)proposed_point.x - navigation_map->min_x)])) {
                                     origin_paths     [((s32)proposed_point.y - navigation_map->min_y) * map_width + ((s32)proposed_point.x - navigation_map->min_x)] = current_point;
                                     explored_points  [((s32)proposed_point.y - navigation_map->min_y) * map_width + ((s32)proposed_point.x - navigation_map->min_x)] = true;
