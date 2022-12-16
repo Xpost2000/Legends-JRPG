@@ -51,29 +51,6 @@ local void set_scrollable_ui_bounds(s32 selection, s32* bottom_index, s32* top_i
     return;
 }
 
-void serialize_tile(struct binary_serializer* serializer, s32 version, struct tile* tile) {
-    switch (version) {
-        default:
-        case CURRENT_LEVEL_AREA_VERSION: {
-            serialize_s32(serializer, &tile->id);
-            serialize_u32(serializer, &tile->flags);
-            serialize_s16(serializer, &tile->x);
-            serialize_s16(serializer, &tile->y);
-            /* remove */
-            serialize_s16(serializer, &tile->reserved_);
-            serialize_s16(serializer, NULL);
-        } break;
-    }
-}
-
-void serialize_tile_layer(struct binary_serializer* serializer, s32 version, s32* counter, struct tile* tile) {
-    serialize_s32(serializer, counter);
-    _debugprintf("%d tiles in this layer", *counter);
-    for (s32 index = 0; index < *counter; ++index) {
-        serialize_tile(serializer, version, tile+index);
-    }
-}
-
 void level_area_entity_unpack(struct level_area_entity* entity, struct entity* unpack_target);
 void level_area_entity_savepoint_unpack(struct level_area_savepoint* entity, struct entity_savepoint* unpack_target);
 
@@ -1077,6 +1054,13 @@ void _serialize_level_area(struct memory_arena* arena, struct binary_serializer*
 
                 serialize_level_area_entity_savepoint(serializer, level->version, &packed_entity);
                 level_area_entity_savepoint_unpack(&packed_entity, current_savepoint);
+            }
+        }
+        if (level->version >= 11) {
+            serialize_s32(serializer, &level->battle_safe_square_count);
+            level->battle_safe_squares = memory_arena_push(arena, sizeof(*level->battle_safe_squares) * level->battle_safe_square_count);
+            for (s32 battle_safe_square_index = 0; battle_safe_square_index < level->battle_safe_square_count; ++battle_safe_square_index) {
+                serialize_battle_safe_square(serializer, level->version, level->battle_safe_squares + battle_safe_square_index);
             }
         }
 
@@ -3261,6 +3245,29 @@ local void game_continue_music(f32 dt) {
         if (!music_playing()) {
             play_sound(get_current_sound_theme());
         }
+    }
+}
+
+void serialize_tile(struct binary_serializer* serializer, s32 version, struct tile* tile) {
+    switch (version) {
+        default:
+        case CURRENT_LEVEL_AREA_VERSION: {
+            serialize_s32(serializer, &tile->id);
+            serialize_u32(serializer, &tile->flags);
+            serialize_s16(serializer, &tile->x);
+            serialize_s16(serializer, &tile->y);
+            /* remove */
+            serialize_s16(serializer, &tile->reserved_);
+            serialize_s16(serializer, NULL);
+        } break;
+    }
+}
+
+void serialize_tile_layer(struct binary_serializer* serializer, s32 version, s32* counter, struct tile* tile) {
+    serialize_s32(serializer, counter);
+    _debugprintf("%d tiles in this layer", *counter);
+    for (s32 index = 0; index < *counter; ++index) {
+        serialize_tile(serializer, version, tile+index);
     }
 }
 

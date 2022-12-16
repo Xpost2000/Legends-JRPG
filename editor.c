@@ -105,6 +105,7 @@ void editor_clear_all_allocations(struct editor_state* state) {
     state->entity_count                   = 0;
     state->light_count                    = 0;
     state->entity_savepoint_count         = 0;
+    state->battle_safe_square_count       = 0;
 }
 
 void editor_clear_all(struct editor_state* state) {
@@ -127,6 +128,7 @@ void editor_initialize(struct editor_state* state) {
     state->entity_savepoint_capacity         = 128;
     state->entity_capacity                   = 512*2;
     state->light_capacity                    = 256*2;
+    state->battle_safe_square_capacity       = 512*5;
 
     for (s32 index = 0; index < TILE_LAYER_COUNT; ++index) {
         state->tile_layers[index] = memory_arena_push(state->arena, state->tile_capacities[index] * sizeof(*state->tile_layers[0]));
@@ -137,6 +139,7 @@ void editor_initialize(struct editor_state* state) {
     state->entities                                 = memory_arena_push(state->arena, state->entity_capacity                   * sizeof(*state->entities));
     state->entity_savepoints                        = memory_arena_push(state->arena, state->entity_capacity                   * sizeof(*state->entity_savepoints));
     state->lights                                   = memory_arena_push(state->arena, state->light_capacity                    * sizeof(*state->lights));
+    state->battle_safe_squares                      = memory_arena_push(state->arena, state->battle_safe_square_capacity       * sizeof(*state->battle_safe_squares));
     editor_clear_all(state);
 }
 
@@ -220,6 +223,12 @@ void editor_serialize_area(struct binary_serializer* serializer) {
             serialize_level_area_entity_savepoint(serializer, version_id, &editor_state->entity_savepoints[entity_savepoint_index]);
         }
     }
+    if (version_id >= 11) {
+        serialize_s32(serializer, &editor_state->battle_safe_square_count);
+        for (s32 battle_safe_square_index = 0; battle_safe_square_index < editor_state->battle_safe_square_count; ++battle_safe_square_index) {
+            serialize_battle_safe_square(serializer, version_id, &editor_state->battle_safe_squares[battle_safe_square_index]);
+        }
+    }
 }
 
 void editor_remove_tile_at(v2f32 point_in_tilespace) {
@@ -235,6 +244,21 @@ void editor_remove_tile_at(v2f32 point_in_tilespace) {
 
             current_tile->id = 0;
             editor_state->tile_layers[editor_state->current_tile_layer][index] = editor_state->tile_layers[editor_state->current_tile_layer][--editor_state->tile_counts[editor_state->current_tile_layer]];
+            return;
+        }
+    }
+}
+void editor_remove_battle_tile_at(v2f32 point_in_tilespace) {
+    s32 where_x = point_in_tilespace.x;
+    s32 where_y = point_in_tilespace.y;
+
+    for (s32 index = 0; index < editor_state->battle_safe_square_count; ++index) {
+        struct level_area_battle_safe_square* current_tile = editor_state->battle_safe_squares + index;
+
+        /* override */
+        if (current_tile->x == where_x && current_tile->y == where_y) {
+            if (current_tile == editor_state->last_selected) editor_state->last_selected = 0;
+            editor_state->battle_safe_squares[index] = editor_state->battle_safe_squares[--editor_state->battle_safe_square_count];
             return;
         }
     }
@@ -290,6 +314,26 @@ void editor_place_tile_at(v2f32 point_in_tilespace) {
 
     struct tile* new_tile = editor_state->tile_layers[editor_state->current_tile_layer] + (editor_state->tile_counts[editor_state->current_tile_layer]++);
     new_tile->id = editor_state->painting_tile_id;
+    new_tile->x  = where_x;
+    new_tile->y  = where_y;
+    editor_state->last_selected = new_tile;
+}
+
+void editor_place_battle_tile_at(v2f32 point_in_tilespace) {
+    s32 where_x = point_in_tilespace.x;
+    s32 where_y = point_in_tilespace.y;
+
+    for (s32 index = 0; index < editor_state->battle_safe_square_count; ++index) {
+        struct level_area_battle_safe_square* current_tile = editor_state->battle_safe_squares + index;
+
+        /* override */
+        if (current_tile->x == where_x && current_tile->y == where_y) {
+            editor_state->last_selected = current_tile;
+            return;
+        }
+    }
+
+    struct level_area_battle_safe_square* new_tile = &editor_state->battle_safe_squares[editor_state->battle_safe_square_count++];
     new_tile->x  = where_x;
     new_tile->y  = where_y;
     editor_state->last_selected = new_tile;
@@ -637,6 +681,15 @@ local void handle_editor_tool_mode_input(struct software_framebuffer* framebuffe
     }
 
     switch (editor_state->tool_mode) {
+        case EDITOR_TOOL_BATTLETILE_PAINTING: {
+            if (!editor_state->viewing_loaded_area) {
+                if (left_clicked) {
+                    editor_place_battle_tile_at(tile_space_mouse_location);
+                } else if (right_clicked) {
+                    editor_remove_battle_tile_at(tile_space_mouse_location);
+                }
+            }
+        } break;
         case EDITOR_TOOL_TILE_PAINTING: {
             if (is_key_pressed(KEY_1)) {
                 editor_state->editor_brush_pattern = 0;
@@ -1140,6 +1193,23 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
                                            1, v2f32(0,y_cursor), string_from_cstring(tmp_text), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
         }
         switch (editor_state->tool_mode) { /* PROPERTY MENU */
+            case EDITOR_TOOL_BATTLETILE_PAINTING: {
+                y_cursor += 12;
+                {
+                    char tmp_text[1024]={};
+                    snprintf(tmp_text, 1024, "Battle Tile Painting");
+                    software_framebuffer_draw_text(framebuffer,
+                                                   graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_GOLD]),
+                                                   1, v2f32(0,y_cursor), string_from_cstring(tmp_text), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+                }
+                y_cursor += 12;
+
+                if (!editor_state->tab_menu_open) {
+                    if (is_key_down(KEY_SHIFT)) {
+                    } else {
+                    }
+                }
+            } break;
             case EDITOR_TOOL_TILE_PAINTING: {
                 y_cursor += 12;
                 {
@@ -1216,6 +1286,7 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
             } else {
                 switch (editor_state->tool_mode) {
                     /* I would show images, but this is easier for now */
+                    case EDITOR_TOOL_BATTLETILE_PAINTING:
                     case EDITOR_TOOL_TILE_PAINTING: {
                         editor_state->tab_menu_open = 0;
                     } break;
@@ -1608,6 +1679,9 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
                         draw_cursor_y += 12 * 1.2 * 2;
                     }
                 } break;
+                default: {
+                    editor_state->tab_menu_open          = 0;
+                } break;
             }
         }
     }
@@ -1836,6 +1910,14 @@ void update_and_render_editor(struct software_framebuffer* framebuffer, f32 dt) 
                 s32 savepoint_id          = current_savepoint - editor_state->entity_savepoints;
                 render_commands_push_text(&commands, font, 1, v2f32(current_savepoint->position.x * TILE_UNIT_SIZE, current_savepoint->position.y * TILE_UNIT_SIZE),
                                           copy_cstring_to_scratch(format_temp("(savepoint %d)", savepoint_id)), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+            }
+
+            if (editor_state->tool_mode == EDITOR_TOOL_BATTLETILE_PAINTING) {
+                for (s32 battle_safe_tile_index = 0; battle_safe_tile_index < editor_state->battle_safe_square_count; ++battle_safe_tile_index) {
+                    struct level_area_battle_safe_square* current_square = editor_state->battle_safe_squares + battle_safe_tile_index;
+                    render_commands_push_quad(&commands, rectangle_f32(current_square->x * TILE_UNIT_SIZE, current_square->y * TILE_UNIT_SIZE, 1 * TILE_UNIT_SIZE,    1 * TILE_UNIT_SIZE),
+                                              color32u8(0, 255, 0, 100), BLEND_MODE_ALPHA);
+                }
             }
         }
         

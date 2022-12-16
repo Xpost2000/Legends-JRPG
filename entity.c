@@ -3332,6 +3332,15 @@ void serialize_level_area_entity_savepoint(struct binary_serializer* serializer,
         } break;
     }
 }
+void serialize_battle_safe_square(struct binary_serializer* serializer, s32 version, struct level_area_battle_safe_square* square) {
+    switch (version) {
+        default:
+        case CURRENT_LEVEL_AREA_VERSION: {
+            serialize_s32(serializer, &square->x);
+            serialize_s32(serializer, &square->y);
+        } break;
+    }
+}
 
 void serialize_light(struct binary_serializer* serializer, s32 version, struct light_def* light) {
     switch (version) {
@@ -3394,6 +3403,7 @@ void serialize_level_area_entity(struct binary_serializer* serializer, s32 versi
         } break;
         case 8:
         case 9:
+        case 10:
         case CURRENT_LEVEL_AREA_VERSION: {
             /* whoops... */
             serialize_f32(serializer, &entity->position.x);

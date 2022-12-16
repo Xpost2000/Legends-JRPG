@@ -21,8 +21,12 @@
    Version 7: Change to the level area entity struct.
    Version 9: Added savepoint entities
    Version 10: Format fix
+   Version 11: Battle Safe Square
+
+   / ? /
+   Verions 12: Tilemap Island Objects
 */
-#define CURRENT_LEVEL_AREA_VERSION (10)
+#define CURRENT_LEVEL_AREA_VERSION (11)
 
 enum tile_layers {
     TILE_LAYER_GROUND,            /* render below all. dark color? */
@@ -233,6 +237,34 @@ struct trigger {
     char                 unique_name[32];
 };
 
+/*
+  Since levels may have triggers and lots of other things, we want to avoid
+  the player from walking into them inadvertently during combat and causing weird things to happen.
+
+  So I have to disable triggers in the traditional sense, otherwise stuff will break.
+  I don't know how a game like Divinity Original Sin 2 does it, but it does help that they have an open world with
+  obvious boundaries like oceans. This game isn't open world, so it has to cut off combat areas otherwise we walk to the
+  border of game levels, which is obviously bad.
+*/
+struct level_area_battle_zone_bounding_box {
+    s32 min_x;
+    s32 min_y;
+    s32 max_x;
+    s32 max_y;
+
+    /* cache the island indices here. */
+    s32  square_count;
+    s32* squares;
+};
+
+struct level_area_battle_safe_square { /* thankfully these are obvious to implement, and don't require too much work */
+    s32 x;
+    s32 y;
+
+    /* runtime data, associate with a battle zone */
+    u16 island_index;
+};
+
 struct level_area { /* this cannot be automatically serialized because of the unpack stage. I can use macros to reduce the burden though */
     /* keep reference of a name. */
     u32          version SERIALIZE_VERSIONS(level, 1 to CURRENT);
@@ -245,17 +277,19 @@ struct level_area { /* this cannot be automatically serialized because of the un
       Address in script file as (trigger (id) or (name-string?(when supported.)))
      */
 
-    s32                              trigger_level_transition_count;
-    struct trigger_level_transition* trigger_level_transitions SERIALIZE_VERSIONS(level, 1 to CURRENT) VARIABLE_ARRAY(trigger_level_transition_count);
-    s32                              entity_chest_count;
-    struct entity_chest*             chests SERIALIZE_VERSIONS(level, 2 to CURRENT) VARIABLE_ARRAY(entity_chest_count);
-    s32                              script_trigger_count;
-    struct trigger*                  script_triggers SERIALIZE_VERSIONS(level, 3 to CURRENT) VARIABLE_ARRAY(script_trigger_count);
-    struct entity_list               entities SERIALIZE_VERSIONS(level, 5 to CURRENT) VARIABLE_ARRAY(create=entity_list_create alloc=entity_list_create_entity) PACKED_AS(struct level_area_entity);
-    s32                              light_count;
-    struct light_def*                lights SERIALIZE_VERSIONS(level, 6 to CURRENT) VARIABLE_ARRAY(light_count);
-    s32                              entity_savepoint_count;
-    struct entity_savepoint*         savepoints SERIALIZE_VERSIONS(level, 9 to CURRENT) VARIABLE_ARRAY(entity_savepoint_count) PACKED_AS(struct level_area_savepoint);
+    s32                                   trigger_level_transition_count;
+    struct trigger_level_transition*      trigger_level_transitions SERIALIZE_VERSIONS(level, 1 to CURRENT) VARIABLE_ARRAY(trigger_level_transition_count);
+    s32                                   entity_chest_count;
+    struct entity_chest*                  chests SERIALIZE_VERSIONS(level, 2 to CURRENT) VARIABLE_ARRAY(entity_chest_count);
+    s32                                   script_trigger_count;
+    struct trigger*                       script_triggers SERIALIZE_VERSIONS(level, 3 to CURRENT) VARIABLE_ARRAY(script_trigger_count);
+    struct entity_list                    entities SERIALIZE_VERSIONS(level, 5 to CURRENT) VARIABLE_ARRAY(create=entity_list_create alloc=entity_list_create_entity) PACKED_AS(struct level_area_entity);
+    s32                                   light_count;
+    struct light_def*                     lights SERIALIZE_VERSIONS(level, 6 to CURRENT) VARIABLE_ARRAY(light_count);
+    s32                                   entity_savepoint_count;
+    struct entity_savepoint*              savepoints SERIALIZE_VERSIONS(level, 9 to CURRENT) VARIABLE_ARRAY(entity_savepoint_count) PACKED_AS(struct level_area_savepoint);
+    s32                                   battle_safe_square_count;
+    struct level_area_battle_safe_square* battle_safe_squares SERIALIZE_VERSIONS(level, 11 to CURRENT) VARIABLE_ARRAY(battle_safe_square_count);
 
     /* runtime data */
     struct level_area_script_data    script;
@@ -264,6 +298,10 @@ struct level_area { /* this cannot be automatically serialized because of the un
     entity_id                        reported_entity_deaths[MAX_REPORTED_ENTITY_DEATHS];
     /* used for displaying what tiles you can walk to. */
     u8*                              combat_movement_visibility_map;
+    /* We segregate the battle squares into islands */
+    /* this is for the visual effect primarily. (fade everything not in this zone to black, or treat the squares as a giant distance field) */
+    s32                                         battle_zone_count;
+    struct level_area_battle_zone_bounding_box* battle_zones;
 
     bool   on_enter_triggered;
 };
@@ -313,6 +351,9 @@ bool level_area_any_obstructions_at(struct level_area* area, s32 x, s32 y) {
     return false;
 }
 
+void serialize_tile(struct binary_serializer* serializer, s32 version, struct tile* tile);
+void serialize_tile_layer(struct binary_serializer* serializer, s32 version, s32* counter, struct tile* tile);
+void serialize_battle_safe_square(struct binary_serializer* serializer, s32 version, struct level_area_battle_safe_square* square);
 void serialize_level_area_entity_savepoint(struct binary_serializer* serializer, s32 version, struct level_area_savepoint* entity);
 void serialize_generic_trigger(struct binary_serializer* serializer, s32 version, struct trigger* trigger);
 void serialize_trigger_level_transition(struct binary_serializer* serializer, s32 version, struct trigger_level_transition* trigger);
