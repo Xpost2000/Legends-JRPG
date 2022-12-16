@@ -1284,6 +1284,14 @@ void _serialize_level_area(struct memory_arena* arena, struct binary_serializer*
                 serialize_battle_safe_square(serializer, level->version, level->battle_safe_squares + battle_safe_square_index);
             }
         }
+        if (level->version >= 12) {
+            serialize_s32(serializer, &level->tilemap_object_count);
+            level->tilemap_objects = memory_arena_push(arena, sizeof(*level->tilemap_objects) * level->tilemap_object_count);
+            for (s32 tilemap_object_index = 0; tilemap_object_index < level->tilemap_object_count; ++tilemap_object_index) {
+                serialize_tilemap_object(serializer, level->version, level->tilemap_objects + tilemap_object_index, arena);
+                initialize_tilemap_object(level->tilemap_objects + tilemap_object_index);
+            }
+        }
 
         build_navigation_map_for_level_area(arena, level);
         build_battle_zone_bounding_boxes_for_level_area(arena, level);

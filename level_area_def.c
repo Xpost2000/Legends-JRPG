@@ -22,11 +22,9 @@
    Version 9: Added savepoint entities
    Version 10: Format fix
    Version 11: Battle Safe Square
-
-   / ? /
    Verions 12: Tilemap Island Objects
 */
-#define CURRENT_LEVEL_AREA_VERSION (11)
+#define CURRENT_LEVEL_AREA_VERSION (12)
 
 enum tile_layers {
     TILE_LAYER_GROUND,            /* render below all. dark color? */
@@ -267,6 +265,46 @@ struct level_area_battle_safe_square { /* thankfully these are obvious to implem
     u16                            island_index;
 };
 
+
+struct level_area_tilemap_tile {
+    s32 id;
+    s16 x;
+    s16 y;
+};
+
+/*
+  NOTE: these are probably the most complicated to fit into a normal combat zone, since the navigation map
+  is fixed at load time.
+
+  Level Area Tilemaps are really designed to just be props though. Maybe with enough creativity they can be used as moving platforms
+  or something, but since all combat positions are gridlocked it's a PITA to guarantee these will not break during combat since these
+  things can move outside of the grid
+ */
+enum level_area_tilemap_object_flags {
+    LEVEL_AREA_TILEMAP_OBJECT_NONE      = 0,
+    LEVEL_AREA_TILEMAP_OBJECT_NOCOLLIDE = BIT(0),
+    LEVEL_AREA_TILEMAP_OBJECT_INVISIBLE = BIT(30), /* not the same as hidden, IE these are still collidable. */
+    LEVEL_AREA_TILEMAP_OBJECT_HIDDEN    = BIT(31),
+};
+struct level_area_tilemap_object { 
+    v2f32                           position;
+    s32                             tile_count;
+    struct level_area_tilemap_tile* tiles;
+    u32                             flags;
+    s8                              layer; /* I honestly don't want to update stuff when a new layer is introduced, so I'll just build the layer reference list at runtime. */
+
+    /* runtime data */
+
+    /* bounding box */
+    s16 min_x;
+    s16 min_y;
+    s16 max_x;
+    s16 max_y;
+
+    v2f32 velocity;
+    v2f32 acceleration;
+};
+
 struct level_area { /* this cannot be automatically serialized because of the unpack stage. I can use macros to reduce the burden though */
     /* keep reference of a name. */
     u32          version SERIALIZE_VERSIONS(level, 1 to CURRENT);
@@ -292,6 +330,8 @@ struct level_area { /* this cannot be automatically serialized because of the un
     struct entity_savepoint*              savepoints SERIALIZE_VERSIONS(level, 9 to CURRENT) VARIABLE_ARRAY(entity_savepoint_count) PACKED_AS(struct level_area_savepoint);
     s32                                   battle_safe_square_count;
     struct level_area_battle_safe_square* battle_safe_squares SERIALIZE_VERSIONS(level, 11 to CURRENT) VARIABLE_ARRAY(battle_safe_square_count);
+    s32                                   tilemap_object_count;
+    struct level_area_tilemap_object*     tilemap_objects;
 
     /* runtime data */
     struct level_area_script_data    script;
@@ -353,6 +393,13 @@ bool level_area_any_obstructions_at(struct level_area* area, s32 x, s32 y) {
 
     return false;
 }
+
+/* this thing is variably sized, so it needs an arena */
+/* also because the game doesn't use dynamic memory often, there has to be a slightly different allocator and container for the editor version */
+void serialize_tilemap_object(struct binary_serializer* serializer, s32 version, struct level_area_tilemap_object* tilemap_object, struct memory_arena* arena);
+void initialize_tilemap_object(struct level_area_tilemap_object* tilemap_object);
+struct rectangle_f32 tilemap_object_bounding_box(struct level_area_tilemap_object* tilemap_object);
+/* void serialize_tilemap_object_level_editor(struct binary_serializer* serializer, s32 version, struct level_area_tilemap_object* tilemap_object, struct memory_arena* arena); */
 
 void serialize_tile(struct binary_serializer* serializer, s32 version, struct tile* tile);
 void serialize_tile_layer(struct binary_serializer* serializer, s32 version, s32* counter, struct tile* tile);
