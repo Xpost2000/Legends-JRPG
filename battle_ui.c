@@ -128,6 +128,18 @@ struct battle_ui_state {
 
     entity_id targetable_entities[512];
     s32       targetable_entity_count;
+
+    /*
+      With multiple party members, I do want this to involve some tactics thinking ish,
+      and I don't really want players to waste a turn placing units in obligatory decent positions.
+
+      That is unless an encounter is explicitly supposed to be an "ambush", but if in most battles
+      I'm sure you can get into a not totally disadvantageous position to start off.
+
+      It just allows you to put your units in a formation,
+      (Mainly it circumvents the weird problem of entity snapping)
+    */
+    bool      formations_placed;
 } global_battle_ui_state;
 
 local void announce_battle_action(struct entity_id who, string what) {
@@ -324,6 +336,7 @@ local void draw_turn_panel(struct game_state* state, struct software_framebuffer
         union color32u8 color = color32u8(128, 128, 128, 255);
 
         struct entity* entity = game_dereference_entity(state, combat_state->participants[index]);
+
         struct entity_base_data* data                    = entity_database_find_by_index(entities_database, entity->base_id_index);
         string                   facing_direction_string = facing_direction_strings_normal[0];
         struct entity_animation* anim                    = find_animation_by_name(data->model_index, format_temp_s("idle_%.*s", facing_direction_string.length, facing_direction_string.data));

@@ -488,6 +488,7 @@ struct game_state_combat_state {
     struct combat_counter_attack_action counter_attack_LIFO[MAX_STORED_COUNTER_ATTACKS];
     s32                                 counter_attack_LIFO_count;
 
+    s32       turn_number;
     /* crying for all the animation state */
     s32       active_combatant;
 };

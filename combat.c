@@ -35,6 +35,10 @@ local void add_all_combat_participants(struct game_state* state) {
     s32 index = 0;
     for (struct entity* current_entity = entity_iterator_begin(&it); !entity_iterator_finished(&it); current_entity = entity_iterator_advance(&it)) {
         /* snap everyone to the combat grid (might be a bit jarring, which is okay for the demo.) */
+        if (current_entity->flags & ENTITY_FLAGS_HIDDEN) {
+            continue;
+        }
+
         if (current_entity->flags & ENTITY_FLAGS_ALIVE) {
             entity_snap_to_grid_position(current_entity);
             current_entity->waiting_on_turn                   = true;
@@ -92,6 +96,7 @@ local void determine_if_combat_should_begin(struct game_state* state) {
     if (should_be_in_combat(state)) {
         state->combat_state.active_combat    = true;
         state->combat_state.active_combatant = 0;
+        state->combat_state.turn_number      = 1;
         start_combat_ui();
         add_all_combat_participants(state);
     }
@@ -163,6 +168,7 @@ void update_combat(struct game_state* state, f32 dt) {
                         if (combat_state->active_combatant >= combat_state->count) {
                             add_all_combat_participants(state);
                             battle_ui_trigger_end_turn();
+                            combat_state->turn_number += 1;
                         } else {
                             /* trigger their per frame start actions */
                             entity_update_all_status_effects_for_a_turn(find_current_combatant(state));
