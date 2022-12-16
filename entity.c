@@ -3626,11 +3626,12 @@ local void entity_think_basic_zombie_combat_actions(struct entity* entity, struc
     f32 closest_distance           = INFINITY;
     bool found_any_valid_entity    = false;
 
+    bool game_entity_is_party_member(struct entity* entity);
     for (unsigned target_index = 0; target_index < nearby_potential_targets.count; ++target_index) {
         entity_id      current_target_id = nearby_potential_targets.ids[target_index];
         struct entity* target_entity     = game_dereference_entity(state, current_target_id);
 
-        if (target_entity != game_get_player(state)) {
+        if (!game_entity_is_party_member(target_entity)) {
             continue;
         }
 

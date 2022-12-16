@@ -82,6 +82,7 @@ void render_cutscene_entities(struct sortable_draw_entities* draw_entities);
 void game_initialize_game_world(void);
 void game_push_reported_entity_death(entity_id id);
 void game_report_entity_death(entity_id id);
+bool game_total_party_knockout(void);
 
 local f32 GLOBAL_GAME_TIMESTEP_MODIFIER = 1;
 
@@ -523,6 +524,15 @@ s32 game_get_party_number(struct entity* entity) {
         n++;
     }
     return n;
+}
+bool game_total_party_knockout(void) {
+    for (s32 party_member_index = 0; party_member_index < game_state->party_member_count; ++party_member_index) {
+        struct entity* party_member = game_dereference_entity(game_state, game_state->party_members[party_member_index]);
+        if (party_member->health.value > 0) {
+            return false;
+        }
+    }
+    return true;
 }
 /*
   Party Members don't know how to handle dismissing unless I store where entities used to exist, which is possible to do by updating the save record,
@@ -2916,7 +2926,7 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                     game_script_run_all_timers(dt);
 
                     if (!cutscene_active() && !game_state->is_conversation_active) {
-                        if (!(game_get_player(game_state)->flags & ENTITY_FLAGS_ALIVE)) {
+                        if (game_total_party_knockout()) {
                             game_setup_death_ui();
                         }
                     

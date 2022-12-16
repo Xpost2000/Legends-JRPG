@@ -312,11 +312,9 @@ local void start_combat_ui(void) {
 local bool is_player_combat_turn(struct game_state* state) {
     struct game_state_combat_state* combat_state            = &state->combat_state;
     struct entity*                  active_combatant_entity = game_dereference_entity(state, combat_state->participants[combat_state->active_combatant]);
-    struct entity*                  player_entity           = game_get_player(state);
 
-    if (player_entity == active_combatant_entity) {
-        /* check if player entity can do anything */
-        if (player_entity->ai.current_action == 0)
+    if (game_entity_is_party_member(active_combatant_entity)) {
+        if (active_combatant_entity->ai.current_action == 0)
             return true;
 
         return false;
