@@ -29,6 +29,12 @@ struct ui_pause_menu {
     s32 sub_menu_state;
     /* reserved space */
     f32 shift_t[128];
+
+    bool editing_party_lineup;
+
+    /* for the equipment menu queueing */
+    bool need_to_select_party_member;
+    s32  party_queued_to;
 };
 
 enum ui_pause_menu_gameplay_options {
@@ -42,7 +48,7 @@ enum ui_pause_menu_gameplay_options {
 };
 static string ui_pause_menu_strings[] = {
     [PAUSE_MENU_RESUME]            = string_literal("RESUME"),
-    [PAUSE_MENU_PARTY_EQUIPMENT]   = string_literal("PARTY"),
+    [PAUSE_MENU_PARTY_EQUIPMENT]   = string_literal("EQUIPMENT"),
     [PAUSE_MENU_PARTY_ITEMS]       = string_literal("ITEMS"),
     [PAUSE_MENU_OPTIONS]           = string_literal("OPTIONS"),
     [PAUSE_MENU_QUIT]              = string_literal("QUIT"),

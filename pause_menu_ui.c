@@ -54,6 +54,15 @@ local void update_and_render_sub_menu_states(struct game_state* state, struct so
     }
 }
 
+local void do_party_member_edits_or_selections(struct game_state* state, struct software_framebuffer* framebuffer, f32 x, f32 dt, bool allow_inputs) {
+    f32 font_scale = 3;
+    struct ui_pause_menu* menu_state = &state->ui_pause;
+
+    if (!allow_inputs) {
+        return;
+    }
+}
+
 local void update_and_render_pause_game_menu_ui(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
     /* needs a bit of cleanup */
     f32 font_scale = 3;
@@ -95,6 +104,8 @@ local void update_and_render_pause_game_menu_ui(struct game_state* state, struct
             }
 
             bool should_blur_fade = (menu_state->last_sub_menu_state == UI_PAUSE_MENU_SUB_MENU_STATE_NONE);
+
+            do_party_member_edits_or_selections(state, framebuffer, 0, dt, false);
 
             if (should_blur_fade) {
                 game_postprocess_blur(framebuffer, blur_samples, max_blur * (menu_state->transition_t), BLEND_MODE_ALPHA);
@@ -157,6 +168,8 @@ local void update_and_render_pause_game_menu_ui(struct game_state* state, struct
                                 close_pause_menu();
                             } break;
                             case PAUSE_MENU_PARTY_EQUIPMENT: {
+                                menu_state->party_queued_to             = PAUSE_MENU_PARTY_EQUIPMENT;
+                                menu_state->need_to_select_party_member = true;
                                 pause_menu_transition_to(UI_PAUSE_MENU_SUB_MENU_STATE_EQUIPMENT);
                                 open_equipment_screen(game_state->party_members[0]);
                             } break;
@@ -177,6 +190,8 @@ local void update_and_render_pause_game_menu_ui(struct game_state* state, struct
                         }
                     }
                 }
+
+                do_party_member_edits_or_selections(state, framebuffer, 0, dt, false);
             } else {
                 for (unsigned index = 0; index < array_count(item_positions); ++index) {
                     item_positions[index].x = -99999999;
@@ -194,6 +209,7 @@ local void update_and_render_pause_game_menu_ui(struct game_state* state, struct
             }
 
             bool should_blur_fade = (menu_state->sub_menu_state == UI_PAUSE_MENU_SUB_MENU_STATE_NONE);
+            do_party_member_edits_or_selections(state, framebuffer, 0, dt, false);
 
             if (should_blur_fade) {
                 game_postprocess_blur(framebuffer, blur_samples, max_blur * (1-menu_state->transition_t), BLEND_MODE_ALPHA);
@@ -202,7 +218,6 @@ local void update_and_render_pause_game_menu_ui(struct game_state* state, struct
                 game_postprocess_blur(framebuffer, blur_samples, max_blur, BLEND_MODE_ALPHA);
                 game_postprocess_grayscale(framebuffer, max_grayscale);
             }
-
 
             if (menu_state->transition_t >= 1.0f) {
                 menu_state->transition_t = 0;
