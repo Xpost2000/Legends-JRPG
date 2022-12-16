@@ -694,6 +694,21 @@ void player_handle_radial_interactables(struct game_state* state, struct entity*
 void entity_handle_player_controlled(struct game_state* state, struct entity* entity, f32 dt) {
     /* all the input blockers. */
     {
+        if (game_get_party_leader() != entity) {
+            f32            flock_radius    = TILE_UNIT_SIZE*0.85 * game_get_party_number(entity)*1.12;
+            f32            flock_radius_sq = flock_radius*flock_radius;
+            struct entity* leader          = game_get_party_leader();
+
+            v2f32 direction = v2f32_direction(entity->position, leader->position);
+
+            if (v2f32_distance_sq(entity->position, leader->position) > flock_radius_sq) {
+                entity->velocity.x = direction.x * DEFAULT_VELOCITY;
+                entity->velocity.y = direction.y * DEFAULT_VELOCITY;
+            }
+            entity_look_at(entity, leader->position);
+            return;
+        }
+
         if (game_command_console_enabled) {
             return;
         }

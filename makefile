@@ -64,7 +64,7 @@ cloc:
 clean:
 	-rm data.bigfile
 	-rm game.exe
-	-rm gamescript_metagen.c
+	-rm gamescript_metagen.exe
 	-rm game.js
 	-rm game.html
 	-rm game.wasm

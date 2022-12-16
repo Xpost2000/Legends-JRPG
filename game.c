@@ -476,6 +476,52 @@ entity_id entity_list_create_badguy(struct entity_list* entities, v2f32 position
     return result;
 }
 
+/* used to gauge the "flock distance" */
+s32 game_get_party_index(struct entity* entity) {
+    for (s32 party_member_index = 0; party_member_index < game_state->party_member_count; ++party_member_index) {
+        struct entity* party_member = game_dereference_entity(game_state, game_state->party_members[party_member_index]);
+        if (entity == party_member) {
+            return party_member_index;
+        }
+    }
+    return -1;
+}
+s32 game_get_party_number(struct entity* entity) {
+    s32 n = 1;
+    for (s32 party_member_index = 0; party_member_index < game_state->party_member_count; ++party_member_index) {
+        struct entity* party_member = game_dereference_entity(game_state, game_state->party_members[party_member_index]);
+        if (entity == party_member) {
+            if (party_member_index == game_state->leader_index) {
+                return 0;
+            }
+            return n;
+        }
+        n++;
+    }
+    return n;
+}
+
+void game_set_party_leader(s32 index) {
+    struct entity* last_leader = game_dereference_entity(game_state, game_state->party_members[game_state->leader_index]);
+    struct entity* new_leader  = game_dereference_entity(game_state, game_state->party_members[game_state->leader_index]);
+    Swap(last_leader->position, new_leader->position, v2f32);
+    game_state->leader_index = index;
+}
+
+void game_swap_party_member_index(s32 first, s32 second) {
+    if (first == game_state->leader_index) {
+        game_state->leader_index = second;
+    } else if (second == game_state->leader_index) {
+        game_state->leader_index = first;
+    }
+
+    Swap(game_state->party_members[first], game_state->party_members[second], entity_id);
+}
+
+struct entity* game_get_party_leader(void) {
+    return game_dereference_entity(game_state, game_state->party_members[game_state->leader_index]);
+}
+
 struct entity* game_get_player(struct game_state* state) {
     return game_dereference_entity(state, state->party_members[state->leader_index]);
 }
@@ -1628,7 +1674,7 @@ void game_initialize(void) {
     {
         
         game_state->leader_index       = 0;
-        game_state->party_member_count = 3;
+        game_state->party_member_count = 2;
         for (s32 party_member_index = 0; party_member_index < MAX_PARTY_MEMBERS; ++party_member_index) {
             entity_id* id = game_state->party_members + party_member_index;
             *id = entity_list_create_player(&game_state->permenant_entities, v2f32(70, 70));

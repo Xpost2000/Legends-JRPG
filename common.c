@@ -47,6 +47,8 @@
    It's not perfect, but it's better than nothing.
 
    the editable stuff, is obvious, need to do that later...
+
+   NOTE: might not do this, but I might forget to remove the markup...
  */
 #define SERIALIZE
 #define SERIALIZE_SAVE
