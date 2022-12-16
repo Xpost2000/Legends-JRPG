@@ -33,6 +33,8 @@ enum save_record_type {
     SAVE_RECORD_TYPE_NIL,
     SAVE_RECORD_TYPE_ENTITY_ENTITY,
     SAVE_RECORD_TYPE_ENTITY_CHEST,
+    SAVE_RECORD_TYPE_ENTITY_LIGHT,
+    SAVE_RECORD_TYPE_ENTITY_SAVEPOINT,
     SAVE_RECORD_TYPE_COUNT
 };
 
@@ -40,6 +42,8 @@ local string save_record_type_strings[] = {
     [SAVE_RECORD_TYPE_NIL]           = string_literal("RECORD_NIL"),
     [SAVE_RECORD_TYPE_ENTITY_ENTITY] = string_literal("RECORD_ENTITY"),
     [SAVE_RECORD_TYPE_ENTITY_CHEST]  = string_literal("RECORD_CHEST"),
+    [SAVE_RECORD_TYPE_ENTITY_LIGHT] = string_literal("RECORD_LIGHT"),
+    [SAVE_RECORD_TYPE_ENTITY_SAVEPOINT]  = string_literal("RECORD_SAVEPOINT"),
 };
 
 /*
@@ -66,6 +70,7 @@ enum save_record_entity_field_flags {
     SAVE_RECORD_ENTITY_FIELD_FLAGS_ENTITY_FLAGS = BIT(3),
     SAVE_RECORD_ENTITY_FIELD_FLAGS_RECORD_EVERYTHING = 0xFFFF,
 };
+/* NOTE: I should probably save equipslots */
 struct save_record_entity_entity {
     entity_id id;
     u32       entity_field_flags; /* intepret whether to read the fields, we save them regardless though */
@@ -75,12 +80,27 @@ struct save_record_entity_entity {
     u8        direction;
 };
 
+struct save_record_entity_savepoint {
+    u32   id;
+    v2f32 where;
+    u32   flags;
+};
+struct save_record_entity_light {
+    u32             id;
+    v2f32           where;
+    f32             power;
+    union color32u8 color;
+    u32             flags;
+};
+
 struct save_record {
     u32 type;
 
     union {
-        struct save_record_entity_chest  chest_record;
-        struct save_record_entity_entity entity_record;
+        struct save_record_entity_chest     chest_record;
+        struct save_record_entity_entity    entity_record;
+        struct save_record_entity_savepoint savepoint_record;
+        struct save_record_entity_light     light_record;
     };
 };
 
@@ -350,6 +370,7 @@ local void save_serialize_record_entry(struct save_area_record_chunk* entry_chun
                 } break;
             }
         } break;
+
         case CURRENT_SAVE_RECORD_VERSION:
         default: {
             struct save_record* current_entry = entry_chunk->records + record_to_consume;
@@ -379,6 +400,25 @@ local void save_serialize_record_entry(struct save_area_record_chunk* entry_chun
                     struct save_record_entity_chest* chest_record = &current_entry->chest_record;
                     serialize_u32(serializer, &chest_record->target_entity);
                     serialize_u32(serializer, &chest_record->entity_flags);
+                } break;
+                case SAVE_RECORD_TYPE_ENTITY_LIGHT: {
+                    struct save_record_entity_light* light_record = &current_entry->light_record;
+                    serialize_u32(serializer, &light_record->id);
+                    serialize_f32(serializer, &light_record->where.x);
+                    serialize_f32(serializer, &light_record->where.y);
+                    serialize_f32(serializer, &light_record->power);
+                    serialize_u8(serializer,  &light_record->color.r);
+                    serialize_u8(serializer,  &light_record->color.g);
+                    serialize_u8(serializer,  &light_record->color.b);
+                    serialize_u8(serializer,  &light_record->color.a);
+                    serialize_u32(serializer, &light_record->flags);
+                } break;
+                case SAVE_RECORD_TYPE_ENTITY_SAVEPOINT: {
+                    struct save_record_entity_savepoint* savepoint_record = &current_entry->savepoint_record;
+                    serialize_u32(serializer, &savepoint_record->id);
+                    serialize_f32(serializer, &savepoint_record->where.x);
+                    serialize_f32(serializer, &savepoint_record->where.y);
+                    serialize_u32(serializer, &savepoint_record->flags);
                 } break;
             }
         } break;
@@ -605,8 +645,21 @@ void apply_save_data(struct game_state* state) {
 
 local void apply_save_record_chest_entry(struct save_record_entity_chest* chest_record, struct game_state* state) {
     struct level_area* area = &state->loaded_area;
-    area->chests[chest_record->target_entity].flags |= ENTITY_CHEST_FLAGS_UNLOCKED;
-    _debugprintf("opening chest: %d\n", chest_record->target_entity);
+    area->chests[chest_record->target_entity].flags = chest_record->entity_flags;
+}
+
+local void apply_save_record_light_entry(struct save_record_entity_light* light_record, struct game_state* state) {
+    struct level_area* area                 = &state->loaded_area;
+    area->lights[light_record->id].position = light_record->where;
+    area->lights[light_record->id].power    = light_record->power;
+    area->lights[light_record->id].color    = light_record->color;
+    area->lights[light_record->id].flags    = light_record->flags;
+}
+
+local void apply_save_record_savepoint_entry(struct save_record_entity_savepoint* savepoint_record, struct game_state* state) {
+    struct level_area* area                         = &state->loaded_area;
+    area->savepoints[savepoint_record->id].position = savepoint_record->where;
+    area->savepoints[savepoint_record->id].flags    = savepoint_record->flags;
 }
 
 local void apply_save_record_entity_entry(struct save_record_entity_entity* entity_record, struct game_state* state) {
@@ -645,6 +698,14 @@ void try_to_apply_record_entry(struct save_record* record, struct game_state* st
             struct save_record_entity_entity* entity_record = &record->entity_record;
             apply_save_record_entity_entry(entity_record, state);
         } break;
+        case SAVE_RECORD_TYPE_ENTITY_LIGHT: {
+            struct save_record_entity_light* entity_record = &record->light_record;
+            apply_save_record_light_entry(entity_record, state);
+        } break;
+        case SAVE_RECORD_TYPE_ENTITY_SAVEPOINT: {
+            struct save_record_entity_savepoint* entity_record = &record->savepoint_record;
+            apply_save_record_savepoint_entry(entity_record, state);
+        } break;
         default: {
             _debugprintf("UNHANDLED RECORD TYPE: %.*s", save_record_type_strings[record->type].length, save_record_type_strings[record->type].data);
         } break;
@@ -675,16 +736,22 @@ local struct save_record* save_data_existing_chest_record(u32 chest_id) {
     return NULL;
 }
 
-void save_data_register_chest_looted(u32 chest_id) {
-    struct save_area_record_entry* area       = current_area_save_entry();
-    struct save_record*            new_record = save_data_existing_chest_record(chest_id);
+local struct save_record* save_data_existing_light_record(u32 light_id) {
+    struct save_area_record_entry* area = current_area_save_entry();
 
-    if (!new_record) {
-        new_record = save_area_record_entry_allocate_record(area);
+    for (struct save_area_record_chunk* record_chunk = area->first; record_chunk; record_chunk = record_chunk->next) {
+        for (s32 record_index = 0; record_index < record_chunk->written_entries; ++record_index) {
+            struct save_record* current_record = &record_chunk->records[record_index];
+
+            if (current_record->type == SAVE_RECORD_TYPE_ENTITY_LIGHT) {
+                if (current_record->light_record.id == light_id) {
+                    return current_record;
+                }
+            }
+        }
     }
 
-    new_record->type                          = SAVE_RECORD_TYPE_ENTITY_CHEST;
-    new_record->chest_record.target_entity    = chest_id;
+    return NULL;
 }
 
 local struct save_record* save_data_existing_entity_record(entity_id id) {
@@ -703,6 +770,70 @@ local struct save_record* save_data_existing_entity_record(entity_id id) {
     }
 
     return NULL;
+}
+
+local struct save_record* save_data_existing_savepoint_record(u32 id) {
+    struct save_area_record_entry* area = current_area_save_entry();
+
+    for (struct save_area_record_chunk* record_chunk = area->first; record_chunk; record_chunk = record_chunk->next) {
+        for (s32 record_index = 0; record_index < record_chunk->written_entries; ++record_index) {
+            struct save_record* current_record = &record_chunk->records[record_index];
+
+            if (current_record->type == SAVE_RECORD_TYPE_ENTITY_SAVEPOINT) {
+                if (current_record->savepoint_record.id == id) {
+                    return current_record;
+                }
+            }
+        }
+    }
+
+    return NULL;
+}
+
+void save_data_register_savepoint(u32 savepoint_id) {
+    struct save_area_record_entry* area       = current_area_save_entry();
+    struct save_record*            new_record = save_data_existing_savepoint_record(savepoint_id);
+
+    if (!new_record) {
+        new_record = save_area_record_entry_allocate_record(area);
+    }
+
+    new_record->type                   = SAVE_RECORD_TYPE_ENTITY_SAVEPOINT;
+    struct entity_savepoint* savepoint = game_state->loaded_area.savepoints + savepoint_id;
+    new_record->savepoint_record.id           = savepoint_id;
+    new_record->savepoint_record.where        = savepoint->position;
+    new_record->savepoint_record.flags        = savepoint->flags;
+}
+
+void save_data_register_chest(u32 chest_id) {
+    struct save_area_record_entry* area       = current_area_save_entry();
+    struct save_record*            new_record = save_data_existing_chest_record(chest_id);
+
+    if (!new_record) {
+        new_record = save_area_record_entry_allocate_record(area);
+    }
+
+    new_record->type                       = SAVE_RECORD_TYPE_ENTITY_CHEST;
+    new_record->chest_record.target_entity = chest_id;
+    struct entity_chest* chest             = game_state->loaded_area.chests + chest_id;
+    new_record->chest_record.entity_flags  = chest->flags;
+}
+
+void save_data_register_light(u32 light_id) {
+    struct save_area_record_entry* area       = current_area_save_entry();
+    struct save_record*            new_record = save_data_existing_light_record(light_id);
+
+    if (!new_record) {
+        new_record = save_area_record_entry_allocate_record(area);
+    }
+
+    new_record->type                       = SAVE_RECORD_TYPE_ENTITY_LIGHT;
+    struct light_def* light = game_state->loaded_area.lights + light_id;
+    new_record->light_record.id = light_id;
+    new_record->light_record.where = light->position;
+    new_record->light_record.power = light->power;
+    new_record->light_record.color = light->color;
+    new_record->light_record.flags = light->flags;
 }
 
 void save_data_register_entity(entity_id id) {

@@ -11,12 +11,10 @@ void apply_save_data(struct game_state* state);
 void finish_save_data(void);
 
 string filename_from_saveslot_id(s32 id);
-void   save_data_register_chest_looted(u32 chest_id);
+void   save_data_register_chest(u32 chest_id);
 void   save_data_register_entity(entity_id id);
-#if 0
 void   save_data_register_light(u32 savepoint_id);
 void   save_data_register_savepoint(u32 savepoint_id);
-#endif
 
 struct save_data_description {
     bool good;

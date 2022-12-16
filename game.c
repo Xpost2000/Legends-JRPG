@@ -1790,9 +1790,8 @@ local void game_loot_chest(struct game_state* state, struct entity_chest* chest)
             }
         }
 
+        u32 chest_index = chest - state->loaded_area.chests;
         chest->flags |= ENTITY_CHEST_FLAGS_UNLOCKED;
-        u32 chest_index = (u32)(chest - state->loaded_area.chests);
-        save_data_register_chest_looted(chest_index);
 
         struct lisp_form listener_body = level_area_find_listener_for_object(state, &state->loaded_area, LEVEL_AREA_LISTEN_EVENT_ON_LOOT, GAME_SCRIPT_TARGET_CHEST, chest_index);
         game_script_enqueue_form_to_execute(listener_body);
@@ -2361,6 +2360,18 @@ local void register_all_entities_to_save_record(void) {
              !entity_iterator_finished(&iterator);
              current_entity = entity_iterator_advance(&iterator)) {
             save_data_register_entity(iterator.current_id);
+        }
+
+        for (u32 chest_index = 0; chest_index < game_state->loaded_area.entity_chest_count; ++chest_index) {
+            save_data_register_chest(chest_index);
+        }
+
+        for (u32 light_index = 0; light_index < game_state->loaded_area.light_count; ++light_index) {
+            save_data_register_light(light_index);
+        }
+
+        for (u32 savepoint_index = 0; savepoint_index < game_state->loaded_area.entity_savepoint_count; ++savepoint_index) {
+            save_data_register_savepoint(savepoint_index);
         }
     }    
 }
