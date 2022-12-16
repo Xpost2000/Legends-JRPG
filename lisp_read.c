@@ -102,6 +102,18 @@ string lexer_slice_from_file_buffer(struct lexer* lexer, s32 start, s32 end) {
 /* 
    NOTE: this is supposed to return a giant lisp form that we can just read.
 */
+void lexer_eat_comment(struct lexer* lexer) {
+    while (!lexer_done(lexer)) {
+        char eaten = lexer_eat_next_character(lexer);
+
+        if (eaten == '\n')
+            break;
+    }
+}
+
+struct lexer_token lexer_try_to_eat_string(struct lexer* lexer);
+struct lexer_token lexer_try_to_eat_list(struct lexer* lexer);
+
 struct lexer_token lexer_try_to_eat_list(struct lexer* lexer) {
     s32 list_start_index = lexer->current_read_index-1; /* have to include parenthesis */
     s32 list_end_index   = list_start_index;
@@ -110,13 +122,18 @@ struct lexer_token lexer_try_to_eat_list(struct lexer* lexer) {
     while (!lexer_done(lexer)) {
         char eaten = lexer_eat_next_character(lexer);
 
-        /* NOTE: This is incorrect! We fail to filter out comments or other strings! Or comments even! */
         switch (eaten) {
+            case '#': {
+                lexer_eat_comment(lexer);
+            } break;
             case '(': {
                 balancer++;
             } break;
             case ')': {
                 balancer--;
+            } break;
+            case '\"': {
+                lexer_try_to_eat_string(lexer);
             } break;
         }
 
@@ -228,12 +245,7 @@ struct lexer_token lexer_next_token(struct lexer* lexer) {
 
         switch (first) {
             case '#': {
-                while (!lexer_done(lexer)) {
-                    char eaten = lexer_eat_next_character(lexer);
-
-                    if (eaten == '\n')
-                        break;
-                }
+                lexer_eat_comment(lexer);
             } break;
             case ',': {
                 return (struct lexer_token) {
