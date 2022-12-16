@@ -1,17 +1,6 @@
 #include "save_data_def.c"
 /*
-  NOTE: it may be nice to build an iterator type for these nested things...
-
-  Save record versions are done to accomodate new save record data updates
-
-  VERSION1&2:
-      Basically initial versions.
-      (broken!)
-  VERSION3: (new forward format)
-      size discriminator
-      Entity record
-         - Position
-         - Health
+  Save format is very fluid currently so there are no permenant versions established yet.
 */
 #define SAVE_RECORDS_PER_SAVE_AREA_RECORD_CHUNK (64)
 
@@ -46,17 +35,6 @@ local string save_record_type_strings[] = {
     [SAVE_RECORD_TYPE_ENTITY_SAVEPOINT]  = string_literal("RECORD_SAVEPOINT"),
 };
 
-/*
-  I still don't know if I want to write that metaprogrammer thing yet.
-
-  I can probably safely test it's implementation on the save files since it's simple,
-  but I don't know if I trust my level formats quite yet...
-
-  Though it would be very useful
-struct save_record_entity_chest_V4 {
-    u32 id;
-};
-*/
 struct save_record_entity_chest {
     u32 id;
     u32 flags;
@@ -95,7 +73,7 @@ struct save_record_entity_light {
 
 struct save_record {
     u32 type;
-
+    /* TODO: I might be interested in storing the sizeof stuff */
     union {
         struct save_record_entity_chest     chest_record;
         struct save_record_entity_entity    entity_record;
@@ -333,44 +311,6 @@ local void save_serialize_record_entry(struct save_area_record_chunk* entry_chun
     struct save_record* record_to_serialize = entry_chunk->records + record_to_consume; 
 
     switch (save_version) {
-        case 1:
-        case 2:
-        case 3:{ /* This was before the backwards compatibility changes in Version 3 */
-            assertion(!"This is a prerelease save file. I have no idea why you have one of these!");
-        } break;
-            /* The default case is meant to generally be forward compatible with everything in the future... */
-            /* If it fails to work, I can analyze the specific structures and drop down */
-        case 4: {
-            struct save_record* current_entry = entry_chunk->records + record_to_consume;
-            serialize_u32(serializer, &current_entry->type);
-
-            /* this compresses our save files I guess (it's a stream now :! ) */
-            _debugprintf("Current record type: %d %s", current_entry->type, save_record_type_strings[current_entry->type].data);
-            switch (current_entry->type) {
-                case SAVE_RECORD_TYPE_NIL: {
-                    
-                } break;
-                case SAVE_RECORD_TYPE_ENTITY_ENTITY: {
-                    struct save_record_entity_entity* entity_record = &current_entry->entity_record;
-
-                    serialize_entity_id(serializer, save_version, &entity_record->id);
-
-                    serialize_u32(serializer, &entity_record->entity_field_flags);
-                    serialize_u32(serializer, &entity_record->flags);
-
-                    serialize_f32(serializer, &entity_record->position.x);
-                    serialize_f32(serializer, &entity_record->position.y);
-
-                    serialize_s32(serializer, &entity_record->health);
-                    serialize_u8(serializer,  &entity_record->direction);
-                } break;
-                case SAVE_RECORD_TYPE_ENTITY_CHEST: {
-                    struct save_record_entity_chest* chest_record = &current_entry->chest_record;
-                    serialize_u32(serializer, &chest_record->id);
-                } break;
-            }
-        } break;
-
         case CURRENT_SAVE_RECORD_VERSION:
         default: {
             struct save_record* current_entry = entry_chunk->records + record_to_consume;
