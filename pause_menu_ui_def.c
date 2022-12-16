@@ -35,6 +35,7 @@ struct ui_pause_menu {
     /* for the equipment menu queueing */
     bool need_to_select_party_member;
     s32  party_queued_to;
+    s32  party_member_index;
 };
 
 enum ui_pause_menu_gameplay_options {

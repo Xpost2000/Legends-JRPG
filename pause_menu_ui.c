@@ -54,7 +54,7 @@ local void update_and_render_sub_menu_states(struct game_state* state, struct so
     }
 }
 
-local void do_party_member_edits_or_selections(struct game_state* state, struct software_framebuffer* framebuffer, f32 x, f32 dt, bool allow_inputs) {
+local void do_party_member_edits_or_selections(struct game_state* state, struct software_framebuffer* framebuffer, f32 x, f32 dt, bool allow_input) {
     struct ui_pause_menu* menu_state      = &state->ui_pause;
     struct font_cache*    font            = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_STEEL]);
     struct font_cache*    font1           = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_GOLD]);
@@ -69,7 +69,15 @@ local void do_party_member_edits_or_selections(struct game_state* state, struct 
 
     f32 cards_x = SCREEN_WIDTH - estimated_dimensions.x * 1.1 + x;
     for (s32 index = 0; index < state->party_member_count; ++index) {
-        draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, ui_scale_factor, v2f32(cards_x, y_cursor), CARD_WIDTH, CARD_HEIGHT, UI_DEFAULT_COLOR);
+        /* I want to lerp this too but don't have time today */
+        f32 offset = 0;
+        if (allow_input) {
+            if (menu_state->party_member_index == index) {
+                offset = TILE_UNIT_SIZE;
+            }
+        }
+
+        draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, ui_scale_factor, v2f32(cards_x + offset, y_cursor), CARD_WIDTH, CARD_HEIGHT, UI_DEFAULT_COLOR);
 
         struct entity* entity = game_dereference_entity(state, state->party_members[index]);
         {
@@ -78,22 +86,70 @@ local void do_party_member_edits_or_selections(struct game_state* state, struct 
             struct entity_animation* anim                    = find_animation_by_name(data->model_index, format_temp_s("idle_%.*s", facing_direction_string.length, facing_direction_string.data));
             image_id sprite_to_use = anim->sprites[0];
             const s32 square_size = TILE_UNIT_SIZE;
-            software_framebuffer_draw_quad(framebuffer, rectangle_f32(cards_x + TILE_UNIT_SIZE, y_cursor + TILE_UNIT_SIZE*0.9, square_size, square_size+8), color32u8(0, 0, 0, 255), BLEND_MODE_ALPHA);
+
+            software_framebuffer_draw_quad(framebuffer, rectangle_f32(cards_x + TILE_UNIT_SIZE + offset, y_cursor + TILE_UNIT_SIZE*0.9, square_size, square_size+8), color32u8(0, 0, 0, 255), BLEND_MODE_ALPHA);
             software_framebuffer_draw_image_ex(framebuffer,
                                                graphics_assets_get_image_by_id(&graphics_assets, sprite_to_use),
-                                               rectangle_f32(cards_x + TILE_UNIT_SIZE, y_cursor + TILE_UNIT_SIZE*0.9, square_size, square_size+8),
+                                               rectangle_f32(cards_x + TILE_UNIT_SIZE + offset, y_cursor + TILE_UNIT_SIZE*0.9, square_size, square_size+8),
                                                rectangle_f32(0, 0, 16, 20), /* This should be a little more generic but whatever for now */
                                                color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
-            draw_ui_breathing_text(framebuffer, v2f32(cards_x + 2.2*TILE_UNIT_SIZE, y_cursor+TILE_UNIT_SIZE*0.35), font1, font_scale, entity->name, 341, color32f32_WHITE);
-            draw_ui_breathing_text(framebuffer, v2f32(cards_x + 2.2*TILE_UNIT_SIZE, y_cursor+TILE_UNIT_SIZE*0.70 + 22), font, 1, format_temp_s("LEVEL: %d", entity->stat_block.level), 341, color32f32_WHITE);
-            draw_ui_breathing_text(framebuffer, v2f32(cards_x + 2.2*TILE_UNIT_SIZE, y_cursor+TILE_UNIT_SIZE*0.70 + 22 + 16*1), font, 1, format_temp_s("HEALTH: %d/%d", entity->health.value, entity->health.max), 341, color32f32_WHITE);
-            draw_ui_breathing_text(framebuffer, v2f32(cards_x + 2.2*TILE_UNIT_SIZE, y_cursor+TILE_UNIT_SIZE*0.70 + 22 + 16*2), font, 1, format_temp_s("XP: %d", entity->stat_block.experience), 341, color32f32_WHITE);
+            draw_ui_breathing_text(framebuffer, v2f32(cards_x + 2.2*TILE_UNIT_SIZE + offset, y_cursor+TILE_UNIT_SIZE*0.35), font1, font_scale, entity->name, 341, color32f32_WHITE);
+            draw_ui_breathing_text(framebuffer, v2f32(cards_x + 2.2*TILE_UNIT_SIZE + offset, y_cursor+TILE_UNIT_SIZE*0.70 + 22), font, 1, format_temp_s("LEVEL: %d", entity->stat_block.level), 341, color32f32_WHITE);
+            draw_ui_breathing_text(framebuffer, v2f32(cards_x + 2.2*TILE_UNIT_SIZE + offset, y_cursor+TILE_UNIT_SIZE*0.70 + 22 + 16*1), font, 1, format_temp_s("HEALTH: %d/%d", entity->health.value, entity->health.max), 341, color32f32_WHITE);
+            draw_ui_breathing_text(framebuffer, v2f32(cards_x + 2.2*TILE_UNIT_SIZE + offset, y_cursor+TILE_UNIT_SIZE*0.70 + 22 + 16*2), font, 1, format_temp_s("XP: %d", entity->stat_block.experience), 341, color32f32_WHITE);
         }
         y_cursor += estimated_dimensions.y * 1.23;
     }
 
-    if (!allow_inputs) {
+    if (!allow_input) {
         return;
+    } else {
+        bool selection_down    = is_action_down_with_repeat(INPUT_ACTION_MOVE_DOWN);
+        bool selection_up      = is_action_down_with_repeat(INPUT_ACTION_MOVE_UP);
+        bool selection_pause   = is_action_down_with_repeat(INPUT_ACTION_PAUSE);
+        bool selection_cancel  = is_action_down_with_repeat(INPUT_ACTION_CANCEL);
+        bool selection_confirm = is_action_down_with_repeat(INPUT_ACTION_CONFIRMATION);
+
+        if (selection_down) {
+            menu_state->party_member_index++;
+            if (menu_state->party_member_index >= state->party_member_count) {
+                menu_state->party_member_index = 0;
+            }
+            play_sound(ui_blip);
+        } else if (selection_up) {
+            menu_state->party_member_index--;
+            if (menu_state->party_member_index < 0) {
+                menu_state->party_member_index = state->party_member_count-1;
+            }
+            play_sound(ui_blip);
+        }
+
+        if (selection_confirm) {
+            menu_state->need_to_select_party_member = false;
+            switch (menu_state->party_queued_to) {
+                case PAUSE_MENU_RESUME: {
+                    close_pause_menu();
+                } break;
+                case PAUSE_MENU_PARTY_EQUIPMENT: {
+                    pause_menu_transition_to(UI_PAUSE_MENU_SUB_MENU_STATE_EQUIPMENT);
+                    open_equipment_screen(game_state->party_members[menu_state->party_member_index]);
+                } break;
+                case PAUSE_MENU_PARTY_ITEMS: {
+                    pause_menu_transition_to(UI_PAUSE_MENU_SUB_MENU_STATE_INVENTORY);
+                    open_party_inventory_screen();
+                } break;
+                case PAUSE_MENU_OPTIONS: {
+                    pause_menu_transition_to(UI_PAUSE_MENU_SUB_MENU_STATE_OPTIONS);
+                } break;
+                case PAUSE_MENU_QUIT: {
+                    initialize_main_menu();
+                    screen_mode = GAME_SCREEN_MAIN_MENU;
+                } break;
+                case PAUSE_MENU_RETURN_TO_DESKTOP: {
+                    global_game_running = false;
+                } break;
+            }
+        }
     }
 }
 
@@ -128,6 +184,10 @@ local void update_and_render_pause_game_menu_ui(struct game_state* state, struct
     bool selection_up      = is_action_down_with_repeat(INPUT_ACTION_MOVE_UP);
     bool selection_pause   = is_action_down_with_repeat(INPUT_ACTION_PAUSE);
     bool selection_confirm = is_action_down_with_repeat(INPUT_ACTION_CONFIRMATION);
+
+    if (menu_state->need_to_select_party_member || menu_state->editing_party_lineup) {
+        selection_confirm = selection_pause = selection_up = selection_down = false;
+    }
 
     switch (menu_state->animation_state) {
         case UI_PAUSE_MENU_TRANSITION_IN: {
@@ -199,6 +259,7 @@ local void update_and_render_pause_game_menu_ui(struct game_state* state, struct
                     play_sound(ui_blip);
                 }
 
+                do_party_member_edits_or_selections(state, framebuffer, 0, dt, menu_state->editing_party_lineup || menu_state->need_to_select_party_member);
                 if (selection_confirm) {
                     if (!disabled_actions[menu_state->selection]) {
                         switch (menu_state->selection) {
@@ -208,8 +269,7 @@ local void update_and_render_pause_game_menu_ui(struct game_state* state, struct
                             case PAUSE_MENU_PARTY_EQUIPMENT: {
                                 menu_state->party_queued_to             = PAUSE_MENU_PARTY_EQUIPMENT;
                                 menu_state->need_to_select_party_member = true;
-                                pause_menu_transition_to(UI_PAUSE_MENU_SUB_MENU_STATE_EQUIPMENT);
-                                open_equipment_screen(game_state->party_members[0]);
+                                menu_state->party_member_index          = 0;
                             } break;
                             case PAUSE_MENU_PARTY_ITEMS: {
                                 pause_menu_transition_to(UI_PAUSE_MENU_SUB_MENU_STATE_INVENTORY);
@@ -229,7 +289,6 @@ local void update_and_render_pause_game_menu_ui(struct game_state* state, struct
                     }
                 }
 
-                do_party_member_edits_or_selections(state, framebuffer, 0, dt, false);
             } else {
                 for (unsigned index = 0; index < array_count(item_positions); ++index) {
                     item_positions[index].x = -99999999;
