@@ -889,7 +889,6 @@ void _serialize_level_area(struct memory_arena* arena, struct binary_serializer*
 
         if (level->version >= 1) {
             _debugprintf("reading level transitions");
-            /* this thing is allergic to chest updates. Unfortunately it might happen a lot... */
             serialize_s32(serializer, &level->trigger_level_transition_count);
             _debugprintf("%d level transitions to read", level->trigger_level_transition_count);
             level->trigger_level_transitions = memory_arena_push(arena, sizeof(*level->trigger_level_transitions) * level->trigger_level_transition_count);
@@ -917,36 +916,19 @@ void _serialize_level_area(struct memory_arena* arena, struct binary_serializer*
             }
         }
         if (level->version >= 5) {
-            struct level_area_entity current_packed_entity = {};
-
             _debugprintf("reading and unpacking entities");
 
             s32 entity_count = 0;
             serialize_s32(serializer, &entity_count);
             _debugprintf("Seeing %d entities to read", entity_count);
 
-            /* TODO: 
-               hack, this is incorrect behavior as we need to more fine-tune the iterator.
-           
-               Now since this additional "sentinel" entity is never initialized, it makes no difference anyways.
-               I'll correct this later.
-            */
-            /*
-              NOTE: While this is more explicit since it simply requires an unpacking step,
-              it also helps since the entity holder may change formats...
-            */
             level->entities = entity_list_create(arena, (entity_count+1), level_type);
 
+            struct level_area_entity current_packed_entity = {};
             for (s32 entity_index = 0; entity_index < entity_count; ++entity_index) {
+                entity_id      new_ent        = entity_list_create_entity(&level->entities);
+                struct entity* current_entity = entity_list_dereference_entity(&level->entities, new_ent);
                 serialize_level_area_entity(serializer, level->version, &current_packed_entity);
-                struct entity* current_entity = 0;
-
-                entity_id new_ent = entity_list_create_entity(&level->entities);
-                current_entity    = entity_list_dereference_entity(&level->entities, new_ent);
-
-                /* I should really use IDs more. Oh well. Who knows how many lines of redundant dereferencing code I have in this codebase. */
-                struct entity_base_data* base_data = entity_database_find_by_name(&game_state->entity_database, string_from_cstring(current_packed_entity.base_name));
-                entity_base_data_unpack(&game_state->entity_database, base_data, current_entity);
                 level_area_entity_unpack(&current_packed_entity, current_entity);
             }
         }
@@ -966,14 +948,11 @@ void _serialize_level_area(struct memory_arena* arena, struct binary_serializer*
 
             struct level_area_savepoint packed_entity = {};
             _debugprintf("Will need to unpack %d savepoints!", level->entity_savepoint_count);
-
             for (s32 entity_savepoint_index = 0; entity_savepoint_index < level->entity_savepoint_count; ++entity_savepoint_index) {
                 struct entity_savepoint* current_savepoint = level->savepoints + entity_savepoint_index;
 
                 serialize_level_area_entity_savepoint(serializer, level->version, &packed_entity);
                 level_area_entity_savepoint_unpack(&packed_entity, current_savepoint);
-
-                entity_savepoint_initialize(current_savepoint);
             }
         }
 

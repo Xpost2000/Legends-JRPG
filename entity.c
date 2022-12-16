@@ -2946,6 +2946,7 @@ struct entity_database entity_database_create(struct memory_arena* arena) {
 void level_area_entity_savepoint_unpack(struct level_area_savepoint* savepoint, struct entity_savepoint* unpack_target) {
     unpack_target->position = savepoint->position;
     unpack_target->flags   |= savepoint->flags;
+    entity_savepoint_initialize(unpack_target);
 }
 
 bool entity_has_dialogue(struct entity* entity) {
@@ -2964,9 +2965,17 @@ void level_area_entity_unpack(struct level_area_entity* entity, struct entity* u
     cstring_copy(entity->script_name, unpack_target->script_name, array_count(unpack_target->script_name));
     cstring_copy(entity->dialogue_file, unpack_target->dialogue_file, array_count(unpack_target->dialogue_file));
 
+    if(cstring_length(entity->dialogue_file)) {
+        unpack_target->has_dialogue = true;
+    }
+
     if (entity->health_override != -1) {unpack_target->health.value = entity->health_override;}
     if (entity->magic_override != -1)  {unpack_target->magic.value  = entity->magic_override;}
 
+
+    /* I should really use IDs more. Oh well. Who knows how many lines of redundant dereferencing code I have in this codebase. */
+    struct entity_base_data* base_data = entity_database_find_by_name(&game_state->entity_database, string_from_cstring(entity->base_name));
+    entity_base_data_unpack(&game_state->entity_database, base_data, unpack_target);
     entity_validate_death(unpack_target);
 }
 

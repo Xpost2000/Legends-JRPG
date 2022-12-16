@@ -246,6 +246,10 @@ struct level_area {
     struct entity_chest*             chests;
     s32                              entity_savepoint_count;
     struct entity_savepoint*         savepoints;
+    s32                              level_area_entity_count;
+    struct level_area_entity*        level_area_entities;
+    s32                              level_area_savepoint_entity_count;
+    struct level_area_entity*        level_area_savepoint_entities;
 
     /* runtime data */
     struct entity_list               entities;
