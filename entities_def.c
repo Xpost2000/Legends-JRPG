@@ -154,9 +154,9 @@ struct entity_actor_inventory {
     struct item_instance items[MAX_ACTOR_AVALIABLE_ITEMS];
 };
 
-struct entity_chest_inventory {
-    s32           item_count;
-    struct item_instance items[16];
+SERIALIZE struct entity_chest_inventory {
+    s32           item_count       SERIALIZE;
+    struct item_instance items[16] SERIALIZE;
 };
 
 /* both types above cast into this, and hopefully decay correctly without exploding */
@@ -173,22 +173,22 @@ enum entity_chest_flags {
     ENTITY_CHEST_NONE                           = 0,
     ENTITY_CHEST_FLAGS_REQUIRES_ITEM_FOR_UNLOCK = BIT(0),
     ENTITY_CHEST_FLAGS_UNLOCKED                 = BIT(1), /* redundant if it does not require an item for unlock */
-    ENTITY_CHEST_FLAGS_HIDDEN                   = ENTITY_FLAGS_HIDDEN,
+    ENTITY_CHEST_FLAGS_HIDDEN                   = BIT(31),
 };
 /* in tiles */
 #define ENTITY_CHEST_INTERACTIVE_RADIUS ((f32)1.8565 * TILE_UNIT_SIZE)
-struct entity_chest {
-    v2f32                         position;
-    v2f32                         scale;
-    u32                           flags;
-    struct entity_chest_inventory inventory;
-    item_id                       key_item;
+SERIALIZE_VERSIONS(2 to CURRENT) struct entity_chest {
+    v2f32                         position  SERIALIZE_VERSIONS(2 to CURRENT);
+    v2f32                         scale     SERIALIZE_VERSIONS(2 to CURRENT);
+    u32                           flags     SERIALIZE_VERSIONS(2 to CURRENT) SERIALIZE_SAVE_VERSIONS(1 to CURRENT);
+    struct entity_chest_inventory inventory SERIALIZE_VERSIONS(2 to CURRENT);
+    item_id                       key_item  SERIALIZE_VERSIONS(2 to CURRENT);
 };
 
 enum entity_savepoint_flags {
     ENTITY_SAVEPOINT_FLAGS_NONE     = 0,
-    ENTITY_SAVEPOINT_FLAGS_DISABLED = ENTITY_FLAGS_HIDDEN,
-    ENTITY_SAVEPOINT_FLAGS_HIDDEN   = ENTITY_FLAGS_HIDDEN,
+    ENTITY_SAVEPOINT_FLAGS_DISABLED = BIT(31),
+    ENTITY_SAVEPOINT_FLAGS_HIDDEN   = BIT(31),
 };
 #define ENTITY_SAVEPOINT_INTERACTIVE_RADIUS ((f32)1.9565 * TILE_UNIT_SIZE)
 struct entity_savepoint {

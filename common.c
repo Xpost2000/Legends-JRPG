@@ -22,8 +22,40 @@
  */
 
 /* mark these on structs? To allow for autogeneration of serialization code */
-#define STRUCTVERSION(x)
-#define SERIALIZESTRUCT
+/* Ground rules for how this should work:
+
+   SERIALIZE is equivalent to
+   SERIALIZE_VERSIONS(ALL_VERSIONS) or SERIALIZE_VERSIONS(1 to CURRENT_LEVEL_AREA_VERSION)
+   SERIALIZE_SAVE is equivalent to
+   SERIALIZE_SAVE_VERSIONS(ALL_VERSIONS) or SERIALIZE_VERSIONS(2 to CURRENT_LEVEL_AREA_VERSION)
+
+   SERIALIZE on struct def only considers it for serialization. Does not automatic serialize. Fields
+   are never automatically serialized unless otherwise specified.
+
+   These two serialization procedures are based on the save and level area versions respectively,
+   they are slightly different.
+
+   UNPACK_INTO(), for the few structures that require an unpack step since I for some reason decided
+   there are some differences in the serialization process, I'm just going to parse a weird DSL
+   to get these to unpack sanely.
+
+   This is context dependent.
+
+   This automates the unpack function generation, and if there are fields that don't exist or are
+   the wrong type it will give me a compilation error so I can always notice it.
+
+   It's not perfect, but it's better than nothing.
+
+   the editable stuff, is obvious, need to do that later...
+ */
+#define SERIALIZE
+#define SERIALIZE_SAVE
+#define SERIALIZE_VERSIONS(...)
+#define SERIALIZE_SAVE_VERSIONS(...)
+#define UNPACK_INTO(...)
+#define EDITABLE
+#define EDITABLE_BITFLAG(flag_enumeration)
+#define EDITABLE_LIMITS(a, b)
 
 /*
   END OF METAPROGRAMMING MARKERS

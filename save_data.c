@@ -54,12 +54,12 @@ local string save_record_type_strings[] = {
 
   Though it would be very useful
 struct save_record_entity_chest_V4 {
-    u32 target_entity;
+    u32 id;
 };
 */
 struct save_record_entity_chest {
-    u32 target_entity;
-    u32 entity_flags;
+    u32 id;
+    u32 flags;
 };
 
 enum save_record_entity_field_flags {
@@ -74,7 +74,7 @@ enum save_record_entity_field_flags {
 struct save_record_entity_entity {
     entity_id id;
     u32       entity_field_flags; /* intepret whether to read the fields, we save them regardless though */
-    u32       entity_flags      ; /* flags stored on the entity itself. */
+    u32       flags      ; /* flags stored on the entity itself. */
     v2f32     position;
     s32       health;
     u8        direction;
@@ -356,7 +356,7 @@ local void save_serialize_record_entry(struct save_area_record_chunk* entry_chun
                     serialize_entity_id(serializer, save_version, &entity_record->id);
 
                     serialize_u32(serializer, &entity_record->entity_field_flags);
-                    serialize_u32(serializer, &entity_record->entity_flags);
+                    serialize_u32(serializer, &entity_record->flags);
 
                     serialize_f32(serializer, &entity_record->position.x);
                     serialize_f32(serializer, &entity_record->position.y);
@@ -366,7 +366,7 @@ local void save_serialize_record_entry(struct save_area_record_chunk* entry_chun
                 } break;
                 case SAVE_RECORD_TYPE_ENTITY_CHEST: {
                     struct save_record_entity_chest* chest_record = &current_entry->chest_record;
-                    serialize_u32(serializer, &chest_record->target_entity);
+                    serialize_u32(serializer, &chest_record->id);
                 } break;
             }
         } break;
@@ -388,7 +388,7 @@ local void save_serialize_record_entry(struct save_area_record_chunk* entry_chun
                     serialize_entity_id(serializer, save_version, &entity_record->id);
 
                     serialize_u32(serializer, &entity_record->entity_field_flags);
-                    serialize_u32(serializer, &entity_record->entity_flags);
+                    serialize_u32(serializer, &entity_record->flags);
 
                     serialize_f32(serializer, &entity_record->position.x);
                     serialize_f32(serializer, &entity_record->position.y);
@@ -398,8 +398,8 @@ local void save_serialize_record_entry(struct save_area_record_chunk* entry_chun
                 } break;
                 case SAVE_RECORD_TYPE_ENTITY_CHEST: {
                     struct save_record_entity_chest* chest_record = &current_entry->chest_record;
-                    serialize_u32(serializer, &chest_record->target_entity);
-                    serialize_u32(serializer, &chest_record->entity_flags);
+                    serialize_u32(serializer, &chest_record->id);
+                    serialize_u32(serializer, &chest_record->flags);
                 } break;
                 case SAVE_RECORD_TYPE_ENTITY_LIGHT: {
                     struct save_record_entity_light* light_record = &current_entry->light_record;
@@ -645,7 +645,7 @@ void apply_save_data(struct game_state* state) {
 
 local void apply_save_record_chest_entry(struct save_record_entity_chest* chest_record, struct game_state* state) {
     struct level_area* area = &state->loaded_area;
-    area->chests[chest_record->target_entity].flags = chest_record->entity_flags;
+    area->chests[chest_record->id].flags = chest_record->flags;
 }
 
 local void apply_save_record_light_entry(struct save_record_entity_light* light_record, struct game_state* state) {
@@ -681,7 +681,7 @@ local void apply_save_record_entity_entry(struct save_record_entity_entity* enti
         }
 
         if (field_flags_to_read & SAVE_RECORD_ENTITY_FIELD_FLAGS_ENTITY_FLAGS) {
-            entity_object->flags = entity_record->entity_flags;
+            entity_object->flags = entity_record->flags;
         }
     }
 }
@@ -726,7 +726,7 @@ local struct save_record* save_data_existing_chest_record(u32 chest_id) {
             struct save_record* current_record = &record_chunk->records[record_index];
 
             if (current_record->type == SAVE_RECORD_TYPE_ENTITY_CHEST) {
-                if (current_record->chest_record.target_entity == chest_id) {
+                if (current_record->chest_record.id == chest_id) {
                     return current_record;
                 }
             }
@@ -814,9 +814,9 @@ void save_data_register_chest(u32 chest_id) {
     }
 
     new_record->type                       = SAVE_RECORD_TYPE_ENTITY_CHEST;
-    new_record->chest_record.target_entity = chest_id;
+    new_record->chest_record.id = chest_id;
     struct entity_chest* chest             = game_state->loaded_area.chests + chest_id;
-    new_record->chest_record.entity_flags  = chest->flags;
+    new_record->chest_record.flags  = chest->flags;
 }
 
 void save_data_register_light(u32 light_id) {
@@ -858,7 +858,7 @@ void save_data_register_entity(entity_id id) {
 
     entity_record->entity_field_flags = SAVE_RECORD_ENTITY_FIELD_FLAGS_RECORD_EVERYTHING;
     entity_record->id                 = id;
-    entity_record->entity_flags       = entity_object->flags;
+    entity_record->flags       = entity_object->flags;
     entity_record->position           = entity_object->position;
     entity_record->health             = entity_object->health.value;
     entity_record->direction          = entity_object->facing_direction;

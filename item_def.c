@@ -10,8 +10,8 @@
 /*
   NOTE: FNV1-A hasn't really failed me yet...
 */
-typedef struct item_id {
-    u32 id_hash; /* may have collisions but with small item count prolly not */
+SERIALIZE typedef struct item_id {
+    SERIALIZE u32 id_hash; /* may have collisions but with small item count prolly not */
 } item_id;
 
 item_id item_id_make(string id_name) {
