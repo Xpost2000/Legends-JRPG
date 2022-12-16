@@ -2287,7 +2287,7 @@ local void update_game_camera_exploration_mode(struct game_state* state, f32 dt)
       In reality, I want to do more with the camera, but right now I'm just going to leave this hacky code in
       here so I can do stuff later.
     */
-    if (!(game_get_player(state)->flags & ENTITY_FLAGS_ALIVE)) {
+    if (game_total_party_knockout()) {
         camera->xy.y -= dt * 25;
         return;
     }
@@ -2362,7 +2362,7 @@ local void update_game_camera_exploration_mode(struct game_state* state, f32 dt)
 local void update_game_camera(struct game_state* state, f32 dt) {
     struct camera* camera = &state->camera;
 
-    struct entity* player = game_get_player(state);
+    struct entity* player = game_get_party_leader();
     camera->centered    = true;
     camera->zoom        = 1;
 

@@ -1301,7 +1301,7 @@ local void sortable_entity_draw_entity(struct render_commands* commands, struct 
 
         /* Highlighted for target selection */
         {
-            bool me = is_entity_under_ability_selection(id);
+            bool me = is_entity_under_ability_selection(id) || current_entity->under_selection;
             if (me) {
                 /* red for now. We want better effects maybe? */
                 modulation_color.g = modulation_color.b = 0;
@@ -1322,14 +1322,24 @@ local void sortable_entity_draw_entity(struct render_commands* commands, struct 
             height_trim = 0;
         }
 
-        render_commands_push_image(commands,
-                                   graphics_assets_get_image_by_id(assets, sprite_to_use),
-                                   rectangle_f32(current_entity->position.x - alignment_offset.x + other_offsets.x,
-                                                 current_entity->position.y - alignment_offset.y + other_offsets.y,
-                                                 real_dimensions.x,
-                                                 real_dimensions.y*(1 - height_trim)),
-                                   rectangle_f32(0, 0, sprite_dimensions.x, sprite_dimensions.y * (1 - height_trim)),
-                                   modulation_color, NO_FLAGS, BLEND_MODE_ALPHA);
+        {
+            struct image_buffer* used_image = graphics_assets_get_image_by_id(assets, sprite_to_use);
+            struct rectangle_f32 rectangle  = rectangle_f32(current_entity->position.x - alignment_offset.x + other_offsets.x,
+                                                            current_entity->position.y - alignment_offset.y + other_offsets.y,
+                                                            real_dimensions.x,
+                                                            real_dimensions.y*(1 - height_trim));
+            render_commands_push_image(commands,
+                                       used_image,
+                                       rectangle,
+                                       rectangle_f32(0, 0, sprite_dimensions.x, sprite_dimensions.y * (1 - height_trim)),
+                                       modulation_color, NO_FLAGS, BLEND_MODE_ALPHA);
+            v2f32 rectangle_position_transformed = v2f32(rectangle.x, rectangle.y);
+            rectangle_position_transformed       = camera_transform(&commands->camera, rectangle_position_transformed, SCREEN_WIDTH, SCREEN_HEIGHT);
+            rectangle.x                          = rectangle_position_transformed.x;
+            rectangle.y                          = rectangle_position_transformed.y;
+
+            lightmask_buffer_blit_image(&global_lightmask_buffer, used_image, rectangle, RECTANGLE_F32_NULL, LIGHTMASK_BLEND_NONE, BLEND_MODE_ALPHA, 0);
+        }
         if (current_entity->ai.hurt_animation_phase == ENTITY_HURT_ANIMATION_ON) {
             if ((current_entity->ai.hurt_animation_shakes % 2) == 0) {
                 struct image_buffer* used_image = graphics_assets_get_image_by_id(assets, sprite_to_use);
@@ -1342,7 +1352,7 @@ local void sortable_entity_draw_entity(struct render_commands* commands, struct 
                 rectangle.x                          = rectangle_position_transformed.x;
                 rectangle.y                          = rectangle_position_transformed.y;
 
-                lightmask_buffer_blit_image(&global_lightmask_buffer, used_image, rectangle, RECTANGLE_F32_NULL, LIGHTMASK_BLEND_OR, BLEND_MODE_ALPHA, 255);
+                lightmask_buffer_blit_image(&global_lightmask_buffer, used_image, rectangle, RECTANGLE_F32_NULL, LIGHTMASK_BLEND_NONE, BLEND_MODE_ALPHA, 255);
             }
         }
         render_commands_set_shader(commands, game_foreground_entity_things_shader, current_entity);
@@ -3704,7 +3714,7 @@ local void entity_think_basic_zombie_combat_actions(struct entity* entity, struc
     }
 
     /* attack if in range */
-    if (v2f32_distance(entity->position, target_entity->position) < attack_radius) {
+    if (v2f32_distance(entity->position, target_entity->position) <= attack_radius) {
         entity_combat_submit_attack_action(entity, closest_valid_entity);
     }
 }

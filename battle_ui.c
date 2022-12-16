@@ -867,7 +867,7 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                 entity_id current_id = global_battle_ui_state.targetable_entities[index];
                 struct entity* current_entity = game_dereference_entity(state, current_id);
 
-                if (current_entity == game_get_player(state)) {
+                if (game_entity_is_party_member(current_entity)) {
                     continue;
                 }
 
@@ -898,6 +898,7 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
 
                 if (global_battle_ui_state.selection == index) {
                     painted_font = highlighted_font;
+                    target_entity->under_selection = false;
                 }
 
                 draw_ui_breathing_text(framebuffer, draw_point, painted_font, 2, entity_name, 0, color32f32_WHITE);
@@ -927,6 +928,7 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                     struct entity* target_entity = game_dereference_entity(state, enemy_id);
 
                     camera_set_point_to_interpolate(camera, target_entity->position);
+                    target_entity->under_selection = true;
                 }
             }
 
@@ -1389,7 +1391,7 @@ local void update_game_camera_combat(struct game_state* state, f32 dt) {
 
         {
             v2f32 direction_to_entity = v2f32_direction(game_state->camera.xy, to_stalk->position);
-            f32 distance = v2f32_distance(game_state->camera.xy, to_stalk->position);
+            f32   distance            = v2f32_distance(game_state->camera.xy, to_stalk->position);
 
             /* f32 effective_velocity = CAMERA_VELOCITY / (1 - (distance*distance)); */
             f32 effective_velocity = distance*distance;
@@ -1422,7 +1424,6 @@ local void update_game_camera_combat(struct game_state* state, f32 dt) {
                 }
             } break;
             default: {
-            
             } break;
         }
     }
@@ -1488,7 +1489,10 @@ local void draw_battle_tooltips(struct game_state* state, struct software_frameb
                                                      state);
         } break;
         case BATTLE_UI_SUBMODE_USING_ABILITY: {
-            struct entity_ability* ability = entity_database_ability_find_by_index(&game_state->entity_database, game_get_player(state)->abilities[global_battle_ui_state.selection].ability);
+            struct game_state_combat_state* combat_state            = &game_state->combat_state;
+            struct entity*                  active_combatant_entity = game_dereference_entity(game_state, combat_state->participants[combat_state->active_combatant]);
+            struct entity_ability* ability = entity_database_ability_find_by_index(&game_state->entity_database,
+                                                                                   active_combatant_entity->abilities[global_battle_ui_state.selection].ability);
             tip = ability->description;
         } break;
         case BATTLE_UI_SUBMODE_USING_ITEM: {
@@ -1703,7 +1707,7 @@ local void update_and_render_battle_ui(struct game_state* state, struct software
             if (global_battle_ui_state.timer > max_t+linger_t) {
                 /* TODO: More robust player death conditions */
                 {
-                    if (!(game_get_player(state)->flags & ENTITY_FLAGS_ALIVE)) {
+                    if (game_total_party_knockout()) {
                         game_setup_death_ui();
                     } else {
                         if (global_battle_ui_state.phase == BATTLE_UI_FADE_OUT_DETAILS_AFTER_TURN_COMPLETION) {

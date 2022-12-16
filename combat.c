@@ -70,7 +70,7 @@ local void add_all_combat_participants(struct game_state* state) {
 local bool should_be_in_combat(struct game_state* state) {
     struct entity* player = game_get_player(state);
     bool should_be_in_combat = false;
-    if (!(player->flags & ENTITY_FLAGS_ALIVE)) {
+    if (game_total_party_knockout()) {
         return false;
     }
 
@@ -137,10 +137,11 @@ void update_combat(struct game_state* state, f32 dt) {
 
         if (global_battle_ui_state.phase == BATTLE_UI_IDLE) {
             if (combatant->waiting_on_turn) {
-                if (combatant->flags & ENTITY_FLAGS_PLAYER_CONTROLLED) {
-                    battle_ui_stop_stalk_entity_with_camera();
-                } else {
+                if (global_battle_ui_state.submode != BATTLE_UI_SUBMODE_LOOKING ||
+                    global_battle_ui_state.submode != BATTLE_UI_SUBMODE_ATTACKING) {
                     battle_ui_stalk_entity_with_camera(combatant);
+                } else {
+                    battle_ui_stop_stalk_entity_with_camera();
                 }
                 entity_think_combat_actions(combatant, state, dt);
             } else {
@@ -162,7 +163,6 @@ void update_combat(struct game_state* state, f32 dt) {
                         }
                     } else {
                         combat_state->active_combatant += 1;
-
                         /* I would also love to animate this, but I don't have to animate */
                         /* *everything* */
                         if (combat_state->active_combatant >= combat_state->count) {

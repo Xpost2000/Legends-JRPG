@@ -711,6 +711,8 @@ struct entity {
     /* mostly runtime data. */
     struct entity_ai_data         ai;
 
+    bool under_selection;
+
     /* This is a "main" turn action. Attacking / Using Items / Defending */
     bool                          waiting_on_turn;
 
