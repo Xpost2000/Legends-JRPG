@@ -985,6 +985,90 @@ GAME_LISP_FUNCTION(ENTITY_UNEQUIP_ITEM) {
     entity_inventory_unequip_item(inventory_target, inventory_limits, equip_slot_index, target_entity);
     return LISP_nil;
 }
+GAME_LISP_FUNCTION(HIDE) {
+    Required_Argument_Count(HIDE, 1);
+    struct game_script_typed_ptr ptr = game_script_object_handle_decode(arguments[0]);
+    switch (ptr.type) {
+        case GAME_SCRIPT_TARGET_LIGHT: {
+            /* ? */
+        } break;
+        case GAME_SCRIPT_TARGET_TRANSITION_TRIGGER: {
+            /* ? */
+        } break;
+        case GAME_SCRIPT_TARGET_TRIGGER: {
+            /* ? */
+        } break;
+        case GAME_SCRIPT_TARGET_ENTITY: {
+            struct entity* entity = ptr.ptr;
+            entity->flags |= ENTITY_FLAGS_HIDDEN;
+        } break;
+        case GAME_SCRIPT_TARGET_SAVEPOINT: {
+            struct entity_savepoint* savepoint = ptr.ptr;
+            savepoint->flags |= ENTITY_FLAGS_HIDDEN;
+        } break;
+        case GAME_SCRIPT_TARGET_CHEST: {
+            struct entity_chest* chest = ptr.ptr;
+            chest->flags |= ENTITY_FLAGS_HIDDEN;
+        } break;
+    }
+    return LISP_nil;
+}
+GAME_LISP_FUNCTION(SHOW) {
+    Required_Argument_Count(SHOW, 1);
+    struct game_script_typed_ptr ptr = game_script_object_handle_decode(arguments[0]);
+    switch (ptr.type) {
+        case GAME_SCRIPT_TARGET_LIGHT: {
+            /* ? */
+        } break;
+        case GAME_SCRIPT_TARGET_TRANSITION_TRIGGER: {
+            /* ? */
+        } break;
+        case GAME_SCRIPT_TARGET_TRIGGER: {
+            /* ? */
+        } break;
+        case GAME_SCRIPT_TARGET_ENTITY: {
+            struct entity* entity = ptr.ptr;
+            entity->flags &= ~(ENTITY_FLAGS_HIDDEN);
+        } break;
+        case GAME_SCRIPT_TARGET_SAVEPOINT: {
+            struct entity_savepoint* savepoint = ptr.ptr;
+            savepoint->flags &= ~(ENTITY_FLAGS_HIDDEN);
+        } break;
+        case GAME_SCRIPT_TARGET_CHEST: {
+            struct entity_chest* chest = ptr.ptr;
+            chest->flags &= ~(ENTITY_FLAGS_HIDDEN);
+        } break;
+    }
+    return LISP_nil;
+}
+GAME_LISP_FUNCTION(TOGGLE_VISIBILITY) {
+    Required_Argument_Count(TOGGLE_VISIBILITY, 1);
+    struct game_script_typed_ptr ptr = game_script_object_handle_decode(arguments[0]);
+    switch (ptr.type) {
+        case GAME_SCRIPT_TARGET_LIGHT: {
+            /* ? */
+        } break;
+        case GAME_SCRIPT_TARGET_TRANSITION_TRIGGER: {
+            /* ? */
+        } break;
+        case GAME_SCRIPT_TARGET_TRIGGER: {
+            /* ? */
+        } break;
+        case GAME_SCRIPT_TARGET_ENTITY: {
+            struct entity* entity = ptr.ptr;
+            entity->flags ^= (ENTITY_FLAGS_HIDDEN);
+        } break;
+        case GAME_SCRIPT_TARGET_SAVEPOINT: {
+            struct entity_savepoint* savepoint = ptr.ptr;
+            savepoint->flags ^= (ENTITY_FLAGS_HIDDEN);
+        } break;
+        case GAME_SCRIPT_TARGET_CHEST: {
+            struct entity_chest* chest = ptr.ptr;
+            chest->flags ^= (ENTITY_FLAGS_HIDDEN);
+        } break;
+    }
+    return LISP_nil;
+}
 
 #undef GAME_LISP_FUNCTION
 

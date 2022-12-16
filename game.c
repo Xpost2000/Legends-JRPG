@@ -1074,7 +1074,7 @@ void serialize_level_area(struct game_state* state, struct binary_serializer* se
     if (use_default_spawn) {
         game_set_all_party_members_to(v2f32(
                                           level->default_player_spawn.x,
-                                          level->default_player_spawn.y,
+                                          level->default_player_spawn.y
                                       ));
     }
 
@@ -2485,7 +2485,7 @@ void load_level_queued_for_transition(void* callback_data) {
     if (!data->use_default_spawn_location) {
         game_set_all_party_members_to(v2f32(
                                           data->spawn_location.x * TILE_UNIT_SIZE,
-                                          data->spawn_location.y * TILE_UNIT_SIZE,
+                                          data->spawn_location.y * TILE_UNIT_SIZE
                                       ));
     }
 
