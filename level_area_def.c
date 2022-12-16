@@ -117,52 +117,52 @@ enum level_area_entity_spawn_flags {
      */
     /* LEVEL_AREA_ENTITY_SPAWN_FLAGS_RANDOM_SPAWN = BIT(1), */
 };
-SERIALIZE_VERSIONS(5 to CURRENT) struct level_area_entity UNPACK_INTO(struct entity) {
+SERIALIZE_VERSIONS(level, 5 to CURRENT) struct level_area_entity UNPACK_INTO(struct entity) {
     /*
       This is only a rectangle because it allows me to use it for the drag candidate system in the
       editor.
       
       we always use the model size when unpacking.
      */
-    SERIALIZE_VERSIONS(5 to CURRENT) v2f32 position;
-    SERIALIZE_VERSIONS(5 to CURRENT) v2f32 scale;
+    SERIALIZE_VERSIONS(level, 5 to CURRENT) v2f32 position;
+    SERIALIZE_VERSIONS(level, 5 to CURRENT) v2f32 scale;
 
     /* look this up in the entity dictionary */
     /* I would like to hash but don't want to risk changing hashing later. */
     /* NOTE: Turns out I don't hash in the DB, so we could keep an index but that requires data changes. */
-    SERIALIZE_VERSIONS(5 to CURRENT) char  base_name[ENTITY_BASENAME_LENGTH_MAX];
-    SERIALIZE_VERSIONS(5 to CURRENT) char  script_name[ENTITY_BASENAME_LENGTH_MAX]; /* Use this to refer for game script reasons */
-    SERIALIZE_VERSIONS(5 to CURRENT) char  dialogue_file[ENTITY_BASENAME_LENGTH_MAX];
+    SERIALIZE_VERSIONS(level, 5 to CURRENT) char  base_name[ENTITY_BASENAME_LENGTH_MAX];
+    SERIALIZE_VERSIONS(level, 5 to CURRENT) char  script_name[ENTITY_BASENAME_LENGTH_MAX]; /* Use this to refer for game script reasons */
+    SERIALIZE_VERSIONS(level, 5 to CURRENT) char  dialogue_file[ENTITY_BASENAME_LENGTH_MAX];
 
     /* not editted */
     /* Currently not editted. */
-    SERIALIZE_VERSIONS(5 to CURRENT) s32 health_override UNPACK_INTO(health.value, DEFAULT(-1, 0)); /* -1 == default */
-    SERIALIZE_VERSIONS(5 to CURRENT) s32 magic_override  UNPACK_INTO(magic.value,  DEFAULT(-1, 0));  /* -1 == default */
+    SERIALIZE_VERSIONS(level, 5 to CURRENT) s32 health_override UNPACK_INTO(health.value, DEFAULT(-1, 0)); /* -1 == default */
+    SERIALIZE_VERSIONS(level, 5 to CURRENT) s32 magic_override  UNPACK_INTO(magic.value,  DEFAULT(-1, 0));  /* -1 == default */
 
-    SERIALIZE_VERSIONS(5 to CURRENT) u8  facing_direction;
+    SERIALIZE_VERSIONS(level, 5 to CURRENT) u8  facing_direction;
 
 #if 0
-    SERIALIZE_VERSIONS(8 to 10)u8 pad0;
-    SERIALIZE_VERSIONS(8 to 10)u8 pad1;
-    SERIALIZE_VERSIONS(8 to 10)u8 pad2;
+    SERIALIZE_VERSIONS(level, 8 to 10)u8 pad0;
+    SERIALIZE_VERSIONS(level, 8 to 10)u8 pad1;
+    SERIALIZE_VERSIONS(level, 8 to 10)u8 pad2;
 #endif
 
     /* TODO: none of the flags are editted */
     /* for the most part look at enum entity_flags */
-    SERIALIZE_VERSIONS(5 to CURRENT) u32 flags;
+    SERIALIZE_VERSIONS(level, 5 to CURRENT) u32 flags;
     /* look at enum entity_ai_flags */
-    SERIALIZE_VERSIONS(5 to CURRENT) u32 ai_flags;
-    SERIALIZE_VERSIONS(5 to CURRENT) u32 spawn_flags;
+    SERIALIZE_VERSIONS(level, 5 to CURRENT) u32 ai_flags;
+    SERIALIZE_VERSIONS(level, 5 to CURRENT) u32 spawn_flags;
 
     /* TODO not editted yet */
     /* use for quicker script referencing */
     /* not used? */
-    SERIALIZE_VERSIONS(5,6,8 to CURRENT) u32 group_ids[16];
+    SERIALIZE_VERSIONS(level, 5,6,8 to CURRENT) u32 group_ids[16];
 #if 0
-    SERIALIZE_VERSIONS(5,6) u8 unused[128];
+    SERIALIZE_VERSIONS(level, 5,6) u8 unused[128];
 #endif
     /* ???  */
-    SERIALIZE_VERSIONS(8 to CURRENT) s32 loot_table_id_index;
+    SERIALIZE_VERSIONS(level, 8 to CURRENT) s32 loot_table_id_index;
 };
 
 void serialize_level_area_entity_savepoint(struct binary_serializer* serializer, s32 version, struct level_area_savepoint* entity);

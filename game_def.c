@@ -546,6 +546,8 @@ enum current_theme_track_type {
     THEME_BATTLE_TRACK,
 };
 
+#define MAX_PARTY_MEMBERS (16)
+
 struct game_state {
     struct memory_arena* arena;
 
@@ -577,7 +579,6 @@ struct game_state {
     struct ui_pause_menu ui_pause;
     struct ui_sub_menu_inventory ui_inventory;
 
-    /* TODO add party member stuff! */
     struct player_party_inventory inventory;
 
     struct ui_save_menu ui_save;
@@ -591,19 +592,25 @@ struct game_state {
     struct entity_list                  permenant_entities;
     struct entity_particle_emitter_list permenant_particle_emitters;
 
+    s32                                 party_member_count;
+    s32                                 leader_index;
+    /*
+     * 
+     NOTE: All characters are intended to be templated off of a base entity, I can write
+     character save changes to the save file, and have it override the base entity with
+     the master record.
+
+     This allows for character consistency. I can also do cool things like allowing Party Members
+     that eventually turn on you, and fight but with all the stuff you taught them.
+
+     Or partially merge them.
+
+     NOTE: only party members will cause the save record to have an override entity database, since
+     everyone else can be swapped with higher level shims or something.
+     */
+    entity_id                           party_members[MAX_PARTY_MEMBERS];
+
     struct weather      weather;
-
-    /* 
-       The player is eternally going to be entity 0, we never unload them,
-       
-       NOTE: need to think of how to keep track of these things. I'm currently
-       just planning to run it through the save record system, as the engine
-       doesn't support a real persistent world and I'll have to hack alot of things
-       through entity flags.
-
-       struct entity party_member_persistent_storage[12];
-    */
-    /* fread into this */
 
     /* I am a fan of animation, so we need to animate this. Even though it causes */
     /* state nightmares for me. */

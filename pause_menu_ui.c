@@ -158,7 +158,7 @@ local void update_and_render_pause_game_menu_ui(struct game_state* state, struct
                             } break;
                             case PAUSE_MENU_PARTY_EQUIPMENT: {
                                 pause_menu_transition_to(UI_PAUSE_MENU_SUB_MENU_STATE_EQUIPMENT);
-                                open_equipment_screen(player_id);
+                                open_equipment_screen(game_state->party_members[0]);
                             } break;
                             case PAUSE_MENU_PARTY_ITEMS: {
                                 pause_menu_transition_to(UI_PAUSE_MENU_SUB_MENU_STATE_INVENTORY);

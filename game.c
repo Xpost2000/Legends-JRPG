@@ -396,7 +396,6 @@ void render_ground_area(struct game_state* state, struct render_commands* comman
     }
 }
 
-entity_id player_id;
 struct entity* game_dereference_entity(struct game_state* state, entity_id id) {
     switch (id.store_type) {
         case ENTITY_LIST_STORAGE_TYPE_PER_LEVEL_CUTSCENE: {
@@ -478,7 +477,7 @@ entity_id entity_list_create_badguy(struct entity_list* entities, v2f32 position
 }
 
 struct entity* game_get_player(struct game_state* state) {
-    return entity_list_dereference_entity(&state->permenant_entities, player_id);
+    return game_dereference_entity(state, state->party_members[state->leader_index]);
 }
 
 #include "weather.c"
@@ -961,7 +960,7 @@ void _serialize_level_area(struct memory_arena* arena, struct binary_serializer*
 }
 void serialize_level_area(struct game_state* state, struct binary_serializer* serializer, struct level_area* level, bool use_default_spawn) {
     _serialize_level_area(state->arena, serializer, level, ENTITY_LIST_STORAGE_TYPE_PER_LEVEL);
-    struct entity* player = entity_list_dereference_entity(&state->permenant_entities, player_id);
+    struct entity* player = game_get_player(game_state);
     if (use_default_spawn) {
         player->position.x             = level->default_player_spawn.x;
         player->position.y             = level->default_player_spawn.y;
@@ -1626,10 +1625,27 @@ void game_initialize(void) {
     initialize_particle_pools(&game_arena, PARTICLE_POOL_MAX_SIZE);
     Report_Memory_Status_Region(&game_arena, "Permenant entity pools");
 
-    player_id                               = entity_list_create_player(&game_state->permenant_entities, v2f32(70, 70));
-    /* entity_list_create_niceguy(&game_state->permenant_entities, v2f32(9 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE)); */
-    /* entity_list_create_badguy(&game_state->permenant_entities, v2f32(9 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE)); */
-    /* entity_list_create_badguy(&game_state->permenant_entities, v2f32(11 * TILE_UNIT_SIZE, 8 * TILE_UNIT_SIZE)); */
+    {
+        
+        game_state->leader_index       = 0;
+        game_state->party_member_count = 3;
+        for (s32 party_member_index = 0; party_member_index < MAX_PARTY_MEMBERS; ++party_member_index) {
+            entity_id* id = game_state->party_members + party_member_index;
+            *id = entity_list_create_player(&game_state->permenant_entities, v2f32(70, 70));
+        }
+        {
+            struct entity* a = game_dereference_entity(game_state, game_state->party_members[0]);
+            a->name =string_literal("Calamir");
+        }
+        {
+            struct entity* a = game_dereference_entity(game_state, game_state->party_members[1]);
+            a->name =string_literal("Frimor");
+        }
+        {
+            struct entity* a = game_dereference_entity(game_state, game_state->party_members[2]);
+            a->name =string_literal("Pyrrha");
+        }
+    }
 
     game_state->camera.rng = &game_state->rng;
 
@@ -1672,8 +1688,11 @@ local void game_clear_party_inventory(void) {
 }
 
 bool game_entity_is_party_member(struct entity* entity) {
-    if (entity == game_get_player(game_state)) {
-        return true;
+    for (s32 party_member_index = 0; party_member_index < game_state->party_member_count; ++party_member_index) {
+        struct entity* deref = game_dereference_entity(game_state, game_state->party_members[party_member_index]);
+        if (deref == entity) {
+            return true;
+        }
     }
 
     return false;
@@ -1687,11 +1706,12 @@ void game_initialize_game_world(void) {
     entity_particle_emitter_kill_all(&game_state->permenant_particle_emitters);
     particle_list_kill_all_particles(&global_particle_list);
 
-    /* NOTE: if we had party members this is where we would also affect them */
     {
-        struct entity* player = game_get_player(game_state);
-        player->health.value = player->health.max;
-        player->interacted_script_trigger_write_index = 0;
+        for (s32 party_member_index = 0; party_member_index < game_state->party_member_count; ++party_member_index) {
+            struct entity* player = game_dereference_entity(game_state, game_state->party_members[party_member_index]);
+            player->health.value = player->health.max;
+            player->interacted_script_trigger_write_index = 0;
+        }
     }
 
     /* clear all game variable state */
@@ -2149,7 +2169,7 @@ local void game_apply_constant_camera_trauma_as(f32 amount) {
 local void update_game_camera_exploration_mode(struct game_state* state, f32 dt) {
     struct camera* camera = &state->camera;
 
-    struct entity* player = entity_list_dereference_entity(&state->permenant_entities, player_id);
+    struct entity* player = game_get_player(state);
 
     /* NOTE/TODO/FINISHLATER hacky death camera */
     /*
@@ -2231,7 +2251,7 @@ local void update_game_camera_exploration_mode(struct game_state* state, f32 dt)
 local void update_game_camera(struct game_state* state, f32 dt) {
     struct camera* camera = &state->camera;
 
-    struct entity* player = entity_list_dereference_entity(&state->permenant_entities, player_id);
+    struct entity* player = game_get_player(state);
     camera->centered    = true;
     camera->zoom        = 1;
 
@@ -2762,26 +2782,6 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                 update_game_camera(game_state, dt);
 
                 execute_current_area_scripts(game_state, dt);
-
-                if (is_key_pressed(KEY_Y)) {
-                    /* game_begin_shopping(string_literal("basic")); */
-                    /* cutscene_open(string_literal("bridgescene")); */
-                    /* game_write_save_slot(0); */
-#if 1
-                    camera_traumatize(&game_state->camera, 0.5);
-                    /* if (!transition_fading()) { */
-                    /*     if (!transition_faded_in()) { */
-                    /*         /\* do_horizontal_slide_in(color32f32(0,0,0,1), 0.2, 1); *\/ */
-                    /*         do_shuteye_in(color32f32(0,0,0,1), 0.2, 1); */
-                    /*     } else { */
-                    /*         do_curtainclose_out(color32f32(0,0,0,1), 0.2, 1); */
-                    /*         /\* do_vertical_slide_out(color32f32(0,0,0,1), 0.2, 1); *\/ */
-                    /*         /\* do_color_transition_out(color32f32(0,0,0,1), 0.2, 1); *\/ */
-                    /*     } */
-                    /* } */
-                    /* passive_speaking_dialogue_push(player_id, string_literal("Hello world!"), MENU_FONT_COLOR_LIME); */
-#endif
-                }
 
                 /* update all tile animations */
                 {

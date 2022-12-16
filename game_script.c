@@ -879,7 +879,7 @@ struct game_script_typed_ptr game_script_object_handle_decode(struct lisp_form o
                     _debugprintf("found player");
                     switch (object_handle.list.count) {
                         case 2: {
-                            result.entity_id = player_id; /* this is the "active player leader" */
+                            result.entity_id = game_state->party_members[game_state->leader_index]; /* this is the "active player leader" */
                         } break;
                         case 3: {
 #if 0

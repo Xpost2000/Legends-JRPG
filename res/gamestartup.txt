@@ -7,21 +7,6 @@
 (game_load_area "bforest1.area" 'retained)
 #(game_load_area "g.area" 'retained)
 
-(set_health_limit '(entity player) 100)
-(set_vigor '(entity player) 120)
-(set_strength '(entity player) 120)
-(set_constitution '(entity player) 120)
-(set_willpower '(entity player) 120)
-(set_agility '(entity player) 120)
-(set_speed '(entity player) 120)
-(set_intellgience '(entity player) 120)
-(set_luck '(entity player) 120)
-
-(entity_add_ability '(entity player) "ability_shock")
-(entity_add_ability '(entity player) "ability_ignis")
-(entity_add_ability '(entity player) "ability_sword_rush")
-(entity_add_ability '(entity player) "ability_detonate_self")
-
 (entity_add_item '(entity player) "item_gold" 450)
 (entity_add_item '(entity player) "item_armor_loincloth")
 (entity_add_item '(entity player) "item_armor_bandage_wraps")

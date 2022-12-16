@@ -154,9 +154,9 @@ struct entity_actor_inventory {
     struct item_instance items[MAX_ACTOR_AVALIABLE_ITEMS];
 };
 
-SERIALIZE struct entity_chest_inventory {
-    s32           item_count       SERIALIZE;
-    struct item_instance items[16] SERIALIZE;
+SERIALIZE_VERSIONS(level, 2 to CURRENT) struct entity_chest_inventory {
+    s32           item_count       SERIALIZE_VERSIONS(level, 2 to CURRENT);
+    struct item_instance items[16] SERIALIZE_VERSIONS(level, 2 to CURRENT);
 };
 
 /* both types above cast into this, and hopefully decay correctly without exploding */
@@ -177,12 +177,12 @@ enum entity_chest_flags {
 };
 /* in tiles */
 #define ENTITY_CHEST_INTERACTIVE_RADIUS ((f32)1.8565 * TILE_UNIT_SIZE)
-SERIALIZE_VERSIONS(2 to CURRENT) struct entity_chest {
-    v2f32                         position  SERIALIZE_VERSIONS(2 to CURRENT);
-    v2f32                         scale     SERIALIZE_VERSIONS(2 to CURRENT);
-    u32                           flags     SERIALIZE_VERSIONS(2 to CURRENT) SERIALIZE_SAVE_VERSIONS(1 to CURRENT);
-    struct entity_chest_inventory inventory SERIALIZE_VERSIONS(2 to CURRENT);
-    item_id                       key_item  SERIALIZE_VERSIONS(2 to CURRENT);
+SERIALIZE_VERSIONS(level, 2 to CURRENT) SERIALIZE_VERSIONS(save, 1 to CURRENT) struct entity_chest {
+    v2f32                         position  SERIALIZE_VERSIONS(level, 2 to CURRENT);
+    v2f32                         scale     SERIALIZE_VERSIONS(level, 2 to CURRENT);
+    u32                           flags     SERIALIZE_VERSIONS(level, 2 to CURRENT) SERIALIZE_VERSIONS(save, 1 to CURRENT);
+    struct entity_chest_inventory inventory SERIALIZE_VERSIONS(level, 2 to CURRENT);
+    item_id                       key_item  SERIALIZE_VERSIONS(level, 2 to CURRENT);
 };
 
 enum entity_savepoint_flags {
