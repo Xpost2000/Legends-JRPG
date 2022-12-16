@@ -55,8 +55,42 @@ local void update_and_render_sub_menu_states(struct game_state* state, struct so
 }
 
 local void do_party_member_edits_or_selections(struct game_state* state, struct software_framebuffer* framebuffer, f32 x, f32 dt, bool allow_inputs) {
-    f32 font_scale = 3;
-    struct ui_pause_menu* menu_state = &state->ui_pause;
+    struct ui_pause_menu* menu_state      = &state->ui_pause;
+    struct font_cache*    font            = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_STEEL]);
+    struct font_cache*    font1           = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_GOLD]);
+    f32                   font_scale      = 2;
+    f32                   ui_scale_factor = 1;
+
+    s32 CARD_WIDTH = 16;
+    s32 CARD_HEIGHT = 5;
+    v2f32 estimated_dimensions = nine_patch_estimate_extents(ui_chunky, ui_scale_factor, CARD_WIDTH, CARD_HEIGHT);
+    /* NEED TO HANDLE SCROLLING LATER :) */
+    f32 y_cursor = 100;
+
+    f32 cards_x = SCREEN_WIDTH - estimated_dimensions.x * 1.1 + x;
+    for (s32 index = 0; index < state->party_member_count; ++index) {
+        draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, ui_scale_factor, v2f32(cards_x, y_cursor), CARD_WIDTH, CARD_HEIGHT, UI_DEFAULT_COLOR);
+
+        struct entity* entity = game_dereference_entity(state, state->party_members[index]);
+        {
+            struct entity_base_data* data                    = entity_database_find_by_index(&state->entity_database, entity->base_id_index);
+            string                   facing_direction_string = facing_direction_strings_normal[0];
+            struct entity_animation* anim                    = find_animation_by_name(data->model_index, format_temp_s("idle_%.*s", facing_direction_string.length, facing_direction_string.data));
+            image_id sprite_to_use = anim->sprites[0];
+            const s32 square_size = TILE_UNIT_SIZE;
+            software_framebuffer_draw_quad(framebuffer, rectangle_f32(cards_x + TILE_UNIT_SIZE, y_cursor + TILE_UNIT_SIZE*0.9, square_size, square_size+8), color32u8(0, 0, 0, 255), BLEND_MODE_ALPHA);
+            software_framebuffer_draw_image_ex(framebuffer,
+                                               graphics_assets_get_image_by_id(&graphics_assets, sprite_to_use),
+                                               rectangle_f32(cards_x + TILE_UNIT_SIZE, y_cursor + TILE_UNIT_SIZE*0.9, square_size, square_size+8),
+                                               rectangle_f32(0, 0, 16, 20), /* This should be a little more generic but whatever for now */
+                                               color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
+            draw_ui_breathing_text(framebuffer, v2f32(cards_x + 2.2*TILE_UNIT_SIZE, y_cursor+TILE_UNIT_SIZE*0.35), font1, font_scale, entity->name, 341, color32f32_WHITE);
+            draw_ui_breathing_text(framebuffer, v2f32(cards_x + 2.2*TILE_UNIT_SIZE, y_cursor+TILE_UNIT_SIZE*0.70 + 22), font, 1, format_temp_s("LEVEL: %d", entity->stat_block.level), 341, color32f32_WHITE);
+            draw_ui_breathing_text(framebuffer, v2f32(cards_x + 2.2*TILE_UNIT_SIZE, y_cursor+TILE_UNIT_SIZE*0.70 + 22 + 16*1), font, 1, format_temp_s("HEALTH: %d/%d", entity->health.value, entity->health.max), 341, color32f32_WHITE);
+            draw_ui_breathing_text(framebuffer, v2f32(cards_x + 2.2*TILE_UNIT_SIZE, y_cursor+TILE_UNIT_SIZE*0.70 + 22 + 16*2), font, 1, format_temp_s("XP: %d", entity->stat_block.experience), 341, color32f32_WHITE);
+        }
+        y_cursor += estimated_dimensions.y * 1.23;
+    }
 
     if (!allow_inputs) {
         return;
@@ -99,21 +133,25 @@ local void update_and_render_pause_game_menu_ui(struct game_state* state, struct
         case UI_PAUSE_MENU_TRANSITION_IN: {
             menu_state->transition_t   += dt * timescale;
 
+            f32 effective_t = menu_state->transition_t;
+            if (effective_t > 1) effective_t = 1;
+            if (effective_t < 0) effective_t = 0;
+
             for (unsigned index = 0; index < array_count(item_positions); ++index) {
-                item_positions[index].x = lerp_f32(offscreen_x, final_x, menu_state->transition_t);
+                item_positions[index].x = lerp_f32(offscreen_x, final_x, effective_t);
             }
 
             bool should_blur_fade = (menu_state->last_sub_menu_state == UI_PAUSE_MENU_SUB_MENU_STATE_NONE);
 
-            do_party_member_edits_or_selections(state, framebuffer, 0, dt, false);
-
             if (should_blur_fade) {
-                game_postprocess_blur(framebuffer, blur_samples, max_blur * (menu_state->transition_t), BLEND_MODE_ALPHA);
-                game_postprocess_grayscale(framebuffer, max_grayscale * (menu_state->transition_t));
+                game_postprocess_blur(framebuffer, blur_samples, max_blur * (effective_t), BLEND_MODE_ALPHA);
+                game_postprocess_grayscale(framebuffer, max_grayscale * (effective_t));
             } else {
                 game_postprocess_blur(framebuffer, blur_samples, max_blur, BLEND_MODE_ALPHA);
                 game_postprocess_grayscale(framebuffer, max_grayscale);
             }
+
+            do_party_member_edits_or_selections(state, framebuffer, lerp_f32(400, 0, effective_t), dt, false);
 
             if (menu_state->transition_t >= 1.0f) {
                 menu_state->animation_state += 1;
@@ -204,20 +242,25 @@ local void update_and_render_pause_game_menu_ui(struct game_state* state, struct
         case UI_PAUSE_MENU_TRANSITION_CLOSING: {
             menu_state->transition_t   += dt * timescale;
 
+            f32 effective_t = menu_state->transition_t;
+            if (effective_t > 1) effective_t = 1;
+            if (effective_t < 0) effective_t = 0;
+
             for (unsigned index = 0; index < array_count(item_positions); ++index) {
-                item_positions[index].x = lerp_f32(final_x, offscreen_x, menu_state->transition_t);
+                item_positions[index].x = lerp_f32(final_x, offscreen_x, effective_t);
             }
 
             bool should_blur_fade = (menu_state->sub_menu_state == UI_PAUSE_MENU_SUB_MENU_STATE_NONE);
-            do_party_member_edits_or_selections(state, framebuffer, 0, dt, false);
 
             if (should_blur_fade) {
-                game_postprocess_blur(framebuffer, blur_samples, max_blur * (1-menu_state->transition_t), BLEND_MODE_ALPHA);
-                game_postprocess_grayscale(framebuffer, max_grayscale * (1-menu_state->transition_t));
+                game_postprocess_blur(framebuffer, blur_samples, max_blur * (1-effective_t), BLEND_MODE_ALPHA);
+                game_postprocess_grayscale(framebuffer, max_grayscale * (1-effective_t));
             } else {
                 game_postprocess_blur(framebuffer, blur_samples, max_blur, BLEND_MODE_ALPHA);
                 game_postprocess_grayscale(framebuffer, max_grayscale);
             }
+
+            do_party_member_edits_or_selections(state, framebuffer, lerp_f32(0, 400, effective_t), dt, false);
 
             if (menu_state->transition_t >= 1.0f) {
                 menu_state->transition_t = 0;

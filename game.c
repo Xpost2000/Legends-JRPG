@@ -1738,7 +1738,6 @@ void game_initialize(void) {
     Report_Memory_Status_Region(&game_arena, "Permenant entity pools");
 
     {
-        game_state->party_member_count = 2;
         for (s32 party_member_index = 0; party_member_index < MAX_PARTY_MEMBERS; ++party_member_index) {
             entity_id* id = game_state->party_members + party_member_index;
             /* *id = entity_list_create_player(&game_state->permenant_entities, v2f32(140, 300)); */
