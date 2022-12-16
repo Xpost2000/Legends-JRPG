@@ -68,6 +68,12 @@ local void do_party_member_edits_or_selections(struct game_state* state, struct 
     f32 y_cursor = 100;
 
     f32 cards_x = SCREEN_WIDTH - estimated_dimensions.x * 1.1 + x;
+    if (menu_state->allow_party_lineup_editing) {
+        draw_ui_breathing_text(framebuffer, v2f32(cards_x-x + 2.2*TILE_UNIT_SIZE, 10), font1, font_scale, string_literal("EDITING LINEUP"), 341, color32f32_WHITE);
+    } else if (menu_state->need_to_select_party_member) {
+        draw_ui_breathing_text(framebuffer, v2f32(cards_x-x + 2.2*TILE_UNIT_SIZE, 10), font1, font_scale, string_literal("SELECT MEMBER"), 341, color32f32_WHITE);
+    }
+
     for (s32 index = 0; index < state->party_member_count; ++index) {
         /* I want to lerp this too but don't have time today */
         f32 offset = 0;
@@ -111,43 +117,69 @@ local void do_party_member_edits_or_selections(struct game_state* state, struct 
         bool selection_confirm = is_action_down_with_repeat(INPUT_ACTION_CONFIRMATION);
 
         if (selection_down) {
-            menu_state->party_member_index++;
-            if (menu_state->party_member_index >= state->party_member_count) {
-                menu_state->party_member_index = 0;
+            s32 next_index = menu_state->party_member_index+1;
+            if (next_index >= state->party_member_count) {
+                next_index = 0;
             }
+            if (menu_state->allow_party_lineup_editing) {
+                game_swap_party_member_index(menu_state->party_member_index, next_index);
+            }
+            menu_state->party_member_index = next_index;
             play_sound(ui_blip);
         } else if (selection_up) {
-            menu_state->party_member_index--;
-            if (menu_state->party_member_index < 0) {
-                menu_state->party_member_index = state->party_member_count-1;
+            s32 next_index = menu_state->party_member_index-1;
+            if (next_index < 0) {
+                next_index = state->party_member_count-1;
             }
+            if (menu_state->allow_party_lineup_editing) {
+                game_swap_party_member_index(menu_state->party_member_index, next_index);
+            }
+            menu_state->party_member_index = next_index;
             play_sound(ui_blip);
         }
 
-        if (selection_confirm) {
-            menu_state->need_to_select_party_member = false;
-            switch (menu_state->party_queued_to) {
-                case PAUSE_MENU_RESUME: {
-                    close_pause_menu();
-                } break;
-                case PAUSE_MENU_PARTY_EQUIPMENT: {
-                    pause_menu_transition_to(UI_PAUSE_MENU_SUB_MENU_STATE_EQUIPMENT);
-                    open_equipment_screen(game_state->party_members[menu_state->party_member_index]);
-                } break;
-                case PAUSE_MENU_PARTY_ITEMS: {
-                    pause_menu_transition_to(UI_PAUSE_MENU_SUB_MENU_STATE_INVENTORY);
-                    open_party_inventory_screen();
-                } break;
-                case PAUSE_MENU_OPTIONS: {
-                    pause_menu_transition_to(UI_PAUSE_MENU_SUB_MENU_STATE_OPTIONS);
-                } break;
-                case PAUSE_MENU_QUIT: {
-                    initialize_main_menu();
-                    screen_mode = GAME_SCREEN_MAIN_MENU;
-                } break;
-                case PAUSE_MENU_RETURN_TO_DESKTOP: {
-                    global_game_running = false;
-                } break;
+        if (menu_state->need_to_select_party_member) {
+            if (selection_confirm) {
+                menu_state->need_to_select_party_member = false;
+                switch (menu_state->party_queued_to) {
+                    case PAUSE_MENU_RESUME: {
+                        close_pause_menu();
+                    } break;
+                    case PAUSE_MENU_PARTY_EQUIPMENT: {
+                        pause_menu_transition_to(UI_PAUSE_MENU_SUB_MENU_STATE_EQUIPMENT);
+                        open_equipment_screen(game_state->party_members[menu_state->party_member_index]);
+                    } break;
+                    case PAUSE_MENU_PARTY_ITEMS: {
+                        pause_menu_transition_to(UI_PAUSE_MENU_SUB_MENU_STATE_INVENTORY);
+                        open_party_inventory_screen();
+                    } break;
+                    case PAUSE_MENU_OPTIONS: {
+                        pause_menu_transition_to(UI_PAUSE_MENU_SUB_MENU_STATE_OPTIONS);
+                    } break;
+                    case PAUSE_MENU_QUIT: {
+                        initialize_main_menu();
+                        screen_mode = GAME_SCREEN_MAIN_MENU;
+                    } break;
+                    case PAUSE_MENU_RETURN_TO_DESKTOP: {
+                        global_game_running = false;
+                    } break;
+                }
+            }
+
+            if (selection_pause || selection_cancel) {
+                menu_state->need_to_select_party_member = false;
+            }
+        } else if (menu_state->editing_party_lineup) {
+            if (selection_pause || selection_cancel) {
+                if (menu_state->allow_party_lineup_editing) {
+                    menu_state->allow_party_lineup_editing = false;
+                } else {
+                    menu_state->editing_party_lineup = false;
+                }
+            }
+
+            if (selection_confirm) {
+                menu_state->allow_party_lineup_editing ^= true;
             }
         }
     }
@@ -182,6 +214,7 @@ local void update_and_render_pause_game_menu_ui(struct game_state* state, struct
 
     bool selection_down    = is_action_down_with_repeat(INPUT_ACTION_MOVE_DOWN);
     bool selection_up      = is_action_down_with_repeat(INPUT_ACTION_MOVE_UP);
+    bool selection_right   = is_action_down_with_repeat(INPUT_ACTION_MOVE_RIGHT);
     bool selection_pause   = is_action_down_with_repeat(INPUT_ACTION_PAUSE);
     bool selection_confirm = is_action_down_with_repeat(INPUT_ACTION_CONFIRMATION);
 
@@ -260,7 +293,11 @@ local void update_and_render_pause_game_menu_ui(struct game_state* state, struct
                 }
 
                 do_party_member_edits_or_selections(state, framebuffer, 0, dt, menu_state->editing_party_lineup || menu_state->need_to_select_party_member);
-                if (selection_confirm) {
+                if (selection_right) {
+                    menu_state->editing_party_lineup       = true;
+                    menu_state->allow_party_lineup_editing = false;
+                    menu_state->party_member_index         = 0;
+                } else if (selection_confirm) {
                     if (!disabled_actions[menu_state->selection]) {
                         switch (menu_state->selection) {
                             case PAUSE_MENU_RESUME: {

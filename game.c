@@ -574,9 +574,9 @@ void game_set_party_leader(s32 index) {
 
 void game_swap_party_member_index(s32 first, s32 second) {
     if (first == game_state->leader_index) {
-        game_state->leader_index = second;
+        game_set_party_leader(second);
     } else if (second == game_state->leader_index) {
-        game_state->leader_index = first;
+        game_set_party_leader(first);
     }
 
     Swap(game_state->party_members[first], game_state->party_members[second], entity_id);

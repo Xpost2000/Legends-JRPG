@@ -30,7 +30,9 @@ struct ui_pause_menu {
     /* reserved space */
     f32 shift_t[128];
 
+    /* editing line up doesn't technically do anything, but it's nice to swap in members I suppose. */
     bool editing_party_lineup;
+    bool allow_party_lineup_editing;
 
     /* for the equipment menu queueing */
     bool need_to_select_party_member;
