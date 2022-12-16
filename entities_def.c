@@ -946,4 +946,6 @@ void render_entities(struct game_state* state, struct sortable_draw_entities* dr
 void serialize_entity_chest(struct binary_serializer* serializer, s32 version, struct entity_chest* chest);
 void serialize_entity_id(struct binary_serializer* serializer, s32 version, entity_id* id);
 
+bool entity_has_dialogue(struct entity* entity);
+
 #endif

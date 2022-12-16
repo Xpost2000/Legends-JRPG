@@ -957,12 +957,6 @@ void _serialize_level_area(struct memory_arena* arena, struct binary_serializer*
             level->lights = memory_arena_push(arena, sizeof(*level->lights) * level->light_count);
             for (s32 light_index = 0; light_index < level->light_count; ++light_index) {
                 serialize_light(serializer, level->version, level->lights + light_index);
-                {
-                    struct light_def* l = level->lights+light_index;
-                    _debugprintf("position: %f, %f", l->position.x, l->position.y);
-                    _debugprintf("scale:    %f", l->scale.x);
-                    _debugprintf("power:    %f", l->power);
-                }
             }
         }
 
@@ -2072,7 +2066,7 @@ local void update_and_render_ingame_game_menu_ui(struct game_state* state, struc
                 software_framebuffer_draw_text_bounds_centered(framebuffer, font, 2, rectangle_f32(0, 400, framebuffer->width, framebuffer->height - 400),
                                                                string_literal("speak"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
 
-                assertion(to_speak->has_dialogue && "I'm not sure how this was possible...");
+                assertion(entity_has_dialogue(to_speak) && "I'm not sure how this was possible...");
                 if (is_action_pressed(INPUT_ACTION_CONFIRMATION)) {
                     string conversation_path = format_temp_s(GAME_DEFAULT_DIALOGUE_PATH "/%s.txt", to_speak->dialogue_file);
                     game_open_conversation_file(state, conversation_path);
@@ -2601,7 +2595,7 @@ void player_handle_radial_interactables(struct game_state* state, struct entity*
             f32 distance_sq = v2f32_distance_sq(entity->position, current_entity->position);
 
             if (distance_sq <= (ENTITY_TALK_INTERACTIVE_RADIUS*ENTITY_TALK_INTERACTIVE_RADIUS)) {
-                if ((current_entity->flags & ENTITY_FLAGS_ALIVE) && current_entity->has_dialogue) {
+                if ((current_entity->flags & ENTITY_FLAGS_ALIVE) && entity_has_dialogue(current_entity)) {
                     if (distance_sq < closest_interactive_distance) {
                         mark_interactable(state, INTERACTABLE_TYPE_ENTITY_CONVERSATION, current_entity);
                         found_any_interactable = true;
