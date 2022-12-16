@@ -255,6 +255,8 @@ struct level_area_battle_zone_bounding_box {
     /* cache the island indices here. */
     s32  square_count;
     s32* squares;
+    /* linked list */
+    struct level_area_battle_zone_bounding_box* next;
 };
 
 struct level_area_battle_safe_square { /* thankfully these are obvious to implement, and don't require too much work */
@@ -262,7 +264,7 @@ struct level_area_battle_safe_square { /* thankfully these are obvious to implem
     s32 y;
 
     /* runtime data, associate with a battle zone */
-    u16 island_index;
+    u16                            island_index;
 };
 
 struct level_area { /* this cannot be automatically serialized because of the unpack stage. I can use macros to reduce the burden though */
@@ -300,8 +302,9 @@ struct level_area { /* this cannot be automatically serialized because of the un
     u8*                              combat_movement_visibility_map;
     /* We segregate the battle squares into islands */
     /* this is for the visual effect primarily. (fade everything not in this zone to black, or treat the squares as a giant distance field) */
+    struct level_area_battle_zone_bounding_box* first_battle_zone;
+    struct level_area_battle_zone_bounding_box* last_battle_zone;
     s32                                         battle_zone_count;
-    struct level_area_battle_zone_bounding_box* battle_zones;
 
     bool   on_enter_triggered;
 };

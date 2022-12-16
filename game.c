@@ -649,6 +649,163 @@ local void build_navigation_map_for_level_area(struct memory_arena* arena, struc
     }
 }
 
+local struct level_area_battle_safe_square* level_area_get_battle_safe_square_at_index(struct level_area* level, s32 i) {
+    return &level->battle_safe_squares[i];
+}
+
+local struct level_area_battle_safe_square* level_area_get_battle_safe_square_at(struct level_area* level, s32 x, s32 y) {
+    for (s32 square_index = 0; square_index < level->battle_safe_square_count; ++square_index) {
+        struct level_area_battle_safe_square* current_square = level->battle_safe_squares + square_index;
+
+        if (current_square->x == x && current_square->y == y) {
+            return current_square;
+        }
+    }
+
+    return NULL;
+}
+
+struct level_area_battle_zone_bounding_box* level_area_allocate_battle_zone(struct memory_arena* arena, struct level_area* level) {
+    struct level_area_battle_zone_bounding_box* new_bounding_box = memory_arena_push(arena, sizeof(*new_bounding_box));
+    new_bounding_box->next                                       = 0;
+
+    if (!level->last_battle_zone) {
+        level->first_battle_zone = level->last_battle_zone = new_bounding_box;
+    } else {
+        level->last_battle_zone->next = new_bounding_box;
+        level->last_battle_zone       = new_bounding_box;
+    }
+
+    level->battle_zone_count++;
+    return new_bounding_box;
+}
+
+void build_battle_zone_bounding_boxes_for_level_area(struct memory_arena* arena, struct level_area* level) {
+    /*
+      this builds bounding boxes to figure out how we draw the battle zones,
+      this also happens to be a small acceleration I can use to simplify the pathfinding code and stuff like that.
+    */
+    level->first_battle_zone = level->last_battle_zone = NULL;
+    level->battle_zone_count = 0;
+
+    _debugprintf("%d battle squares to scan", level->battle_safe_square_count);
+    {
+        local v2s32 neighbor_offsets[] = {
+            v2s32(1, 0), v2s32(-1, 0), v2s32(0, 1), v2s32(0, -1),
+        };
+
+        v2s32* exploration_queue       = memory_arena_push(&scratch_arena, sizeof(v2s32) * level->battle_safe_square_count);
+        v2s32* already_visited         = memory_arena_push(&scratch_arena, sizeof(v2s32) * level->battle_safe_square_count);
+        for (s32 square_index = 0; square_index < level->battle_safe_square_count; ++square_index) {
+            struct level_area_battle_safe_square* current_square = level->battle_safe_squares + square_index;
+
+            bool generate_island = true;
+            {
+                s32 index = 0;
+                for (struct level_area_battle_zone_bounding_box* existing_zone = level->first_battle_zone; existing_zone; existing_zone = existing_zone->next, index++) {
+                    if (existing_zone->min_x <= current_square->x &&
+                        existing_zone->max_x >= current_square->x &&
+                        existing_zone->min_y <= current_square->y &&
+                        existing_zone->max_y >= current_square->y) {
+                        current_square->island_index = index;
+                        generate_island = false;
+                        break;
+                    }
+                }
+            }
+
+            /* build a zone by "greedily meshing" it */
+            if (generate_island) {
+                _debugprintf("Generating an island surrounding %d, %d", current_square->x, current_square->y);
+                s32    already_visited_count   = 0;
+                s32    exploration_queue_count = 0;
+
+                struct level_area_battle_zone_bounding_box* current_battle_zone = level_area_allocate_battle_zone(arena, level);
+                {
+                    exploration_queue[exploration_queue_count++] = v2s32(current_square->x, current_square->y);
+                    already_visited[already_visited_count++]     = v2s32(current_square->x, current_square->y);
+                }
+
+                s32 min_x = INT_MAX;
+                s32 max_x = INT_MIN;
+                s32 min_y = INT_MAX;
+                s32 max_y = INT_MIN;
+
+                while (exploration_queue_count > 0) {
+                    v2s32 current_point = exploration_queue[exploration_queue_count-1];
+                    exploration_queue_count--;
+
+                    {
+                        struct level_area_battle_safe_square* square = level_area_get_battle_safe_square_at(level, current_point.x, current_point.y);
+                        assertion(square && "Hmm, this should always be a valid square...");
+                        square->island_index                         = level->battle_zone_count-1;
+                    }
+
+                    for (s32 neighbor_offset_index = 0; neighbor_offset_index < array_count(neighbor_offsets); ++neighbor_offset_index) {
+                        v2s32 neighbor_offset = neighbor_offsets[neighbor_offset_index];
+
+                        struct level_area_battle_safe_square* candidate = level_area_get_battle_safe_square_at(level, current_point.x+neighbor_offset.x, current_point.y+neighbor_offset.y);
+                        if (candidate) {
+                            v2s32 position_of_candidate = v2s32(candidate->x, candidate->y);
+                            bool  try_to_explore        = true;
+
+                            for (s32 already_visited_index = 0; already_visited_index < already_visited_count; ++already_visited_index) {
+                                if (position_of_candidate.x == already_visited[already_visited_index].x &&
+                                    position_of_candidate.y == already_visited[already_visited_index].y) {
+                                    try_to_explore = false;
+                                    break;
+                                }
+                            }
+
+                            if (try_to_explore) {
+                                already_visited[already_visited_count++]     = position_of_candidate;
+                                exploration_queue[exploration_queue_count++] = position_of_candidate;
+
+                                if (position_of_candidate.x < min_x) min_x = position_of_candidate.x;
+                                if (position_of_candidate.x > max_x) max_x = position_of_candidate.x;
+                                if (position_of_candidate.y < min_y) min_y = position_of_candidate.y;
+                                if (position_of_candidate.y > max_y) max_y = position_of_candidate.y;
+                            }
+                        }
+                    }
+                }
+
+                current_battle_zone->min_x = min_x;
+                current_battle_zone->min_y = min_y;
+                current_battle_zone->max_x = max_x;
+                current_battle_zone->max_y = max_y;
+            }
+        }
+        _debugprintf("Generated %d battle islands", level->battle_zone_count);
+    }
+
+    /* now cache all squares related to their islands inside of the islands. */
+    {
+        s32 index = 0;
+        for (struct level_area_battle_zone_bounding_box* existing_zone = level->first_battle_zone; existing_zone; existing_zone = existing_zone->next, index++) {
+            s32 count = 0;
+            /* separated into two passes since I'm not sure why it seems to fail on a single pass. Maybe it's affecting the pointers of something? */
+            for (s32 square_index = 0; square_index < level->battle_safe_square_count; ++square_index) {
+                struct level_area_battle_safe_square* current_square = level->battle_safe_squares + square_index;
+                if (current_square->island_index == index) {
+                    count++;
+                }
+            }
+
+            existing_zone->squares      = memory_arena_push(arena, count * sizeof(s32));
+            existing_zone->square_count = 0;
+            for (s32 square_index = 0; square_index < level->battle_safe_square_count; ++square_index) {
+                struct level_area_battle_safe_square* current_square = level->battle_safe_squares + square_index;
+                if (current_square->island_index == index) {
+                    existing_zone->squares[existing_zone->square_count++] = square_index;
+                }
+            }
+
+            _debugprintf("Battle Island Zone: %p has %d members", existing_zone, existing_zone->square_count);
+        }
+    }
+}
+
 local void level_area_clear_movement_visibility_map(struct level_area* level) {
     struct level_area_navigation_map* navigation_map          = &level->navigation_data;
     s32                               map_width               = navigation_map->width;
@@ -1065,6 +1222,7 @@ void _serialize_level_area(struct memory_arena* arena, struct binary_serializer*
         }
 
         build_navigation_map_for_level_area(arena, level);
+        build_battle_zone_bounding_boxes_for_level_area(arena, level);
     } memory_arena_set_allocation_region_bottom(arena);
 }
 void serialize_level_area(struct game_state* state, struct binary_serializer* serializer, struct level_area* level, bool use_default_spawn) {
