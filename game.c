@@ -593,6 +593,9 @@ void game_swap_party_member_index(s32 first, s32 second) {
     Swap(game_state->party_members[first], game_state->party_members[second], entity_id);
 }
 
+struct entity* game_get_party_member(s32 index) {
+    return game_dereference_entity(game_state, game_state->party_members[index]);
+}
 struct entity* game_get_party_leader(void) {
     return game_dereference_entity(game_state, game_state->party_members[game_state->leader_index]);
 }
@@ -958,6 +961,7 @@ struct navigation_path navigation_path_find(struct memory_arena* arena, struct l
     return results;
 }
 
+/* NEEDS TO BE REWRITTEN TO BE CONTEXT DEPENDENT */
 void _serialize_level_area(struct memory_arena* arena, struct binary_serializer* serializer, struct level_area* level, s32 level_type) {
     memory_arena_set_allocation_region_top(arena); {
         _debugprintf("%llu memory used", arena->used + arena->used_top);
@@ -1042,7 +1046,7 @@ void _serialize_level_area(struct memory_arena* arena, struct binary_serializer*
             serialize_s32(serializer, &entity_count);
             _debugprintf("Seeing %d entities to read", entity_count);
 
-            level->entities = entity_list_create(arena, (entity_count+1), level_type);
+            level->entities = entity_list_create(arena, (entity_count), level_type);
 
             struct level_area_entity current_packed_entity = {};
             for (s32 entity_index = 0; entity_index < entity_count; ++entity_index) {

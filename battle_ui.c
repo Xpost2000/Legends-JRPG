@@ -899,7 +899,7 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
 
                 if (global_battle_ui_state.selection == index) {
                     painted_font = highlighted_font;
-                    target_entity->under_selection = false;
+                    target_entity->under_selection = true;
                 }
 
                 draw_ui_breathing_text(framebuffer, draw_point, painted_font, 2, entity_name, 0, color32f32_WHITE);
@@ -929,7 +929,6 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                     struct entity* target_entity = game_dereference_entity(state, enemy_id);
 
                     camera_set_point_to_interpolate(camera, target_entity->position);
-                    target_entity->under_selection = true;
                 }
             }
 

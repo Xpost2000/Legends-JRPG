@@ -55,6 +55,8 @@
 #define SERIALIZE_VERSIONS(...)
 #define SERIALIZE_SAVE_VERSIONS(...)
 #define UNPACK_INTO(...)
+#define PACKED_AS(...)
+#define VARIABLE_ARRAY(entity_savepoint_count)
 #define EDITABLE
 #define EDITABLE_BITFLAG(flag_enumeration)
 #define EDITABLE_LIMITS(a, b)

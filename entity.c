@@ -1322,6 +1322,7 @@ local void sortable_entity_draw_entity(struct render_commands* commands, struct 
                 modulation_color.g = modulation_color.b = 0;
             }
         }
+        current_entity->under_selection = false;
 
         f32 height_trim = 0.0787;
 
@@ -3173,7 +3174,7 @@ struct entity* entity_iterator_advance(struct entity_iterator* iterator) {
 
         iterator->entity_list_index += 1;
 
-        if (iterator->entity_list_index >= current_iteration_list->capacity) {
+        if (iterator->entity_list_index > current_iteration_list->capacity) {
             iterator->index += 1;
             iterator->entity_list_index = 0;
         }
@@ -3394,7 +3395,26 @@ void serialize_level_area_entity(struct binary_serializer* serializer, s32 versi
         case 8:
         case 9:
         case CURRENT_LEVEL_AREA_VERSION: {
-            Serialize_Structure(serializer, *entity);
+            /* whoops... */
+            serialize_f32(serializer, &entity->position.x);
+            serialize_f32(serializer, &entity->position.y);
+            serialize_f32(serializer, &entity->scale.x);
+            serialize_f32(serializer, &entity->scale.y);
+            serialize_bytes(serializer, entity->base_name, ENTITY_BASENAME_LENGTH_MAX);
+            serialize_bytes(serializer, entity->script_name, ENTITY_BASENAME_LENGTH_MAX);
+            serialize_bytes(serializer, entity->dialogue_file, ENTITY_BASENAME_LENGTH_MAX);
+            serialize_s32(serializer, &entity->health_override);
+            serialize_s32(serializer, &entity->magic_override);
+            serialize_u8(serializer, &entity->facing_direction);
+            serialize_u8(serializer, 0);
+            serialize_u8(serializer, 0);
+            serialize_u8(serializer, 0);
+            serialize_u32(serializer, &entity->flags);
+            serialize_u32(serializer, &entity->ai_flags);
+            serialize_u32(serializer, &entity->spawn_flags);
+            for (s32 i = 0; i < 16; ++i)
+                serialize_u32(serializer, &entity->group_ids[i]);
+            serialize_s32(serializer, &entity->loot_table_id_index);
         } break;
         default: {
             _debugprintf("Either this version doesn't support entities or never existed.");

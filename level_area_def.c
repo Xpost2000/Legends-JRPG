@@ -117,7 +117,7 @@ enum level_area_entity_spawn_flags {
      */
     /* LEVEL_AREA_ENTITY_SPAWN_FLAGS_RANDOM_SPAWN = BIT(1), */
 };
-SERIALIZE_VERSIONS(level, 5 to CURRENT) struct level_area_entity UNPACK_INTO(struct entity) {
+struct level_area_entity UNPACK_INTO(struct entity) {
     /*
       This is only a rectangle because it allows me to use it for the drag candidate system in the
       editor.
@@ -235,7 +235,7 @@ struct trigger {
 
 struct level_area { /* this cannot be automatically serialized because of the unpack stage. I can use macros to reduce the burden though */
     /* keep reference of a name. */
-    u32          version;
+    u32          version SERIALIZE_VERSIONS(level, 1 to CURRENT);
     v2f32        default_player_spawn;
 
     s32          tile_counts[TILE_LAYER_COUNT];
@@ -245,19 +245,19 @@ struct level_area { /* this cannot be automatically serialized because of the un
       Address in script file as (trigger (id) or (name-string?(when supported.)))
      */
 
-    s32                              light_count;
-    struct light_def*                lights;
     s32                              trigger_level_transition_count;
-    struct trigger_level_transition* trigger_level_transitions;
-    s32                              script_trigger_count;
-    struct trigger*                  script_triggers;
+    struct trigger_level_transition* trigger_level_transitions SERIALIZE_VERSIONS(level, 1 to CURRENT) VARIABLE_ARRAY(trigger_level_transition_count);
     s32                              entity_chest_count;
-    struct entity_chest*             chests;
+    struct entity_chest*             chests SERIALIZE_VERSIONS(level, 2 to CURRENT) VARIABLE_ARRAY(entity_chest_count);
+    s32                              script_trigger_count;
+    struct trigger*                  script_triggers SERIALIZE_VERSIONS(level, 3 to CURRENT) VARIABLE_ARRAY(script_trigger_count);
+    struct entity_list               entities SERIALIZE_VERSIONS(level, 5 to CURRENT) VARIABLE_ARRAY(create=entity_list_create alloc=entity_list_create_entity) PACKED_AS(struct level_area_entity);
+    s32                              light_count;
+    struct light_def*                lights SERIALIZE_VERSIONS(level, 6 to CURRENT) VARIABLE_ARRAY(light_count);
     s32                              entity_savepoint_count;
-    struct entity_savepoint*         savepoints;
+    struct entity_savepoint*         savepoints SERIALIZE_VERSIONS(level, 9 to CURRENT) VARIABLE_ARRAY(entity_savepoint_count) PACKED_AS(struct level_area_savepoint);
 
     /* runtime data */
-    struct entity_list               entities;
     struct level_area_script_data    script;
     struct level_area_navigation_map navigation_data;
     s32                              reported_entity_death_count;
