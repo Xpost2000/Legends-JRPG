@@ -34,6 +34,7 @@ struct game_script_typed_ptr {
         void* ptr;
         /* entities cannot be references with a generic pointer technically */
         entity_id entity_id;
+        u64       index;
     };
 };
 

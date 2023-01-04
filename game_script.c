@@ -833,12 +833,16 @@ struct game_script_typed_ptr game_script_object_handle_decode(struct lisp_form o
     s32 real_id = 0;
 
 
+    bool found_any = false;
     for (s32 index = 0; index < array_count(entity_game_script_target_type_name); ++index) {
         if (lisp_form_symbol_matching(*type_discriminator_form, entity_game_script_target_type_name[index])) {
-            type_id = index;
+            type_id   = index;
+            found_any = true;
             break;
         }
     }
+
+    assertion(found_any && "Unknown script handle... Crashing, fix the script!");
 
     result.type = type_id;
 
@@ -944,6 +948,13 @@ struct game_script_typed_ptr game_script_object_handle_decode(struct lisp_form o
                     return result;
                 }
                 result.ptr = area->chests + real_id;
+                return result;
+            } break;
+            case GAME_SCRIPT_TARGET_SCRIPTABLE_LAYER: {
+                if (!lisp_form_get_s32(*id_form, &real_id)) {
+                    return result;
+                }
+                result.ptr = area->scriptable_layer_properties + real_id;
                 return result;
             } break;
         }
