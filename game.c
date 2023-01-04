@@ -363,7 +363,7 @@ local void render_tile_layer(struct render_commands* commands, struct level_area
 
 local void render_scriptable_tile_layers_that_qualify_as(struct render_commands* commands, struct level_area* area, s32 layer) {
     for (s32 layer_index = TILE_LAYER_SCRIPTABLE_0; layer_index < TILE_LAYER_COUNT; ++layer_index) {
-        struct scriptable_tile_layer_property* current_scriptable_layer_property = area->scriptable_layer_properties + layer_index; 
+        struct scriptable_tile_layer_property* current_scriptable_layer_property = area->scriptable_layer_properties + layer_index - TILE_LAYER_SCRIPTABLE_0; 
         if (current_scriptable_layer_property->flags & SCRIPTABLE_TILE_LAYER_FLAGS_HIDDEN) {
             continue;
         }

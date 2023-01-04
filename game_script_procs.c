@@ -1020,7 +1020,7 @@ GAME_LISP_FUNCTION(HIDE) {
         } break;
         case GAME_SCRIPT_TARGET_SCRIPTABLE_LAYER: {
             struct scriptable_tile_layer_property* layer_properties = ptr.ptr;
-            layer_properties->flags |= ENTITY_FLAGS_HIDDEN;
+            layer_properties->flags |= SCRIPTABLE_TILE_LAYER_FLAGS_HIDDEN;
         } break;
     }
     return LISP_nil;
@@ -1049,6 +1049,10 @@ GAME_LISP_FUNCTION(SHOW) {
         case GAME_SCRIPT_TARGET_CHEST: {
             struct entity_chest* chest = ptr.ptr;
             chest->flags &= ~(ENTITY_FLAGS_HIDDEN);
+        } break;
+        case GAME_SCRIPT_TARGET_SCRIPTABLE_LAYER: {
+            struct scriptable_tile_layer_property* layer_properties = ptr.ptr;
+            layer_properties->flags &= ~(ENTITY_FLAGS_HIDDEN);
         } break;
     }
     return LISP_nil;
@@ -1080,7 +1084,7 @@ GAME_LISP_FUNCTION(TOGGLE_VISIBILITY) {
         } break;
         case GAME_SCRIPT_TARGET_SCRIPTABLE_LAYER: {
             struct scriptable_tile_layer_property* layer_properties = ptr.ptr;
-            layer_properties->flags ^= ~(ENTITY_FLAGS_HIDDEN);
+            layer_properties->flags ^= (ENTITY_FLAGS_HIDDEN);
         } break;
     }
     return LISP_nil;

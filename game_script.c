@@ -954,6 +954,7 @@ struct game_script_typed_ptr game_script_object_handle_decode(struct lisp_form o
                 if (!lisp_form_get_s32(*id_form, &real_id)) {
                     return result;
                 }
+                _debugprintf("Script layer : %d", real_id);
                 result.ptr = area->scriptable_layer_properties + real_id;
                 return result;
             } break;
