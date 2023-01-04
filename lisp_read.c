@@ -356,6 +356,19 @@ struct lisp_form lisp_form_symbol(string string_constant) {
     return result;
 }
 
+/*
+  NOTE: Please don't maintain references to this for too long... Game script essentially has no variables, so this might be okay generally.
+
+  The only time dynamic strings are needed are for like message boxes or something but those can be buffered or something, but I don't
+  think this is much of an issue, since I'm the only person writing scripts currently so I would hopefully know to not make this mistake.
+*/
+struct lisp_form lisp_form_string(string string_constant) {
+    struct lisp_form result = {};
+    result.type             = LISP_FORM_STRING;
+    result.string           = string_clone(&scratch_arena, string_constant);
+    return result;
+}
+
 struct lisp_form* lisp_list_nth(struct lisp_form* f, s32 index);
 
 bool lisp_form_get_string(struct lisp_form form, string* value) {
@@ -528,6 +541,41 @@ static void _debug_print_out_lisp_code_(struct lisp_form* code) {
                 _debugprintf1("%.*s", lisp_form_type_strings[code->type].length, lisp_form_type_strings[code->type].data);
             } break;
         }
+}
+
+/* NOTE:
+   This is mostly used to allow for rich text to output lisp results if I need to.
+ */
+string lisp_primitive_form_into_string(struct memory_arena* arena, struct lisp_form* code) {
+    assertion(code->type != LISP_FORM_LIST && "This procedure should not be operating on nested structures like lists due to it's limited use!");
+
+    string result = {};
+    switch (code->type) {
+        case LISP_FORM_NUMBER: {
+            if (code->is_real) {
+                result = format_temp_s("%f", code->real);
+            } else {
+                result = format_temp_s("%d", code->integer);
+            }
+        } break;
+        case LISP_FORM_STRING: {
+            result = format_temp_s("\"%.*s\"", code->string.length, code->string.data);
+        } break;
+        case LISP_FORM_T:
+        case LISP_FORM_NIL:
+        case LISP_FORM_SYMBOL: {
+            char* flavor_text = "";
+            if (code->type == LISP_FORM_SYMBOL) {
+                if (code->quoted) flavor_text = "[quoted]";
+            }
+            result = format_temp_s("%.*s(%s)", code->string.length, code->string.data, flavor_text);
+        } break;
+        default: {
+            result = format_temp_s("%.*s", lisp_form_type_strings[code->type].length, lisp_form_type_strings[code->type].data);
+        } break;
+    }
+
+    return string_clone(arena, result);
 }
 
 static void _debug_print_out_lisp_code(struct lisp_form* code) {

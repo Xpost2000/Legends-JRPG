@@ -16,7 +16,10 @@
 */
 
 
-/* used for some scripts to make life easier */
+/*
+  used for some scripts to make life easier, since I don't have variables. I can probably create a few CONTEXT_BINDING_VARs,
+  since I don't want to have an actual variable system. (lexical bindings be scary and overkill for this)
+*/
 enum context_binding_ids {
     CONTEXT_BINDING_SELF,
     CONTEXT_BINDING_TOUCHER,

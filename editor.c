@@ -792,6 +792,9 @@ local void handle_editor_tool_mode_input(struct software_framebuffer* framebuffe
                 Placement_Procedure_For(chest);
                 Placement_Procedure_For(light);
                 Placement_Procedure_For(savepoint);
+#if 0
+                Placement_Procedure_For(tilemap_object);
+#endif
 #undef Placement_Procedure_For
             }
         } break;
@@ -1815,6 +1818,10 @@ void update_and_render_editor(struct software_framebuffer* framebuffer, f32 dt) 
         /* this is pretty old, so I'd probably avoid using this part... */
         /* yeah this is a big mess */
         render_ground_area(game_state, &commands, &editor_state->loaded_area);
+        struct render_commands        commands      = render_commands(&scratch_arena, 16384, game_state->camera);
+        struct sortable_draw_entities draw_entities = sortable_draw_entities(&scratch_arena, 8192*4);
+        render_entities(game_state, &draw_entities);
+        sortable_draw_entities_submit(&commands, &graphics_assets, &draw_entities, dt);
         if (editor_state->last_selected && editor_state->tool_mode == EDITOR_TOOL_TRIGGER_PLACEMENT) {
             struct trigger_level_transition* trigger = editor_state->last_selected;
             render_commands_push_quad(&commands, rectangle_f32(trigger->spawn_location.x * TILE_UNIT_SIZE, trigger->spawn_location.y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE),
@@ -1823,6 +1830,7 @@ void update_and_render_editor(struct software_framebuffer* framebuffer, f32 dt) 
         render_foreground_area(game_state, &commands, &editor_state->loaded_area);
     } else {
         {
+            /* rendering the editor world */
             for (s32 layer_index = 0; layer_index < array_count(editor_state->tile_layers); ++layer_index) {
                 for (s32 tile_index = 0; tile_index < editor_state->tile_counts[layer_index]; ++tile_index) {
                     struct tile*                 current_tile = editor_state->tile_layers[layer_index] + tile_index;

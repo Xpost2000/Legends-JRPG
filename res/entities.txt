@@ -1,133 +1,133 @@
 # Entity base master file
 # all these fields are mandatory
 (
-"player"
-"Lloyd Irving"
-0
-()
-()
+ "player"
+ "Lloyd Irving"
+ 0
+ ()
+ ()
 
-100
-0
+ 100
+ 0
 
-nil
+ nil
 
-()
-()
+ ()
+ ()
 
-(
-(level 1)
-(xp 756)
-(vigor 100)
-(strength 125)
-(constitution 100)
-(willpower 100)
-(agility 100)
-(speed 100)
-(intelligence 100)
-(luck 100)
-)
+ (
+  (level 1)
+  (xp 756)
+  (vigor 100)
+  (strength 125)
+  (constitution 100)
+  (willpower 100)
+  (agility 100)
+  (speed 100)
+  (intelligence 100)
+  (luck 100)
+  )
 
-(
-("ability_shock" 0)
-("ability_ignis" 0)
-("ability_detonate_self" 0)
-)
-)
+ (
+  ("ability_shock" 0)
+  ("ability_ignis" 0)
+  ("ability_detonate_self" 0)
+  )
+ )
 # NEXT
 (
-"brother"
-"Dirk"
-0
-()
-()
+ "brother"
+ "Dirk"
+ 0
+ ()
+ ()
 
-9999
-0
+ 9999
+ 0
 
-nil
+ nil
 
-()
-()
+ ()
+ ()
 
-(
-(level 1)
-(xp 756)
-(vigor 100)
-(strength 125)
-(constitution 100)
-(willpower 100)
-(agility 100)
-(speed 100)
-(intelligence 100)
-(luck 100)
-)
+ (
+  (level 1)
+  (xp 756)
+  (vigor 100)
+  (strength 125)
+  (constitution 100)
+  (willpower 100)
+  (agility 100)
+  (speed 100)
+  (intelligence 100)
+  (luck 100)
+  )
 
-(
-("ability_shock" 0)
-("ability_ignis" 0)
-("ability_detonate_self" 0)
-)
-)
+ (
+  ("ability_shock" 0)
+  ("ability_ignis" 0)
+  ("ability_detonate_self" 0)
+  )
+ )
 # NEXT
 (
-"bandit_tutorial0"
-"Bandit"
-0 # Models should be referenced through numbers but I can fix that later
-() # FLAGS
-() # AI FLAGS
+ "bandit_tutorial0"
+ "Bandit"
+ 0 # Models should be referenced through numbers but I can fix that later
+ () # FLAGS
+ () # AI FLAGS
 
-75 # health
-0  # magic
+ 75 # health
+ 0  # magic
 
-"bandit_loot0"# loot table name, can be nil
+ "bandit_loot0"# loot table name, can be nil
 
-() # equip slots not being used
-() # inventory avaliable during battle
+ () # equip slots not being used
+ () # inventory avaliable during battle
 
-(
-(level 1)
-(xp 150)
-(vigor 100)
-(strength 125)
-(constitution 100)
-(willpower 100)
-(agility 100)
-(speed 100)
-(intelligence 100)
-(luck 100))
+ (
+  (level 1)
+  (xp 150)
+  (vigor 100)
+  (strength 125)
+  (constitution 100)
+  (willpower 100)
+  (agility 100)
+  (speed 100)
+  (intelligence 100)
+  (luck 100))
 
-(
-("ability_sword_rush" 0))
-)
-
-(
-"deadcorpse_b1"
-"Dead Body"
-0 # Models should be referenced through numbers but I can fix that later
-() # FLAGS
-() # AI FLAGS
-
-0 # health
-0  # magic
-
-nil
-
-() # equip slots not being used
-() # inventory avaliable during battle
+ (
+  ("ability_sword_rush" 0))
+ )
 
 (
-(level 1)
-(xp 0)
-(vigor 0)
-(strength 0)
-(constitution 0)
-(willpower 0)
-(agility 0)
-(speed 0)
-(intelligence 0)
-(luck 0))
+ "deadcorpse_b1"
+ "Dead Body"
+ 0 # Models should be referenced through numbers but I can fix that later
+ () # FLAGS
+ () # AI FLAGS
 
-(
-)
-)
+ 0 # health
+ 0  # magic
+
+ nil
+
+ () # equip slots not being used
+ () # inventory avaliable during battle
+
+ (
+  (level 1)
+  (xp 0)
+  (vigor 0)
+  (strength 0)
+  (constitution 0)
+  (willpower 0)
+  (agility 0)
+  (speed 0)
+  (intelligence 0)
+  (luck 0))
+
+ (
+  )
+ )

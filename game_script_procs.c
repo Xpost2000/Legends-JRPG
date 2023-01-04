@@ -110,6 +110,7 @@ GAME_LISP_FUNCTION(ENTITY_LOOK_AT) {
 
     return LISP_nil;
 }
+/* Should remove these ENTITY_ prefixes so I can get a more consistent "script language" but it's whatever right now */
 GAME_LISP_FUNCTION(ENTITY_IS_DEAD) {
     Required_Argument_Count(ENTITY_IS_DEAD, 1);
 
@@ -119,17 +120,6 @@ GAME_LISP_FUNCTION(ENTITY_IS_DEAD) {
     assertion(target_entity && "no entity?");
 
     return lisp_form_produce_truthy_value_form(entity_is_dead(target_entity));
-}
-
-GAME_LISP_FUNCTION(ENTITY_GET_HEALTH) {
-    Required_Argument_Count(ENTITY_GET_HEALTH, 1);
-
-    struct game_script_typed_ptr ptr = game_script_object_handle_decode(arguments[0]);
-    assertion(ptr.type == GAME_SCRIPT_TARGET_ENTITY && "This only works on entities!");
-    struct entity* target_entity = game_dereference_entity(state, ptr.entity_id);
-    assertion(target_entity && "no entity?");
-
-    return lisp_form_integer(target_entity->health.value);
 }
 
 GAME_LISP_FUNCTION(ENTITY_GET_HEALTH_PERCENT) {
@@ -769,6 +759,7 @@ GAME_LISP_FUNCTION(SET_COUNTER);
     GAME_LISP_FUNCTION(STAT_NAME) {                                     \
         Required_Argument_Count(STAT_NAME, 1);  \
         struct game_script_typed_ptr ptr    = game_script_object_handle_decode(arguments[0]); \
+        Fatal_Script_Error(ptr.type == GAME_SCRIPT_TARGET_ENTITY && "Non ENTITY cannot have stats!"); \
         struct entity*               entity = game_dereference_entity(state, ptr.entity_id); \
         s32                          value  = entity->stat_block.STAT_FIELD ; \
         return lisp_form_integer(value);        \
@@ -776,6 +767,7 @@ GAME_LISP_FUNCTION(SET_COUNTER);
     GAME_LISP_FUNCTION(SET_ ## STAT_NAME) {     \
         Required_Argument_Count(SET_ ## STAT_NAME, 2); \
         struct game_script_typed_ptr ptr    = game_script_object_handle_decode(arguments[0]); \
+        Fatal_Script_Error(ptr.type == GAME_SCRIPT_TARGET_ENTITY && "Non ENTITY cannot have stats!"); \
         struct entity*               entity = game_dereference_entity(state, ptr.entity_id); \
         s32                          value  = 0; \
         Fatal_Script_Error(lisp_form_get_s32(arguments[1], &value) && "Stat accessor set needs to be a number"); \
@@ -841,6 +833,22 @@ GAME_LISP_FUNCTION(GET_POSITION) {
     result.list.forms[1] = lisp_form_real(entity->position.y / TILE_UNIT_SIZE);
 
     return result;
+}
+
+GAME_LISP_FUNCTION(NAME) {
+    Required_Argument_Count(NAME, 1);
+    struct game_script_typed_ptr ptr    = game_script_object_handle_decode(arguments[0]);
+    switch (ptr.type) {
+        case GAME_SCRIPT_TARGET_ENTITY: {
+            struct entity* entity = game_dereference_entity(state, ptr.entity_id);
+            return lisp_form_string(entity->name);
+        } break;
+        default: {
+            unimplemented("Not sure how to get the name of htis type of entity yet");
+        } break;
+    }
+
+    return LISP_nil;
 }
 
 GAME_LISP_FUNCTION(SUICIDE) {

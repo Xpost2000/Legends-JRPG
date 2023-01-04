@@ -36,6 +36,7 @@ enum entity_placement_type {
     ENTITY_PLACEMENT_TYPE_chest,
     ENTITY_PLACEMENT_TYPE_light,
     ENTITY_PLACEMENT_TYPE_savepoint,
+    ENTITY_PLACEMENT_TYPE_tilemap_object,
     ENTITY_PLACEMENT_TYPE_count,
 };
 static string entity_placement_type_strings[] = {
@@ -43,6 +44,7 @@ static string entity_placement_type_strings[] = {
     [ENTITY_PLACEMENT_TYPE_chest]     = string_literal("Chest"),
     [ENTITY_PLACEMENT_TYPE_light]     = string_literal("Light"),
     [ENTITY_PLACEMENT_TYPE_savepoint] = string_literal("Savepoint"),
+    [ENTITY_PLACEMENT_TYPE_tilemap_object] = string_literal("Tilemap Object"),
     [ENTITY_PLACEMENT_TYPE_count]     = string_literal("(count)"),
 };
 struct entity_chest_placement_property_menu {
