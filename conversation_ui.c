@@ -68,15 +68,15 @@ void dialogue_ui_setup_for_next_line_of_dialogue(void) {
 
 void dialogue_ui_set_target_node(u32 id) {
     game_state->current_conversation_node_id = id;
-
-    struct conversation*      conversation              = &game_state->current_conversation;
-    struct conversation_node* current_conversation_node = &conversation->nodes[game_state->current_conversation_node_id-1];
-
-    dialogue_ui_setup_for_next_line_of_dialogue();
-    dialogue_try_to_execute_script_actions(game_state, current_conversation_node);
-
+    
     if (id == 0) {
         close_dialogue_ui();
+    } else {
+        struct conversation*      conversation              = &game_state->current_conversation;
+        struct conversation_node* current_conversation_node = &conversation->nodes[game_state->current_conversation_node_id-1];
+
+        dialogue_ui_setup_for_next_line_of_dialogue();
+        dialogue_try_to_execute_script_actions(game_state, current_conversation_node);
     }
 }
 
