@@ -264,5 +264,15 @@ Define_Serializer_Function(f64, f64);
         serialize_bytes(serializer, &structure, sizeof(structure));     \
     } while (0)
 
+void serialize_string(IAllocator* allocator, struct binary_serializer* serializer, string* s) {
+    serialize_s32(serializer, &s->length);
+    if (allocator && serializer->mode == BINARY_SERIALIZER_READ) {
+        if (s->data) {
+            allocator->free(allocator, s->data);
+        }
+        s->data = allocator->alloc(allocator, s->length);
+    }
+    serialize_bytes(serializer, s->data, s->length);
+}
 
 #undef Serialize_Object_Into_File

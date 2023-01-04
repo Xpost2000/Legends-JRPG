@@ -119,8 +119,14 @@ void editor_clear_all(struct editor_state* state) {
 
 void editor_initialize(struct editor_state* state) {
     state->arena = &editor_arena;
-    for (s32 index = 0; index < TILE_LAYER_COUNT; ++index) {
-        state->tile_capacities[index] = 65535*2;
+    {
+        s32 index;
+        for (index = 0; index < TILE_LAYER_SCRIPTABLE_0; ++index) {
+            state->tile_capacities[index] = 65535*2;
+        }
+        for (; index < TILE_LAYER_COUNT; ++index) {
+            state->tile_capacities[index] = 4096;
+        }
     }
     state->trigger_level_transition_capacity = 1024*2;
     state->entity_chest_capacity             = 1024*2;
@@ -140,6 +146,7 @@ void editor_initialize(struct editor_state* state) {
     state->entity_savepoints                        = memory_arena_push(state->arena, state->entity_capacity                   * sizeof(*state->entity_savepoints));
     state->lights                                   = memory_arena_push(state->arena, state->light_capacity                    * sizeof(*state->lights));
     state->battle_safe_squares                      = memory_arena_push(state->arena, state->battle_safe_square_capacity       * sizeof(*state->battle_safe_squares));
+    cstring_copy("DefaultAreaName<>", state->level_settings.area_name, array_count(state->level_settings.area_name));
     editor_clear_all(state);
 }
 
@@ -156,6 +163,17 @@ void editor_serialize_area(struct binary_serializer* serializer) {
     serialize_f32(serializer, &editor_state->default_player_spawn.y);
     _debugprintf("reading tiles");
 
+    if (version_id >= 12) {
+        { /* NOTE: My primitive leak check will say this is a memory leak, which it *is*, but it's the kind that doesn't matter. */
+            IAllocator allocator = heap_allocator();
+            serialize_bytes(serializer, editor_state->level_settings.area_name, array_count(editor_state->level_settings.area_name));
+            serialize_string(&allocator, serializer, &editor_state->level_script_string);
+
+            OS_create_directory(string_literal("temp/"));
+            write_string_into_entire_file(string_literal("temp/SCRIPT.txt"), editor_state->level_script_string);
+        }
+    }
+
     if (version_id >= 4) {
         if (version_id < CURRENT_LEVEL_AREA_VERSION) {
             /* for older versions I have to know what the tile layers were and assign them like this. */
@@ -165,6 +183,20 @@ void editor_serialize_area(struct binary_serializer* serializer) {
                     serialize_tile_layer(serializer, version_id, &editor_state->tile_counts[TILE_LAYER_OBJECT],     editor_state->tile_layers[TILE_LAYER_OBJECT]);
                     serialize_tile_layer(serializer, version_id, &editor_state->tile_counts[TILE_LAYER_ROOF],       editor_state->tile_layers[TILE_LAYER_ROOF]);
                     serialize_tile_layer(serializer, version_id, &editor_state->tile_counts[TILE_LAYER_FOREGROUND], editor_state->tile_layers[TILE_LAYER_FOREGROUND]);
+                } break;
+                case 5:
+                case 6:
+                case 7:
+                case 8:
+                case 9:
+                case 10:
+                case 11: {
+                    serialize_tile_layer(serializer, version_id, &editor_state->tile_counts[TILE_LAYER_GROUND],     editor_state->tile_layers[TILE_LAYER_GROUND]);
+                    serialize_tile_layer(serializer, version_id, &editor_state->tile_counts[TILE_LAYER_OBJECT],     editor_state->tile_layers[TILE_LAYER_OBJECT]);
+                    serialize_tile_layer(serializer, version_id, &editor_state->tile_counts[TILE_LAYER_CLUTTER_DECOR],       editor_state->tile_layers[TILE_LAYER_CLUTTER_DECOR]);
+                    serialize_tile_layer(serializer, version_id, &editor_state->tile_counts[TILE_LAYER_OVERHEAD],       editor_state->tile_layers[TILE_LAYER_OVERHEAD]);
+                    serialize_tile_layer(serializer, version_id, &editor_state->tile_counts[TILE_LAYER_ROOF],       editor_state->tile_layers[TILE_LAYER_ROOF]);
+                    serialize_tile_layer(serializer, version_id, &editor_state->tile_counts[TILE_LAYER_FOREGROUND],       editor_state->tile_layers[TILE_LAYER_FOREGROUND]);
                 } break;
                 default: {
                     goto didnt_change_level_tile_format_from_current;

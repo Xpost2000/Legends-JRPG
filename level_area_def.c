@@ -22,9 +22,22 @@
    Version 9: Added savepoint entities
    Version 10: Format fix
    Version 11: Battle Safe Square
-   Verions 12: Tilemap Island Objects
+   Verions 12: AreaName BuiltIn & BuiltIn scripts & Extra Tile Layers
 */
 #define CURRENT_LEVEL_AREA_VERSION (12)
+
+#define SCRIPTABLE_TILE_LAYER_COUNT (32)
+enum scriptable_tile_layer_flags {
+    SCRIPTABLE_TILE_LAYER_FLAGS_NONE      = 0,
+    SCRIPTABLE_TILE_LAYER_FLAGS_NOCOLLIDE = BIT(0),
+    SCRIPTABLE_TILE_LAYER_FLAGS_HIDDEN    = ENTITY_FLAGS_HIDDEN,
+};
+struct scriptable_tile_layer_property { /* these are all script editable properties... Thank god! I don't have to write more editor code */
+    f32 offset_x;
+    f32 offset_y;
+    u32 flags;
+    s32 draw_layer; /* refer to enum tile_layers */
+};
 
 enum tile_layers {
     TILE_LAYER_GROUND,            /* render below all. dark color? */
@@ -34,6 +47,39 @@ enum tile_layers {
     TILE_LAYER_OVERHEAD,          /* render above entities no fading */
     TILE_LAYER_ROOF,              /* render above entities, allow fading */
     TILE_LAYER_FOREGROUND,        /* render above entities, no fading */
+    /* FLEXIBLE EXTRA LAYERS */
+    TILE_LAYER_SCRIPTABLE_0,
+    TILE_LAYER_SCRIPTABLE_1,
+    TILE_LAYER_SCRIPTABLE_2,
+    TILE_LAYER_SCRIPTABLE_3,
+    TILE_LAYER_SCRIPTABLE_4,
+    TILE_LAYER_SCRIPTABLE_5,
+    TILE_LAYER_SCRIPTABLE_6,
+    TILE_LAYER_SCRIPTABLE_7,
+    TILE_LAYER_SCRIPTABLE_8,
+    TILE_LAYER_SCRIPTABLE_9,
+    TILE_LAYER_SCRIPTABLE_10,
+    TILE_LAYER_SCRIPTABLE_11,
+    TILE_LAYER_SCRIPTABLE_12,
+    TILE_LAYER_SCRIPTABLE_13,
+    TILE_LAYER_SCRIPTABLE_14,
+    TILE_LAYER_SCRIPTABLE_15,
+    TILE_LAYER_SCRIPTABLE_16,
+    TILE_LAYER_SCRIPTABLE_17,
+    TILE_LAYER_SCRIPTABLE_18,
+    TILE_LAYER_SCRIPTABLE_19,
+    TILE_LAYER_SCRIPTABLE_20,
+    TILE_LAYER_SCRIPTABLE_21,
+    TILE_LAYER_SCRIPTABLE_22,
+    TILE_LAYER_SCRIPTABLE_23,
+    TILE_LAYER_SCRIPTABLE_24,
+    TILE_LAYER_SCRIPTABLE_25,
+    TILE_LAYER_SCRIPTABLE_26,
+    TILE_LAYER_SCRIPTABLE_27,
+    TILE_LAYER_SCRIPTABLE_28,
+    TILE_LAYER_SCRIPTABLE_29,
+    TILE_LAYER_SCRIPTABLE_30,
+    TILE_LAYER_SCRIPTABLE_31,
     TILE_LAYER_COUNT
 };
 
@@ -44,6 +90,38 @@ local string tile_layer_strings[] = {
     string_literal("(overhead)"),
     string_literal("(roof)"),
     string_literal("(foreground)"),
+    string_literal("(scriptable 0)"),
+    string_literal("(scriptable 1)"),
+    string_literal("(scriptable 2)"),
+    string_literal("(scriptable 3)"),
+    string_literal("(scriptable 4)"),
+    string_literal("(scriptable 5)"),
+    string_literal("(scriptable 6)"),
+    string_literal("(scriptable 7)"),
+    string_literal("(scriptable 8)"),
+    string_literal("(scriptable 9)"),
+    string_literal("(scriptable 10)"),
+    string_literal("(scriptable 11)"),
+    string_literal("(scriptable 12)"),
+    string_literal("(scriptable 13)"),
+    string_literal("(scriptable 14)"),
+    string_literal("(scriptable 15)"),
+    string_literal("(scriptable 16)"),
+    string_literal("(scriptable 17)"),
+    string_literal("(scriptable 18)"),
+    string_literal("(scriptable 19)"),
+    string_literal("(scriptable 20)"),
+    string_literal("(scriptable 21)"),
+    string_literal("(scriptable 22)"),
+    string_literal("(scriptable 23)"),
+    string_literal("(scriptable 24)"),
+    string_literal("(scriptable 25)"),
+    string_literal("(scriptable 26)"),
+    string_literal("(scriptable 27)"),
+    string_literal("(scriptable 28)"),
+    string_literal("(scriptable 29)"),
+    string_literal("(scriptable 30)"),
+    string_literal("(scriptable 31)"),
     string_literal("(count)"),
 };
 
@@ -216,7 +294,11 @@ local string level_area_listen_event_form_names[] = {
 
 struct level_area_script_data {
     bool present;
-    struct file_buffer buffer;
+    bool isbuiltin;
+    union {
+        struct file_buffer buffer;
+        string             internal_buffer;
+    };
     struct lisp_list*  code_forms;
 
     struct lisp_form*  on_enter;
@@ -285,9 +367,12 @@ struct level_area { /* this cannot be automatically serialized because of the un
     u32          version SERIALIZE_VERSIONS(level, 1 to CURRENT);
     v2f32        default_player_spawn;
 
-    s32          tile_counts[TILE_LAYER_COUNT];
-    struct tile* tile_layers[TILE_LAYER_COUNT];
+    struct       scriptable_tile_layer_property scriptable_layer_properties[SCRIPTABLE_TILE_LAYER_COUNT];
+    s32                                         tile_counts[TILE_LAYER_COUNT];
+    struct tile*                                tile_layers[TILE_LAYER_COUNT];
 
+
+    char area_name[260];
     /*
       Address in script file as (trigger (id) or (name-string?(when supported.)))
      */

@@ -51,6 +51,7 @@ void serializer_finish(struct binary_serializer* serializer);
 void* serializer_flatten_memory(struct binary_serializer* serializer, size_t* size);
 void serializer_push_memory_node(struct binary_serializer* serializer, void* bytes, size_t size);
 void serialize_bytes(struct binary_serializer* serializer, void* bytes, size_t size);
+void serialize_string(IAllocator* allocator, struct binary_serializer* serializer, string* s);
 void serialize_format(struct binary_serializer* serializer, char* format_string, ...);
 
 #define Define_Serializer_Function(Typename, Type) void serialize_##Typename(struct binary_serializer* serializer, Type* obj);

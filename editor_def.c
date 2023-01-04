@@ -143,6 +143,7 @@ struct editor_state {
     struct level_settings_property_menu         level_settings;
 
     /* ui pause menu animation state */
+    /* NOTE: which isn't really that great... Will need to revise */
     /* 0 - none, 1 - save, 2 - load */
     s32 serialize_menu_mode;
     s32 serialize_menu_reason; /* 
@@ -152,6 +153,7 @@ struct editor_state {
     f32 serialize_menu_t;
 
     s32 tab_menu_open;
+    string level_script_string;
 
     /* NOTE I'm aware there is drag data like a few lines above this. */
     struct {

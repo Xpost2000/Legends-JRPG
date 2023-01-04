@@ -323,7 +323,7 @@ void game_finish_conversation(struct game_state* state) {
 }
 
 local void render_combat_area_information(struct game_state* state, struct render_commands* commands, struct level_area* area);
-local void render_tile_layer(struct render_commands* commands, struct level_area* area, s32 layer) {
+local void render_tile_layer_ex(struct render_commands* commands, struct level_area* area, s32 layer, f32 x_off, f32 y_off, union color32f32 modulation) {
     for (s32 index = 0; index < area->tile_counts[layer]; ++index) {
         s32 tile_id = area->tile_layers[layer][index].id;
         struct tile_data_definition* tile_data = tile_table_data + tile_id;
@@ -357,11 +357,34 @@ local void render_tile_layer(struct render_commands* commands, struct level_area
     }
 }
 
+local void render_tile_layer(struct render_commands* commands, struct level_area* area, s32 layer) {
+    render_tile_layer_ex(commands, area, layer, 0, 0, color32f32_WHITE);
+}
+
+local void render_scriptable_tile_layers_that_qualify_as(struct render_commands* commands, struct level_area* area, s32 layer) {
+    for (s32 layer_index = TILE_LAYER_SCRIPTABLE_0; layer_index < TILE_LAYER_COUNT; ++layer_index) {
+        struct scriptable_tile_layer_property* current_scriptable_layer_property = area->scriptable_layer_properties + layer_index; 
+        if (current_scriptable_layer_property->flags & SCRIPTABLE_TILE_LAYER_FLAGS_HIDDEN) {
+            continue;
+        }
+
+        if (current_scriptable_layer_property->draw_layer == layer) {
+            f32 offset_x = current_scriptable_layer_property->offset_x;
+            f32 offset_y = current_scriptable_layer_property->offset_y;
+
+            render_tile_layer_ex(commands, area, layer_index, offset_x, offset_y, color32f32_WHITE);
+        }
+    }
+}
+
 void render_foreground_area(struct game_state* state, struct render_commands* commands, struct level_area* area) {
     {
         render_tile_layer(commands, area, TILE_LAYER_OVERHEAD);
+        render_scriptable_tile_layers_that_qualify_as(commands, area, TILE_LAYER_OVERHEAD);
         render_tile_layer(commands, area, TILE_LAYER_ROOF);
+        render_scriptable_tile_layers_that_qualify_as(commands, area, TILE_LAYER_ROOF);
         render_tile_layer(commands, area, TILE_LAYER_FOREGROUND);
+        render_scriptable_tile_layers_that_qualify_as(commands, area, TILE_LAYER_FOREGROUND);
     }
 }
 
@@ -377,8 +400,11 @@ void render_ground_area(struct game_state* state, struct render_commands* comman
     /* Object & ground layer */
     {
         render_tile_layer(commands, area, TILE_LAYER_GROUND);
+        render_scriptable_tile_layers_that_qualify_as(commands, area, TILE_LAYER_GROUND);
         render_tile_layer(commands, area, TILE_LAYER_OBJECT);
+        render_scriptable_tile_layers_that_qualify_as(commands, area, TILE_LAYER_OBJECT);
         render_tile_layer(commands, area, TILE_LAYER_CLUTTER_DECOR);
+        render_scriptable_tile_layers_that_qualify_as(commands, area, TILE_LAYER_CLUTTER_DECOR);
     }
 
     if (state->combat_state.active_combat) {
@@ -1173,6 +1199,16 @@ void _serialize_level_area(struct memory_arena* arena, struct binary_serializer*
         _debugprintf("reading tiles");
 
         /* I should try to move this into one spot since it's a little annoying */
+        if (level->version >= 12) {
+            serialize_bytes(serializer, game_state->loaded_area_name, array_count(game_state->loaded_area_name));
+            IAllocator allocator = memory_arena_allocator(arena);
+            serialize_string(&allocator, serializer, &level->script.internal_buffer);
+
+            if (level->script.internal_buffer.length > 0) {
+                level->script.present   = true;
+                level->script.isbuiltin = true;
+            }
+        }
         if (level->version >= 4) {
 #define Serialize_Tile_Layer(LAYER)                                     \
             do {                                                        \
@@ -1191,6 +1227,20 @@ void _serialize_level_area(struct memory_arena* arena, struct binary_serializer*
                     case 4: {
                         Serialize_Tile_Layer(TILE_LAYER_GROUND);
                         Serialize_Tile_Layer(TILE_LAYER_OBJECT);
+                        Serialize_Tile_Layer(TILE_LAYER_ROOF);
+                        Serialize_Tile_Layer(TILE_LAYER_FOREGROUND);
+                    } break;
+                    case 5:
+                    case 6:
+                    case 7:
+                    case 8:
+                    case 9:
+                    case 10:
+                    case 11: {
+                        Serialize_Tile_Layer(TILE_LAYER_GROUND);
+                        Serialize_Tile_Layer(TILE_LAYER_OBJECT);
+                        Serialize_Tile_Layer(TILE_LAYER_CLUTTER_DECOR);
+                        Serialize_Tile_Layer(TILE_LAYER_OVERHEAD);
                         Serialize_Tile_Layer(TILE_LAYER_ROOF);
                         Serialize_Tile_Layer(TILE_LAYER_FOREGROUND);
                     } break;
@@ -1284,8 +1334,6 @@ void _serialize_level_area(struct memory_arena* arena, struct binary_serializer*
                 serialize_battle_safe_square(serializer, level->version, level->battle_safe_squares + battle_safe_square_index);
             }
         }
-        if (level->version >= 12) {
-        }
 
         build_navigation_map_for_level_area(arena, level);
         build_battle_zone_bounding_boxes_for_level_area(arena, level);
@@ -1310,12 +1358,21 @@ local void load_area_script(struct memory_arena* arena, struct level_area* area,
     struct level_area_script_data* script_data = &area->script;
 
     memory_arena_set_allocation_region_top(arena);
-    if (file_exists(script_name)) {
+    if (script_data->isbuiltin && script_data->present) {
+        _debugprintf("builtin script found. Using that.");
+        script_data->code_forms  = memory_arena_push(arena, sizeof(*script_data->code_forms));
+        *script_data->code_forms = lisp_read_string_into_forms(arena, script_data->internal_buffer);
+    } else if (file_exists(script_name)) {
         script_data->present     = true;
         script_data->buffer      = read_entire_file(memory_arena_allocator(arena), script_name);
         script_data->code_forms  = memory_arena_push(arena, sizeof(*script_data->code_forms));
         *script_data->code_forms = lisp_read_string_into_forms(arena, file_buffer_as_string(&script_data->buffer));
 
+    } else {
+        _debugprintf("NOTE: %.*s does not exist! No script for this level.", script_name.length, script_name.data);
+    }
+
+    if (script_data->present) {
         /* search for on_enter, on_frame, on_exit */
         {
             for (s32 index = 0;
@@ -1387,9 +1444,8 @@ local void load_area_script(struct memory_arena* arena, struct level_area* area,
                 }
             }
         }
-    } else {
-        _debugprintf("NOTE: %.*s does not exist! No script for this level.", script_name.length, script_name.data);
     }
+
     memory_arena_set_allocation_region_bottom(arena);
 }
 
