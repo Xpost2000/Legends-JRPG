@@ -306,13 +306,13 @@ GAME_LISP_FUNCTION(GAME_SET_ENVIRONMENT_COLORS) {
 
     if (argument->type == LISP_FORM_SYMBOL) {
         if (lisp_form_symbol_matching(*argument, string_literal("night"))) {
-            global_color_grading_filter = COLOR_GRADING_NIGHT;
+            game_set_time_color(2);
         } else if (lisp_form_symbol_matching(*argument, string_literal("dawn"))) {
-            global_color_grading_filter = COLOR_GRADING_DAWN;
+            game_set_time_color(1);
         } else if (lisp_form_symbol_matching(*argument, string_literal("midnight"))) {
-            global_color_grading_filter = COLOR_GRADING_DARKEST;
+            game_set_time_color(3);
         } else if (lisp_form_symbol_matching(*argument, string_literal("day"))) {
-            global_color_grading_filter = COLOR_GRADING_DAY;
+            game_set_time_color(0);
         }
     } else {
         struct lisp_form* r = lisp_list_nth(argument, 0);

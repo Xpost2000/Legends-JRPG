@@ -142,6 +142,36 @@ static string ui_state_strings[] = {
 /* local union color32u8 global_color_grading_filter = COLOR_GRADING_DAY; */
 local union color32u8 global_color_grading_filter = COLOR_GRADING_DARKEST;
 
+local string color_grade_preset_strings[] = {
+    [0] = string_literal("Day"),
+    [1] = string_literal("Dawn"),
+    [2] = string_literal("Night"),
+    [3] = string_literal("Midnight"),
+};
+local union color32u8 color_grade_presets[] = {
+    [0] = COLOR_GRADING_DAY,
+    [1] = COLOR_GRADING_DAWN,
+    [2] = COLOR_GRADING_NIGHT,
+    [3] = COLOR_GRADING_DARKEST,
+};
+
+local void game_set_time_color(s32 time) {
+    switch (time) {
+        case 0: {
+            global_color_grading_filter = COLOR_GRADING_DAY;
+        } break;
+        case 1: {
+            global_color_grading_filter = COLOR_GRADING_DAWN;
+        } break;
+        case 2: {
+            global_color_grading_filter = COLOR_GRADING_NIGHT;
+        } break;
+        case 3: {
+            global_color_grading_filter = COLOR_GRADING_DARKEST;
+        } break;
+    }
+}
+
 enum facing_direction {
     DIRECTION_DOWN,
     DIRECTION_RIGHT,

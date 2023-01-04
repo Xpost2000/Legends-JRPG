@@ -7,15 +7,17 @@ enum editor_tool_mode {
     EDITOR_TOOL_SPAWN_PLACEMENT,
     EDITOR_TOOL_ENTITY_PLACEMENT,
     EDITOR_TOOL_TRIGGER_PLACEMENT,
+    EDITOR_TOOL_LEVEL_SETTINGS,
     EDITOR_TOOL_COUNT,
 };
 static string editor_tool_mode_strings[]=  {
-    [EDITOR_TOOL_TILE_PAINTING]     = string_literal("Tile mode"),
-    [EDITOR_TOOL_BATTLETILE_PAINTING]     = string_literal("Battle Safe Tile mode"),
-    [EDITOR_TOOL_SPAWN_PLACEMENT]   = string_literal("Place default spawn mode"),
-    [EDITOR_TOOL_ENTITY_PLACEMENT]  = string_literal("Entity mode"),
-    [EDITOR_TOOL_TRIGGER_PLACEMENT] = string_literal("Trigger"),
-    [EDITOR_TOOL_COUNT]             = string_literal("(count)")
+    [EDITOR_TOOL_TILE_PAINTING]       = string_literal("Tile mode"),
+    [EDITOR_TOOL_BATTLETILE_PAINTING] = string_literal("Battle Safe Tile mode"),
+    [EDITOR_TOOL_SPAWN_PLACEMENT]     = string_literal("Place default spawn mode"),
+    [EDITOR_TOOL_ENTITY_PLACEMENT]    = string_literal("Entity mode"),
+    [EDITOR_TOOL_TRIGGER_PLACEMENT]   = string_literal("Trigger"),
+    [EDITOR_TOOL_LEVEL_SETTINGS]      = string_literal("Level Settings"),
+    [EDITOR_TOOL_COUNT]               = string_literal("(count)")
 };
 enum trigger_placement_type {
     TRIGGER_PLACEMENT_TYPE_LEVEL_TRANSITION,
@@ -53,6 +55,11 @@ struct entity_chest_placement_property_menu {
     /* NOTE this does not mouse wheel scroll. How disappointing */
     f32  item_list_scroll_y;
     s32  item_sort_filter;
+};
+
+struct level_settings_property_menu {
+    char area_name[260];
+    bool changing_preview_environment_color;
 };
 
 #define FACING_DIRECTION_SPIN_TIMER_LENGTH_MAX (0.08)
@@ -141,6 +148,7 @@ struct editor_state {
     struct entity_chest_placement_property_menu chest_property_menu;
     struct tile_painting_property_menu          tile_painting_property_menu;
     struct entity_actor_placement_property_menu actor_property_menu;
+    struct level_settings_property_menu         level_settings;
 
     /* ui pause menu animation state */
     /* 0 - none, 1 - save, 2 - load */

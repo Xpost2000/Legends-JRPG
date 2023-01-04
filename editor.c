@@ -1243,7 +1243,7 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
     {
         software_framebuffer_draw_text(framebuffer,
                                        graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_GOLD]),
-                                       1, v2f32(0,y_cursor), string_literal("Level Editor"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+                                       1, v2f32(0,y_cursor), string_literal("Level Editor [SHIFT-TAB (tool select), TAB (tool mode select), CTRL-TAB (object setting)]"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
         y_cursor += 12;
         {
             char tmp_text[1024]={};
@@ -1347,7 +1347,8 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
                 switch (editor_state->tool_mode) {
                     /* I would show images, but this is easier for now */
                     case EDITOR_TOOL_BATTLETILE_PAINTING:
-                    case EDITOR_TOOL_TILE_PAINTING: {
+                    case EDITOR_TOOL_TILE_PAINTING:
+                    case EDITOR_TOOL_LEVEL_SETTINGS: {
                         editor_state->tab_menu_open = 0;
                     } break;
                     case EDITOR_TOOL_TRIGGER_PLACEMENT: {
@@ -1657,6 +1658,54 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
         } else {
             switch (editor_state->tool_mode) {
                 /* I would show images, but this is easier for now */
+                case EDITOR_TOOL_LEVEL_SETTINGS: {
+                    f32 draw_cursor_y = 70;
+                    const f32 text_scale = 1;
+
+                    struct level_area_entity* entity = editor_state->last_selected;
+
+                    /* this is mostly script affecting so yeah. */
+                    if (editor_state->level_settings.changing_preview_environment_color) {
+                        if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(10, draw_cursor_y), string_literal("DAY (0)"))) {
+                            game_set_time_color(0);
+                            editor_state->level_settings.changing_preview_environment_color = false;
+                        }
+                        draw_cursor_y += 16 * 2 * 1.5 + TILE_UNIT_SIZE*2.3;
+                        if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(10, draw_cursor_y), string_literal("DAWN (1)"))) {
+                            game_set_time_color(1);
+                            editor_state->level_settings.changing_preview_environment_color = false;
+                        }
+                        draw_cursor_y += 16 * 2 * 1.5 + TILE_UNIT_SIZE*2.3;
+                        if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(10, draw_cursor_y), string_literal("NIGHT (2)"))) {
+                            game_set_time_color(2);
+                            editor_state->level_settings.changing_preview_environment_color = false;
+                        }
+                        draw_cursor_y += 16 * 2 * 1.5 + TILE_UNIT_SIZE*2.3;
+                        if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(10, draw_cursor_y), string_literal("MIDNIGHT (3)"))) {
+                            game_set_time_color(3);
+                            editor_state->level_settings.changing_preview_environment_color = false;
+                        }
+                        draw_cursor_y += 16 * 2 * 1.5 + TILE_UNIT_SIZE*2.3;
+                    } else {
+                        {
+                            EDITOR_imgui_text_edit_cstring(framebuffer, font, highlighted_font, 2, v2f32(10, draw_cursor_y), string_literal("(can scriptoverride)areaname:"), editor_state->level_settings.area_name, array_count(editor_state->level_settings.area_name));
+                            draw_cursor_y += 16 * 2 * 1.5 + TILE_UNIT_SIZE*2.3;
+                        }
+                        {
+                            string s = string_clone(&scratch_arena, string_from_cstring(format_temp("(preview only, nosave) environment color", entity->base_name)));
+                            if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(10, draw_cursor_y), s)) {
+                                editor_state->level_settings.changing_preview_environment_color = true;
+                            }
+                            draw_cursor_y += 16 * 2 * 1.5 + TILE_UNIT_SIZE*2.3;
+                        }
+                        {
+                            string s = string_clone(&scratch_arena, string_from_cstring(format_temp("open temporary/SCRIPT.txt to edit current level script.")));
+                            if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(10, draw_cursor_y), s)) {
+                            }
+                            draw_cursor_y += 16 * 2 * 1.5 + TILE_UNIT_SIZE*2.3;
+                        }
+                    }
+                } break;
                 case EDITOR_TOOL_TILE_PAINTING: {
                     f32 draw_cursor_y = 30 + editor_state->tile_painting_property_menu.item_list_scroll_y;
 
