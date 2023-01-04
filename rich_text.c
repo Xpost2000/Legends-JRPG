@@ -40,7 +40,7 @@ local string game_script_formatting_preprocess_string(struct memory_arena* arena
     s32 character_index = 0;
     while (character_index < text.length) {
         if (text.data[character_index] == '$') {
-            s32 start_of_format_result = character_index;
+            s32 start_of_format_result = character_index+1;
             character_index++;
 
             while (text.data[character_index] != '$' && character_index < text.length) {
@@ -58,6 +58,7 @@ local string game_script_formatting_preprocess_string(struct memory_arena* arena
             */
             memory_arena_set_allocation_region_top(&scratch_arena); {
                 string           format_result = string_slice(text, start_of_format_result, end_of_format_result);
+                _debugprintf("Hi I'm decoding: %.*s", format_result.length, format_result.data);
                 struct lisp_list markup_forms  = lisp_read_string_into_forms(&scratch_arena, format_result);
 
                 for (s32 form_index = 0; form_index < markup_forms.count; ++form_index) {
