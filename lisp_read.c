@@ -150,6 +150,11 @@ struct lexer_token lexer_try_to_eat_list(struct lexer* lexer) {
     return NULL_TOKEN;
 }
 
+/*
+  NOTE:
+  strings are escaped however. They are not formatted with their escaped set property,
+  so these can't be used :/
+*/
 struct lexer_token lexer_try_to_eat_string(struct lexer* lexer) {
     /* we've already eaten the double quote by this point */
     s32 string_start_index = lexer->current_read_index;
@@ -170,6 +175,35 @@ struct lexer_token lexer_try_to_eat_string(struct lexer* lexer) {
                     .str  = string_slice(lexer->buffer, string_start_index, string_end_index),
                 };
             }
+        }
+    }
+
+    return NULL_TOKEN;
+}
+
+/*
+  NOTE: use this in that case. I'm a bit too lazy to fix the string escape stuff without
+  more memory allocations.
+
+  I could do it by implementing an escaped string iterator, but right now I don't want to do
+  that.
+ */
+struct lexer_token lexer_try_to_eat_string_without_escapes(struct lexer* lexer) {
+    /* we've already eaten the double quote by this point */
+    s32 string_start_index = lexer->current_read_index;
+    s32 string_end_index   = string_start_index;
+
+    /* allow string escaping */
+    while (!lexer_done(lexer)) {
+        char eaten = lexer_eat_next_character(lexer);
+
+        if (eaten == '`') {
+            string_end_index = lexer->current_read_index-1; 
+
+            return (struct lexer_token) {
+                .type = TOKEN_TYPE_STRING,
+                .str  = string_slice(lexer->buffer, string_start_index, string_end_index),
+            };
         }
     }
 
@@ -267,6 +301,9 @@ struct lexer_token lexer_next_token(struct lexer* lexer) {
             } break;
             case '\"': {
                 return lexer_try_to_eat_string(lexer);
+            } break;
+            case '`': {
+                return lexer_try_to_eat_string_without_escapes(lexer);
             } break;
             case '(': {
                 return lexer_try_to_eat_list(lexer);

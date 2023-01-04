@@ -246,6 +246,21 @@ struct string_array string_split(struct memory_arena* arena, string input_string
     return result;
 }
 
+u64 copy_string_into_cstring(string source, char* destination, u64 destination_length) {
+    u64 smaller_length = 0;
+    if (source.length < destination_length) {
+        smaller_length = source.length;
+    } else {
+        smaller_length = destination_length;
+    }
+
+    for (s32 character_index = 0; character_index < smaller_length; ++character_index) {
+        destination[character_index] = source.data[character_index];
+    }
+
+    return smaller_length;
+}
+
 bool string_is_substring(string a, string substring) {
     if (a.length < substring.length) {
         return false;

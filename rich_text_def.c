@@ -1,6 +1,17 @@
 #ifndef RICH_TEXT_DEF_C
 #define RICH_TEXT_DEF_C
 
+/*
+  Rich Text Rules
+
+  All characters are escapable with \
+
+  [] indicates a command
+  $$ indicates a lisp form that will be inplace-evaluated as text (like a format)
+
+  Preprocess to handle the $$ text, and [] remains.
+*/
+
 struct rich_text_state {
     f32 tallest_glyph_height_on_line;
 
@@ -23,6 +34,7 @@ struct rich_glyph {
     s32  font_id;
 };
 
+local string game_script_formatting_preprocess_string(struct memory_arena* arena, string text);
 local struct rich_glyph rich_text_parse_next_glyph(struct rich_text_state* rich_text_state, string text, s32* parse_character_cursor, bool skipping_mode);
 local void parse_markup_details(struct rich_text_state* rich_text_state, string text_data, bool skipping_mode);
 local s32 text_length_without_dialogue_rich_markup_length(string text);

@@ -25,6 +25,64 @@ s32 fontname_string_to_id(string name) {
     return MENU_FONT_COLOR_GOLD;
 }
 
+local string game_script_formatting_preprocess_string(struct memory_arena* arena, string text) {
+    /* thankfully this is pretty simple... */ 
+    string result = {
+        .data = memory_arena_push(arena, 0),
+    };
+
+#define Add_Character(S, C)                     \
+    do {                                        \
+        memory_arena_push(arena, 1);            \
+        S.data[S.length++] = C;                   \
+    } while(0);
+
+    s32 character_index = 0;
+    while (character_index < text.length) {
+        if (text.data[character_index] == '$') {
+            s32 start_of_format_result = character_index;
+            character_index++;
+
+            while (text.data[character_index] != '$' && character_index < text.length) {
+                character_index++;
+            }
+
+            s32 end_of_format_result = character_index;
+            character_index++;
+
+            /*
+              NOTE:
+              This is a safeguard just in case arena == scratch_arena, as it would break the string I'm allocating there...
+
+              Have to carefully pingpong between region areas, but it should be okay.
+            */
+            memory_arena_set_allocation_region_top(&scratch_arena); {
+                string           format_result = string_slice(text, start_of_format_result, end_of_format_result);
+                struct lisp_list markup_forms  = lisp_read_string_into_forms(&scratch_arena, format_result);
+
+                for (s32 form_index = 0; form_index < markup_forms.count; ++form_index) {
+                    struct lisp_form* current_form     = markup_forms.forms + form_index;
+                    struct lisp_form  evaluated_form   = game_script_evaluate_form(&scratch_arena, game_state, current_form);
+                    string            resulting_string = lisp_primitive_form_into_string(&scratch_arena, &evaluated_form);
+
+                    memory_arena_set_allocation_region_bottom(&scratch_arena);
+                    {
+                        for (s32 resulting_string_index = 0; resulting_string_index < resulting_string.length; ++resulting_string_index) {
+                            Add_Character(result, resulting_string.data[resulting_string_index]);
+                        }
+                    }
+                    memory_arena_set_allocation_region_top(&scratch_arena);
+                }
+            } memory_arena_set_allocation_region_bottom(&scratch_arena);
+        } else {
+            Add_Character(result, text.data[character_index]);
+            character_index++;
+        }
+    }
+#undef Add_Character
+    return result;
+}
+
 local void parse_markup_details(struct rich_text_state* rich_text_state, string text_data, bool skipping_mode) {
     /* lisp forms */ 
     struct lisp_list markup_forms = lisp_read_string_into_forms(&scratch_arena, text_data);

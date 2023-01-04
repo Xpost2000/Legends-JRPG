@@ -24,6 +24,11 @@ struct {
 
     struct rich_text_state rich_text_state;
 
+    s32  dialogue_speaker_buffer_count;
+    char dialogue_speaker_buffer[64];
+    s32  dialogue_buffer_count;
+    char dialogue_buffer[256];
+
     s32 phase;
     f32 phase_animation_timer;
 } dialogue_ui;
@@ -47,6 +52,18 @@ void dialogue_ui_setup_for_next_line_of_dialogue(void) {
 
     dialogue_ui.rich_text_length = 0;
     dialogue_ui.rich_text_state  = rich_text_state_default();
+
+    struct conversation*      conversation              = &game_state->current_conversation;
+    struct conversation_node* current_conversation_node = &conversation->nodes[game_state->current_conversation_node_id-1];
+
+    {
+        string preprocessed_string = game_script_formatting_preprocess_string(&scratch_arena, current_conversation_node->speaker_name);
+        dialogue_ui.dialogue_speaker_buffer_count = copy_string_into_cstring(preprocessed_string, dialogue_ui.dialogue_speaker_buffer, array_count(dialogue_ui.dialogue_speaker_buffer));
+    }
+    {
+        string preprocessed_string = game_script_formatting_preprocess_string(&scratch_arena, current_conversation_node->text);
+        dialogue_ui.dialogue_buffer_count = copy_string_into_cstring(preprocessed_string, dialogue_ui.dialogue_buffer, array_count(dialogue_ui.dialogue_buffer));
+    }
 }
 
 void dialogue_ui_set_target_node(u32 id) {
@@ -66,7 +83,7 @@ void dialogue_ui_set_target_node(u32 id) {
 local s32 conversation_ui_advance_character(bool skipping_mode) {
     struct conversation*      conversation              = &game_state->current_conversation;
     struct conversation_node* current_conversation_node = &conversation->nodes[game_state->current_conversation_node_id-1];
-    s32                       fake_length               = text_length_without_dialogue_rich_markup_length(current_conversation_node->text);
+    s32                       fake_length               = text_length_without_dialogue_rich_markup_length(string_from_cstring_length_counted(dialogue_ui.dialogue_buffer, dialogue_ui.dialogue_buffer_count));
 
     if (dialogue_ui.visible_characters >= fake_length) {
         return 0;
@@ -83,7 +100,7 @@ local s32 conversation_ui_advance_character(bool skipping_mode) {
         {
             struct rich_glyph* current_rich_glyph = &dialogue_ui.rich_text[dialogue_ui.rich_text_length++];
             assertion(dialogue_ui.rich_text_length <= RICH_TEXT_CONVERSATION_UI_MAX_LENGTH && "Your text is too big!");
-            *current_rich_glyph = rich_text_parse_next_glyph(&dialogue_ui.rich_text_state, current_conversation_node->text,
+            *current_rich_glyph = rich_text_parse_next_glyph(&dialogue_ui.rich_text_state, string_from_cstring_length_counted(dialogue_ui.dialogue_buffer, dialogue_ui.dialogue_buffer_count),
                                                              &dialogue_ui.parse_character_cursor, skipping_mode);
         }
     }
@@ -118,16 +135,16 @@ local void update_and_render_conversation_ui(struct game_state* state, struct so
             }
         } break;
         case DIALOGUE_UI_PHASE_IDLE: {
-            struct font_cache* font = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_YELLOW]);
-            struct font_cache* font2 = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_GOLD]);
-            struct conversation* conversation = &game_state->current_conversation;
+            struct font_cache*        font                      = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_YELLOW]);
+            struct font_cache*        font2                     = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_GOLD]);
+            struct conversation*      conversation              = &game_state->current_conversation;
             struct conversation_node* current_conversation_node = &conversation->nodes[game_state->current_conversation_node_id-1];
 
             v2f32 dialogue_box_extents = nine_patch_estimate_extents(ui_chunky, 1, BOX_WIDTH, BOX_HEIGHT);
             v2f32 dialogue_box_start_position = v2f32(SCREEN_WIDTH/2 - dialogue_box_extents.x/2, (SCREEN_HEIGHT * 0.9) - dialogue_box_extents.y);
             {
                 draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, dialogue_box_start_position, BOX_WIDTH, BOX_HEIGHT, UI_DEFAULT_COLOR);
-                draw_ui_breathing_text(framebuffer, v2f32(dialogue_box_start_position.x + TILE_UNIT_SIZE, dialogue_box_start_position.y + TILE_UNIT_SIZE/2), font2, 2, current_conversation_node->speaker_name, 0, color32f32(1,1,1,1));
+                draw_ui_breathing_text(framebuffer, v2f32(dialogue_box_start_position.x + TILE_UNIT_SIZE, dialogue_box_start_position.y + TILE_UNIT_SIZE/2), font2, 2, string_from_cstring_length_counted(dialogue_ui.dialogue_speaker_buffer, dialogue_ui.dialogue_speaker_buffer_count), 0, color32f32(1,1,1,1));
 
                 f32 start_x_cursor        = dialogue_box_start_position.x + 30;
                 f32 start_y_cursor        = dialogue_box_start_position.y + 50;

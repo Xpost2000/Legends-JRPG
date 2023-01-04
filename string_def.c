@@ -33,6 +33,7 @@ bool   string_is_substring(string a, string substring);
 bool cstring_equal(cstring a, cstring b);
 u64  cstring_length(const char* cstring);
 void cstring_copy(cstring source, cstring destination, u64 destination_length);
+u64  copy_string_into_cstring(string source, char* destination, u64 destination_length);
 
 /* obviously this implies you build the string in linear fashion... Not string builder style I hope */
 /* but I can offer a string builder... */
