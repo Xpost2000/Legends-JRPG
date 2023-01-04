@@ -97,50 +97,6 @@ local v2f32 editor_get_world_space_mouse_location(void) {
 
 #include "editor_imgui.c"
 
-void editor_deallocate_tilemap_object_tile(s32 index) {
-    struct level_area_tilemap_tile* tile = editor_state->tilemap_object_tile_pool + index;
-    tile->id = 0;
-}
-s32 editor_allocate_tilemap_object_tile(void) {
-    for (s32 index = 0; index < editor_state->tilemap_object_tile_pool_capacity; ++index) {
-        struct level_area_tilemap_tile* tile = editor_state->tilemap_object_tile_pool + index;
-        if (tile->id == 0) {
-            return index;
-        }
-    }
-
-    return -1;
-}
-/* TODO: need to serialize, display and allow edits */
-void editor_add_tilemap_object_tile_at(struct level_area_tilemap_object_editor* tilemap_object, s32 x, s32 y, s32 id) {
-    assertion(id != 0);
-    for (s32 index = 0; index < tilemap_object->tile_count; ++index) {
-        struct level_area_tilemap_tile* tile = editor_state->tilemap_object_tile_pool + tilemap_object->tiles[index];
-        if (tile->x == x && tile->y == y) {
-            tile->id = id;
-            return;
-        }
-    }
-
-    s32*                            new_tile = &tilemap_object->tiles[tilemap_object->tile_count++];
-    *new_tile                                = editor_allocate_tilemap_object_tile();
-    struct level_area_tilemap_tile* tile     = editor_state->tilemap_object_tile_pool + *new_tile;
-    tile->x                                  = x;
-    tile->y                                  = y;
-    tile->id                                 = id;
-}
-void editor_remove_tilemap_object_tile_at(struct level_area_tilemap_object_editor* tilemap_object, s32 x, s32 y) {
-    for (s32 index = 0; index < tilemap_object->tile_count; ++index) {
-        struct level_area_tilemap_tile* tile = editor_state->tilemap_object_tile_pool + tilemap_object->tiles[index];
-        if (tile->x == x && tile->y == y) {
-            tilemap_object->tiles[index] = tilemap_object->tiles[--tilemap_object->tile_count];
-            editor_deallocate_tilemap_object_tile(index);
-            return;
-        }
-    }
-    return;
-}
-
 void editor_clear_all_allocations(struct editor_state* state) {
     zero_array(state->tile_counts);
     state->trigger_level_transition_count = 0;
@@ -150,12 +106,6 @@ void editor_clear_all_allocations(struct editor_state* state) {
     state->light_count                    = 0;
     state->entity_savepoint_count         = 0;
     state->battle_safe_square_count       = 0;
-    for (s32 index = 0; index < state->tilemap_object_tile_pool_capacity; ++index) {
-        state->tilemap_object_tile_pool[index].id = 0;
-    }
-    for (s32 tilemap_object_index = 0; tilemap_object_index < state->tilemap_object_count; ++tilemap_object_index) {
-        state->tilemap_objects[tilemap_object_index].tile_count = 0;
-    }
 }
 
 void editor_clear_all(struct editor_state* state) {
@@ -179,8 +129,6 @@ void editor_initialize(struct editor_state* state) {
     state->entity_capacity                   = 512*2;
     state->light_capacity                    = 256*2;
     state->battle_safe_square_capacity       = 512*5;
-    state->tilemap_object_capacity           = 128;
-    state->tilemap_object_tile_pool_capacity = 1024*10;
 
     for (s32 index = 0; index < TILE_LAYER_COUNT; ++index) {
         state->tile_layers[index] = memory_arena_push(state->arena, state->tile_capacities[index] * sizeof(*state->tile_layers[0]));
@@ -192,11 +140,6 @@ void editor_initialize(struct editor_state* state) {
     state->entity_savepoints                        = memory_arena_push(state->arena, state->entity_capacity                   * sizeof(*state->entity_savepoints));
     state->lights                                   = memory_arena_push(state->arena, state->light_capacity                    * sizeof(*state->lights));
     state->battle_safe_squares                      = memory_arena_push(state->arena, state->battle_safe_square_capacity       * sizeof(*state->battle_safe_squares));
-    state->tilemap_objects                          = memory_arena_push(state->arena, state->tilemap_object_count              * sizeof(*state->tilemap_objects));
-    for (s32 tilemap_object_index = 0; tilemap_object_index < state->tilemap_object_count; ++tilemap_object_index) {
-        state->tilemap_objects[tilemap_object_index].tiles = memory_arena_push(state->arena, 1024 * sizeof(*state->tilemap_objects[tilemap_object_index].tiles));
-    }
-    state->tilemap_object_tile_pool                 = memory_arena_push(state->arena, state->tilemap_object_tile_pool_capacity * sizeof(*state->tilemap_object_tile_pool));
     editor_clear_all(state);
 }
 
@@ -792,9 +735,6 @@ local void handle_editor_tool_mode_input(struct software_framebuffer* framebuffe
                 Placement_Procedure_For(chest);
                 Placement_Procedure_For(light);
                 Placement_Procedure_For(savepoint);
-#if 0
-                Placement_Procedure_For(tilemap_object);
-#endif
 #undef Placement_Procedure_For
             }
         } break;

@@ -3375,61 +3375,6 @@ void serialize_light(struct binary_serializer* serializer, s32 version, struct l
     }
 }
 
-void initialize_tilemap_object(struct level_area_tilemap_object* tilemap_object) {
-    s16 min_x = SHRT_MAX;
-    s16 min_y = SHRT_MAX;
-    s16 max_x = SHRT_MIN;
-    s16 max_y = SHRT_MIN;
-
-    for (s32 tile_index = 0; tile_index < tilemap_object->tile_count; ++tile_index) {
-        struct level_area_tilemap_tile* current_tile = tilemap_object->tiles + tile_index;
-        if (current_tile->x < min_x) min_x = current_tile->x;
-        if (current_tile->y < min_y) min_y = current_tile->y;
-        if (current_tile->x > max_x) max_x = current_tile->x;
-        if (current_tile->y > max_y) max_y = current_tile->y;
-    } 
-
-    tilemap_object->min_x        = min_x;
-    tilemap_object->min_y        = min_y;
-    tilemap_object->max_x        = max_x;
-    tilemap_object->max_y        = max_y;
-    tilemap_object->velocity     = v2f32(0,0);
-    tilemap_object->acceleration = v2f32(0,0);
-    return;
-}
-
-struct rectangle_f32 tilemap_object_bounding_box(struct level_area_tilemap_object* tilemap_object) {
-    s32 width  = tilemap_object->max_x - tilemap_object->min_x;
-    s32 height = tilemap_object->max_y - tilemap_object->min_y;
-    return rectangle_f32(
-        tilemap_object->min_x + tilemap_object->position.x,
-        tilemap_object->min_y + tilemap_object->position.y,
-        width,
-        height
-    );
-}
-
-void serialize_tilemap_object(struct binary_serializer* serializer, s32 version, struct level_area_tilemap_object* tilemap_object, struct memory_arena* arena) {
-    switch (version) {
-        default:
-        case CURRENT_LEVEL_AREA_VERSION: {
-            serialize_f32(serializer, &tilemap_object->position.x);
-            serialize_f32(serializer, &tilemap_object->position.y);
-            serialize_s32(serializer, &tilemap_object->tile_count);
-            if (serializer->mode == BINARY_SERIALIZER_READ) {
-                tilemap_object->tiles = memory_arena_push(arena, sizeof(*tilemap_object->tiles) * tilemap_object->tile_count);
-            }
-            for (s32 tile_index = 0; tile_index < tilemap_object->tile_count; ++tile_index) {
-                serialize_s32(serializer, &tilemap_object->tiles[tile_index].id);
-                serialize_s16(serializer, &tilemap_object->tiles[tile_index].x);
-                serialize_s16(serializer, &tilemap_object->tiles[tile_index].y);
-            }
-            serialize_u32(serializer, &tilemap_object->flags);
-            serialize_s8(serializer, &tilemap_object->layer);
-        } break;
-    }
-}
-
 void serialize_level_area_entity(struct binary_serializer* serializer, s32 version, struct level_area_entity* entity) {
     switch (version) {
         case 5:

@@ -38,7 +38,6 @@ enum entity_placement_type {
     ENTITY_PLACEMENT_TYPE_chest,
     ENTITY_PLACEMENT_TYPE_light,
     ENTITY_PLACEMENT_TYPE_savepoint,
-    ENTITY_PLACEMENT_TYPE_tilemap_object,
     ENTITY_PLACEMENT_TYPE_count,
 };
 static string entity_placement_type_strings[] = {
@@ -46,7 +45,6 @@ static string entity_placement_type_strings[] = {
     [ENTITY_PLACEMENT_TYPE_chest]     = string_literal("Chest"),
     [ENTITY_PLACEMENT_TYPE_light]     = string_literal("Light"),
     [ENTITY_PLACEMENT_TYPE_savepoint] = string_literal("Savepoint"),
-    [ENTITY_PLACEMENT_TYPE_tilemap_object] = string_literal("Tilemap Object"),
     [ENTITY_PLACEMENT_TYPE_count]     = string_literal("(count)"),
 };
 struct entity_chest_placement_property_menu {
@@ -127,12 +125,6 @@ struct editor_state {
     s32                                      battle_safe_square_capacity;
     s32                                      battle_safe_square_count;
     struct level_area_battle_safe_square*    battle_safe_squares;
-    s32                                      tilemap_object_capacity;
-    s32                                      tilemap_object_count;
-    struct level_area_tilemap_object_editor* tilemap_objects;
-
-    s32                                      tilemap_object_tile_pool_capacity;
-    struct level_area_tilemap_tile*          tilemap_object_tile_pool;
 
     bool fullbright;
     
