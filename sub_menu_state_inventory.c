@@ -11,6 +11,7 @@ enum inventory_ui_animation_phase {
 
 struct {
     s32  queued_item_use_index;
+    s32  queued_party_member_use_index;
 
     s32 confirmation_popup_selection;
 } specific_inventory_ui_state;
@@ -80,93 +81,102 @@ local void do_inventory_use_item_popup(struct software_framebuffer* framebuffer,
     struct item_instance*    current_inventory_item = inventory->items + specific_inventory_ui_state.queued_item_use_index;
     struct item_def*         item_base              = item_database_find_by_id(current_inventory_item->item);
 
-    string confirmation_string = format_temp_s("Use \"%.*s\"?", item_base->name.length, item_base->name.data);
-    f32 text_width  = font_cache_text_width(normal_font, confirmation_string, TEXT_SCALE); 
-    f32 text_height = font_cache_text_height(normal_font) * TEXT_SCALE;
-
-    /* This should be a fixed size box, we'll have to find out what the longest name in the game is and scale it based off of that... */
-    s32 BOX_WIDTH = (text_width/16+3);
-    if (BOX_WIDTH < 25) BOX_WIDTH = 25;
-    s32 BOX_HEIGHT = (5);
-
-    v2f32 ui_box_extents = nine_patch_estimate_extents(ui_chunky, 1, BOX_WIDTH, BOX_HEIGHT);
-
-    v2f32 start_box_point = v2f32(framebuffer->width/2 - ui_box_extents.x/2, framebuffer->height/2 - ui_box_extents.y/2);
-
-    draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, start_box_point, BOX_WIDTH, BOX_HEIGHT, UI_DEFAULT_COLOR);
-    software_framebuffer_draw_text(framebuffer, normal_font, TEXT_SCALE, v2f32(start_box_point.x+15, start_box_point.y+15), confirmation_string, color32f32_WHITE, BLEND_MODE_ALPHA);
-
-    string options[] = {
-        string_literal("USE"),
-        string_literal("CANCEL"),
-    };
-
-    f32 longest_width = 0;
+    /* darken fader */
     {
-        for (s32 option_index = 0; option_index < array_count(options); ++option_index) {
-            f32 current_width = font_cache_text_width(normal_font, options[option_index], TEXT_SCALE);
-            if (current_width > longest_width) {
-                longest_width = current_width;
-            }
-        }
+        software_framebuffer_draw_quad(framebuffer, rectangle_f32(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT), color32u8(0, 0, 0, 100), BLEND_MODE_ALPHA);
     }
 
-    if (selection_move_right) {
-        specific_inventory_ui_state.confirmation_popup_selection += 1;
-        if (specific_inventory_ui_state.confirmation_popup_selection >= array_count(options)) {
-            specific_inventory_ui_state.confirmation_popup_selection = 0;
-        }
-    } else if (selection_move_left) {
-        specific_inventory_ui_state.confirmation_popup_selection -= 1;
-        if (specific_inventory_ui_state.confirmation_popup_selection < 0) {
-            specific_inventory_ui_state.confirmation_popup_selection = array_count(options)-1;
-        }
-    }
+    if (specific_inventory_ui_state.queued_party_member_use_index == -1) {
+        string confirmation_string = format_temp_s("Use \"%.*s\"?", item_base->name.length, item_base->name.data);
+        f32 text_width  = font_cache_text_width(normal_font, confirmation_string, TEXT_SCALE); 
+        f32 text_height = font_cache_text_height(normal_font) * TEXT_SCALE;
 
-    {
-        f32 x_cursor = start_box_point.x + 15;
-        f32 y_cursor = start_box_point.y + ui_box_extents.y*0.9;
+        /* This should be a fixed size box, we'll have to find out what the longest name in the game is and scale it based off of that... */
+        s32 BOX_WIDTH = (text_width/16+3);
+        if (BOX_WIDTH < 25) BOX_WIDTH = 25;
+        s32 BOX_HEIGHT = (5);
 
-        for (s32 option_index = 0; option_index < array_count(options); ++option_index) {
-            struct font_cache* painting_font = normal_font;
+        v2f32 ui_box_extents = nine_patch_estimate_extents(ui_chunky, 1, BOX_WIDTH, BOX_HEIGHT);
 
-            if (option_index == specific_inventory_ui_state.confirmation_popup_selection) {
-                painting_font = highlighted_font;
-            }
+        v2f32 start_box_point = v2f32(framebuffer->width/2 - ui_box_extents.x/2, framebuffer->height/2 - ui_box_extents.y/2);
 
-            software_framebuffer_draw_text(framebuffer, painting_font, TEXT_SCALE, v2f32(x_cursor, y_cursor), options[option_index], color32f32_WHITE, BLEND_MODE_ALPHA);
-            x_cursor += longest_width;
-        }
-    }
+        draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, start_box_point, BOX_WIDTH, BOX_HEIGHT, UI_DEFAULT_COLOR);
+        software_framebuffer_draw_text(framebuffer, normal_font, TEXT_SCALE, v2f32(start_box_point.x+15, start_box_point.y+15), confirmation_string, color32f32_WHITE, BLEND_MODE_ALPHA);
 
-    /*
-      would probably need to modify the menu a bit to show more stuff, but for the demo it's
-      okay if I omit that feature (IE: if I heal it should show that I'm healing, but that takes some more
-      UI state work, and I would best be served refactoring some of that anyways before I get to work on that...)
-    */
-    if (selection_confirmation) {
-        switch (specific_inventory_ui_state.confirmation_popup_selection) {
-            case 0: {
-                /* actually use the item here. */
-                {
-                    s32 index = specific_inventory_ui_state.queued_item_use_index;
-                    struct item_def* item = item_database_find_by_id(inventory->items[index].item);
+        string options[] = {
+            string_literal("USE"),
+            string_literal("CANCEL"),
+        };
 
-                    /* should this type checking really be here? */
-                    if (item->type != ITEM_TYPE_MISC) {
-                        _debugprintf("use item \"%.*s\"", item->name.length, item->name.data);
-
-                        struct entity* player = game_get_player(game_state);
-                        entity_inventory_use_item(inventory, index, player);
-                    }   
+        f32 longest_width = 0;
+        {
+            for (s32 option_index = 0; option_index < array_count(options); ++option_index) {
+                f32 current_width = font_cache_text_width(normal_font, options[option_index], TEXT_SCALE);
+                if (current_width > longest_width) {
+                    longest_width = current_width;
                 }
-                repopulate_inventory_view();
-                specific_inventory_ui_state.queued_item_use_index = -1;
-            } break;
-            case 1: {
-                specific_inventory_ui_state.queued_item_use_index = -1;
-            } break;
+            }
         }
+
+        if (selection_move_right) {
+            specific_inventory_ui_state.confirmation_popup_selection += 1;
+            if (specific_inventory_ui_state.confirmation_popup_selection >= array_count(options)) {
+                specific_inventory_ui_state.confirmation_popup_selection = 0;
+            }
+        } else if (selection_move_left) {
+            specific_inventory_ui_state.confirmation_popup_selection -= 1;
+            if (specific_inventory_ui_state.confirmation_popup_selection < 0) {
+                specific_inventory_ui_state.confirmation_popup_selection = array_count(options)-1;
+            }
+        }
+
+        {
+            f32 x_cursor = start_box_point.x + 15;
+            f32 y_cursor = start_box_point.y + ui_box_extents.y*0.9;
+
+            for (s32 option_index = 0; option_index < array_count(options); ++option_index) {
+                struct font_cache* painting_font = normal_font;
+
+                if (option_index == specific_inventory_ui_state.confirmation_popup_selection) {
+                    painting_font = highlighted_font;
+                }
+
+                software_framebuffer_draw_text(framebuffer, painting_font, TEXT_SCALE, v2f32(x_cursor, y_cursor), options[option_index], color32f32_WHITE, BLEND_MODE_ALPHA);
+                x_cursor += longest_width;
+            }
+        }
+
+        /*
+          would probably need to modify the menu a bit to show more stuff, but for the demo it's
+          okay if I omit that feature (IE: if I heal it should show that I'm healing, but that takes some more
+          UI state work, and I would best be served refactoring some of that anyways before I get to work on that...)
+        */
+        if (selection_confirmation) {
+            switch (specific_inventory_ui_state.confirmation_popup_selection) {
+                case 0: {
+                    /* actually use the item here. */
+                    {
+                        s32 index = specific_inventory_ui_state.queued_item_use_index;
+                        struct item_def* item = item_database_find_by_id(inventory->items[index].item);
+
+                        /* should this type checking really be here? */
+                        if (item->type != ITEM_TYPE_MISC) {
+                            _debugprintf("use item \"%.*s\"", item->name.length, item->name.data);
+
+                            struct entity* player = game_get_player(game_state);
+                            entity_inventory_use_item(inventory, index, player);
+                        }   
+                    }
+                    repopulate_inventory_view();
+                    specific_inventory_ui_state.queued_item_use_index = -1;
+                } break;
+                case 1: {
+                    specific_inventory_ui_state.queued_item_use_index = -1;
+                } break;
+            }
+        }
+    } else {
+        
     }
 }
 

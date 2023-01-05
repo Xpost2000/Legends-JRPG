@@ -71,4 +71,8 @@ local void close_pause_menu(void);
 local void reexpose_pause_menu_options(void);
 local void pause_menu_transition_to(u32 submenu);
 
+v2f32 party_member_card_dimensions_units(void);
+v2f32 party_member_card_dimensions_pixels(void);
+void draw_party_member_card(struct software_framebuffer* framebuffer, f32 x, f32 y, s32 member);
+
 #endif
