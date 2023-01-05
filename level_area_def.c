@@ -467,6 +467,10 @@ bool level_area_any_obstructions_at(struct level_area* area, s32 x, s32 y) {
 
     /* check qualifying scriptable layers */
     {
+        /* NOTE:
+           The iterator pattern is increasingly proving more and more valuable... In the future when I will make sure to do this more often.
+           Right now I'll just inline most of it...
+        */
         for (s32 layer_index = TILE_LAYER_SCRIPTABLE_0; layer_index <= TILE_LAYER_SCRIPTABLE_31; ++layer_index) {
             struct scriptable_tile_layer_property* layer_properties = area->scriptable_layer_properties + (layer_index - TILE_LAYER_SCRIPTABLE_0);
 
