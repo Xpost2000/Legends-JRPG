@@ -100,7 +100,7 @@ local void dialogue_node_evaluate_code(struct memory_arena* arena, struct conver
 /*
   NOTE: This essentially operates "line" mode
 */
-local void parse_and_compose_dialogue(struct game_state* state, struct lexer* lexer_state) {
+local void parse_and_compose_dialogue(struct game_state* state, struct lexer* lexer_state, s32* starting_node) {
     struct lexer_token determiner_token = lexer_peek_token(lexer_state);
 
     if (determiner_token.type == TOKEN_TYPE_LIST) {
@@ -130,8 +130,8 @@ local void parse_and_compose_dialogue(struct game_state* state, struct lexer* le
                 _debugprintf("Got back\n");
                 _debug_print_out_lisp_code(&winning_start);
             } else {
-                state->current_conversation_node_id = new_start;
-                _debugprintf("Figured out the new start should be: %d\n", state->current_conversation_node_id);
+                *starting_node = new_start;
+                _debugprintf("Figured out the new start should be: %d\n", *starting_node);
             }
         }
         lexer_next_token(lexer_state);
@@ -215,16 +215,17 @@ local void game_open_conversation_file(struct game_state* state, string filename
     state->before_conversation_camera         = state->camera; 
     struct conversation* conversation = &state->current_conversation;
     conversation->node_count = 0;
-    state->current_conversation_node_id       = 1;
+    state->current_conversation_node_id       = 0;
     state->currently_selected_dialogue_choice = 0;
     state->conversation_file_buffer           = read_entire_file(memory_arena_allocator(&state->conversation_arena), filename);
     struct lexer lexer_state                  = {.buffer = file_buffer_as_string(&state->conversation_file_buffer),};
 
+    s32 starting_node = 1;
     while (!lexer_done(&lexer_state)) {
-        parse_and_compose_dialogue(state, &lexer_state);
+        parse_and_compose_dialogue(state, &lexer_state, &starting_node);
         _debugprintf("next line\n");
     }
 
-    void dialogue_ui_setup_for_next_line_of_dialogue(void);
-    dialogue_ui_setup_for_next_line_of_dialogue();
+    void dialogue_ui_set_target_node(u32);
+    dialogue_ui_set_target_node(starting_node);
 }

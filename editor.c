@@ -164,13 +164,21 @@ void editor_serialize_area(struct binary_serializer* serializer) {
     _debugprintf("reading tiles");
 
     if (version_id >= 12) {
-        { /* NOTE: My primitive leak check will say this is a memory leak, which it *is*, but it's the kind that doesn't matter. */
-            IAllocator allocator = heap_allocator();
-            serialize_bytes(serializer, editor_state->level_settings.area_name, array_count(editor_state->level_settings.area_name));
-            serialize_string(&allocator, serializer, &editor_state->level_script_string);
+        { /* NOTE: My primitive leak check will say this is a memory leak, which I think it *is*, but it's the kind that doesn't matter. */
 
-            OS_create_directory(string_literal("temp/"));
-            write_string_into_entire_file(string_literal("temp/SCRIPT.txt"), editor_state->level_script_string);
+            serialize_bytes(serializer, editor_state->level_settings.area_name, array_count(editor_state->level_settings.area_name));
+            IAllocator allocator = heap_allocator();
+
+            if (serializer->mode == BINARY_SERIALIZER_READ) {
+                serialize_string(&allocator, serializer, &editor_state->level_script_string);
+                OS_create_directory(string_literal("temp/"));
+                write_string_into_entire_file(string_literal("temp/SCRIPT.txt"), editor_state->level_script_string);
+            } else {
+                struct file_buffer script_filebuffer = OS_read_entire_file(allocator, string_literal("temp/SCRIPT.txt"));
+                editor_state->level_script_string = file_buffer_as_string(&script_filebuffer);
+                serialize_string(&allocator, serializer, &editor_state->level_script_string);
+                file_buffer_free(&script_filebuffer);
+            }
         }
     }
 

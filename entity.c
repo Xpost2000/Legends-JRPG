@@ -521,7 +521,7 @@ void entity_snap_to_grid_position(struct entity* entity) {
 void entity_look_at(struct entity* entity, v2f32 position) {
     v2f32 position_delta = v2f32_direction(entity->position, position);
 
-    _debugprintf("look at delta: %f, %f\n", position_delta.x, position_delta.y);
+    /* _debugprintf("look at delta: %f, %f\n", position_delta.x, position_delta.y); */
     if (fabs(position_delta.x) > fabs(position_delta.y)) {
         if (position_delta.x < 0) {
             entity->facing_direction = DIRECTION_LEFT;
@@ -2236,7 +2236,7 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
                             } break;
                             case LOOK_TARGET_TYPE_ENTITY: {
                                 struct entity* look_target_entity = decode_sequence_action_target_entity_into_entity(state, target_entity, &look_at->look_target);
-                                _debugprintf("Trying to look at entity %p looktarget, %p self", target_entity, look_target_entity);
+                                /* _debugprintf("Trying to look at entity %p looktarget, %p self", target_entity, look_target_entity); */
                                 entity_look_at_and_set_animation_state(target_entity, look_target_entity->position);
                             } break;
                             case LOOK_TARGET_TYPE_DIRECTION: {

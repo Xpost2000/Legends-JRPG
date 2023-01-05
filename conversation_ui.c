@@ -36,6 +36,7 @@ struct {
 local void start_dialogue_ui(void) {
     dialogue_ui.phase                 = DIALOGUE_UI_PHASE_OPEN_UP;
     dialogue_ui.phase_animation_timer = 0;
+    dialogue_ui_set_target_node(1);
 }
 
 local void close_dialogue_ui(void) {

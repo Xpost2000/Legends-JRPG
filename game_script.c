@@ -720,7 +720,7 @@ struct lisp_form game_script_evaluate_form(struct memory_arena* arena, struct ga
                             _debugprintf("this is an error!");
                         } else {
                             var->value = s32_result;
-                            _debugprintf("Successfully set var");
+                            _debugprintf("Successfully set var: %.*s", var_name_as_string.length, var_name_as_string.data);
                         }
                     }
                 } else {
