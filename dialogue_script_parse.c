@@ -165,7 +165,7 @@ local void parse_and_compose_dialogue(struct game_state* state, struct lexer* le
             new_node->choice_count = 0;
             new_node->id           = proposed_id;
             _debugprintf("new id: %d", proposed_id);
-            new_node->target       = conversation->node_count+1;
+            new_node->target       = proposed_id+1;
 
             if (lexer_token_is_symbol_matching(maybe_arrow, string_literal("=>"))) {
                 lexer_next_token(lexer_state);
