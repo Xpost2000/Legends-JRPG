@@ -140,14 +140,21 @@ local void parse_and_compose_dialogue(struct game_state* state, struct lexer* le
         /* try to eat remaining state to finish off the lexer */
         lexer_next_token(lexer_state);
     } else {
+        struct conversation* conversation = &state->current_conversation;
         /* no error checking */
-        struct lexer_token speaker_name  = lexer_next_token(lexer_state);
+        s32 proposed_id = conversation->node_count+1;
+        struct lexer_token first_token = lexer_next_token(lexer_state);
+        struct lexer_token speaker_name  = {};
+        if (first_token.type == TOKEN_TYPE_NUMBER && !first_token.is_real) {
+            speaker_name  = lexer_next_token(lexer_state);
+            proposed_id = string_to_s32(first_token.str);
+        } else {
+            speaker_name    = first_token;
+        }
         struct lexer_token colon         = lexer_next_token(lexer_state);
         struct lexer_token dialogue_line = lexer_next_token(lexer_state);
         /* try to peek and see if we find an arrow */
         struct lexer_token maybe_arrow   = lexer_peek_token(lexer_state);
-
-        struct conversation* conversation = &state->current_conversation;
 
         if (speaker_name.type == TOKEN_TYPE_STRING && colon.type == TOKEN_TYPE_COLON && dialogue_line.type == TOKEN_TYPE_STRING) {
             struct conversation_node* new_node = &conversation->nodes[conversation->node_count++];
@@ -156,6 +163,8 @@ local void parse_and_compose_dialogue(struct game_state* state, struct lexer* le
             new_node->speaker_name = speaker_name.str;
             new_node->text         = dialogue_line.str;
             new_node->choice_count = 0;
+            new_node->id           = proposed_id;
+            _debugprintf("new id: %d", proposed_id);
             new_node->target       = conversation->node_count+1;
 
             if (lexer_token_is_symbol_matching(maybe_arrow, string_literal("=>"))) {
@@ -226,6 +235,6 @@ local void game_open_conversation_file(struct game_state* state, string filename
         _debugprintf("next line\n");
     }
 
-    void dialogue_ui_set_target_node(u32);
+    void dialogue_ui_set_target_node(s32);
     dialogue_ui_set_target_node(starting_node);
 }

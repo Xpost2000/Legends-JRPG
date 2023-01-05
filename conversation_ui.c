@@ -36,7 +36,6 @@ struct {
 local void start_dialogue_ui(void) {
     dialogue_ui.phase                 = DIALOGUE_UI_PHASE_OPEN_UP;
     dialogue_ui.phase_animation_timer = 0;
-    dialogue_ui_set_target_node(1);
 }
 
 local void close_dialogue_ui(void) {
@@ -46,6 +45,16 @@ local void close_dialogue_ui(void) {
 
 /* I would like to vary dialogue, but that takes a lot of extra mark up and rewriting... */
 /* for now just keep it like this. */
+struct conversation_node* conversation_find_node_with_id(struct conversation* conversation, s32 id) {
+    for (s32 index = 0; index < conversation->node_count; ++index) {
+        if (conversation->nodes[index].id == id) {
+            return &conversation->nodes[index];
+        }
+    }
+
+    return NULL;
+}
+
 void dialogue_ui_setup_for_next_line_of_dialogue(void) {
     dialogue_ui.speak_timer            = 0;
     dialogue_ui.visible_characters     = 0;
@@ -55,7 +64,7 @@ void dialogue_ui_setup_for_next_line_of_dialogue(void) {
     dialogue_ui.override_next_node     = -1;
 
     struct conversation*      conversation              = &game_state->current_conversation;
-    struct conversation_node* current_conversation_node = &conversation->nodes[game_state->current_conversation_node_id-1];
+    struct conversation_node* current_conversation_node = conversation_find_node_with_id(conversation, game_state->current_conversation_node_id);
 
     {
         string preprocessed_string = game_script_formatting_preprocess_string(&scratch_arena, current_conversation_node->speaker_name);
@@ -67,14 +76,14 @@ void dialogue_ui_setup_for_next_line_of_dialogue(void) {
     }
 }
 
-void dialogue_ui_set_target_node(u32 id) {
+void dialogue_ui_set_target_node(s32 id) {
     game_state->current_conversation_node_id = id;
     
     if (id == 0) {
         close_dialogue_ui();
     } else {
         struct conversation*      conversation              = &game_state->current_conversation;
-        struct conversation_node* current_conversation_node = &conversation->nodes[game_state->current_conversation_node_id-1];
+        struct conversation_node* current_conversation_node = conversation_find_node_with_id(conversation, game_state->current_conversation_node_id);
 
         dialogue_ui_setup_for_next_line_of_dialogue();
         dialogue_try_to_execute_script_actions(game_state, current_conversation_node);
@@ -84,7 +93,7 @@ void dialogue_ui_set_target_node(u32 id) {
 /* returns amount of characters to read */
 local s32 conversation_ui_advance_character(bool skipping_mode) {
     struct conversation*      conversation              = &game_state->current_conversation;
-    struct conversation_node* current_conversation_node = &conversation->nodes[game_state->current_conversation_node_id-1];
+    struct conversation_node* current_conversation_node = conversation_find_node_with_id(conversation, game_state->current_conversation_node_id);
     s32                       fake_length               = text_length_without_dialogue_rich_markup_length(string_from_cstring_length_counted(dialogue_ui.dialogue_buffer, dialogue_ui.dialogue_buffer_count));
 
     if (dialogue_ui.visible_characters >= fake_length) {
@@ -140,7 +149,7 @@ local void update_and_render_conversation_ui(struct game_state* state, struct so
             struct font_cache*        font                      = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_YELLOW]);
             struct font_cache*        font2                     = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_GOLD]);
             struct conversation*      conversation              = &game_state->current_conversation;
-            struct conversation_node* current_conversation_node = &conversation->nodes[game_state->current_conversation_node_id-1];
+            struct conversation_node* current_conversation_node = conversation_find_node_with_id(conversation, game_state->current_conversation_node_id);
 
             v2f32 dialogue_box_extents = nine_patch_estimate_extents(ui_chunky, 1, BOX_WIDTH, BOX_HEIGHT);
             v2f32 dialogue_box_start_position = v2f32(SCREEN_WIDTH/2 - dialogue_box_extents.x/2, (SCREEN_HEIGHT * 0.9) - dialogue_box_extents.y);
@@ -247,7 +256,7 @@ local void update_and_render_conversation_ui(struct game_state* state, struct so
                             (void)(0);
                         }
                     } else {
-                        u32 target = current_conversation_node->target;
+                        s32 target = current_conversation_node->target;
                         if (dialogue_ui.override_next_node != -1) {
                             target = dialogue_ui.override_next_node;
                         }
@@ -306,7 +315,7 @@ local void update_and_render_conversation_ui(struct game_state* state, struct so
 
                     if (is_action_pressed(INPUT_ACTION_CONFIRMATION)) {
                         state->viewing_dialogue_choices = false;
-                        u32 target = current_conversation_node->choices[state->currently_selected_dialogue_choice].target;
+                        s32 target = current_conversation_node->choices[state->currently_selected_dialogue_choice].target;
                         if (current_conversation_node->choices[state->currently_selected_dialogue_choice].script_code.length) {
                             dialogue_choice_try_to_execute_script_actions(state, &current_conversation_node->choices[state->currently_selected_dialogue_choice], state->currently_selected_dialogue_choice);
                         } else {

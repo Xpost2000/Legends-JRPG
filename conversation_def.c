@@ -14,12 +14,13 @@
 struct conversation_choice {
     string text;
     /* does not count bartering */
-    u32    target; /* 0 == END_CONVERSATION */
+    s32    target; /* 0 == END_CONVERSATION */
 
     /* will override target! */
     string script_code;
 };
 struct conversation_node {
+    s32      id;
     string   speaker_name;
     string   text;
 
@@ -27,7 +28,7 @@ struct conversation_node {
     struct conversation_choice choices[MAX_CONVERSATION_CHOICES];
 
     /* use if no choices, and using the default continue option */
-    u32 target;
+    s32 target;
 
     /* will override target! */
     /* note you cannot have script + choices. */
@@ -42,14 +43,15 @@ struct conversation {
 };
 
 /* code construction utils, not needed for runtime... */
-struct conversation_node* conversation_push_node(struct conversation* c, string speaker_name, string text, u32 target) {
+struct conversation_node* conversation_push_node(struct conversation* c, string speaker_name, string text, s32 target, s32 id) {
     struct conversation_node* n = &c->nodes[c->node_count++];
+    n->id           = id;
     n->speaker_name = speaker_name;
     n->text         = text;
     n->target       = target;
     return n;
 }
-struct conversation_choice* conversation_push_choice(struct conversation_node* c, string text, u32 target) {
+struct conversation_choice* conversation_push_choice(struct conversation_node* c, string text, s32 target) {
     struct conversation_choice* choice = &c->choices[c->choice_count++];
     choice->text   = text;
     choice->target = target;
