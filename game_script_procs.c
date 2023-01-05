@@ -953,6 +953,33 @@ GAME_LISP_FUNCTION(SET_POSITION) {
     return LISP_nil;
 }
 
+GAME_LISP_FUNCTION(SET_SCRIPTABLE_LAYER_ID) {
+    Required_Argument_Count(SET_SCRIPTABLE_LAYER_ID, 2);
+    struct game_script_typed_ptr ptr    = game_script_object_handle_decode(arguments[0]);
+    struct lisp_form*            arg1   = &arguments[1];
+    s32                          new_id = 0;
+    Fatal_Script_Error(ptr.type == GAME_SCRIPT_TARGET_SCRIPTABLE_LAYER && "This method only works on script_layers!");
+    if (lisp_form_symbol_matching(*arg1, string_literal("object"))) {
+        new_id = TILE_LAYER_OBJECT;
+    } else if (lisp_form_symbol_matching(*arg1, string_literal("ground"))) {
+        new_id = TILE_LAYER_GROUND;
+    } else if (lisp_form_symbol_matching(*arg1, string_literal("clutter-decor"))) {
+        new_id = TILE_LAYER_CLUTTER_DECOR;
+    } else if (lisp_form_symbol_matching(*arg1, string_literal("overhead"))) {
+        new_id = TILE_LAYER_OVERHEAD;
+    } else if (lisp_form_symbol_matching(*arg1, string_literal("roof"))) {
+        new_id = TILE_LAYER_ROOF;
+    } else if (lisp_form_symbol_matching(*arg1, string_literal("foreground"))) {
+        new_id = TILE_LAYER_FOREGROUND;
+    } else {
+        Fatal_Script_Error(lisp_form_get_s32(*arg1, &new_id) && "new id must be an integer convertable number!");
+    }
+    struct scriptable_tile_layer_property* layer_properties = ptr.ptr;
+    layer_properties->draw_layer                            = new_id;
+    _debugprintf("Set new draw layer id to be: %d(%.*s)", new_id, tile_layer_strings[new_id].length, tile_layer_strings[new_id].data);
+    return LISP_nil;
+}
+
 GAME_LISP_FUNCTION(NTH) {
     Required_Argument_Count(NTH, 2);
     s32 index = -1;
