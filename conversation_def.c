@@ -56,4 +56,6 @@ struct conversation_choice* conversation_push_choice(struct conversation_node* c
     return choice;
 }
 
+void dialogue_ui_set_override_next_target(s32 new_override);
+
 #endif

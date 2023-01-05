@@ -2297,14 +2297,22 @@ local void dialogue_try_to_execute_script_actions(struct game_state* state, stru
         /* we should already know this is a DO form so just go */
 
         struct lisp_list* list_contents = &code.list;
+        struct lisp_form latest;
+
         for (unsigned index = 1; index < list_contents->count; ++index) {
             struct lisp_form* form = list_contents->forms + index;
-            game_script_evaluate_form(&scratch_arena, state, form);
+            latest = game_script_evaluate_form(&scratch_arena, state, form);
+        }
+
+        s32 override_node = -1;
+        if (lisp_form_get_s32(latest, &override_node)) {
+            dialogue_ui_set_override_next_target(override_node);
         }
     } else {
         _debugprintf("no dialogue script present");
     }
 }
+/* need to change this to not require that and do something more "lispy" */
 local void dialogue_choice_try_to_execute_script_actions(struct game_state* state, struct conversation_choice* choice, s32 choice_index) {
     if (choice->script_code.length) {
         _debugprintf("dialogue choice script present");

@@ -1,6 +1,3 @@
-/*
-  INPROGRESS: Rich text system, which is kind of annoying to implement.
-*/
 #define RICHTEXT_EXPERIMENTAL
 
 #define DIALOGUE_UI_CHARACTER_TYPE_TIMER     (0.045)
@@ -31,6 +28,9 @@ struct {
 
     s32 phase;
     f32 phase_animation_timer;
+
+    /* -1 means default choice */
+    s32 override_next_node;
 } dialogue_ui;
 
 local void start_dialogue_ui(void) {
@@ -50,9 +50,9 @@ void dialogue_ui_setup_for_next_line_of_dialogue(void) {
     dialogue_ui.speak_timer            = 0;
     dialogue_ui.visible_characters     = 0;
     dialogue_ui.parse_character_cursor = 0;
-
-    dialogue_ui.rich_text_length = 0;
-    dialogue_ui.rich_text_state  = rich_text_state_default();
+    dialogue_ui.rich_text_length       = 0;
+    dialogue_ui.rich_text_state        = rich_text_state_default();
+    dialogue_ui.override_next_node     = -1;
 
     struct conversation*      conversation              = &game_state->current_conversation;
     struct conversation_node* current_conversation_node = &conversation->nodes[game_state->current_conversation_node_id-1];
@@ -248,6 +248,10 @@ local void update_and_render_conversation_ui(struct game_state* state, struct so
                         }
                     } else {
                         u32 target = current_conversation_node->target;
+                        if (dialogue_ui.override_next_node != -1) {
+                            target = dialogue_ui.override_next_node;
+                        }
+                        /* TODO verify that this thing is safe. */
                         dialogue_ui_set_target_node(target);
                     }
                 }
@@ -340,4 +344,8 @@ local void update_and_render_conversation_ui(struct game_state* state, struct so
             }
         } break;
     }
+}
+
+void dialogue_ui_set_override_next_target(s32 new_override) {
+    dialogue_ui.override_next_node = new_override;
 }
