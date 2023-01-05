@@ -29,8 +29,9 @@ void open_party_inventory_screen(void) {
     shopping_ui.phase = INVENTORY_UI_ANIMATION_PHASE_SLIDE_IN;
     /* shopping_ui.phase = INVENTORY_UI_ANIMATION_PHASE_IDLE; */
     repopulate_inventory_view();
-    specific_inventory_ui_state.queued_item_use_index = -1;
-    specific_inventory_ui_state.confirmation_popup_selection = 0;
+    specific_inventory_ui_state.queued_item_use_index         = -1;
+    specific_inventory_ui_state.queued_party_member_use_index = -1;
+    specific_inventory_ui_state.confirmation_popup_selection  = 0;
 }
 
 void inventory_remove_queued_item_usage(void) {
@@ -67,11 +68,6 @@ local void do_inventory_use_item_popup(struct software_framebuffer* framebuffer,
     bool selection_cancel       = is_action_down_with_repeat(INPUT_ACTION_PAUSE);
     bool selection_confirmation = is_action_pressed(INPUT_ACTION_CONFIRMATION);
 
-    if (selection_cancel) {
-        inventory_remove_queued_item_usage();
-        return;
-    }
-
     const f32 TEXT_SCALE = 2;
 
     struct font_cache* normal_font      = game_get_font(MENU_FONT_COLOR_WHITE);
@@ -87,6 +83,11 @@ local void do_inventory_use_item_popup(struct software_framebuffer* framebuffer,
     }
 
     if (specific_inventory_ui_state.queued_party_member_use_index == -1) {
+        if (selection_cancel) {
+            inventory_remove_queued_item_usage();
+            return;
+        }
+
         string confirmation_string = format_temp_s("Use \"%.*s\"?", item_base->name.length, item_base->name.data);
         f32 text_width  = font_cache_text_width(normal_font, confirmation_string, TEXT_SCALE); 
         f32 text_height = font_cache_text_height(normal_font) * TEXT_SCALE;
@@ -154,21 +155,8 @@ local void do_inventory_use_item_popup(struct software_framebuffer* framebuffer,
         if (selection_confirmation) {
             switch (specific_inventory_ui_state.confirmation_popup_selection) {
                 case 0: {
-                    /* actually use the item here. */
-                    {
-                        s32 index = specific_inventory_ui_state.queued_item_use_index;
-                        struct item_def* item = item_database_find_by_id(inventory->items[index].item);
-
-                        /* should this type checking really be here? */
-                        if (item->type != ITEM_TYPE_MISC) {
-                            _debugprintf("use item \"%.*s\"", item->name.length, item->name.data);
-
-                            struct entity* player = game_get_player(game_state);
-                            entity_inventory_use_item(inventory, index, player);
-                        }   
-                    }
-                    repopulate_inventory_view();
-                    specific_inventory_ui_state.queued_item_use_index = -1;
+                    /* opening up the queue menu. */
+                    specific_inventory_ui_state.queued_party_member_use_index = 0;
                 } break;
                 case 1: {
                     specific_inventory_ui_state.queued_item_use_index = -1;
@@ -176,7 +164,52 @@ local void do_inventory_use_item_popup(struct software_framebuffer* framebuffer,
             }
         }
     } else {
-        
+        /* would like to fade in but I don't have time for that :/ */ 
+        s32   party_member_count   = game_state->party_member_count;
+        v2f32 estimated_dimensions = party_member_card_dimensions_pixels();
+        f32   cards_x              = SCREEN_WIDTH/2  - estimated_dimensions.x/2;
+        /* magical spacing number */
+        f32   y_cursor             = SCREEN_HEIGHT/2 - (estimated_dimensions.y * 1.23 * party_member_count)/2;
+
+        s32              index = specific_inventory_ui_state.queued_item_use_index;
+        struct item_def* item  = item_database_find_by_id(inventory->items[index].item);
+
+        /* NOTE This would have to be a bit more specific to account for "KOed" party members. Who might not be selectable for certain items. */
+        if (selection_move_right) {
+            specific_inventory_ui_state.queued_party_member_use_index += 1;
+            if (specific_inventory_ui_state.queued_party_member_use_index >= party_member_count) {
+                specific_inventory_ui_state.queued_party_member_use_index = 0;
+            }
+        } else if (selection_move_left) {
+            specific_inventory_ui_state.queued_party_member_use_index -= 1;
+            if (specific_inventory_ui_state.queued_party_member_use_index < 0) {
+                specific_inventory_ui_state.queued_party_member_use_index = party_member_count-1;
+            }
+        }
+
+        for (s32 party_member_index = 0; party_member_index < party_member_count; ++party_member_index) {
+            f32 offset = 0;
+            if (party_member_index == specific_inventory_ui_state.queued_party_member_use_index) {
+                offset = TILE_UNIT_SIZE;
+            }
+            draw_party_member_card(framebuffer, cards_x + offset, y_cursor, party_member_index);
+            y_cursor += estimated_dimensions.y * 1.23;
+        }
+
+        if (selection_confirmation) {
+            /* TODO: I should show an animation to indicate item usage */
+            if (item->type != ITEM_TYPE_MISC) {
+                _debugprintf("use item \"%.*s\"", item->name.length, item->name.data);
+
+                struct entity* player = game_get_party_member(specific_inventory_ui_state.queued_party_member_use_index);
+                entity_inventory_use_item(inventory, index, player);
+                repopulate_inventory_view();
+                specific_inventory_ui_state.queued_item_use_index         = -1;
+                specific_inventory_ui_state.queued_party_member_use_index = -1;
+            }   
+        } else if (selection_cancel) {
+            specific_inventory_ui_state.queued_party_member_use_index = -1;
+        }
     }
 }
 
