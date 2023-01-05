@@ -406,6 +406,22 @@ struct lisp_form lisp_form_string(string string_constant) {
     return result;
 }
 
+/*
+  NOTE: also don't keep references. Uses scratch memory! Only for intermediate calculations.
+  I mean all game-script lisp stuff is kind of like this anyways...
+*/
+struct lisp_form lisp_form_v2f32(v2f32 xy) {
+    struct lisp_form result = {};
+    result.type = LISP_FORM_LIST;
+    result.list.count = 2;
+    result.list.forms = memory_arena_push(&scratch_arena, sizeof(struct lisp_form) * 2);
+
+    result.list.forms[0] = lisp_form_real(xy.x);
+    result.list.forms[1] = lisp_form_real(xy.y);
+
+    return result;
+}
+
 struct lisp_form* lisp_list_nth(struct lisp_form* f, s32 index);
 
 bool lisp_form_get_string(struct lisp_form form, string* value) {

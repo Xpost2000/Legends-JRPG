@@ -822,17 +822,146 @@ GAME_LISP_FUNCTION(SET_HEALTH) {
 GAME_LISP_FUNCTION(GET_POSITION) {
     Required_Argument_Count(GET_POSITION, 1);
     struct game_script_typed_ptr ptr    = game_script_object_handle_decode(arguments[0]);
-    struct entity*               entity = game_dereference_entity(state, ptr.entity_id);
 
-    struct lisp_form result = {};
-    result.type = LISP_FORM_LIST;
-    result.list.count = 2;
-    result.list.forms = memory_arena_push(&scratch_arena, sizeof(struct lisp_form) * 2);
+    switch (ptr.type) {
+        case GAME_SCRIPT_TARGET_ENTITY: {
+            struct entity*               entity = game_dereference_entity(state, ptr.entity_id);
+            return lisp_form_v2f32(v2f32(entity->position.x / TILE_UNIT_SIZE,
+                                         entity->position.y / TILE_UNIT_SIZE));
+        } break;
+        case GAME_SCRIPT_TARGET_LIGHT: {
+            struct light_def* light = ptr.ptr;
+            return lisp_form_v2f32(light->position);
+        } break;
+        case GAME_SCRIPT_TARGET_TRANSITION_TRIGGER: {
+            /* ? */
+            struct trigger_level_transition* transition = ptr.ptr;
+            return lisp_form_v2f32(
+                v2f32(
+                    transition->bounds.x,
+                    transition->bounds.y
+                )
+            );
+        } break;
+        case GAME_SCRIPT_TARGET_TRIGGER: {
+            /* ? */
+            struct trigger* trigger = ptr.ptr;
+            return lisp_form_v2f32(
+                v2f32(
+                    trigger->bounds.x,
+                    trigger->bounds.y
+                )
+            );
+        } break;
+        case GAME_SCRIPT_TARGET_SAVEPOINT: {
+            struct entity_savepoint* savepoint = ptr.ptr;
+            return lisp_form_v2f32(savepoint->position);
+        } break;
+        case GAME_SCRIPT_TARGET_CHEST: {
+            struct entity_chest* chest = ptr.ptr;
+            return lisp_form_v2f32(chest->position);
+        } break;
+        case GAME_SCRIPT_TARGET_SCRIPTABLE_LAYER: {
+            struct scriptable_tile_layer_property* layer_properties = ptr.ptr;
+            return lisp_form_v2f32(
+                v2f32(
+                    layer_properties->offset_x,
+                    layer_properties->offset_y
+                )
+            );
+        } break;
+        default: {
+            /* unknown type */
+            /* ? */
+        } break;
+    }
 
-    result.list.forms[0] = lisp_form_real(entity->position.x / TILE_UNIT_SIZE);
-    result.list.forms[1] = lisp_form_real(entity->position.y / TILE_UNIT_SIZE);
+    return LISP_nil;
+}
+GAME_LISP_FUNCTION(SET_POSITION) {
+    Required_Argument_Count(SET_POSITION, 2);
+    struct game_script_typed_ptr ptr        = game_script_object_handle_decode(arguments[0]);
+    struct lisp_form*            where_form = &arguments[1];
+    v2f32                        where      = v2f32(0,0);
 
-    return result;
+    Fatal_Script_Error(lisp_form_get_v2f32(*where_form, &where) && "Need where form!");
+
+    switch (ptr.type) {
+        case GAME_SCRIPT_TARGET_ENTITY: {
+            struct entity*               entity = game_dereference_entity(state, ptr.entity_id);
+            entity->position.x = where.x * TILE_UNIT_SIZE;
+            entity->position.y = where.y * TILE_UNIT_SIZE;
+            return lisp_form_v2f32(v2f32(entity->position.x / TILE_UNIT_SIZE,
+                                         entity->position.y / TILE_UNIT_SIZE));
+        } break;
+        case GAME_SCRIPT_TARGET_LIGHT: {
+            struct light_def* light = ptr.ptr;
+            light->position = where;
+            return lisp_form_v2f32(light->position);
+        } break;
+        case GAME_SCRIPT_TARGET_TRANSITION_TRIGGER: {
+            /* ? */
+            struct trigger_level_transition* transition = ptr.ptr;
+            transition->bounds.x = where.x;
+            transition->bounds.y = where.y;
+            return lisp_form_v2f32(
+                v2f32(
+                    transition->bounds.x,
+                    transition->bounds.y
+                )
+            );
+        } break;
+        case GAME_SCRIPT_TARGET_TRIGGER: {
+            /* ? */
+            struct trigger* trigger = ptr.ptr;
+            trigger->bounds.x = where.x;
+            trigger->bounds.y = where.y;
+            return lisp_form_v2f32(
+                v2f32(
+                    trigger->bounds.x,
+                    trigger->bounds.y
+                )
+            );
+        } break;
+        case GAME_SCRIPT_TARGET_SAVEPOINT: {
+            struct entity_savepoint* savepoint = ptr.ptr;
+            savepoint->position = where;
+            return lisp_form_v2f32(savepoint->position);
+        } break;
+        case GAME_SCRIPT_TARGET_CHEST: {
+            struct entity_chest* chest = ptr.ptr;
+            chest->position = where;
+            return lisp_form_v2f32(chest->position);
+        } break;
+        case GAME_SCRIPT_TARGET_SCRIPTABLE_LAYER: {
+            struct scriptable_tile_layer_property* layer_properties = ptr.ptr;
+            layer_properties->offset_x = where.x;
+            layer_properties->offset_y = where.y;
+            return lisp_form_v2f32(
+                v2f32(
+                    layer_properties->offset_x,
+                    layer_properties->offset_y
+                )
+            );
+        } break;
+        default: {
+            /* unknown type */
+            /* ? */
+        } break;
+    }
+
+    return LISP_nil;
+}
+
+GAME_LISP_FUNCTION(NTH) {
+    Required_Argument_Count(NTH, 2);
+    s32 index = -1;
+    struct lisp_form* arg0 = lisp_list_nth(arguments, 0);
+    struct lisp_form* arg1 = lisp_list_nth(arguments, 1);
+    Fatal_Script_Error(lisp_form_get_s32(*arg1, &index) && "Needs index argument!");
+
+    struct lisp_form* result = lisp_list_nth(arg0, index);
+    return *result;
 }
 
 GAME_LISP_FUNCTION(NAME) {

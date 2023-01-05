@@ -33,6 +33,7 @@ enum scriptable_tile_layer_flags {
     SCRIPTABLE_TILE_LAYER_FLAGS_HIDDEN    = ENTITY_FLAGS_HIDDEN,
 };
 struct scriptable_tile_layer_property { /* these are all script editable properties... Thank god! I don't have to write more editor code */
+    /* in tile units */
     f32 offset_x;
     f32 offset_y;
     u32 flags;
@@ -308,6 +309,7 @@ struct level_area_script_data {
     struct level_area_listener listeners[LEVEL_AREA_LISTEN_EVENT_COUNT];
 };
 
+/* TODO: use a flags field. */
 struct trigger {
     /* NOTE: reserve this for the future, in case I need this */
     struct rectangle_f32 bounds;
@@ -432,6 +434,20 @@ struct tile* level_area_get_tile_at(struct level_area* area, s32 tile_layer, s32
         s32 tile_x = current_tile->x;
         s32 tile_y = current_tile->y;
 
+        if (tile_index >= TILE_LAYER_SCRIPTABLE_0 && tile_index <= TILE_LAYER_SCRIPTABLE_31) {
+            struct scriptable_tile_layer_property* layer_properties = area->scriptable_layer_properties + (tile_layer - TILE_LAYER_SCRIPTABLE_0);
+
+            if (layer_properties->flags & SCRIPTABLE_TILE_LAYER_FLAGS_HIDDEN) {
+                return NULL;
+            }
+
+            f32 tile_xf32 = tile_x + layer_properties->offset_x;
+            f32 tile_yf32 = tile_y + layer_properties->offset_y;
+
+            tile_x = roundf(tile_xf32);
+            tile_y = roundf(tile_yf32);
+        }
+
         if (tile_x == x && tile_y == y) {
             return current_tile;
         }
@@ -447,6 +463,29 @@ bool level_area_any_obstructions_at(struct level_area* area, s32 x, s32 y) {
 
     if (level_area_get_tile_at(area, TILE_LAYER_OBJECT, x, y)) {
         return true;
+    }
+
+    /* check qualifying scriptable layers */
+    {
+        for (s32 layer_index = TILE_LAYER_SCRIPTABLE_0; layer_index <= TILE_LAYER_SCRIPTABLE_31; ++layer_index) {
+            struct scriptable_tile_layer_property* layer_properties = area->scriptable_layer_properties + (layer_index - TILE_LAYER_SCRIPTABLE_0);
+
+            if (layer_properties->draw_layer != TILE_LAYER_OBJECT) {
+                continue;
+            }
+
+            if (layer_properties->flags & SCRIPTABLE_TILE_LAYER_FLAGS_HIDDEN) {
+                continue;
+            }
+
+            if (layer_properties->flags & SCRIPTABLE_TILE_LAYER_FLAGS_NOCOLLIDE) {
+                continue;
+            }
+
+            if (level_area_get_tile_at(area, layer_index, x, y)) {
+                return true;
+            }
+        }
     }
 
     return false;
