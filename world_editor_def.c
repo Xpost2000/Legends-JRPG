@@ -2,6 +2,9 @@
 #define WORLD_EDITOR_DEF_C
 
 /* yep this is a separate editor... Shares some structure with editor_state */
+struct world_editor_pause_menu {
+    s32 screen;
+};
 struct world_editor_state {
     struct memory_arena* arena;
     s32    painting_tile_id;
@@ -40,6 +43,11 @@ struct world_editor_state {
     char loaded_area_name[260]; /* level_areas don't know where they come from... */
     struct level_area loaded_area;
     bool       viewing_loaded_area;
+
+    /* we're going to use a custom pause menu for this since I want the editor code to generally be self-contained */
+    /* also because hooking into the normal pause menu is weird */
+    struct world_editor_pause_menu pause_menu;
+    string map_script_string;
 };
 
 #endif

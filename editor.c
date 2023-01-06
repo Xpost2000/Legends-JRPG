@@ -10,11 +10,9 @@
 
   TODO: Scrollable level loads?
   TODO: Needs a lot of conveniences or a rewrite.
-*/
 
-/*
-  NOTE: would be nice ot make the rendering apply lighting later.
-  Not doing it right now though.
+  NOTE: Hmm. I think this is liable to become the first piece of code in this codebase I'm actually
+  going to forget about how this thing functions.
 */
 
 /*
@@ -876,7 +874,8 @@ local void update_and_render_pause_editor_menu_ui(struct game_state* state, stru
                             } break;
                             case 1: {
                                 /*NOTE: 
-                                  level testing code
+                                  level testing code (TODO: unchecked for functionality, and might not be useful anymore... An RPG is really difficult
+                                  to playtest levels where it depends on so much game state.)
                                   
                                   as the engine now understands the notion of scripting,
                                   I need to add some functionality to force the scripting to work as intended...
