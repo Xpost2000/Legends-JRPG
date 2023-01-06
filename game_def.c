@@ -315,6 +315,7 @@ union color32f32 game_foreground_entity_things_shader(struct software_framebuffe
 #include "entity_model_def.c"
 #include "entities_def.c"
 #include "level_area_def.c"
+#include "world_map_def.c"
 
 /* use this instead of entity_list_dereference */
 struct entity* game_dereference_entity(struct game_state* state, entity_id id);
@@ -348,6 +349,7 @@ string copy_cstring_to_scratch(char* cstr) {
 
 #ifdef USE_EDITOR
 #include "editor_def.c"
+#include "world_editor_def.c"
 #endif
 /* TODO */
 /* for now just an informative message box. No prompting. Prompts are probably just going to be different code, and more involved. */

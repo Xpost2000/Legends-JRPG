@@ -21,51 +21,6 @@
   WHOCARES: May crash if touching the last_selected pointer incorrectly?
 */
 
-#define EDITOR_BRUSH_SQUARE_SIZE (5)
-#define HALF_EDITOR_BRUSH_SQUARE_SIZE (5/2)
-local struct rectangle_f32 cursor_rectangle(v2f32 where) {
-    return rectangle_f32(
-        where.x, where.y, 0.25, 0.25
-    );
-}
-local u8 editor_brush_patterns[][EDITOR_BRUSH_SQUARE_SIZE][EDITOR_BRUSH_SQUARE_SIZE] = {
-    {
-        {0, 0, 0, 0, 0,},
-        {0, 0, 0, 0, 0,},
-        {0, 0, 1, 0, 0,},
-        {0, 0, 0, 0, 0,},
-        {0, 0, 0, 0, 0,},
-    },
-    {
-        {0, 0, 0, 0, 0,},
-        {0, 0, 1, 0, 0,},
-        {0, 1, 1, 1, 0,},
-        {0, 0, 1, 0, 0,},
-        {0, 0, 0, 0, 0,},
-    },
-    {
-        {0, 0, 0, 0, 0,},
-        {0, 1, 1, 1, 0,},
-        {0, 1, 1, 1, 0,},
-        {0, 1, 1, 1, 0,},
-        {0, 0, 0, 0, 0,},
-    },
-    {
-        {0, 0, 1, 0, 0,},
-        {0, 1, 1, 1, 0,},
-        {1, 1, 1, 1, 1,},
-        {0, 1, 1, 1, 0,},
-        {0, 0, 1, 0, 0,},
-    },
-    {
-        {1, 1, 1, 1, 1,},
-        {1, 1, 1, 1, 1,},
-        {1, 1, 1, 1, 1,},
-        {1, 1, 1, 1, 1,},
-        {1, 1, 1, 1, 1,},
-    },
-};
-
 local bool is_dragging(void) {
     return editor_state->drag_data.context != NULL;
 }

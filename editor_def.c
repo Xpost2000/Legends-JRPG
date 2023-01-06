@@ -93,15 +93,9 @@ struct editor_state {
     s32           trigger_placement_type;
     s32           entity_placement_type;
 
-#if 0
-    s32                              tile_count;
-    s32                              tile_capacity;
-    struct tile*                     tiles;
-#else
     s32                              tile_counts[TILE_LAYER_COUNT];
     s32                              tile_capacities[TILE_LAYER_COUNT];
     struct tile*                     tile_layers[TILE_LAYER_COUNT];
-#endif
     s32                              current_tile_layer;
 
     s32                                      trigger_level_transition_count;
@@ -181,6 +175,51 @@ struct editor_state {
     char loaded_area_name[260]; /* level_areas don't know where they come from... */
     struct level_area loaded_area;
     bool       viewing_loaded_area;
+};
+
+#define EDITOR_BRUSH_SQUARE_SIZE (5)
+#define HALF_EDITOR_BRUSH_SQUARE_SIZE (5/2)
+local struct rectangle_f32 cursor_rectangle(v2f32 where) {
+    return rectangle_f32(
+        where.x, where.y, 0.25, 0.25
+    );
+}
+local u8 editor_brush_patterns[][EDITOR_BRUSH_SQUARE_SIZE][EDITOR_BRUSH_SQUARE_SIZE] = {
+    {
+        {0, 0, 0, 0, 0,},
+        {0, 0, 0, 0, 0,},
+        {0, 0, 1, 0, 0,},
+        {0, 0, 0, 0, 0,},
+        {0, 0, 0, 0, 0,},
+    },
+    {
+        {0, 0, 0, 0, 0,},
+        {0, 0, 1, 0, 0,},
+        {0, 1, 1, 1, 0,},
+        {0, 0, 1, 0, 0,},
+        {0, 0, 0, 0, 0,},
+    },
+    {
+        {0, 0, 0, 0, 0,},
+        {0, 1, 1, 1, 0,},
+        {0, 1, 1, 1, 0,},
+        {0, 1, 1, 1, 0,},
+        {0, 0, 0, 0, 0,},
+    },
+    {
+        {0, 0, 1, 0, 0,},
+        {0, 1, 1, 1, 0,},
+        {1, 1, 1, 1, 1,},
+        {0, 1, 1, 1, 0,},
+        {0, 0, 1, 0, 0,},
+    },
+    {
+        {1, 1, 1, 1, 1,},
+        {1, 1, 1, 1, 1,},
+        {1, 1, 1, 1, 1,},
+        {1, 1, 1, 1, 1,},
+        {1, 1, 1, 1, 1,},
+    },
 };
 
 #endif

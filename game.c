@@ -86,7 +86,9 @@ sound_id test_battle_music = {};
 /* compile out */
 #ifdef USE_EDITOR
 struct editor_state* editor_state = 0;
+struct world_editor_state* world_editor_state = 0;
 static struct memory_arena editor_arena = {};
+static struct memory_arena world_editor_arena = {};
 #endif
 
 /* Single line command console for gamescript. */
@@ -1909,7 +1911,9 @@ local void draw_ui_breathing_text_word_wrapped_centered1(struct software_framebu
 
 #ifdef USE_EDITOR
 void editor_initialize(struct editor_state* state);
+void world_editor_initialize(struct world_editor_state* state);
 #include "editor.c"
+#include "world_editor.c"
 #endif
 
 #include "tile_data.c"
@@ -1952,6 +1956,7 @@ void game_initialize(void) {
     scratch_arena = memory_arena_create_from_heap("Scratch Buffer", Megabyte(8));
 #ifdef USE_EDITOR
     editor_arena = memory_arena_create_from_heap("Editor Memory", Megabyte(32));
+    world_editor_arena = memory_arena_create_from_heap("World Editor Memory", Megabyte(32));
 #endif
 
     game_VFS_mount_archives();
@@ -2057,6 +2062,8 @@ void game_initialize(void) {
 #ifdef USE_EDITOR
     editor_state                = memory_arena_push(&editor_arena, sizeof(*editor_state));
     editor_initialize(editor_state);
+    world_editor_state                = memory_arena_push(&world_editor_arena, sizeof(*world_editor_state));
+    world_editor_initialize(world_editor_state);
 #endif
     initialize_static_table_data();
     initialize_items_database();
@@ -2135,6 +2142,7 @@ void game_deinitialize(void) {
     memory_arena_finish(&scratch_arena);
 #ifdef USE_EDITOR
     memory_arena_finish(&editor_arena);
+    memory_arena_finish(&world_editor_arena);
 #endif
     graphics_assets_finish(&graphics_assets);
     memory_arena_finish(&game_arena);
@@ -3170,16 +3178,31 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
 
 #ifdef USE_EDITOR
     if (is_key_pressed(KEY_F1)) {
-        game_state->in_editor ^= 1;
+        if (game_state->in_editor == 1) {
+            game_state->in_editor = 0;
+        } else {
+            game_state->in_editor = 1;
+        }
+    }
+    if (is_key_pressed(KEY_F3)) {
+        if (game_state->in_editor == 2) {
+            game_state->in_editor = 0;
+        } else {
+            game_state->in_editor = 2;
+        }
     }
 #endif
 
     recalculate_camera_shifting_bounds(framebuffer);
 
 #ifdef USE_EDITOR
-    if (game_state->in_editor) {
+    if (game_state->in_editor == 1) {
         update_and_render_editor(framebuffer, dt);
         update_and_render_editor_menu_ui(game_state, framebuffer, dt);
+        return;
+    } else if (game_state->in_editor == 2) {
+        update_and_render_world_editor(framebuffer, dt);
+        update_and_render_world_editor_menu_ui(game_state, framebuffer, dt);
         return;
     }
 #endif
