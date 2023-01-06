@@ -220,7 +220,10 @@ enum tile_data_flags {
     TILE_DATA_FLAGS_SOLID = BIT(0),
 };
 /* index = id, reserve sparse array to allow for random access */
-struct autotile_table {s32 neighbors[256];};
+struct autotile_table {
+    s32 neighbors[256];
+};
+
 struct tile_data_definition {
     string               name;
     string               frames[24];
@@ -235,7 +238,8 @@ struct tile_data_definition {
     struct autotile_table* autotile_info;
 };
 image_id get_tile_image_id(struct tile_data_definition* tile_def);
-static s32 tile_table_data_count = 0;
+static s32 tile_table_data_count       = 0;
+static s32 world_tile_table_data_count = 0;
 /* tiles.c */
 
 #include "conversation_def.c"

@@ -22,13 +22,25 @@ s32 get_tile_id_by_name(string name) {
 
     return -1;
 }
+s32 get_world_tile_id_by_name(string name) {
+    for (s32 tile_data_index = 0; tile_data_index < world_tile_table_data_count; ++tile_data_index) {
+        struct tile_data_definition* tile_def = &world_tile_table_data[tile_data_index];
+
+        if (string_equal(tile_def->name, name)) {
+            return tile_def - world_tile_table_data;
+        }
+    }
+
+    return -1;
+}
 
 /* memory is read at start up */
 /* this is kind of expensive since the entire file is kept in memory just to keep the strings. */
 /* I mean it's a small amount of memory relative to the whole thing so it's something to think about. */
 /* Anyways this is not really possible to hotreload. Oh well. */
 /* NOTE: This is because all gamescript strings are intended to be read-only and this happens to be easy to do. */
-struct file_buffer tile_data_source_file = {};
+struct file_buffer tile_data_source_file       = {};
+struct file_buffer world_tile_data_source_file = {};
 
 /*
   NOTE: For future projects should experiment with different allocation patterns.
@@ -37,18 +49,30 @@ struct file_buffer tile_data_source_file = {};
   In release mode replace everything with arenas, (IE I have a lot of debug only paths... Right now I'm coding everything in a nearly release mode style
   path which is fine and all but this is kind of annoying to do sometimes...)
 */
-static void initialize_static_table_data(void) {
-    tile_data_source_file       = read_entire_file(memory_arena_allocator(&game_arena), string_literal(GAME_DEFAULT_TILE_DATA_FILE));
-    /* NOTE: it would be cleaner to copy all strings and own them directly here. It's not too much of a change but the lisp form reader makes certain assumptions. */
-    struct lisp_list file_forms = lisp_read_string_into_forms(&game_arena, file_buffer_as_string(&tile_data_source_file));
+local void load_tile_data_into_table(string filebuffer_string, s32 table_id) {
+    struct lisp_list file_forms = lisp_read_string_into_forms(&game_arena, filebuffer_string);
 
-    tile_table_data_count = file_forms.count;
-    tile_table_data = memory_arena_push(&game_arena, sizeof(*tile_table_data) * tile_table_data_count);
+    struct tile_data_definition** table_pointer         = 0;
+    s32                        *  table_counter_pointer = 0;
+
+    switch (table_id) {
+        case 0: {
+            table_pointer         = &tile_table_data;
+            table_counter_pointer = &tile_table_data_count;
+        } break;
+        case 1: {
+            table_pointer         = &world_tile_table_data;
+            table_counter_pointer = &world_tile_table_data_count;
+        } break;
+    }
 
     /* TODO error checking? */
+    *table_counter_pointer = file_forms.count;
+    *table_pointer         = memory_arena_push(&game_arena, sizeof(*tile_table_data) * tile_table_data_count);
+
     for (s32 index = 0; index < file_forms.count; ++index) {
         struct lisp_form*            file_list_form     = file_forms.forms + index;
-        struct tile_data_definition* current_tile_entry = tile_table_data + index;
+        struct tile_data_definition* current_tile_entry = *table_pointer + index;
 
         {
             zero_struct(*current_tile_entry);
@@ -96,4 +120,12 @@ static void initialize_static_table_data(void) {
             }
         }
     }
+}
+
+static void initialize_static_table_data(void) {
+    tile_data_source_file       = read_entire_file(memory_arena_allocator(&game_arena), string_literal(GAME_DEFAULT_TILE_DATA_FILE));
+    world_tile_data_source_file = read_entire_file(memory_arena_allocator(&game_arena), string_literal(GAME_DEFAULT_TILE_DATA_FILE));
+    /* NOTE: it would be cleaner to copy all strings and own them directly here. It's not too much of a change but the lisp form reader makes certain assumptions. */
+    load_tile_data_into_table(file_buffer_as_string(&tile_data_source_file), 0);
+    load_tile_data_into_table(file_buffer_as_string(&world_tile_data_source_file), 1);
 }

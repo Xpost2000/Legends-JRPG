@@ -258,8 +258,13 @@ void draw_nine_patch_ui(struct graphics_assets* graphics_assets, struct software
 
 /* only used in the render command system which is smart enough to apply this stuff */
 local struct tile_data_definition* tile_table_data;
-local struct autotile_table*       auto_tile_info;
+local struct tile_data_definition* world_tile_table_data;
+local struct autotile_table*       auto_tile_info; /* TODO: unused? */
 
+/*
+  NOTE: I mean, while there's a lot of code I'm not happy with or proud of writing here alone, this
+  is probably one of the worst offenders since it's kind of stupid for no reason.
+*/
 local sound_id get_current_sound_theme(void) {
     switch (game_state->current_theme_track_type) {
         case THEME_SAFE_TRACK: {
@@ -3107,6 +3112,20 @@ local void execute_current_area_scripts(struct game_state* state, f32 dt) {
     }
 }
 
+v2s32 point_project_perspective(v2s32 screenspace_origin_centered, s32 fov, s32 scale, s32 current_z) {
+    v2s32 result = screenspace_origin_centered;
+    result.y -= fov;
+    result.x *= scale;
+    result.y *= scale;
+
+    result.x /= current_z;
+    result.y /= current_z;
+
+    if (result.x < 0) result.x *= -1;
+    if (result.y < 0) result.y *= -1;
+    return result;
+}
+
 void update_and_render_game_console(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
 #if 1
     if (is_key_pressed(KEY_F2)) {
@@ -3244,8 +3263,8 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                     DEBUG_render_particle_emitters(&commands, &game_state->permenant_particle_emitters);
 #endif
                 }
-
                 software_framebuffer_render_commands(framebuffer, &commands);
+
                 {
                     struct level_area* area = &game_state->loaded_area;
                     if (cutscene_viewing_separate_area()) {
@@ -3253,7 +3272,7 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                     }
                     software_framebuffer_run_shader(framebuffer, rectangle_f32(0, 0, framebuffer->width, framebuffer->height), lighting_shader, area);
                 }
-                game_postprocess_blur_ingame(framebuffer, 2, 0.63, BLEND_MODE_ALPHA);
+                game_postprocess_blur_ingame(framebuffer, 2, 0.62, BLEND_MODE_ALPHA);
                 /* game_postprocess_blur_ingame(framebuffer, 1, 0.65, BLEND_MODE_ALPHA); */
 
                 {
