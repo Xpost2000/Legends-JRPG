@@ -124,7 +124,7 @@ local void load_tile_data_into_table(string filebuffer_string, s32 table_id) {
 
 static void initialize_static_table_data(void) {
     tile_data_source_file       = read_entire_file(memory_arena_allocator(&game_arena), string_literal(GAME_DEFAULT_TILE_DATA_FILE));
-    world_tile_data_source_file = read_entire_file(memory_arena_allocator(&game_arena), string_literal(GAME_DEFAULT_TILE_DATA_FILE));
+    world_tile_data_source_file = read_entire_file(memory_arena_allocator(&game_arena), string_literal(GAME_DEFAULT_WORLD_TILE_DATA_FILE));
     /* NOTE: it would be cleaner to copy all strings and own them directly here. It's not too much of a change but the lisp form reader makes certain assumptions. */
     load_tile_data_into_table(file_buffer_as_string(&tile_data_source_file), 0);
     load_tile_data_into_table(file_buffer_as_string(&world_tile_data_source_file), 1);

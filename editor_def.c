@@ -84,6 +84,16 @@ enum tab_menu_bit_flags {
     TAB_MENU_CTRL_BIT  = BIT(2),
     TAB_MENU_ALT_BIT   = BIT(3),
 };
+struct editor_drag_data {
+    void* context; /* if this pointer is non-zero we are dragging */
+
+    bool has_size;
+    v2f32 initial_mouse_position; /* assume this to be in "world/tile" coordinates */
+    /* context sensitive information to be filled */
+    v2f32 initial_object_position;
+    v2f32 initial_object_dimensions;
+};
+
 struct editor_state {
     struct memory_arena* arena;
     s32           tool_mode;
@@ -148,18 +158,7 @@ struct editor_state {
 
     s32 tab_menu_open;
     string level_script_string;
-
-    /* NOTE I'm aware there is drag data like a few lines above this. */
-    struct {
-        /* NOTE this pointer should always have a rectangle as it's first member! (rectangle_f32) */
-        void* context; /* if this pointer is non-zero we are dragging */
-
-        bool has_size;
-        v2f32 initial_mouse_position; /* assume this to be in "world/tile" coordinates */
-        /* context sensitive information to be filled */
-        v2f32 initial_object_position;
-        v2f32 initial_object_dimensions;
-    } drag_data;
+    struct editor_drag_data drag_data;
 
     /* another context pointer. Use this for the ctrl-tab menu */
     /* NOTE, might've introduced lots of buggies */

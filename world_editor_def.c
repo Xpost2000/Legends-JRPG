@@ -5,9 +5,23 @@
 struct world_editor_pause_menu {
     s32 screen;
 };
+enum world_editor_tool_mode {
+    WORLD_EDITOR_TOOL_TILE_PAINTING,
+    WORLD_EDITOR_TOOL_SPAWN_PLACEMENT,
+    WORLD_EDITOR_TOOL_LEVEL_SETTINGS,
+    WORLD_EDITOR_TOOL_COUNT,
+};
+static string world_editor_tool_mode_strings[]=  {
+    [WORLD_EDITOR_TOOL_TILE_PAINTING]       = string_literal("Tile mode"),
+    [WORLD_EDITOR_TOOL_SPAWN_PLACEMENT]     = string_literal("Place default spawn mode"),
+    [WORLD_EDITOR_TOOL_LEVEL_SETTINGS]      = string_literal("Level Settings"),
+    [WORLD_EDITOR_TOOL_COUNT]               = string_literal("(count)")
+};
 struct world_editor_state {
     struct memory_arena* arena;
     s32    painting_tile_id;
+    s32    tool_mode;
+    s32    tab_menu_open;
 
     s32          tile_counts[WORLD_TILE_LAYER_COUNT];
     s32          tile_capacities[WORLD_TILE_LAYER_COUNT];
@@ -17,16 +31,8 @@ struct world_editor_state {
     struct camera camera;
     v2f32         default_player_spawn;
 
-    struct {
-        /* NOTE this pointer should always have a rectangle as it's first member! (rectangle_f32) */
-        void* context; /* if this pointer is non-zero we are dragging */
-
-        bool has_size;
-        v2f32 initial_mouse_position; /* assume this to be in "world/tile" coordinates */
-        /* context sensitive information to be filled */
-        v2f32 initial_object_position;
-        v2f32 initial_object_dimensions;
-    } drag_data;
+    struct editor_drag_data drag_data;
+    struct tile_painting_property_menu          tile_painting_property_menu;
 
     bool  was_already_camera_dragging;
     v2f32 initial_mouse_position;

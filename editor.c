@@ -19,27 +19,27 @@
   WHOCARES: May crash if touching the last_selected pointer incorrectly?
 */
 
-local bool is_dragging(void) {
-    return editor_state->drag_data.context != NULL;
+local bool is_dragging(struct editor_drag_data* dragdata) {
+    return dragdata->context != NULL;
 }
 
-local void set_drag_candidate_rectangle(void* context, v2f32 initial_mouse_worldspace, v2f32 initial_object_position, v2f32 initial_object_size) {
-    editor_state->drag_data.context                 = context;
-    editor_state->drag_data.initial_mouse_position  = initial_mouse_worldspace;
-    editor_state->drag_data.initial_object_position = initial_object_position;
-    editor_state->drag_data.initial_object_dimensions     = initial_object_size;
-    editor_state->drag_data.has_size                          = true;
+local void set_drag_candidate_rectangle(struct editor_drag_data* dragdata, void* context, v2f32 initial_mouse_worldspace, v2f32 initial_object_position, v2f32 initial_object_size) {
+    dragdata->context                 = context;
+    dragdata->initial_mouse_position  = initial_mouse_worldspace;
+    dragdata->initial_object_position = initial_object_position;
+    dragdata->initial_object_dimensions     = initial_object_size;
+    dragdata->has_size                          = true;
 }
 
-local void set_drag_candidate(void* context, v2f32 initial_mouse_worldspace, v2f32 initial_object_position) {
-    editor_state->drag_data.context                 = context;
-    editor_state->drag_data.initial_mouse_position  = initial_mouse_worldspace;
-    editor_state->drag_data.initial_object_position = initial_object_position;
-    editor_state->drag_data.has_size                          = false;
+local void set_drag_candidate(struct editor_drag_data* dragdata, void* context, v2f32 initial_mouse_worldspace, v2f32 initial_object_position) {
+    dragdata->context                 = context;
+    dragdata->initial_mouse_position  = initial_mouse_worldspace;
+    dragdata->initial_object_position = initial_object_position;
+    dragdata->has_size                          = false;
 }
 
-local void clear_drag_candidate(void) {
-    editor_state->drag_data.context = 0;
+local void clear_drag_candidate(struct editor_drag_data* dragdata) {
+    dragdata->context = 0;
 }
 
 local v2f32 editor_get_world_space_mouse_location(void) {
@@ -66,7 +66,6 @@ void editor_clear_all(struct editor_state* state) {
 
     state->camera.xy       = v2f32(0,0);
     state->camera.zoom     = 1;
-    /* not centered to simplify code */
     state->camera.centered = 1;
 }
 
@@ -347,7 +346,7 @@ local void editor_brush_place_tile_at(v2f32 tile_space_mouse_location) {
 
 /* TODO find a better way for the camera to get screen dimensions, I know my fixed resolution though so it's fine... Always guarantee we have a multiple of our fixed resolution to simplify things */
 void editor_place_or_drag_level_transition_trigger(v2f32 point_in_tilespace) {
-    if (is_dragging()) {
+    if (is_dragging(&editor_state->drag_data)) {
         return; 
     }
 
@@ -357,7 +356,7 @@ void editor_place_or_drag_level_transition_trigger(v2f32 point_in_tilespace) {
 
             if (rectangle_f32_intersect(current_trigger->bounds, rectangle_f32(point_in_tilespace.x, point_in_tilespace.y, 0.25, 0.25))) {
                 editor_state->last_selected = current_trigger;
-                set_drag_candidate_rectangle(current_trigger, get_mouse_in_tile_space(&editor_state->camera, SCREEN_WIDTH, SCREEN_HEIGHT),
+                set_drag_candidate_rectangle(&editor_state->drag_data, current_trigger, get_mouse_in_tile_space(&editor_state->camera, SCREEN_WIDTH, SCREEN_HEIGHT),
                                              v2f32(current_trigger->bounds.x, current_trigger->bounds.y),
                                              v2f32(current_trigger->bounds.w, current_trigger->bounds.h));
                 return;
@@ -376,7 +375,7 @@ void editor_place_or_drag_level_transition_trigger(v2f32 point_in_tilespace) {
 }
 
 void editor_place_or_drag_savepoint(v2f32 point_in_tilespace) {
-    if (is_dragging()) {
+    if (is_dragging(&editor_state->drag_data)) {
         return;
     }
 
@@ -386,7 +385,7 @@ void editor_place_or_drag_savepoint(v2f32 point_in_tilespace) {
 
             if (rectangle_f32_intersect(rectangle_f32(current_savepoint->position.x, current_savepoint->position.y, 1, 1), cursor_rectangle(point_in_tilespace))) {
                 editor_state->last_selected = current_savepoint;
-                set_drag_candidate(current_savepoint, get_mouse_in_tile_space(&editor_state->camera, SCREEN_WIDTH, SCREEN_HEIGHT), current_savepoint->position);
+                set_drag_candidate(&editor_state->drag_data, current_savepoint, get_mouse_in_tile_space(&editor_state->camera, SCREEN_WIDTH, SCREEN_HEIGHT), current_savepoint->position);
                 return;
             }
         }
@@ -417,7 +416,7 @@ void editor_remove_savepoint_at(v2f32 point_in_tilespace) {
   NOTE: this is recording level_area_entity entities, which are not like the other entities. These actually have normal coordinate systems.
  */
 void editor_place_or_drag_actor(v2f32 point_in_tilespace) {
-    if (is_dragging()) {
+    if (is_dragging(&editor_state->drag_data)) {
         return; 
     }
 
@@ -428,7 +427,7 @@ void editor_place_or_drag_actor(v2f32 point_in_tilespace) {
             /* The size should really depend on the model. Oh well. */
             if (rectangle_f32_intersect(rectangle_f32(current_entity->position.x, current_entity->position.y-1, 1, 2), cursor_rectangle(point_in_tilespace))) {
                 editor_state->last_selected = current_entity;
-                set_drag_candidate(current_entity, get_mouse_in_tile_space(&editor_state->camera, SCREEN_WIDTH, SCREEN_HEIGHT), current_entity->position);
+                set_drag_candidate(&editor_state->drag_data, current_entity, get_mouse_in_tile_space(&editor_state->camera, SCREEN_WIDTH, SCREEN_HEIGHT), current_entity->position);
                 return;
             }
         }
@@ -457,7 +456,7 @@ void editor_place_or_drag_actor(v2f32 point_in_tilespace) {
 }
 
 void editor_place_or_drag_light(v2f32 point_in_tilespace) {
-    if (is_dragging()) {
+    if (is_dragging(&editor_state->drag_data)) {
         return;
     }
 
@@ -467,7 +466,7 @@ void editor_place_or_drag_light(v2f32 point_in_tilespace) {
 
             if (rectangle_f32_intersect(rectangle_f32((current_light->position.x), (current_light->position.y), 1, 1), cursor_rectangle(point_in_tilespace))) {
                 editor_state->last_selected = current_light;
-                set_drag_candidate(current_light, get_mouse_in_tile_space(&editor_state->camera, SCREEN_WIDTH, SCREEN_HEIGHT), current_light->position);
+                set_drag_candidate(&editor_state->drag_data, current_light, get_mouse_in_tile_space(&editor_state->camera, SCREEN_WIDTH, SCREEN_HEIGHT), current_light->position);
                 return;
             }
         }
@@ -506,7 +505,7 @@ void editor_remove_actor_at(v2f32 point_in_tilespace) {
 }
 
 void editor_place_or_drag_scriptable_transition_trigger(v2f32 point_in_tilespace) {
-    if (is_dragging()) {
+    if (is_dragging(&editor_state->drag_data)) {
         return; 
     }
 
@@ -516,7 +515,7 @@ void editor_place_or_drag_scriptable_transition_trigger(v2f32 point_in_tilespace
 
             if (rectangle_f32_intersect(current_trigger->bounds, cursor_rectangle(point_in_tilespace))) {
                 editor_state->last_selected = current_trigger;
-                set_drag_candidate_rectangle(current_trigger, get_mouse_in_tile_space(&editor_state->camera, SCREEN_WIDTH, SCREEN_HEIGHT),
+                set_drag_candidate_rectangle(&editor_state->drag_data, current_trigger, get_mouse_in_tile_space(&editor_state->camera, SCREEN_WIDTH, SCREEN_HEIGHT),
                                              v2f32(current_trigger->bounds.x, current_trigger->bounds.y),
                                              v2f32(current_trigger->bounds.w, current_trigger->bounds.h));
                 return;
@@ -535,7 +534,7 @@ void editor_place_or_drag_scriptable_transition_trigger(v2f32 point_in_tilespace
 }
 
 void editor_place_or_drag_chest(v2f32 point_in_tilespace) {
-    if (is_dragging()) {
+    if (is_dragging(&editor_state->drag_data)) {
         return;
     }
 
@@ -546,7 +545,7 @@ void editor_place_or_drag_chest(v2f32 point_in_tilespace) {
             if (rectangle_f32_intersect(rectangle_f32(current_chest->position.x, current_chest->position.y, current_chest->scale.x, current_chest->scale.y), cursor_rectangle(point_in_tilespace))) {
                 /* TODO drag candidate */
                 editor_state->last_selected = current_chest;
-                set_drag_candidate(current_chest, get_mouse_in_tile_space(&editor_state->camera, SCREEN_WIDTH, SCREEN_HEIGHT),
+                set_drag_candidate(&editor_state->drag_data, current_chest, get_mouse_in_tile_space(&editor_state->camera, SCREEN_WIDTH, SCREEN_HEIGHT),
                                    v2f32(current_chest->position.x, current_chest->position.y));
                 return;
             }
@@ -578,30 +577,28 @@ void editor_remove_chest_at(v2f32 point_in_tilespace) {
 /* I mean I just do the reverse of my projection so it's okay I guess... */
 
 /* camera should know the world dimensions but okay */
-local void handle_rectangle_dragging_and_scaling(void) {
+local void handle_rectangle_dragging_and_scaling(struct editor_drag_data* dragdata, struct camera* camera) {
     bool left_clicked   = 0;
     bool right_clicked  = 0;
     bool middle_clicked = 0;
 
-    if (editor_state->tab_menu_open == TAB_MENU_CLOSED) {
-        get_mouse_buttons(&left_clicked,
-                          &middle_clicked,
-                          &right_clicked);
-    }
+    get_mouse_buttons(&left_clicked,
+                      &middle_clicked,
+                      &right_clicked);
 
-    if (is_dragging()) {
+    if (is_dragging(dragdata)) {
         /* when using shift you will write the changes! so be careful! */
         if (left_clicked) {
             /* NOTE this is not used yet because we don't have anything that is *not* grid aligned */
-            v2f32                 displacement_delta = v2f32_sub(v2f32_floor(editor_state->drag_data.initial_mouse_position),
-                                                                 editor_state->drag_data.initial_object_position);
-            struct rectangle_f32* object_rectangle   = (struct rectangle_f32*) editor_state->drag_data.context;
+            v2f32                 displacement_delta = v2f32_sub(v2f32_floor(dragdata->initial_mouse_position),
+                                                                 dragdata->initial_object_position);
+            struct rectangle_f32* object_rectangle   = (struct rectangle_f32*) dragdata->context;
 
-            v2f32 mouse_position_in_tilespace_rounded = get_mouse_in_tile_space_integer(&editor_state->camera, SCREEN_WIDTH, SCREEN_HEIGHT);
+            v2f32 mouse_position_in_tilespace_rounded = get_mouse_in_tile_space_integer(camera, SCREEN_WIDTH, SCREEN_HEIGHT);
 
-            if (is_key_down(KEY_SHIFT) && editor_state->drag_data.has_size) {
-                object_rectangle->w =  mouse_position_in_tilespace_rounded.x - editor_state->drag_data.initial_object_position.x;
-                object_rectangle->h =  mouse_position_in_tilespace_rounded.y - editor_state->drag_data.initial_object_position.y;
+            if (is_key_down(KEY_SHIFT) && dragdata->has_size) {
+                object_rectangle->w =  mouse_position_in_tilespace_rounded.x - dragdata->initial_object_position.x;
+                object_rectangle->h =  mouse_position_in_tilespace_rounded.y - dragdata->initial_object_position.y;
 
                 if (object_rectangle->w <= 0) object_rectangle->w = 1;
                 if (object_rectangle->h <= 0) object_rectangle->h = 1;
@@ -619,14 +616,14 @@ local void handle_rectangle_dragging_and_scaling(void) {
                 }
 #endif
             } else {
-                _debugprintf("<%f, %f> initial mpos", editor_state->drag_data.initial_mouse_position.x, editor_state->drag_data.initial_mouse_position.y);
-                _debugprintf("<%f, %f> initial obj pos", editor_state->drag_data.initial_object_position.x, editor_state->drag_data.initial_object_position.y);
+                _debugprintf("<%f, %f> initial mpos", dragdata->initial_mouse_position.x, dragdata->initial_mouse_position.y);
+                _debugprintf("<%f, %f> initial obj pos", dragdata->initial_object_position.x, dragdata->initial_object_position.y);
                 _debugprintf("<%f, %f> displacement delta", displacement_delta.x, displacement_delta.y);
                 object_rectangle->x = mouse_position_in_tilespace_rounded.x - displacement_delta.x;
                 object_rectangle->y = mouse_position_in_tilespace_rounded.y - displacement_delta.y;
             }
         } else {
-            editor_state->drag_data.context = 0;
+            dragdata->context = 0;
         }
     }
 }
@@ -784,7 +781,9 @@ local void handle_editor_tool_mode_input(struct software_framebuffer* framebuffe
         } break;
     }
 
-    handle_rectangle_dragging_and_scaling();
+    if (editor_state->tab_menu_open == TAB_MENU_CLOSED) {
+        handle_rectangle_dragging_and_scaling(&editor_state->drag_data, &editor_state->camera);
+    }
 }
 
 /* copied and pasted for now */

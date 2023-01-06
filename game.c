@@ -19,6 +19,13 @@ local void close_dialogue_ui(void);
 
 #include "fade_transitions.c"
 
+local v2f32 v2f32_snap_to_grid(v2f32 input) {
+    v2f32 result = input;
+    result.x = floorf(result.x / TILE_UNIT_SIZE);
+    result.y = floorf(result.y / TILE_UNIT_SIZE);
+    return result;
+}
+
 local void announce_battle_action(struct entity_id who, string what);
 local struct level_area_battle_zone_bounding_box* level_area_find_current_battle_zone(struct level_area* level, s32 x, s32 y);
 local bool level_area_battle_zone_bounding_box_is_safe_battle_block(struct level_area* level, struct level_area_battle_zone_bounding_box* zone, s32 x, s32 y);
