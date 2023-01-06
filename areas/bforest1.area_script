@@ -1,0 +1,47 @@
+(on-enter
+(game_message_queue "Hello! Welcome to [(font 'red)]Legends[(reset)] this is an RPG")
+        (game_set_environment_colors 'night))
+
+# exit to home
+(on-touch (trigger 0)
+          (entity_speak '(entity player) "... No, I've come to far for this now.")
+          (follow_path '(entity player) '(down down down down down down down down))
+          (wait 2.5)
+)
+
+(routine (entity "boss")
+(if (not (equal flagboss1 1))
+(progn
+(wait 7)
+(entity_speak self "I wonder when some fresh meat is coming...")
+(wait 7))))
+
+# encounter 1
+(on-touch (trigger 1)
+          (if (not (equal flagboss1 1))
+          (progn
+          (setvar flagboss1 1)
+          (game_open_conversation "boss1" '(entity "boss"))
+          (GAME_START_FIGHT_WITH '(entity "b1") '(entity "b2") '(entity "boss"))
+          ))
+)
+
+(on-death (entity "b1") (setvar flagbossb1 1))
+(on-death (entity "b2") (setvar flagbossb2 1))
+(on-death (entity "boss")
+          (cond
+                ((= flagbossb1 1) (setvar flagboss2 2))
+                ((= flagbossb2 1) (setvar flagboss2 3))
+                ((and (= flagbossb1 1) (= flagbossb2 1)) (setvar flagboss2 0))
+                (T (setvar flagboss2 1))
+          )
+          (game_open_conversation "boss1"))
+# bridge
+(on-touch (trigger 2)
+          (if (not (equal bridgescenehit 1))
+          (progn
+          (start_cutscene "bridgescene")
+          (setvar bridgescenehit 1)
+          )
+          )
+)

@@ -1,0 +1,12 @@
+(DETERMINE-START
+        (case agodtest1
+        (0 7)
+        (T 1)))
+
+"Remu": "Hi, I'm God. I'm going to make it day." => (DO (CAMERA_TRAUMATIZE 0.5) (setvar agodtest1 0) -1)
+"Remu": "POOF!" => (DO (GAME_SET_ENVIRONMENT_COLORS 'DAY))
+"Remu": "I'm also going to open this wall."
+"Remu": "POOF!" => (DO (CAMERA_TRAUMATIZE 0.2) (HIDE '(script-layer 0)))
+"Remu": "Wasn't that cool?"
+"Remu": "Bye." => (BYE)
+"Remu": "Don't you have better things to do?" => (BYE)

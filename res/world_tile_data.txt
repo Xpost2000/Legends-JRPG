@@ -1,0 +1,37 @@
+# This is indeed separate from the normal tileset. I don't have palettes?
+# *NOTE: the intent is that these things are supposed to be higher resolution than the normal game world stuff
+
+("grass"
+(frames "res/img/land/grass.png"))
+
+("dirt"
+(frames "res/img/land/dirt.png"))
+
+("sand"
+(frames "res/img/land/sand.png"))
+
+# Water
+("water [solid]"
+(frames "res/img/land/water.png" "res/img/land/water2.png")
+(time-until-next-frame 0.15)
+(flags 'solid))
+("water"
+(frames "res/img/land/water.png" "res/img/land/water2.png")
+(time-until-next-frame 0.15))
+
+# Cave tiles
+("cave wall"
+(frames "res/img/cave/cavewall.png")
+(flags 'solid))
+("cave wall opening"
+(frames "res/img/cave/cavewall_opening.png")
+(flags 'solid))
+("cave wall mossy"
+(frames "res/img/cave/cavewall1.png")
+(flags 'solid))
+("cobble floor"
+(frames "res/img/cave/cobble_floor1.png"))
+
+("small tree"
+(frames "res/img/land/tree_small.png")
+(flags 'solid))
