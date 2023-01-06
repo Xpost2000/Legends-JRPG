@@ -43,6 +43,12 @@ struct world_editor_state {
     char current_save_name[128];
     u16 editor_brush_pattern;
 
+    /* Just for you to gauge the size of the world */
+    s32 current_min_x;
+    s32 current_min_y;
+    s32 current_max_x;
+    s32 current_max_y;
+
     /* ??? */
     /* for edits that may require cross area interaction */
     /* we just load another full level and display it normally without editor mode stuff */

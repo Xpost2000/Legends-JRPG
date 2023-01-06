@@ -21,7 +21,7 @@ void world_editor_initialize(struct world_editor_state* state) {
 
     {
         for (s32 tile_count_index = 0; tile_count_index < WORLD_TILE_LAYER_COUNT; ++tile_count_index) {
-            state->tile_capacities[tile_count_index] = 32768 * 2;
+            state->tile_capacities[tile_count_index] = 32768 * 4;
         }
         for (s32 tile_layer_index = 0; tile_layer_index < WORLD_TILE_LAYER_COUNT; ++tile_layer_index) {
             state->tile_layers[tile_layer_index] = memory_arena_push(state->arena, sizeof(*state->tile_layers) * state->tile_capacities[tile_layer_index]);
@@ -29,6 +29,32 @@ void world_editor_initialize(struct world_editor_state* state) {
     }
 
     world_editor_clear_all();
+}
+
+/* NOTE: I too look forward to my CPU crying when this happens :) */
+void world_editor_update_bounding_box_of_world(void) {
+    world_editor_state->current_min_x = INT_MAX;
+    world_editor_state->current_max_x = INT_MIN;
+    world_editor_state->current_min_y = INT_MAX;
+    world_editor_state->current_max_y = INT_MIN;
+
+    for (s32 layer_index = 0; layer_index < array_count(world_editor_state->tile_layers); ++layer_index) {
+        for (s32 tile_index = 0; tile_index < world_editor_state->tile_counts[layer_index]; ++tile_index) {
+            struct tile*                 current_tile = world_editor_state->tile_layers[layer_index] + tile_index;
+            if (current_tile->x < world_editor_state->current_min_x) {
+                world_editor_state->current_min_x = current_tile->x;
+            }
+            if (current_tile->x > world_editor_state->current_max_x) {
+                world_editor_state->current_max_x = current_tile->x;
+            }
+            if (current_tile->y < world_editor_state->current_min_y) {
+                world_editor_state->current_min_y = current_tile->y;
+            }
+            if (current_tile->y > world_editor_state->current_max_x) {
+                world_editor_state->current_max_y = current_tile->y;
+            }
+        }
+    }
 }
 
 void world_editor_place_tile_at(v2f32 point_in_tilespace) {
@@ -72,12 +98,12 @@ void world_editor_remove_tile_at(v2f32 point_in_tilespace) {
 }
 
 local void world_editor_brush_place_tile_at(v2f32 tile_space_mouse_location) {
-    for (s32 y_index = 0; y_index < EDITOR_BRUSH_SQUARE_SIZE; ++y_index) {
-        for (s32 x_index = 0; x_index < EDITOR_BRUSH_SQUARE_SIZE; ++x_index) {
-            if (editor_brush_patterns[world_editor_state->editor_brush_pattern][y_index][x_index] == 1) {
+    for (s32 y_index = 0; y_index < WORLD_EDITOR_BRUSH_SQUARE_SIZE; ++y_index) {
+        for (s32 x_index = 0; x_index < WORLD_EDITOR_BRUSH_SQUARE_SIZE; ++x_index) {
+            if (world_editor_brush_patterns[world_editor_state->editor_brush_pattern][y_index][x_index] == 1) {
                 v2f32 point = tile_space_mouse_location;
-                point.x += x_index - HALF_EDITOR_BRUSH_SQUARE_SIZE;
-                point.y += y_index - HALF_EDITOR_BRUSH_SQUARE_SIZE;
+                point.x += x_index - HALF_WORLD_EDITOR_BRUSH_SQUARE_SIZE;
+                point.y += y_index - HALF_WORLD_EDITOR_BRUSH_SQUARE_SIZE;
                 world_editor_place_tile_at(point);
             }
         }
@@ -85,12 +111,12 @@ local void world_editor_brush_place_tile_at(v2f32 tile_space_mouse_location) {
 }
 
 local void world_editor_brush_remove_tile_at(v2f32 tile_space_mouse_location) {
-    for (s32 y_index = 0; y_index < EDITOR_BRUSH_SQUARE_SIZE; ++y_index) {
-        for (s32 x_index = 0; x_index < EDITOR_BRUSH_SQUARE_SIZE; ++x_index) {
-            if (editor_brush_patterns[world_editor_state->editor_brush_pattern][y_index][x_index] == 1) {
+    for (s32 y_index = 0; y_index < WORLD_EDITOR_BRUSH_SQUARE_SIZE; ++y_index) {
+        for (s32 x_index = 0; x_index < WORLD_EDITOR_BRUSH_SQUARE_SIZE; ++x_index) {
+            if (world_editor_brush_patterns[world_editor_state->editor_brush_pattern][y_index][x_index] == 1) {
                 v2f32 point = tile_space_mouse_location;
-                point.x += x_index - HALF_EDITOR_BRUSH_SQUARE_SIZE;
-                point.y += y_index - HALF_EDITOR_BRUSH_SQUARE_SIZE;
+                point.x += x_index - HALF_WORLD_EDITOR_BRUSH_SQUARE_SIZE;
+                point.y += y_index - HALF_WORLD_EDITOR_BRUSH_SQUARE_SIZE;
                 world_editor_remove_tile_at(point);
             }
         }
@@ -186,6 +212,10 @@ local void handle_world_editor_tool_mode_input(struct software_framebuffer* fram
                 world_editor_state->editor_brush_pattern = 3;
             } else if (is_key_pressed(KEY_5)) {
                 world_editor_state->editor_brush_pattern = 4;
+            } else if (is_key_pressed(KEY_6)) {
+                world_editor_state->editor_brush_pattern = 5;
+            } else if (is_key_pressed(KEY_7)) {
+                world_editor_state->editor_brush_pattern = 6;
             }
 
             if (!world_editor_state->viewing_loaded_area) {
@@ -245,28 +275,6 @@ void update_and_render_world_editor(struct software_framebuffer* framebuffer, f3
         }
     }
 
-    /* cursor */
-    {
-        v2f32 world_space_mouse_location = world_editor_get_world_space_mouse_location();
-        v2f32 tile_space_mouse_location  = v2f32_snap_to_grid(world_space_mouse_location); 
-
-        if (world_editor_state->tool_mode == WORLD_EDITOR_TOOL_TILE_PAINTING) {
-            for (s32 y_index = 0; y_index < EDITOR_BRUSH_SQUARE_SIZE; ++y_index) {
-                for (s32 x_index = 0; x_index < EDITOR_BRUSH_SQUARE_SIZE; ++x_index) {
-                    if (editor_brush_patterns[world_editor_state->editor_brush_pattern][y_index][x_index] == 1) {
-                        v2f32 point = tile_space_mouse_location;
-                        point.x += x_index - HALF_EDITOR_BRUSH_SQUARE_SIZE;
-                        point.y += y_index - HALF_EDITOR_BRUSH_SQUARE_SIZE;
-
-                        render_commands_push_quad(&commands, rectangle_f32(point.x * TILE_UNIT_SIZE, point.y * TILE_UNIT_SIZE,
-                                                                           TILE_UNIT_SIZE, TILE_UNIT_SIZE),
-                                                  color32u8(0, 0, 255, normalized_sinf(global_elapsed_time*4) * 0.5*255 + 64), BLEND_MODE_ALPHA);
-                    }
-                }
-            }
-        }
-    }
-
     for (s32 layer_index = 0; layer_index < array_count(world_editor_state->tile_layers); ++layer_index) {
         for (s32 tile_index = 0; tile_index < world_editor_state->tile_counts[layer_index]; ++tile_index) {
             struct tile*                 current_tile = world_editor_state->tile_layers[layer_index] + tile_index;
@@ -287,6 +295,28 @@ void update_and_render_world_editor(struct software_framebuffer* framebuffer, f3
                                                      TILE_UNIT_SIZE),
                                        tile_data->sub_rectangle,
                                        color32f32(1,1,1,alpha), NO_FLAGS, BLEND_MODE_ALPHA);
+        }
+    }
+
+    /* cursor */
+    {
+        v2f32 world_space_mouse_location = world_editor_get_world_space_mouse_location();
+        v2f32 tile_space_mouse_location  = v2f32_snap_to_grid(world_space_mouse_location); 
+
+        if (world_editor_state->tool_mode == WORLD_EDITOR_TOOL_TILE_PAINTING) {
+            for (s32 y_index = 0; y_index < WORLD_EDITOR_BRUSH_SQUARE_SIZE; ++y_index) {
+                for (s32 x_index = 0; x_index < WORLD_EDITOR_BRUSH_SQUARE_SIZE; ++x_index) {
+                    if (world_editor_brush_patterns[world_editor_state->editor_brush_pattern][y_index][x_index] == 1) {
+                        v2f32 point = tile_space_mouse_location;
+                        point.x += x_index - HALF_WORLD_EDITOR_BRUSH_SQUARE_SIZE;
+                        point.y += y_index - HALF_WORLD_EDITOR_BRUSH_SQUARE_SIZE;
+
+                        render_commands_push_quad(&commands, rectangle_f32(point.x * TILE_UNIT_SIZE, point.y * TILE_UNIT_SIZE,
+                                                                           TILE_UNIT_SIZE, TILE_UNIT_SIZE),
+                                                  color32u8(0, 0, 255, normalized_sinf(global_elapsed_time*4) * 0.5*255 + 64), BLEND_MODE_ALPHA);
+                    }
+                }
+            }
         }
     }
     render_commands_push_quad(&commands, rectangle_f32(world_editor_state->default_player_spawn.x, world_editor_state->default_player_spawn.y, TILE_UNIT_SIZE/4, TILE_UNIT_SIZE/4),
@@ -366,7 +396,18 @@ void update_and_render_world_editor_game_menu_ui(struct game_state* state, struc
             y_cursor += 12;
             {
                 char tmp_text[1024]={};
-                snprintf(tmp_text, 1024, "current tile id: %d\ncurrent tile layer: %.*s", world_editor_state->painting_tile_id, world_tile_layer_strings[world_editor_state->current_tile_layer].length, world_tile_layer_strings[world_editor_state->current_tile_layer].data);
+                world_editor_update_bounding_box_of_world();
+                snprintf(tmp_text, 1024, "current tile id: %d\ncurrent tile layer: %.*s\nmin_x:%d,min_y:%d\n,max_x:%d,max_y:%d,\nw:%d,h:%d",
+                         world_editor_state->painting_tile_id,
+                         world_tile_layer_strings[world_editor_state->current_tile_layer].length,
+                         world_tile_layer_strings[world_editor_state->current_tile_layer].data,
+                         world_editor_state->current_min_x,
+                         world_editor_state->current_min_y,
+                         world_editor_state->current_max_x,
+                         world_editor_state->current_max_y,
+                         world_editor_state->current_max_x - world_editor_state->current_min_x,
+                         world_editor_state->current_max_y - world_editor_state->current_min_y
+                );
                 software_framebuffer_draw_text(framebuffer,
                                                graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_GOLD]),
                                                1, v2f32(0,y_cursor), string_from_cstring(tmp_text), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
@@ -545,7 +586,6 @@ void update_and_render_pause_world_editor_menu_ui(struct game_state* state, stru
             }
         } break;
     }
-
 }
 
 void update_and_render_world_editor_menu_ui(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {

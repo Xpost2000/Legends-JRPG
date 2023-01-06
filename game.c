@@ -1962,8 +1962,8 @@ void game_initialize(void) {
     game_arena   = memory_arena_create_from_heap("Game Memory", Megabyte(64));
     scratch_arena = memory_arena_create_from_heap("Scratch Buffer", Megabyte(8));
 #ifdef USE_EDITOR
-    editor_arena = memory_arena_create_from_heap("Editor Memory", Megabyte(32));
-    world_editor_arena = memory_arena_create_from_heap("World Editor Memory", Megabyte(32));
+    editor_arena = memory_arena_create_from_heap("Editor Memory", Megabyte(128));
+    world_editor_arena = memory_arena_create_from_heap("World Editor Memory", Megabyte(128));
 #endif
 
     game_VFS_mount_archives();
