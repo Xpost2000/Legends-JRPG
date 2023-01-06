@@ -52,6 +52,7 @@ void world_editor_place_tile_at(v2f32 point_in_tilespace) {
     new_tile->y  = where_y;
     world_editor_state->last_selected = new_tile;
 }
+
 void world_editor_remove_tile_at(v2f32 point_in_tilespace) {
     s32 where_x = point_in_tilespace.x;
     s32 where_y = point_in_tilespace.y;
@@ -77,7 +78,7 @@ local void world_editor_brush_place_tile_at(v2f32 tile_space_mouse_location) {
                 v2f32 point = tile_space_mouse_location;
                 point.x += x_index - HALF_EDITOR_BRUSH_SQUARE_SIZE;
                 point.y += y_index - HALF_EDITOR_BRUSH_SQUARE_SIZE;
-                editor_place_tile_at(point);
+                world_editor_place_tile_at(point);
             }
         }
     }
@@ -90,7 +91,7 @@ local void world_editor_brush_remove_tile_at(v2f32 tile_space_mouse_location) {
                 v2f32 point = tile_space_mouse_location;
                 point.x += x_index - HALF_EDITOR_BRUSH_SQUARE_SIZE;
                 point.y += y_index - HALF_EDITOR_BRUSH_SQUARE_SIZE;
-                editor_remove_tile_at(point);
+                world_editor_remove_tile_at(point);
             }
         }
     }
@@ -189,9 +190,9 @@ local void handle_world_editor_tool_mode_input(struct software_framebuffer* fram
 
             if (!world_editor_state->viewing_loaded_area) {
                 if (left_clicked) {
-                    editor_brush_place_tile_at(tile_space_mouse_location);
+                    world_editor_brush_place_tile_at(tile_space_mouse_location);
                 } else if (right_clicked) {
-                    editor_brush_remove_tile_at(tile_space_mouse_location);
+                    world_editor_brush_remove_tile_at(tile_space_mouse_location);
                 }
             }
         } break;
@@ -304,16 +305,56 @@ void update_and_render_world_editor_game_menu_ui(struct game_state* state, struc
         }
     }
 
-    if (!world_editor_state->tab_menu_open) {
+    if (is_key_down(KEY_SHIFT)) {
+        if (is_key_pressed(KEY_Z)) {
+            world_editor_state->camera.zoom = 1;
+        }
+
+        f32 last_zoom = world_editor_state->camera.zoom;
         if (is_mouse_wheel_up()) {
-            world_editor_state->current_tile_layer -= 1;
-            if (world_editor_state->current_tile_layer < 0) {
-                world_editor_state->current_tile_layer = TILE_LAYER_COUNT-1;
+            world_editor_state->camera.zoom += 0.25;
+            if (world_editor_state->camera.zoom >= 4) {
+                world_editor_state->camera.zoom = 4;
             }
         } else if (is_mouse_wheel_down()) {
-            world_editor_state->current_tile_layer += 1;
-            if (world_editor_state->current_tile_layer >= TILE_LAYER_COUNT) {
-                world_editor_state->current_tile_layer = 0;
+            world_editor_state->camera.zoom -= 0.25;
+            if (world_editor_state->camera.zoom <= 0.25) {
+                world_editor_state->camera.zoom = 0.25;
+            }
+        }
+
+        if (last_zoom != world_editor_state->camera.zoom) {
+            v2f32 world_space_mouse_location = world_editor_get_world_space_mouse_location();
+            v2f32 world_space_in_zoomed_space_last = world_space_mouse_location;
+            v2f32 world_space_in_zoomed_space_current = world_space_mouse_location;
+
+            world_space_in_zoomed_space_last.x *= last_zoom;
+            world_space_in_zoomed_space_last.y *= last_zoom;
+            world_space_in_zoomed_space_current.x *= world_editor_state->camera.zoom;
+            world_space_in_zoomed_space_current.y *= world_editor_state->camera.zoom;
+
+            f32 delta_zoom = world_editor_state->camera.zoom - last_zoom;
+            f32 delta_x    = world_space_in_zoomed_space_last.x - world_space_in_zoomed_space_current.x;
+            f32 delta_y    = world_space_in_zoomed_space_last.y - world_space_in_zoomed_space_current.y;
+
+            world_editor_state->camera.xy.x -= delta_x;
+            world_editor_state->camera.xy.y -= delta_y;
+        }
+    }
+
+    if (!world_editor_state->tab_menu_open) {
+        if (is_key_down(KEY_SHIFT)) {
+        } else {
+            if (is_mouse_wheel_up()) {
+                world_editor_state->current_tile_layer -= 1;
+                if (world_editor_state->current_tile_layer < 0) {
+                    world_editor_state->current_tile_layer = TILE_LAYER_COUNT-1;
+                }
+            } else if (is_mouse_wheel_down()) {
+                world_editor_state->current_tile_layer += 1;
+                if (world_editor_state->current_tile_layer >= TILE_LAYER_COUNT) {
+                    world_editor_state->current_tile_layer = 0;
+                }
             }
         }
 

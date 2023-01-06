@@ -57,10 +57,12 @@ local void load_tile_data_into_table(string filebuffer_string, s32 table_id) {
 
     switch (table_id) {
         case 0: {
+            _debugprintf("Reading level_area tile map");
             table_pointer         = &tile_table_data;
             table_counter_pointer = &tile_table_data_count;
         } break;
         case 1: {
+            _debugprintf("Reading world_map tile map");
             table_pointer         = &world_tile_table_data;
             table_counter_pointer = &world_tile_table_data_count;
         } break;
