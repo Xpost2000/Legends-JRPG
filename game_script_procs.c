@@ -870,6 +870,10 @@ GAME_LISP_FUNCTION(GET_POSITION) {
                 )
             );
         } break;
+        case GAME_SCRIPT_TARGET_POSITION_MARKER: {
+            struct position_marker* marker = ptr.ptr;
+            return lisp_form_v2f32(marker->position);
+        } break;
         default: {
             /* unknown type */
             /* ? */

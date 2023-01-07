@@ -958,6 +958,22 @@ struct game_script_typed_ptr game_script_object_handle_decode(struct lisp_form o
                 result.ptr = area->scriptable_layer_properties + real_id;
                 return result;
             } break;
+            case GAME_SCRIPT_TARGET_POSITION_MARKER: {
+                string script_name_string = {};
+
+                if (lisp_form_get_s32(*id_form, &real_id)) {
+                    _debugprintf("looking up id?");
+                    result.ptr = area->position_markers.markers + real_id;
+                } else if (lisp_form_get_string(*id_form, &script_name_string)) {
+#if 0
+                    _debugprintf("Looking up string name?");
+#endif
+                    result.ptr = position_marker_list_find_marker_with_name(&area->position_markers, script_name_string);
+                } else {
+                    assertion(false && "Invalid id type for entity");
+                }
+                return result;
+            } break;
         }
     }
 
