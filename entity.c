@@ -3380,7 +3380,8 @@ void serialize_tile_layer(struct binary_serializer* serializer, struct memory_ar
     if (tile_layer->capacity == 0) {
         tile_layer->tiles = memory_arena_push(arena, sizeof(*tile_layer->tiles) * tile_layer->count);
     } else {
-        assertion(tile_layer->count > tile_layer->capacity && "That's bad... Cannot store this many tile layers!");
+        _debugprintf("proposing to load %d tiles vs %d max capacity?", tile_layer->count, tile_layer->capacity);
+        assertion(tile_layer->count < tile_layer->capacity && "That's bad... Cannot store this many tile layers!");
     }
 
     for (s32 tile_index = 0; tile_index < tile_layer->count; ++tile_index) {
@@ -3393,7 +3394,7 @@ void serialize_position_marker_list(struct binary_serializer* serializer, struct
     if (list->capacity == 0) {
         list->markers = memory_arena_push(arena, sizeof(*list->markers) * list->count);
     } else {
-        assertion(list->count > list->capacity && "That's bad... Cannot store this many markers!");
+        assertion(list->count < list->capacity && "That's bad... Cannot store this many markers!");
     }
 
 
@@ -4229,7 +4230,7 @@ void serialize_trigger_level_transition_list(struct binary_serializer* serialize
     if (list->capacity == 0) {
         list->transitions = memory_arena_push(arena, sizeof(*list->transitions) * list->count);
     } else {
-        assertion(list->count >= list->capacity && "Too many level transitions!");
+        assertion(list->count < list->capacity && "Too many level transitions!");
     }
 
     for (s32 index = 0; index < list->count; ++index) {

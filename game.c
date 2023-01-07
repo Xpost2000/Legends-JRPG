@@ -346,11 +346,16 @@ void game_finish_conversation(struct game_state* state) {
 }
 
 local void render_combat_area_information(struct game_state* state, struct render_commands* commands, struct level_area* area);
-local void render_tile_layer_ex(struct render_commands* commands, struct level_area* area, struct tile_layer* tile_layer, f32 x_off, f32 y_off, union color32f32 modulation) {
+local void render_tile_layer_ex(s32 tile_palette, struct render_commands* commands, struct level_area* area, struct tile_layer* tile_layer, f32 x_off, f32 y_off, union color32f32 modulation) {
     for (s32 index = 0; index < tile_layer->count; ++index) {
         struct tile*                 tile      = &tile_layer->tiles[index];
         s32                          tile_id   = tile->id;
         struct tile_data_definition* tile_data = tile_table_data + tile_id;
+
+        if (tile_palette == TILE_PALETTE_WORLD_MAP) {
+            tile_data = world_tile_table_data + tile_id;
+        }
+
         image_id                     tex       = get_tile_image_id(tile_data);
 
         union color32f32 color = color32f32(1, 1, 1, 1);
@@ -384,11 +389,11 @@ local void render_tile_layer_ex(struct render_commands* commands, struct level_a
     }
 }
 
-local void render_tile_layer(struct render_commands* commands, struct level_area* area, s32 layer) {
-    render_tile_layer_ex(commands, area, &area->tile_layers[layer], 0, 0, color32f32_WHITE);
+local void render_tile_layer(s32 tile_palette, struct render_commands* commands, struct level_area* area, s32 layer) {
+    render_tile_layer_ex(tile_palette, commands, area, &area->tile_layers[layer], 0, 0, color32f32_WHITE);
 }
 
-local void render_scriptable_tile_layers_that_qualify_as(struct render_commands* commands, struct level_area* area, s32 layer) {
+local void render_scriptable_tile_layers_that_qualify_as(s32 tile_palette, struct render_commands* commands, struct level_area* area, s32 layer) {
     for (s32 layer_index = TILE_LAYER_SCRIPTABLE_0; layer_index < TILE_LAYER_COUNT; ++layer_index) {
         struct scriptable_tile_layer_property* current_scriptable_layer_property = area->scriptable_layer_properties + layer_index - TILE_LAYER_SCRIPTABLE_0; 
         if (current_scriptable_layer_property->flags & SCRIPTABLE_TILE_LAYER_FLAGS_HIDDEN) {
@@ -399,19 +404,19 @@ local void render_scriptable_tile_layers_that_qualify_as(struct render_commands*
             f32 offset_x = current_scriptable_layer_property->offset_x;
             f32 offset_y = current_scriptable_layer_property->offset_y;
 
-            render_tile_layer_ex(commands, area, &area->tile_layers[layer_index], offset_x, offset_y, color32f32_WHITE);
+            render_tile_layer_ex(tile_palette, commands, area, &area->tile_layers[layer_index], offset_x, offset_y, color32f32_WHITE);
         }
     }
 }
 
 void render_foreground_area(struct game_state* state, struct render_commands* commands, struct level_area* area) {
     {
-        render_tile_layer(commands, area, TILE_LAYER_OVERHEAD);
-        render_scriptable_tile_layers_that_qualify_as(commands, area, TILE_LAYER_OVERHEAD);
-        render_tile_layer(commands, area, TILE_LAYER_ROOF);
-        render_scriptable_tile_layers_that_qualify_as(commands, area, TILE_LAYER_ROOF);
-        render_tile_layer(commands, area, TILE_LAYER_FOREGROUND);
-        render_scriptable_tile_layers_that_qualify_as(commands, area, TILE_LAYER_FOREGROUND);
+        render_tile_layer(TILE_PALETTE_OVERWORLD, commands, area, TILE_LAYER_OVERHEAD);
+        render_scriptable_tile_layers_that_qualify_as(TILE_PALETTE_OVERWORLD, commands, area, TILE_LAYER_OVERHEAD);
+        render_tile_layer(TILE_PALETTE_OVERWORLD, commands, area, TILE_LAYER_ROOF);
+        render_scriptable_tile_layers_that_qualify_as(TILE_PALETTE_OVERWORLD, commands, area, TILE_LAYER_ROOF);
+        render_tile_layer(TILE_PALETTE_OVERWORLD, commands, area, TILE_LAYER_FOREGROUND);
+        render_scriptable_tile_layers_that_qualify_as(TILE_PALETTE_OVERWORLD, commands, area, TILE_LAYER_FOREGROUND);
     }
 }
 
@@ -426,12 +431,12 @@ void render_ground_area(struct game_state* state, struct render_commands* comman
 
     /* Object & ground layer */
     {
-        render_tile_layer(commands, area, TILE_LAYER_GROUND);
-        render_scriptable_tile_layers_that_qualify_as(commands, area, TILE_LAYER_GROUND);
-        render_tile_layer(commands, area, TILE_LAYER_OBJECT);
-        render_scriptable_tile_layers_that_qualify_as(commands, area, TILE_LAYER_OBJECT);
-        render_tile_layer(commands, area, TILE_LAYER_CLUTTER_DECOR);
-        render_scriptable_tile_layers_that_qualify_as(commands, area, TILE_LAYER_CLUTTER_DECOR);
+        render_tile_layer(TILE_PALETTE_OVERWORLD, commands, area, TILE_LAYER_GROUND);
+        render_scriptable_tile_layers_that_qualify_as(TILE_PALETTE_OVERWORLD, commands, area, TILE_LAYER_GROUND);
+        render_tile_layer(TILE_PALETTE_OVERWORLD, commands, area, TILE_LAYER_OBJECT);
+        render_scriptable_tile_layers_that_qualify_as(TILE_PALETTE_OVERWORLD, commands, area, TILE_LAYER_OBJECT);
+        render_tile_layer(TILE_PALETTE_OVERWORLD, commands, area, TILE_LAYER_CLUTTER_DECOR);
+        render_scriptable_tile_layers_that_qualify_as(TILE_PALETTE_OVERWORLD, commands, area, TILE_LAYER_CLUTTER_DECOR);
     }
 
     if (state->combat_state.active_combat) {
@@ -1219,7 +1224,12 @@ void serialize_world_map(struct memory_arena* arena, struct binary_serializer* s
             serialize_tile_layer(serializer, arena, area_version_id, &world_map->tile_layers[tile_layer]);
         }
 
-        IAllocator allocator = memory_arena_allocator(arena);
+        IAllocator allocator = {};
+        if (!arena) {
+            allocator = heap_allocator();
+        } else {
+            allocator = memory_arena_allocator(arena);
+        }
         serialize_string(&allocator, serializer, &world_map->script_string);
         if (world_map->script_string.length > 0) {
             world_map->script.present   = true;

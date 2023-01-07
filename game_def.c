@@ -232,6 +232,10 @@ struct autotile_table {
 };
 
 /* TODO: add damaging steps! */
+enum tile_palette {
+    TILE_PALETTE_WORLD_MAP,
+    TILE_PALETTE_OVERWORLD,
+};
 struct tile_data_definition {
     string               name;
     string               frames[24];

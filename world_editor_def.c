@@ -40,14 +40,11 @@ struct world_editor_state {
     s32    painting_tile_id;
     s32    tool_mode;
     s32    tab_menu_open;
-    s32           entity_placement_type;
+    s32    entity_placement_type;
 
-    struct tile_layer tile_layers[WORLD_TILE_LAYER_COUNT];
-    s32          current_tile_layer;
-    struct position_marker_list position_markers;
+    struct world_map world_map;
 
     struct camera camera;
-    v2f32         default_player_spawn;
 
     struct editor_drag_data drag_data;
     struct tile_painting_property_menu          tile_painting_property_menu;
@@ -60,6 +57,7 @@ struct world_editor_state {
 
     char current_save_name[128];
     u16 editor_brush_pattern;
+    s32 current_tile_layer;
 
     /* Just for you to gauge the size of the world */
     s32 current_min_x;
@@ -77,7 +75,6 @@ struct world_editor_state {
     /* we're going to use a custom pause menu for this since I want the editor code to generally be self-contained */
     /* also because hooking into the normal pause menu is weird */
     struct world_editor_pause_menu pause_menu;
-    string map_script_string;
 };
 
 #endif

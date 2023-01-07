@@ -1801,11 +1801,16 @@ union color32f32 editor_lighting_shader(struct software_framebuffer* framebuffer
   While I would like to reuse render_tile_layer_ex, I don't want to pollute it with more editor logic
   so let me just keep this here.
 */
-local void editor_mode_render_tile_layer(struct render_commands* commands, struct tile_layer* tile_layer, s32 layer_index, s32 current_tile_layer) {
+local void editor_mode_render_tile_layer(s32 palette, struct render_commands* commands, struct tile_layer* tile_layer, s32 layer_index, s32 current_tile_layer) {
     for (s32 tile_index = 0; tile_index < tile_layer->count; ++tile_index) {
         struct tile*                 current_tile = tile_layer->tiles + tile_index;
         s32                          tile_id      = current_tile->id;
         struct tile_data_definition* tile_data    = tile_table_data + tile_id;
+
+        if (palette == TILE_PALETTE_WORLD_MAP) {
+            tile_data = world_tile_table_data + tile_id;
+        }
+
         image_id                     tex          = get_tile_image_id(tile_data); 
 
         f32 alpha = 1;
@@ -1852,7 +1857,7 @@ void update_and_render_editor(struct software_framebuffer* framebuffer, f32 dt) 
         {
             /* rendering the editor world */
             for (s32 layer_index = 0; layer_index < array_count(editor_state->tile_layers); ++layer_index) {
-                editor_mode_render_tile_layer(&commands, &editor_state->tile_layers[layer_index], layer_index, editor_state->current_tile_layer);
+                editor_mode_render_tile_layer(TILE_PALETTE_OVERWORLD, &commands, &editor_state->tile_layers[layer_index], layer_index, editor_state->current_tile_layer);
             }
 
             struct font_cache* font = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_BLUE]);

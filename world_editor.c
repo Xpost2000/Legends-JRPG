@@ -2,9 +2,9 @@
 
 void world_editor_clear_all_allocations(void) {
     for (s32 layer_index = 0; layer_index < WORLD_TILE_LAYER_COUNT; ++layer_index) {
-        tile_layer_clear(world_editor_state->tile_layers + layer_index);
+        tile_layer_clear(world_editor_state->world_map.tile_layers + layer_index);
     }
-    position_marker_list_clear(&world_editor_state->position_markers);
+    position_marker_list_clear(&world_editor_state->world_map.position_markers);
 }
 local v2f32 world_editor_get_world_space_mouse_location(void) {
     s32 mouse_location[2];
@@ -24,11 +24,11 @@ void world_editor_initialize(struct world_editor_state* state) {
 
     {
         for (s32 tile_layer_index = 0; tile_layer_index < WORLD_TILE_LAYER_COUNT; ++tile_layer_index) {
-            state->tile_layers[tile_layer_index] = tile_layer_reserved(state->arena, 32768*4);
+            state->world_map.tile_layers[tile_layer_index] = tile_layer_reserved(state->arena, 32768*4);
         }
     }
 
-    state->position_markers = position_marker_list_reserved(state->arena, 8192);
+    state->world_map.position_markers = position_marker_list_reserved(state->arena, 8192);
     world_editor_clear_all();
 }
 
@@ -39,9 +39,9 @@ void world_editor_update_bounding_box_of_world(void) {
     world_editor_state->current_min_y = INT_MAX;
     world_editor_state->current_max_y = INT_MIN;
 
-    for (s32 layer_index = 0; layer_index < array_count(world_editor_state->tile_layers); ++layer_index) {
+    for (s32 layer_index = 0; layer_index < array_count(world_editor_state->world_map.tile_layers); ++layer_index) {
         tile_layer_bounding_box(
-            world_editor_state->tile_layers + layer_index,
+            world_editor_state->world_map.tile_layers + layer_index,
             &world_editor_state->current_min_x,
             &world_editor_state->current_min_y,
             &world_editor_state->current_max_x,
@@ -55,18 +55,18 @@ void world_editor_place_or_drag_position_marker(v2f32 point_in_tilespace) {
         return;
     }
 
-    struct position_marker* marker = position_marker_list_find_marker_at_with_rect(&world_editor_state->position_markers, point_in_tilespace);
+    struct position_marker* marker = position_marker_list_find_marker_at_with_rect(&world_editor_state->world_map.position_markers, point_in_tilespace);
     if (!marker) {
-        world_editor_state->last_selected = position_marker_list_push(&world_editor_state->position_markers, position_marker(string_literal("noname"), point_in_tilespace));
+        world_editor_state->last_selected = position_marker_list_push(&world_editor_state->world_map.position_markers, position_marker(string_literal("noname"), point_in_tilespace));
     } else {
         set_drag_candidate(&world_editor_state->drag_data, marker, get_mouse_in_tile_space(&world_editor_state->camera, SCREEN_WIDTH, SCREEN_HEIGHT), marker->position);
     }
 }
 void world_editor_remove_position_marker_at(v2f32 point_in_tilespace) {
-    struct position_marker* marker = position_marker_list_find_marker_at_with_rect(&world_editor_state->position_markers, point_in_tilespace);
+    struct position_marker* marker = position_marker_list_find_marker_at_with_rect(&world_editor_state->world_map.position_markers, point_in_tilespace);
     
     if (marker) {
-        position_marker_list_remove(&world_editor_state->position_markers, marker - world_editor_state->position_markers.markers);
+        position_marker_list_remove(&world_editor_state->world_map.position_markers, marker - world_editor_state->world_map.position_markers.markers);
     }
 }
 
@@ -74,7 +74,7 @@ void world_editor_place_tile_at(v2f32 point_in_tilespace) {
     s32 where_x = point_in_tilespace.x;
     s32 where_y = point_in_tilespace.y;
 
-    struct tile_layer* tile_layer    = &world_editor_state->tile_layers[world_editor_state->current_tile_layer];
+    struct tile_layer* tile_layer    = &world_editor_state->world_map.tile_layers[world_editor_state->current_tile_layer];
     struct tile*       existing_tile = tile_layer_tile_at(tile_layer, where_x, where_y);
 
     if (existing_tile) {
@@ -89,7 +89,7 @@ void world_editor_place_tile_at(v2f32 point_in_tilespace) {
 void world_editor_remove_tile_at(v2f32 point_in_tilespace) {
     s32                where_x    = point_in_tilespace.x;
     s32                where_y    = point_in_tilespace.y;
-    struct tile_layer* tile_layer = &world_editor_state->tile_layers[world_editor_state->current_tile_layer];
+    struct tile_layer* tile_layer = &world_editor_state->world_map.tile_layers[world_editor_state->current_tile_layer];
     struct tile*       tile       = tile_layer_tile_at(tile_layer, where_x, where_y);
 
     if (tile == editor_state->last_selected) {
@@ -122,43 +122,6 @@ local void world_editor_brush_remove_tile_at(v2f32 tile_space_mouse_location) {
                 world_editor_remove_tile_at(point);
             }
         }
-    }
-}
-
-local void world_editor_serialize_map(struct binary_serializer* serializer) {
-    if (serializer->mode == BINARY_SERIALIZER_READ)
-        world_editor_clear_all_allocations();
-
-    s32 version_id      = CURRENT_WORLD_MAP_VERSION;
-    s32 area_version_id = CURRENT_LEVEL_AREA_VERSION;
-
-    serialize_s32(serializer, &version_id);
-    serialize_s32(serializer, &area_version_id);
-
-    if (version_id >= 1) {
-        serialize_f32(serializer, &world_editor_state->default_player_spawn.x);
-        serialize_f32(serializer, &world_editor_state->default_player_spawn.y);
-
-        for (s32 tile_layer = 0; tile_layer < WORLD_TILE_LAYER_COUNT; ++tile_layer) {
-            serialize_tile_layer(serializer, world_editor_state->arena, area_version_id, &world_editor_state->tile_layers[tile_layer]);
-        }
-
-        IAllocator allocator = heap_allocator();
-
-        if (serializer->mode == BINARY_SERIALIZER_READ) {
-            serialize_string(&allocator, serializer, &world_editor_state->map_script_string);
-            OS_create_directory(string_literal("temp/"));
-            write_string_into_entire_file(string_literal("temp/WORLDMAP_SCRIPT.txt"), world_editor_state->map_script_string);
-        } else {
-            struct file_buffer script_filebuffer = OS_read_entire_file(allocator, string_literal("temp/WORLDMAP_SCRIPT.txt"));
-            world_editor_state->map_script_string = file_buffer_as_string(&script_filebuffer);
-            serialize_string(&allocator, serializer, &world_editor_state->map_script_string);
-            file_buffer_free(&script_filebuffer);
-        }
-
-    }
-    if (version_id >= 2) {
-        serialize_position_marker_list(serializer, world_editor_state->arena, area_version_id, &world_editor_state->position_markers);
     }
 }
 
@@ -233,8 +196,8 @@ local void handle_world_editor_tool_mode_input(struct software_framebuffer* fram
         case WORLD_EDITOR_TOOL_SPAWN_PLACEMENT: {
             if (!world_editor_state->viewing_loaded_area) {
                 if (left_clicked) {
-                    world_editor_state->default_player_spawn.x = world_space_mouse_location.x;
-                    world_editor_state->default_player_spawn.y = world_space_mouse_location.y;
+                    world_editor_state->world_map.default_player_spawn.x = world_space_mouse_location.x;
+                    world_editor_state->world_map.default_player_spawn.y = world_space_mouse_location.y;
                 }
             }
         } break;
@@ -292,13 +255,17 @@ void update_and_render_world_editor(struct software_framebuffer* framebuffer, f3
         }
     }
 
-    for (s32 layer_index = 0; layer_index < array_count(world_editor_state->tile_layers); ++layer_index) {
-        editor_mode_render_tile_layer(&commands, world_editor_state->tile_layers + layer_index, layer_index, world_editor_state->current_tile_layer);
+    for (s32 layer_index = 0; layer_index < array_count(world_editor_state->world_map.tile_layers); ++layer_index) {
+        editor_mode_render_tile_layer(TILE_PALETTE_WORLD_MAP,
+                                      &commands,
+                                      world_editor_state->world_map.tile_layers + layer_index,
+                                      layer_index,
+                                      world_editor_state->current_tile_layer);
     }
 
     struct font_cache* font = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_BLUE]);
-    for (s32 position_marker_index = 0; position_marker_index < world_editor_state->position_markers.count; ++position_marker_index) {
-        struct position_marker* current_marker = world_editor_state->position_markers.markers + position_marker_index;
+    for (s32 position_marker_index = 0; position_marker_index < world_editor_state->world_map.position_markers.count; ++position_marker_index) {
+        struct position_marker* current_marker = world_editor_state->world_map.position_markers.markers + position_marker_index;
         if (world_editor_state->last_selected == current_marker) {
             render_commands_push_quad(&commands, rectangle_f32(current_marker->position.x * TILE_UNIT_SIZE, current_marker->position.y * TILE_UNIT_SIZE,
                                                                current_marker->scale.x * TILE_UNIT_SIZE,    current_marker->scale.y * TILE_UNIT_SIZE),
@@ -333,7 +300,7 @@ void update_and_render_world_editor(struct software_framebuffer* framebuffer, f3
             }
         }
     }
-    render_commands_push_quad(&commands, rectangle_f32(world_editor_state->default_player_spawn.x, world_editor_state->default_player_spawn.y, TILE_UNIT_SIZE/4, TILE_UNIT_SIZE/4),
+    render_commands_push_quad(&commands, rectangle_f32(world_editor_state->world_map.default_player_spawn.x, world_editor_state->world_map.default_player_spawn.y, TILE_UNIT_SIZE/4, TILE_UNIT_SIZE/4),
                               color32u8(0, 255, 0, normalized_sinf(global_elapsed_time*4) * 0.5*255 + 64), BLEND_MODE_ALPHA);
 
     software_framebuffer_render_commands(framebuffer, &commands);
@@ -567,6 +534,8 @@ void update_and_render_pause_world_editor_menu_ui(struct game_state* state, stru
     struct font_cache* highlighted_font = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_GOLD]);
     f32 y_cursor = 30;
 
+    IAllocator allocator = heap_allocator();
+
     if (is_key_pressed(KEY_ESCAPE)) {
         if (world_editor_state->pause_menu.screen != 0) {
             world_editor_state->pause_menu.screen = 0;
@@ -597,12 +566,16 @@ void update_and_render_pause_world_editor_menu_ui(struct game_state* state, stru
                EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(100, y_cursor), string_literal("CONFIRM"))) {
                 world_editor_state->pause_menu.screen = 0;
                 string to_save_as = string_concatenate(&scratch_arena, string_literal(GAME_DEFAULT_WORLDMAPS_PATH), string_from_cstring(world_editor_state->current_save_name));
-#if 1
                 OS_create_directory(string_literal("worldmaps/"));
+
+                struct file_buffer script_filebuffer = OS_read_entire_file(allocator, string_literal("temp/WORLDMAP_SCRIPT.txt"));
+                world_editor_state->world_map.script_string = file_buffer_as_string(&script_filebuffer);
+
                 struct binary_serializer serializer = open_write_file_serializer(to_save_as);
-                world_editor_serialize_map(&serializer);
+                serialize_world_map(world_editor_state->arena, &serializer, &world_editor_state->world_map);
                 serializer_finish(&serializer);
-#endif
+
+                file_buffer_free(&script_filebuffer);
             }
         } break;
         case 2: {
@@ -615,11 +588,13 @@ void update_and_render_pause_world_editor_menu_ui(struct game_state* state, stru
                     struct directory_file* current_file = listing.files + index;
                     y_cursor += 2 * 12 * 1;
                     if(EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(100, y_cursor), string_from_cstring(current_file->name))) {
-#if 1
+                        world_editor_clear_all_allocations();
+
                         struct binary_serializer serializer = open_read_file_serializer(string_concatenate(&scratch_arena, string_literal(GAME_DEFAULT_WORLDMAPS_PATH), string_from_cstring(current_file->name)));
-                        world_editor_serialize_map(&serializer);
+                        serialize_world_map(world_editor_state->arena, &serializer, &world_editor_state->world_map);
+                        OS_create_directory(string_literal("temp/"));
+                        write_string_into_entire_file(string_literal("temp/WORLDMAP_SCRIPT.txt"), world_editor_state->world_map.script_string);
                         serializer_finish(&serializer);
-#endif
 
                         cstring_copy(current_file->name, world_editor_state->current_save_name, array_count(world_editor_state->current_save_name));
                         world_editor_state->pause_menu.screen = 0;
