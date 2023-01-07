@@ -4282,5 +4282,6 @@ struct level_area_entity* level_area_entity_list_push(struct level_area_entity_l
 struct level_area_entity* level_area_entity_list_find_entity_at(struct level_area_entity_list* list, v2f32 point);
 void level_area_entity_list_remove(struct level_area_entity_list* list, s32 index);
 void level_area_entity_list_clear(struct level_area_entity_list* list);
+void serialize_level_area_entity_list(struct binary_serializer* serializer, struct memory_arena* arena, s32 version struct level_area_entity_list* list);
 
 #include "entity_ability.c"

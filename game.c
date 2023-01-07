@@ -1293,9 +1293,7 @@ void load_worldmap_from_file(struct game_state* state, string filename) {
 }
 
 void _serialize_level_area(struct memory_arena* arena, struct binary_serializer* serializer, struct level_area* level, s32 level_type) {
-    memory_arena_set_allocation_region_top(arena); {
-        _debugprintf("%llu memory used", arena->used + arena->used_top);
-        memory_arena_clear_top(arena);
+    {
         _debugprintf("reading version");
         serialize_u32(serializer, &level->version);
         _debugprintf("V: %d", level->version);
@@ -1306,8 +1304,11 @@ void _serialize_level_area(struct memory_arena* arena, struct binary_serializer*
 
         /* I should try to move this into one spot since it's a little annoying */
         if (level->version >= 12) {
-            serialize_bytes(serializer, game_state->loaded_area_name, array_count(game_state->loaded_area_name));
+            serialize_bytes(serializer, level->area_name, array_count(level->area_name));
             IAllocator allocator = memory_arena_allocator(arena);
+            if (!arena) {
+                allocator = heap_allocator();
+            }
             serialize_string(&allocator, serializer, &level->script.internal_buffer);
 
             if (level->script.internal_buffer.length > 0) {
@@ -1315,6 +1316,7 @@ void _serialize_level_area(struct memory_arena* arena, struct binary_serializer*
                 level->script.isbuiltin = true;
             }
         }
+
         if (level->version >= 4) {
             if (level->version < CURRENT_LEVEL_AREA_VERSION) {
                 /* for older versions I have to know what the tile layers were and assign them like this. */
@@ -1360,80 +1362,64 @@ void _serialize_level_area(struct memory_arena* arena, struct binary_serializer*
         }
         if (level->version >= 2) {
             _debugprintf("reading containers");
-            serialize_s32(serializer, &level->entity_chest_count);
-            _debugprintf("%d chest entities to read", level->entity_chest_count);
-            level->chests = memory_arena_push(arena, sizeof(*level->chests) * level->entity_chest_count);
-            for (s32 chest_index = 0; chest_index < level->entity_chest_count; ++chest_index) {
-                serialize_entity_chest(serializer, level->version, level->chests + chest_index);
-            }
+            serialize_entity_chest_list(serializer, arena, level->version &level->entity_chests);
         }
 
         if (level->version >= 3) {
             _debugprintf("reading scriptable triggers");
-            serialize_s32(serializer, &level->script_trigger_count);
-            _debugprintf("%d scriptable triggers to read", level->script_trigger_count);
-            level->script_triggers = memory_arena_push(arena, sizeof(*level->script_triggers) * level->script_trigger_count);
-            for (s32 trigger_index = 0; trigger_index < level->script_trigger_count; ++trigger_index) {
-                serialize_generic_trigger(serializer, level->version, level->script_triggers + trigger_index);
-            }
+            serialize_trigger_list(serializer, arena, level->version, &level->triggers);
         }
         if (level->version >= 5) {
             _debugprintf("reading and unpacking entities");
-
-            s32 entity_count = 0;
-            serialize_s32(serializer, &entity_count);
-            _debugprintf("Seeing %d entities to read", entity_count);
-
-            level->entities = entity_list_create(arena, (entity_count), level_type);
-
-            struct level_area_entity current_packed_entity = {};
-            for (s32 entity_index = 0; entity_index < entity_count; ++entity_index) {
-                entity_id      new_ent        = entity_list_create_entity(&level->entities);
-                struct entity* current_entity = entity_list_dereference_entity(&level->entities, new_ent);
-                serialize_level_area_entity(serializer, level->version, &current_packed_entity);
-                level_area_entity_unpack(&current_packed_entity, current_entity);
-            }
+            serialize_level_area_entity_list(serializer, arena, level->version, &level->load_entities);
         }
         if (level->version >= 6) {
             _debugprintf("loading lights");
-            serialize_s32(serializer, &level->light_count);
-            _debugprintf("seeing %d lights to load", level->light_count);
-            level->lights = memory_arena_push(arena, sizeof(*level->lights) * level->light_count);
-            for (s32 light_index = 0; light_index < level->light_count; ++light_index) {
-                serialize_light(serializer, level->version, level->lights + light_index);
-            }
+            serialize_light_list(serializer, arena, level->version, &level->lights);
         }
-
         if (level->version >= 9) {
-            serialize_s32(serializer, &level->entity_savepoint_count);
-            level->savepoints = memory_arena_push(arena, sizeof(*level->savepoints) * level->entity_savepoint_count);
-
-            struct level_area_savepoint packed_entity = {};
-            _debugprintf("Will need to unpack %d savepoints!", level->entity_savepoint_count);
-            for (s32 entity_savepoint_index = 0; entity_savepoint_index < level->entity_savepoint_count; ++entity_savepoint_index) {
-                struct entity_savepoint* current_savepoint = level->savepoints + entity_savepoint_index;
-
-                serialize_level_area_entity_savepoint(serializer, level->version, &packed_entity);
-                level_area_entity_savepoint_unpack(&packed_entity, current_savepoint);
-            }
+            serialize_level_area_savepoint_list(serializer, arena, level->version, &level->load_savepoints);
         }
         if (level->version >= 11) {
-            serialize_s32(serializer, &level->battle_safe_square_count);
-            level->battle_safe_squares = memory_arena_push(arena, sizeof(*level->battle_safe_squares) * level->battle_safe_square_count);
-            for (s32 battle_safe_square_index = 0; battle_safe_square_index < level->battle_safe_square_count; ++battle_safe_square_index) {
-                serialize_battle_safe_square(serializer, level->version, level->battle_safe_squares + battle_safe_square_index);
-            }
+            serialize_level_area_battle_safe_square_list(serializer, arena, level->version, &level->battle_safe_squares);
         }
         if (level->version >= 13) {
             serialize_position_marker_list(serializer, arena, level->version, &level->position_markers);
         }
 
-        build_navigation_map_for_level_area(arena, level);
-        build_battle_zone_bounding_boxes_for_level_area(arena, level);
-    } memory_arena_set_allocation_region_bottom(arena);
+    }
 }
 void serialize_level_area(struct game_state* state, struct binary_serializer* serializer, struct level_area* level, bool use_default_spawn) {
-    _serialize_level_area(state->arena, serializer, level, ENTITY_LIST_STORAGE_TYPE_PER_LEVEL);
+    _debugprintf("%llu memory used", arena->used + arena->used_top);
+    memory_arena_clear_top(arena);
+    memory_arena_set_allocation_region_top(arena);
+    {
+        _serialize_level_area(state->arena, serializer, level, ENTITY_LIST_STORAGE_TYPE_PER_LEVEL);
+        cstring_copy(level->area_name, game_state->loaded_area_name, array_count(level->area_name));
+        /* unpack steps */
+        { /* Entities */
+            level->entities = entity_list_create(arena, level->load_entities.count, ENTITY_LIST_STORAGE_TYPE_PER_LEVEL);
+
+            for (s32 entity_index = 0; entity_index < level->load_entities.count; ++entity_index) {
+                struct level_area_entity* current_packed_entity = level->load_entities.entities + entity_index;
+                entity_id                 new_ent               = entity_list_create_entity(&level->entities);
+                struct entity*            current_entity        = entity_list_dereference_entity(&level->entities, new_ent);
+                level_area_entity_unpack(current_packed_entity, current_entity);
+            }
+        }
+        { /* Savepoints */
+            level->entity_savepoint_count = level->load_savepoints.count;
+            level->savepoints             = memory_arena_push(state->arena, sizeof(*level->savepoints) * level->entity_savepoint_count);
+            for (s32 savepoint_index = 0; savepoint_index < level->load_savepoints.count; ++savepoint_index) {
+                struct level_area_savepoint* packed_entity = &level->load_savepoints.savepoints + savepoint_index;
+                struct entity_savepoint*     unpack_entity = level->savepoints + savepoint_index;
+                level_area_entity_savepoint_unpack(packed_entity, unpack_entity);
+            }
+        }
+        build_navigation_map_for_level_area(state->arena, level);
+        build_battle_zone_bounding_boxes_for_level_area(state->arena, level);
+    }
+    memory_arena_set_allocation_region_bottom(arena);
     struct entity* player = game_get_player(game_state);
     if (use_default_spawn) {
         game_set_all_party_members_to(v2f32(
