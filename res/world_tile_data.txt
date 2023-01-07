@@ -11,13 +11,10 @@
 (frames "res/img/land/sand.png"))
 
 # Water
-("water [solid]"
-(frames "res/img/land/water.png" "res/img/land/water2.png")
-(time-until-next-frame 0.15)
-(flags 'solid))
 ("water"
 (frames "res/img/land/water.png" "res/img/land/water2.png")
-(time-until-next-frame 0.15))
+(time-until-next-frame 0.15)
+(flags 'solid 'boat-only'))
 
 # Cave tiles
 ("cave wall"

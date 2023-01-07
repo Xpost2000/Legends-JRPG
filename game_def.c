@@ -222,14 +222,16 @@ local u8 facing_direction_from_string(string name) {
 /* loaded from a table at runtime or compile time? */
 /* Since this isn't serialized, I can change this pretty often. */
 enum tile_data_flags {
-    TILE_DATA_FLAGS_NONE  = 0,
-    TILE_DATA_FLAGS_SOLID = BIT(0),
+    TILE_DATA_FLAGS_NONE      = 0,
+    TILE_DATA_FLAGS_SOLID     = BIT(0),
+    TILE_DATA_FLAGS_BOAT_ONLY = BIT(1), /*WORLDMAP FLAG*/
 };
 /* index = id, reserve sparse array to allow for random access */
 struct autotile_table {
     s32 neighbors[256];
 };
 
+/* TODO: add damaging steps! */
 struct tile_data_definition {
     string               name;
     string               frames[24];
@@ -550,10 +552,18 @@ enum game_screen_mode {
     GAME_SCREEN_PREVIEW_DEMO_ALERT,
     GAME_SCREEN_MAIN_MENU,
     GAME_SCREEN_INGAME,
+    GAME_SCREEN_COUNT,
+};
+
+enum game_submode {
+    GAME_SUBMODE_OVERWORLD,
+    GAME_SUBMODE_WORLDMAP,
+    GAME_SUBMODE_COUNT,
 };
 
 /* s32 screen_mode = GAME_SCREEN_PREVIEW_DEMO_ALERT; */
 s32 screen_mode = GAME_SCREEN_MAIN_MENU;
+s32 submode     = GAME_SUBMODE_OVERWORLD;
 
 /* sized fixed chunks, but still dynamic */
 /* this isn't a hashmap FYI, just linear lookups. That's okay too. Since lookup is not frequent. */
@@ -595,6 +605,7 @@ struct ui_save_menu {
     f32 effects_timer;
 };
 
+/* this is bad... */
 enum current_theme_track_type {
     THEME_SAFE_TRACK,
     THEME_BATTLE_TRACK,

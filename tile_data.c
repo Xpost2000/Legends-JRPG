@@ -111,6 +111,9 @@ local void load_tile_data_into_table(string filebuffer_string, s32 table_id) {
                             if (lisp_form_symbol_matching(*f, string_literal("solid"))) {
                                 flags |= TILE_DATA_FLAGS_SOLID;
                             }
+                            if (lisp_form_symbol_matching(*f, string_literal("boat-only"))) {
+                                flags |= TILE_DATA_FLAGS_BOAT_ONLY;
+                            }
                         }
 
                         current_tile_entry->flags = flags;
@@ -119,6 +122,41 @@ local void load_tile_data_into_table(string filebuffer_string, s32 table_id) {
                         lisp_form_get_f32(*arg0, &current_tile_entry->time_until_next_frame);
                     }
                 }
+            }
+        }
+    }
+}
+
+local void update_all_tile_animations(f32 dt) {
+    {
+        for (s32 index = 0; index < tile_table_data_count; ++index) {
+            struct tile_data_definition* tile_definition = tile_table_data + index;
+
+            tile_definition->timer += dt;
+            if (tile_definition->timer > tile_definition->time_until_next_frame) {
+                tile_definition->frame_index += 1;
+
+                if (tile_definition->frame_index >= tile_definition->frame_count) {
+                    tile_definition->frame_index = 0;
+                }
+
+                tile_definition->timer = 0;
+            }
+        }
+    }
+    {
+        for (s32 index = 0; index < world_tile_table_data_count; ++index) {
+            struct tile_data_definition* tile_definition = world_tile_table_data + index;
+
+            tile_definition->timer += dt;
+            if (tile_definition->timer > tile_definition->time_until_next_frame) {
+                tile_definition->frame_index += 1;
+
+                if (tile_definition->frame_index >= tile_definition->frame_count) {
+                    tile_definition->frame_index = 0;
+                }
+
+                tile_definition->timer = 0;
             }
         }
     }

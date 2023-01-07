@@ -433,11 +433,11 @@ void update_and_render_world_editor_game_menu_ui(struct game_state* state, struc
             if (is_mouse_wheel_up()) {
                 world_editor_state->current_tile_layer -= 1;
                 if (world_editor_state->current_tile_layer < 0) {
-                    world_editor_state->current_tile_layer = TILE_LAYER_COUNT-1;
+                    world_editor_state->current_tile_layer = WORLD_TILE_LAYER_COUNT-1;
                 }
             } else if (is_mouse_wheel_down()) {
                 world_editor_state->current_tile_layer += 1;
-                if (world_editor_state->current_tile_layer >= TILE_LAYER_COUNT) {
+                if (world_editor_state->current_tile_layer >= WORLD_TILE_LAYER_COUNT) {
                     world_editor_state->current_tile_layer = 0;
                 }
             }

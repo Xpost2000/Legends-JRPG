@@ -1259,6 +1259,7 @@ void load_worldmap_from_file(struct game_state* state, string filename) {
         file_buffer_free(&file);
 
         struct world_map* world_map = world_map_list_push(&state->world_maps);
+        world_map->script.present = true;
 
         serialize_world_map(state->arena, &serializer, world_map);
         load_world_map_script(state->arena, world_map);
@@ -3278,6 +3279,36 @@ local void execute_area_scripts(struct game_state* state, struct level_area* are
         }
     }
 }
+local void execute_world_map_scripts(struct game_state* state, struct world_map* area, f32 dt) {
+    struct world_map_script_data* script_data = &area->script;
+
+    if (script_data->present) {
+        struct lisp_form* on_frame_script    = script_data->on_frame;
+
+        if (!state->loaded_area.on_enter_triggered) {
+            state->loaded_area.on_enter_triggered = true;
+            struct lisp_form* on_enter_script     = script_data->on_enter;
+
+            if (on_enter_script) {
+                game_script_enqueue_form_to_execute(lisp_list_sliced(*on_enter_script, 1, -1));
+            }
+        } else {
+        }
+
+        if (!game_state->is_conversation_active) {
+            struct world_map_listener* routine_listeners = &script_data->listeners[WORLD_MAP_LISTEN_EVENT_ROUTINE];
+            for (s32 routine_script_index = 0; routine_script_index < routine_listeners->subscribers; ++routine_script_index) {
+                struct lisp_form* routine_forms = routine_listeners->subscriber_codes + routine_script_index;
+                struct game_script_script_instance* context = game_script_enqueue_form_to_execute_ex(lisp_list_sliced(*routine_forms, 2, -1), routine_script_index);
+
+                if (context) {
+                    _debugprintf("pushed new routine script!");
+                    game_script_instance_set_contextual_binding(context, CONTEXT_BINDING_SELF, *lisp_list_nth(routine_forms, 1));
+                }
+            } 
+        }
+    }
+}
 
 local void execute_current_area_scripts(struct game_state* state, f32 dt) {
     if (!cutscene_active()) {
@@ -3333,9 +3364,81 @@ void update_and_render_game_console(struct game_state* state, struct software_fr
 #endif
 }
 
+local void update_and_render_game_worldmap(struct software_framebuffer* framebuffer, f32 dt) {
+    struct world_map* world_map = game_state->world_maps.world_maps + game_state->current_world_map_id;
+    execute_world_map_scripts(game_state, world_map, dt);
+}
+
+local void update_and_render_game_overworld(struct software_framebuffer* framebuffer, f32 dt) {
+    update_game_camera(game_state, dt);
+
+    execute_current_area_scripts(game_state, dt);
+
+    if (game_state->ui_state != UI_STATE_PAUSE) {
+        update_entities(game_state, dt, game_entity_iterator(game_state), &game_state->loaded_area);
+
+        /*...*/
+        particle_list_update_particles(&global_particle_list, dt);
+        entity_particle_emitter_list_update(&game_state->permenant_particle_emitters, dt);
+        /*...*/
+
+        game_script_execute_awaiting_scripts(&scratch_arena, game_state, dt);
+        game_script_run_all_timers(dt);
+
+        if (!cutscene_active() && !game_state->is_conversation_active) {
+            if (game_total_party_knockout()) {
+                game_setup_death_ui();
+            }
+                    
+            if (!game_state->combat_state.active_combat) {
+                determine_if_combat_should_begin(game_state);
+            } else {
+                update_combat(game_state, dt);
+            }
+        }
+
+        global_elapsed_game_time += dt;
+        game_state->weather.timer += dt;
+    }
+
+    struct render_commands        commands      = render_commands(&scratch_arena, 16384, game_state->camera);
+    struct sortable_draw_entities draw_entities = sortable_draw_entities(&scratch_arena, 8192*4);
+    commands.should_clear_buffer = true;
+    commands.clear_buffer_color  = color32u8(100, 128, 148, 255);
+
+    if (cutscene_viewing_separate_area()) {
+        /* might need to rethink this a little... */
+        /* TODO: NO PARTICLES HERE */
+        update_entities(game_state, dt, game_cutscene_entity_iterator(), cutscene_view_area());
+        render_ground_area(game_state, &commands, cutscene_view_area());
+        render_cutscene_entities(&draw_entities);
+        sortable_draw_entities_submit(&commands, &graphics_assets, &draw_entities, dt);
+        render_foreground_area(game_state, &commands, cutscene_view_area());
+    } else {
+        render_ground_area(game_state, &commands, &game_state->loaded_area);
+        render_entities(game_state, &draw_entities);
+        render_particles_list(&global_particle_list, &draw_entities);
+        sortable_draw_entities_submit(&commands, &graphics_assets, &draw_entities, dt);
+        render_foreground_area(game_state, &commands, &game_state->loaded_area);
+#if 0 
+        DEBUG_render_particle_emitters(&commands, &game_state->permenant_particle_emitters);
+#endif
+    }
+    software_framebuffer_render_commands(framebuffer, &commands);
+
+    {
+        struct level_area* area = &game_state->loaded_area;
+        if (cutscene_viewing_separate_area()) {
+            area = cutscene_view_area();
+        }
+        software_framebuffer_run_shader(framebuffer, rectangle_f32(0, 0, framebuffer->width, framebuffer->height), lighting_shader, area);
+    }
+}
+
 void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
     dt *= GLOBAL_GAME_TIMESTEP_MODIFIER;
 
+    /* NOTE: this seems to be broken for some reason */
     if (is_key_pressed(KEY_F12)) {
         image_buffer_write_to_disk((struct image_buffer*)framebuffer, string_literal("scr"));
     }
@@ -3362,8 +3465,6 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
     }
 #endif
 
-    recalculate_camera_shifting_bounds(framebuffer);
-
 #ifdef USE_EDITOR
     if (game_state->in_editor == 1) {
         update_and_render_editor(framebuffer, dt);
@@ -3375,6 +3476,8 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
         return;
     }
 #endif
+
+    recalculate_camera_shifting_bounds(framebuffer);
     
     {
         switch (screen_mode) {
@@ -3382,103 +3485,32 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                 update_and_render_preview_demo_alert(game_state, framebuffer, dt);
             } break;
             case GAME_SCREEN_INGAME: {
-                struct entity* player_entity = game_get_player(game_state);
-                update_game_camera(game_state, dt);
+                update_all_tile_animations(dt);
 
-                execute_current_area_scripts(game_state, dt);
-
-                /* update all tile animations */
-                {
-                    for (s32 index = 0; index < tile_table_data_count; ++index) {
-                        struct tile_data_definition* tile_definition = tile_table_data + index;
-
-                        tile_definition->timer += dt;
-                        if (tile_definition->timer > tile_definition->time_until_next_frame) {
-                            tile_definition->frame_index += 1;
-
-                            if (tile_definition->frame_index >= tile_definition->frame_count) {
-                                tile_definition->frame_index = 0;
-                            }
-
-                            tile_definition->timer = 0;
-                        }
-                    }
+                switch (submode) {
+                    case GAME_SUBMODE_OVERWORLD: {
+                        update_and_render_game_overworld(framebuffer, dt);
+                    } break;
+                    case GAME_SUBMODE_WORLDMAP: {
+                        update_and_render_game_worldmap(framebuffer, dt);
+                    } break;
                 }
-
-                if (game_state->ui_state != UI_STATE_PAUSE) {
-                    update_entities(game_state, dt, game_entity_iterator(game_state), &game_state->loaded_area);
-
-                    /*...*/
-                    particle_list_update_particles(&global_particle_list, dt);
-                    entity_particle_emitter_list_update(&game_state->permenant_particle_emitters, dt);
-                    /*...*/
-
-                    game_script_execute_awaiting_scripts(&scratch_arena, game_state, dt);
-                    game_script_run_all_timers(dt);
-
-                    if (!cutscene_active() && !game_state->is_conversation_active) {
-                        if (game_total_party_knockout()) {
-                            game_setup_death_ui();
-                        }
-                    
-                        if (!game_state->combat_state.active_combat) {
-                            determine_if_combat_should_begin(game_state);
-                        } else {
-                            update_combat(game_state, dt);
-                        }
-                    }
-
-                    global_elapsed_game_time += dt;
-                    game_state->weather.timer += dt;
-                }
-
-                struct render_commands        commands      = render_commands(&scratch_arena, 16384, game_state->camera);
-                struct sortable_draw_entities draw_entities = sortable_draw_entities(&scratch_arena, 8192*4);
-                commands.should_clear_buffer = true;
-                commands.clear_buffer_color  = color32u8(100, 128, 148, 255);
-
-                if (cutscene_viewing_separate_area()) {
-                    /* might need to rethink this a little... */
-                    /* TODO: NO PARTICLES HERE */
-                    update_entities(game_state, dt, game_cutscene_entity_iterator(), cutscene_view_area());
-                    render_ground_area(game_state, &commands, cutscene_view_area());
-                    render_cutscene_entities(&draw_entities);
-                    sortable_draw_entities_submit(&commands, &graphics_assets, &draw_entities, dt);
-                    render_foreground_area(game_state, &commands, cutscene_view_area());
-                } else {
-                    render_ground_area(game_state, &commands, &game_state->loaded_area);
-                    render_entities(game_state, &draw_entities);
-                    render_particles_list(&global_particle_list, &draw_entities);
-                    sortable_draw_entities_submit(&commands, &graphics_assets, &draw_entities, dt);
-                    render_foreground_area(game_state, &commands, &game_state->loaded_area);
-#if 0 
-                    DEBUG_render_particle_emitters(&commands, &game_state->permenant_particle_emitters);
-#endif
-                }
-                software_framebuffer_render_commands(framebuffer, &commands);
-
-                {
-                    struct level_area* area = &game_state->loaded_area;
-                    if (cutscene_viewing_separate_area()) {
-                        area = cutscene_view_area();
-                    }
-                    software_framebuffer_run_shader(framebuffer, rectangle_f32(0, 0, framebuffer->width, framebuffer->height), lighting_shader, area);
-                }
+                
                 game_postprocess_blur_ingame(framebuffer, 2, 0.62, BLEND_MODE_ALPHA);
-                /* game_postprocess_blur_ingame(framebuffer, 1, 0.65, BLEND_MODE_ALPHA); */
 
                 {
                     struct render_commands commands = render_commands(&scratch_arena, 1024, game_state->camera);
                     do_ui_passive_speaking_dialogue(&commands, dt);
                     game_display_and_update_message_notifications(&commands, dt);
+
+                    do_weather(framebuffer, game_state, dt);
+                    game_do_special_effects(framebuffer, dt);
+
+                    update_and_render_game_menu_ui(game_state, framebuffer, dt);
+                    update_and_render_game_console(game_state, framebuffer, dt);
                     software_framebuffer_render_commands(framebuffer, &commands);
                 }
 
-                game_do_special_effects(framebuffer, dt);
-
-                do_weather(framebuffer, game_state, dt);
-                update_and_render_game_menu_ui(game_state, framebuffer, dt);
-                update_and_render_game_console(game_state, framebuffer, dt);
             } break;
             case GAME_SCREEN_MAIN_MENU: {
                 update_and_render_main_menu(game_state, framebuffer, dt);

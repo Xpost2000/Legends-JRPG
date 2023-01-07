@@ -105,6 +105,7 @@ local string world_tile_layer_strings[] = {
   structures.
 */
 enum world_map_listen_event {
+    WORLD_MAP_LISTEN_EVENT_ROUTINE,
     WORLD_MAP_LISTEN_EVENT_COUNT,
 };
 struct world_map_listener {
@@ -112,7 +113,8 @@ struct world_map_listener {
     struct lisp_form* subscriber_codes;
 };
 local string world_map_listen_event_form_names[] = {
-    [WORLD_MAP_LISTEN_EVENT_COUNT] = string_literal("(count)"),
+    [WORLD_MAP_LISTEN_EVENT_ROUTINE] = string_literal("routine"),
+    [WORLD_MAP_LISTEN_EVENT_COUNT]   = string_literal("(count)"),
 };
 struct world_map_script_data {
     bool present;

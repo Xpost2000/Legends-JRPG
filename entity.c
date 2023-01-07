@@ -3547,6 +3547,7 @@ void serialize_level_area_entity(struct binary_serializer* serializer, s32 versi
         case 9:
         case 10:
         case 11:
+        case 12:
         case CURRENT_LEVEL_AREA_VERSION: {
             /* whoops... */
             serialize_f32(serializer, &entity->position.x);
