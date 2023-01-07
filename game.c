@@ -1221,12 +1221,28 @@ void serialize_world_map(struct memory_arena* arena, struct binary_serializer* s
     s32 version_id      = world_map->version;
 
     if (version_id >= 1) {
+#define Serialize_Tile_Layer(LAYER)                                     \
+            do {                                                        \
+                 {                                                      \
+                     serialize_s32(serializer, &world_map->tile_counts[LAYER]); \
+                     _debugprintf("%d tiles in this layer(%.*s)", world_map->tile_counts[LAYER], world_tile_layer_strings[LAYER].length, world_tile_layer_strings[LAYER].data); \
+                     world_map->tile_layers[LAYER] = memory_arena_push(arena, world_map->tile_counts[LAYER]*sizeof(*world_map->tile_layers[LAYER])); \
+                     for (s32 _index = 0; _index < world_map->tile_counts[LAYER]; ++_index) { \
+                         serialize_tile(serializer, area_version_id, &world_map->tile_layers[LAYER][_index]); \
+                     }                                                  \
+                 }                                                      \
+            } while(0)
         for (s32 tile_layer = 0; tile_layer < WORLD_TILE_LAYER_COUNT; ++tile_layer) {
-            serialize_tile_layer(serializer, area_version_id, &world_map->tile_counts[tile_layer], world_map->tile_layers[tile_layer]);
+            Serialize_Tile_Layer(tile_layer);
+            /* serialize_tile_layer(serializer, area_version_id, &world_map->tile_counts[tile_layer], world_map->tile_layers[tile_layer]); */
         }
+#undef Serialize_Tile_Layer
 
         IAllocator allocator = memory_arena_allocator(arena);
         serialize_string(&allocator, serializer, &world_map->script_string);
+            if (world_map->script_string.length > 0) {
+                world_map->script.present   = true;
+            }
     }
 
     if (version_id >= 2) {
@@ -3480,6 +3496,13 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
             game_state->in_editor = 0;
         } else {
             game_state->in_editor = 2;
+        }
+    }
+    if (is_key_pressed(KEY_F4)) {
+        if (submode == GAME_SUBMODE_OVERWORLD) {
+            game_open_worldmap_at_default(string_literal("atlas.map"));
+        } else {
+            game_open_overworld_at_default(string_literal("bforest1.area"), DIRECTION_RETAINED);
         }
     }
 #endif

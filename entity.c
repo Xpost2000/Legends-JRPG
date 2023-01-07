@@ -3377,7 +3377,7 @@ struct position_marker_list position_marker_list_reserved(struct memory_arena* a
 
 void serialize_position_marker_list(struct binary_serializer* serializer, struct memory_arena* arena, s32 version, struct position_marker_list* list) {
     serialize_s32(serializer, &list->count);
-    if (list->capacity != 0) {
+    if (list->capacity == 0) {
         list->markers = memory_arena_push(arena, sizeof(*list->markers) * list->count);
     } else {
         assertion(list->count > list->capacity && "That's bad... Cannot store this many markers!");

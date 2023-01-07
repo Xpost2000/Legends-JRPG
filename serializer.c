@@ -266,13 +266,15 @@ Define_Serializer_Function(f64, f64);
 
 void serialize_string(IAllocator* allocator, struct binary_serializer* serializer, string* s) {
     serialize_s32(serializer, &s->length);
-    if (allocator && serializer->mode == BINARY_SERIALIZER_READ) {
-        if (s->data) {
-            allocator->free(allocator, s->data);
+    if (s->length > 0) {
+        if (allocator && serializer->mode == BINARY_SERIALIZER_READ) {
+            if (s->data) {
+                allocator->free(allocator, s->data);
+            }
+            s->data = allocator->alloc(allocator, s->length);
         }
-        s->data = allocator->alloc(allocator, s->length);
+        serialize_bytes(serializer, s->data, s->length);
     }
-    serialize_bytes(serializer, s->data, s->length);
 }
 
 #undef Serialize_Object_Into_File
