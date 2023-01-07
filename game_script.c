@@ -853,7 +853,7 @@ struct game_script_typed_ptr game_script_object_handle_decode(struct lisp_form o
                 if (!lisp_form_get_s32(*id_form, &real_id)) {
                     return result;
                 }
-                result.ptr = area->lights + real_id;
+                result.ptr = area->lights.lights + real_id;
             } break;
             case GAME_SCRIPT_TARGET_TRANSITION_TRIGGER: {
                 if (!lisp_form_get_s32(*id_form, &real_id)) {
@@ -865,7 +865,7 @@ struct game_script_typed_ptr game_script_object_handle_decode(struct lisp_form o
                 if (!lisp_form_get_s32(*id_form, &real_id)) {
                     return result;
                 }
-                result.ptr = area->script_triggers + real_id;
+                result.ptr = area->triggers.triggers + real_id;
             } break;
             case GAME_SCRIPT_TARGET_ENTITY: {
                 /*
@@ -947,7 +947,7 @@ struct game_script_typed_ptr game_script_object_handle_decode(struct lisp_form o
                 if (!lisp_form_get_s32(*id_form, &real_id)) {
                     return result;
                 }
-                result.ptr = area->chests + real_id;
+                result.ptr = area->chests.chests + real_id;
                 return result;
             } break;
             case GAME_SCRIPT_TARGET_SCRIPTABLE_LAYER: {

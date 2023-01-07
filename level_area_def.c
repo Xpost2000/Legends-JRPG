@@ -25,7 +25,7 @@
    Verions 12: AreaName BuiltIn & BuiltIn scripts & Extra Tile Layers
    Version 13: Position Markers
 */
-#define CURRENT_LEVEL_AREA_VERSION (13)
+#define CURRENT_LEVEL_AREA_VERSION (13) 
 
 #define SCRIPTABLE_TILE_LAYER_COUNT (32)
 enum scriptable_tile_layer_flags {
@@ -325,7 +325,7 @@ struct level_area_entity*     level_area_entity_list_push(struct level_area_enti
 struct level_area_entity*     level_area_entity_list_find_entity_at(struct level_area_entity_list* list, v2f32 point);
 void                          level_area_entity_list_remove(struct level_area_entity_list* list, s32 index);
 void                          level_area_entity_list_clear(struct level_area_entity_list* list);
-void                          serialize_level_area_entity_list(struct binary_serializer* serializer, struct memory_arena* arena, s32 version struct level_area_entity_list* list);
+void                          serialize_level_area_entity_list(struct binary_serializer* serializer, struct memory_arena* arena, s32 version, struct level_area_entity_list* list);
 
 
 void serialize_level_area_entity_savepoint(struct binary_serializer* serializer, s32 version, struct level_area_savepoint* entity);
@@ -406,10 +406,11 @@ struct trigger_list {
     struct trigger* triggers;
 };
 struct trigger_list trigger_list_reserved(struct memory_arena* arena, s32 capacity);
-struct trigger*     trigger_list_transition_at(struct trigger_list* list, v2f32 point);
+struct trigger*     trigger_list_trigger_at(struct trigger_list* list, v2f32 point);
 struct trigger*     trigger_list_push(struct trigger_list* list);
 void                trigger_list_remove(struct trigger_list* list, s32 index);
 void                trigger_list_clear(struct trigger_list* list);
+void                serialize_trigger_list(struct binary_serializer* serializer, struct memory_arena* arena, s32 version, struct trigger_list* list);
 
 /*
   Since levels may have triggers and lots of other things, we want to avoid
@@ -553,8 +554,8 @@ struct level_area {
 
 /* grid coordinate searches */
 struct entity_chest* level_area_get_chest_at(struct level_area* area, s32 x, s32 y) {
-    for (s32 chest_index = 0; chest_index < area->entity_chest_count; ++chest_index) {
-        struct entity_chest* current_chest = area->chests + chest_index;
+    for (s32 chest_index = 0; chest_index < area->chests.count; ++chest_index) {
+        struct entity_chest* current_chest = area->chests.chests + chest_index;
 
         s32 chest_x = floorf(current_chest->position.x);
         s32 chest_y = floorf(current_chest->position.y);

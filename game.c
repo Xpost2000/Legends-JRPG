@@ -710,13 +710,9 @@ local void build_navigation_map_for_level_area(struct memory_arena* arena, struc
     }
 }
 
-local struct level_area_battle_safe_square* level_area_get_battle_safe_square_at_index(struct level_area* level, s32 i) {
-    return &level->battle_safe_squares[i];
-}
-
 local struct level_area_battle_safe_square* level_area_get_battle_safe_square_at(struct level_area* level, s32 x, s32 y) {
-    for (s32 square_index = 0; square_index < level->battle_safe_square_count; ++square_index) {
-        struct level_area_battle_safe_square* current_square = level->battle_safe_squares + square_index;
+    for (s32 square_index = 0; square_index < level->battle_safe_squares.count; ++square_index) {
+        struct level_area_battle_safe_square* current_square = level->battle_safe_squares.squares + square_index;
 
         if (current_square->x == x && current_square->y == y) {
             return current_square;
@@ -749,16 +745,16 @@ void build_battle_zone_bounding_boxes_for_level_area(struct memory_arena* arena,
     level->first_battle_zone = level->last_battle_zone = NULL;
     level->battle_zone_count = 0;
 
-    _debugprintf("%d battle squares to scan", level->battle_safe_square_count);
+    _debugprintf("%d battle squares to scan", level->battle_safe_squares.count);
     {
         local v2s32 neighbor_offsets[] = {
             v2s32(1, 0), v2s32(-1, 0), v2s32(0, 1), v2s32(0, -1),
         };
 
-        v2s32* exploration_queue       = memory_arena_push(&scratch_arena, sizeof(v2s32) * level->battle_safe_square_count);
-        v2s32* already_visited         = memory_arena_push(&scratch_arena, sizeof(v2s32) * level->battle_safe_square_count);
-        for (s32 square_index = 0; square_index < level->battle_safe_square_count; ++square_index) {
-            struct level_area_battle_safe_square* current_square = level->battle_safe_squares + square_index;
+        v2s32* exploration_queue       = memory_arena_push(&scratch_arena, sizeof(v2s32) * level->battle_safe_squares.count);
+        v2s32* already_visited         = memory_arena_push(&scratch_arena, sizeof(v2s32) * level->battle_safe_squares.count);
+        for (s32 square_index = 0; square_index < level->battle_safe_squares.count; ++square_index) {
+            struct level_area_battle_safe_square* current_square = level->battle_safe_squares.squares + square_index;
 
             bool generate_island = true;
             {
@@ -846,8 +842,8 @@ void build_battle_zone_bounding_boxes_for_level_area(struct memory_arena* arena,
         for (struct level_area_battle_zone_bounding_box* existing_zone = level->first_battle_zone; existing_zone; existing_zone = existing_zone->next, index++) {
             s32 count = 0;
             /* separated into two passes since I'm not sure why it seems to fail on a single pass. Maybe it's affecting the pointers of something? */
-            for (s32 square_index = 0; square_index < level->battle_safe_square_count; ++square_index) {
-                struct level_area_battle_safe_square* current_square = level->battle_safe_squares + square_index;
+            for (s32 square_index = 0; square_index < level->battle_safe_squares.count; ++square_index) {
+                struct level_area_battle_safe_square* current_square = level->battle_safe_squares.squares + square_index;
                 if (current_square->island_index == index) {
                     count++;
                 }
@@ -855,8 +851,8 @@ void build_battle_zone_bounding_boxes_for_level_area(struct memory_arena* arena,
 
             existing_zone->squares      = memory_arena_push(arena, count * sizeof(s32));
             existing_zone->square_count = 0;
-            for (s32 square_index = 0; square_index < level->battle_safe_square_count; ++square_index) {
-                struct level_area_battle_safe_square* current_square = level->battle_safe_squares + square_index;
+            for (s32 square_index = 0; square_index < level->battle_safe_squares.count; ++square_index) {
+                struct level_area_battle_safe_square* current_square = level->battle_safe_squares.squares + square_index;
                 if (current_square->island_index == index) {
                     existing_zone->squares[existing_zone->square_count++] = square_index;
                 }
@@ -896,7 +892,7 @@ local struct level_area_battle_zone_bounding_box* level_area_find_current_battle
 local bool level_area_battle_zone_bounding_box_is_safe_battle_block(struct level_area* level, struct level_area_battle_zone_bounding_box* zone, s32 x, s32 y) {
     /* assume we're already in the zone */
     for (s32 block_index = 0; block_index < zone->square_count; ++block_index) {
-        struct level_area_battle_safe_square* square = zone->squares[block_index] + level->battle_safe_squares;
+        struct level_area_battle_safe_square* square = zone->squares[block_index] + level->battle_safe_squares.squares;
         if (square->x == x && square->y == y) {
             return true;
         }
@@ -1362,7 +1358,7 @@ void _serialize_level_area(struct memory_arena* arena, struct binary_serializer*
         }
         if (level->version >= 2) {
             _debugprintf("reading containers");
-            serialize_entity_chest_list(serializer, arena, level->version &level->entity_chests);
+            serialize_entity_chest_list(serializer, arena, level->version, &level->chests);
         }
 
         if (level->version >= 3) {
@@ -1390,15 +1386,15 @@ void _serialize_level_area(struct memory_arena* arena, struct binary_serializer*
     }
 }
 void serialize_level_area(struct game_state* state, struct binary_serializer* serializer, struct level_area* level, bool use_default_spawn) {
-    _debugprintf("%llu memory used", arena->used + arena->used_top);
-    memory_arena_clear_top(arena);
-    memory_arena_set_allocation_region_top(arena);
+    _debugprintf("%llu memory used", state->arena->used + state->arena->used_top);
+    memory_arena_clear_top(state->arena);
+    memory_arena_set_allocation_region_top(state->arena);
     {
         _serialize_level_area(state->arena, serializer, level, ENTITY_LIST_STORAGE_TYPE_PER_LEVEL);
         cstring_copy(level->area_name, game_state->loaded_area_name, array_count(level->area_name));
         /* unpack steps */
         { /* Entities */
-            level->entities = entity_list_create(arena, level->load_entities.count, ENTITY_LIST_STORAGE_TYPE_PER_LEVEL);
+            level->entities = entity_list_create(state->arena, level->load_entities.count, ENTITY_LIST_STORAGE_TYPE_PER_LEVEL);
 
             for (s32 entity_index = 0; entity_index < level->load_entities.count; ++entity_index) {
                 struct level_area_entity* current_packed_entity = level->load_entities.entities + entity_index;
@@ -1411,7 +1407,7 @@ void serialize_level_area(struct game_state* state, struct binary_serializer* se
             level->entity_savepoint_count = level->load_savepoints.count;
             level->savepoints             = memory_arena_push(state->arena, sizeof(*level->savepoints) * level->entity_savepoint_count);
             for (s32 savepoint_index = 0; savepoint_index < level->load_savepoints.count; ++savepoint_index) {
-                struct level_area_savepoint* packed_entity = &level->load_savepoints.savepoints + savepoint_index;
+                struct level_area_savepoint* packed_entity = level->load_savepoints.savepoints + savepoint_index;
                 struct entity_savepoint*     unpack_entity = level->savepoints + savepoint_index;
                 level_area_entity_savepoint_unpack(packed_entity, unpack_entity);
             }
@@ -1419,7 +1415,7 @@ void serialize_level_area(struct game_state* state, struct binary_serializer* se
         build_navigation_map_for_level_area(state->arena, level);
         build_battle_zone_bounding_boxes_for_level_area(state->arena, level);
     }
-    memory_arena_set_allocation_region_bottom(arena);
+    memory_arena_set_allocation_region_bottom(state->arena);
     struct entity* player = game_get_player(game_state);
     if (use_default_spawn) {
         game_set_all_party_members_to(v2f32(
@@ -1787,8 +1783,8 @@ union color32f32 lighting_shader(struct software_framebuffer* framebuffer, union
     f32 g_accumulation = 0;
     f32 b_accumulation = 0;
 
-    for (s32 light_index = 0; light_index < loaded_area->light_count; ++light_index) {
-        struct light_def* current_light = loaded_area->lights + light_index;
+    for (s32 light_index = 0; light_index < loaded_area->lights.count; ++light_index) {
+        struct light_def* current_light = loaded_area->lights.lights + light_index;
         if (current_light->flags & LIGHT_FLAGS_HIDDEN) {
             continue;
         }
@@ -2340,7 +2336,7 @@ local void game_loot_chest(struct game_state* state, struct entity_chest* chest)
             }
         }
 
-        u32 chest_index = chest - state->loaded_area.chests;
+        u32 chest_index = chest - state->loaded_area.chests.chests;
         chest->flags |= ENTITY_CHEST_FLAGS_UNLOCKED;
 
         struct lisp_form listener_body = level_area_find_listener_for_object(state, &state->loaded_area, LEVEL_AREA_LISTEN_EVENT_ON_LOOT, GAME_SCRIPT_TARGET_CHEST, chest_index);
@@ -2929,11 +2925,11 @@ local void register_all_entities_to_save_record(void) {
             save_data_register_entity(iterator.current_id);
         }
 
-        for (u32 chest_index = 0; chest_index < game_state->loaded_area.entity_chest_count; ++chest_index) {
+        for (u32 chest_index = 0; chest_index < game_state->loaded_area.chests.count; ++chest_index) {
             save_data_register_chest(chest_index);
         }
 
-        for (u32 light_index = 0; light_index < game_state->loaded_area.light_count; ++light_index) {
+        for (u32 light_index = 0; light_index < game_state->loaded_area.lights.count; ++light_index) {
             save_data_register_light(light_index);
         }
 
@@ -3033,15 +3029,15 @@ void game_report_entity_death(entity_id id) {
     return;
 }
 
-void handle_entity_scriptable_trigger_interactions(struct game_state* state, struct entity* entity, s32 trigger_count, struct trigger* triggers, f32 dt) {
+void handle_entity_scriptable_trigger_interactions(struct game_state* state, struct entity* entity, struct trigger_list* triggers, f32 dt) {
     if (!(entity->flags & ENTITY_FLAGS_PLAYER_CONTROLLED))
         return;
 
     struct rectangle_f32 entity_collision_bounds = rectangle_f32_scale(entity_rectangle_collision_bounds(entity), 1.0/TILE_UNIT_SIZE);
 
     bool any_intersections = false;
-    for (s32 index = 0; index < trigger_count; ++index) {
-        struct trigger* current_trigger = triggers + index;
+    for (s32 index = 0; index < triggers->count; ++index) {
+        struct trigger* current_trigger = triggers->triggers + index;
 
         switch (current_trigger->activation_method) {
             case ACTIVATION_TYPE_TOUCH: {
@@ -3119,7 +3115,7 @@ void player_handle_radial_interactables(struct game_state* state, struct entity*
 
     if (found_any_interactable) { return; }
     {
-        Array_For_Each(it, struct entity_chest, area->chests, area->entity_chest_count) {
+        Array_For_Each(it, struct entity_chest, area->chests.chests, area->chests.count) {
             f32 distance_sq = v2f32_distance_sq(entity->position, v2f32_scale(it->position, TILE_UNIT_SIZE));
             if (it->flags & ENTITY_CHEST_FLAGS_HIDDEN) {
                 continue;

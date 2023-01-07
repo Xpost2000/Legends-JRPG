@@ -1021,8 +1021,8 @@ void update_entities(struct game_state* state, f32 dt, struct entity_iterator it
                                 }
                             }
 
-                            for (s32 index = 0; index < area->entity_chest_count && !stop_horizontal_movement; ++index) {
-                                struct entity_chest* chest = area->chests + index;
+                            for (s32 index = 0; index < area->chests.count && !stop_horizontal_movement; ++index) {
+                                struct entity_chest* chest = area->chests.chests + index;
 
                                 stop_horizontal_movement |=
                                     entity_push_out_horizontal_edges(current_entity, rectangle_f32(chest->position.x * TILE_UNIT_SIZE, chest->position.y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE));
@@ -1087,8 +1087,8 @@ void update_entities(struct game_state* state, f32 dt, struct entity_iterator it
                                 }
                             }
 
-                            for (s32 index = 0; index < area->entity_chest_count && !stop_vertical_movement; ++index) {
-                                struct entity_chest* chest = area->chests + index;
+                            for (s32 index = 0; index < area->chests.count && !stop_vertical_movement; ++index) {
+                                struct entity_chest* chest = area->chests.chests + index;
 
                                 stop_vertical_movement |=
                                     entity_push_out_vertical_edges(current_entity, rectangle_f32(chest->position.x * TILE_UNIT_SIZE, chest->position.y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE));
@@ -1113,7 +1113,7 @@ void update_entities(struct game_state* state, f32 dt, struct entity_iterator it
                 /* handle trigger interactions */
                 /* NPCs should not be able to leave areas for now */
                 handle_entity_level_trigger_interactions(state, current_entity, &area->trigger_level_transitions, dt);
-                handle_entity_scriptable_trigger_interactions(state, current_entity, area->script_trigger_count, area->script_triggers, dt);
+                handle_entity_scriptable_trigger_interactions(state, current_entity, &area->triggers, dt);
             } else {
                 current_entity->position.x += current_entity->velocity.x * dt;
                 current_entity->position.y += current_entity->velocity.y * dt;
@@ -1600,7 +1600,7 @@ void render_entities_from_area_and_iterator(struct sortable_draw_entities* draw_
     }
 
     {
-        Array_For_Each(it, struct entity_chest, area->chests, area->entity_chest_count) {
+        Array_For_Each(it, struct entity_chest, area->chests.chests, area->chests.count) {
             if (it->flags & ENTITY_FLAGS_HIDDEN) {
                 continue;
             }
@@ -3355,54 +3355,6 @@ struct position_marker* position_marker_list_find_marker_at(struct position_mark
     return NULL;
 }
 
-struct position_marker* position_marker_list_push(struct position_marker_list* list, struct position_marker marker) {
-    list->markers[list->count++] = marker;
-    return &list->markers[list->count-1];
-}
-
-void position_marker_list_clear(struct position_marker_list* list) {
-    list->count = 0;
-}
-
-void position_marker_list_remove(struct position_marker_list* list, s32 index) {
-    list->markers[index] = list->markers[--list->count];
-}
-
-struct position_marker_list position_marker_list_reserved(struct memory_arena* arena, s32 capacity) {
-    struct position_marker_list result = {};
-    result.capacity = capacity;
-    result.markers  = memory_arena_push(arena, sizeof(*result.markers) * capacity);
-    return result;
-}
-
-void serialize_tile_layer(struct binary_serializer* serializer, struct memory_arena* arena, s32 version, struct tile_layer* tile_layer) {
-    serialize_s32(serializer, &tile_layer->count);
-    if (tile_layer->capacity == 0) {
-        tile_layer->tiles = memory_arena_push(arena, sizeof(*tile_layer->tiles) * tile_layer->count);
-    } else {
-        _debugprintf("proposing to load %d tiles vs %d max capacity?", tile_layer->count, tile_layer->capacity);
-        assertion(tile_layer->count < tile_layer->capacity && "That's bad... Cannot store this many tile layers!");
-    }
-
-    for (s32 tile_index = 0; tile_index < tile_layer->count; ++tile_index) {
-        serialize_tile(serializer, version, tile_layer->tiles + tile_index);
-    }
-}
-
-void serialize_position_marker_list(struct binary_serializer* serializer, struct memory_arena* arena, s32 version, struct position_marker_list* list) {
-    serialize_s32(serializer, &list->count);
-    if (list->capacity == 0) {
-        list->markers = memory_arena_push(arena, sizeof(*list->markers) * list->count);
-    } else {
-        assertion(list->count < list->capacity && "That's bad... Cannot store this many markers!");
-    }
-
-
-    for (s32 marker_index = 0; marker_index < list->count; ++marker_index) {
-        serialize_position_marker(serializer, version, &list->markers[marker_index]);
-    }
-}
-
 void serialize_position_marker(struct binary_serializer* serializer, s32 version, struct position_marker* marker) {
     marker->scale = v2f32(1,1);
     switch (version) {
@@ -3635,9 +3587,9 @@ struct used_battle_action_restoration_state used_battle_action_restoration_state
         result.permenant_light_count_state = game_state->dynamic_light_count;
     }
     {
-        result.level_lights_state      = memory_arena_push(&game_arena, sizeof(*result.level_lights_state) * game_state->loaded_area.light_count);
-        memory_copy(game_state->loaded_area.lights, result.level_lights_state, sizeof(*game_state->loaded_area.lights) * game_state->loaded_area.light_count);
-        result.level_light_count_state = game_state->loaded_area.light_count;
+        result.level_lights_state      = memory_arena_push(&game_arena, sizeof(*result.level_lights_state) * game_state->loaded_area.lights.count);
+        memory_copy(game_state->loaded_area.lights.lights, result.level_lights_state, sizeof(*game_state->loaded_area.lights.lights) * game_state->loaded_area.lights.count);
+        result.level_light_count_state = game_state->loaded_area.lights.count;
     }
 
     memory_arena_set_allocation_region_bottom(&game_arena);
@@ -3688,8 +3640,8 @@ local void restore_game_state_using_restoration_state(struct used_battle_action_
         entity_particle_emitter_list_copy(&restoration_state->permenant_particle_emitter_state, &game_state->permenant_particle_emitters);
 
         {
-            memory_copy(restoration_state->level_lights_state, loaded_level_area->lights, sizeof(*loaded_level_area->lights) * restoration_state->level_light_count_state);
-            loaded_level_area->light_count = restoration_state->level_light_count_state;
+            memory_copy(restoration_state->level_lights_state, loaded_level_area->lights.lights, sizeof(*loaded_level_area->lights.lights) * restoration_state->level_light_count_state);
+            loaded_level_area->lights.count = restoration_state->level_light_count_state;
             memory_copy(restoration_state->permenant_lights_state, game_state->dynamic_lights, sizeof(*game_state->dynamic_lights) * restoration_state->permenant_light_count_state);
             game_state->dynamic_light_count = restoration_state->permenant_light_count_state;
         }
@@ -4145,12 +4097,89 @@ struct entity_status_effect status_effect_poison(s32 turn_duration) {
     };
 }
 
-struct tile_layer tile_layer_reserved(struct memory_arena* arena, s32 capacity) {
-    struct tile_layer result = {};
-    result.capacity = capacity;
-    result.tiles    = memory_arena_push(arena, sizeof(*result.tiles) * capacity);
-    return result;
-}
+/*
+  Automatically defines *_reserved, *_push, *_remove, *_clear, *_serialize, which are the most common procedures
+
+  This isn't a very "convenient" macro as all the parameters are a bit too strict...
+
+  There's a copied variant with a push that doesn't have a param as some struct objects are too complicated to include that as a parameter
+  for IMO.
+*/
+#define Define_Common_List_Type_Procedures(List_Type_Without_Tag, Main_Type_Without_Tag, DataMember, SerializeFn) \
+    struct List_Type_Without_Tag List_Type_Without_Tag##_reserved(struct memory_arena* arena, s32 capacity) { \
+        struct List_Type_Without_Tag result = {};                       \
+        result.capacity = capacity;                                     \
+        result.DataMember = memory_arena_push(arena, sizeof(*result.DataMember) * capacity); \
+        return result;                                                  \
+    }                                                                   \
+    struct Main_Type_Without_Tag* List_Type_Without_Tag##_push(struct List_Type_Without_Tag* list, struct Main_Type_Without_Tag obj) { \
+        struct Main_Type_Without_Tag* result = &list->DataMember[list->count++]; \
+        *result = obj;                                                  \
+        return result;                                                  \
+    }                                                                   \
+    void List_Type_Without_Tag##_remove(struct List_Type_Without_Tag* list, s32 index) { \
+        list->DataMember[index] = list->DataMember[--list->count];      \
+    }                                                                   \
+    void List_Type_Without_Tag##_clear(struct List_Type_Without_Tag* list) { \
+        list->count = 0;                                                \
+    }                                                                   \
+    void serialize_##List_Type_Without_Tag(struct binary_serializer* serializer, struct memory_arena* arena, s32 version, struct List_Type_Without_Tag* list) { \
+        serialize_s32(serializer, &list->count);                        \
+        if (list->capacity == 0) {                                      \
+            list->DataMember = memory_arena_push(arena, sizeof(*list->DataMember) * list->count); \
+        } else {                                                        \
+            assertion(list->count < list->capacity);                    \
+        }                                                               \
+        for (s32 i = 0; i < list->count; ++i) {                         \
+            SerializeFn(serializer, version, list->DataMember + i);     \
+        }                                                               \
+    }
+#define Define_Common_List_Type_Procedures_Alloc_Push(List_Type_Without_Tag, Main_Type_Without_Tag, DataMember, SerializeFn) \
+    struct List_Type_Without_Tag List_Type_Without_Tag##_reserved(struct memory_arena* arena, s32 capacity) { \
+        struct List_Type_Without_Tag result = {};                       \
+        result.capacity = capacity;                                     \
+        result.DataMember = memory_arena_push(arena, sizeof(*result.DataMember) * capacity); \
+        return result;                                                  \
+    }                                                                   \
+    struct Main_Type_Without_Tag* List_Type_Without_Tag##_push(struct List_Type_Without_Tag* list) { \
+        struct Main_Type_Without_Tag* result = &list->DataMember[list->count++]; \
+        return result;                                                  \
+    }                                                                   \
+    void List_Type_Without_Tag##_remove(struct List_Type_Without_Tag* list, s32 index) { \
+        list->DataMember[index] = list->DataMember[--list->count];      \
+    }                                                                   \
+    void List_Type_Without_Tag##_clear(struct List_Type_Without_Tag* list) { \
+        list->count = 0;                                                \
+    }                                                                   \
+    void serialize_##List_Type_Without_Tag(struct binary_serializer* serializer, struct memory_arena* arena, s32 version, struct List_Type_Without_Tag* list) { \
+        serialize_s32(serializer, &list->count);                        \
+        if (list->capacity == 0) {                                      \
+            list->DataMember = memory_arena_push(arena, sizeof(*list->DataMember) * list->count); \
+        } else {                                                        \
+            assertion(list->count < list->capacity);                    \
+        }                                                               \
+        for (s32 i = 0; i < list->count; ++i) {                         \
+            SerializeFn(serializer, version, list->DataMember + i);     \
+        }                                                               \
+    }
+
+
+
+Define_Common_List_Type_Procedures(position_marker_list, position_marker, markers, serialize_position_marker);
+Define_Common_List_Type_Procedures(tile_layer, tile, tiles, serialize_tile);
+Define_Common_List_Type_Procedures(trigger_level_transition_list, trigger_level_transition, transitions, serialize_trigger_level_transition);
+Define_Common_List_Type_Procedures_Alloc_Push(entity_chest_list, entity_chest, chests, serialize_entity_chest);
+Define_Common_List_Type_Procedures(light_list, light_def, lights, serialize_light);
+Define_Common_List_Type_Procedures_Alloc_Push(trigger_list, trigger, triggers, serialize_generic_trigger);
+Define_Common_List_Type_Procedures(level_area_savepoint_list, level_area_savepoint, savepoints, serialize_level_area_entity_savepoint);
+Define_Common_List_Type_Procedures(level_area_battle_safe_square_list, level_area_battle_safe_square, squares, serialize_battle_safe_square);
+Define_Common_List_Type_Procedures_Alloc_Push(level_area_entity_list, level_area_entity, entities, serialize_level_area_entity);
+
+struct light_def* light_list_find_light_at(struct light_list* list, v2f32 point);
+struct level_area_savepoint* level_area_savepoint_list_find_savepoint_at(struct level_area_savepoint_list* list, v2f32 point);
+struct level_area_battle_safe_square* level_area_battle_safe_square_list_tile_at(struct level_area_battle_safe_square_list* list, s32 x, s32 y);
+void level_area_battle_safe_square_list_remove_at(struct level_area_battle_safe_square_list* list, s32 x, s32 y);
+struct level_area_entity* level_area_entity_list_find_entity_at(struct level_area_entity_list* list, v2f32 point);
 
 void tile_layer_bounding_box(struct tile_layer* tile_layer, s32* min_x, s32* min_y, s32* max_x, s32* max_y) {
     for (s32 tile_index = 0; tile_index < tile_layer->count; ++tile_index) {
@@ -4162,13 +4191,6 @@ void tile_layer_bounding_box(struct tile_layer* tile_layer, s32* min_x, s32* min
     }
 
     return;
-}
-void tile_layer_clear(struct tile_layer* tile_layer) {
-    tile_layer->count = 0;
-}
-
-void tile_layer_remove(struct tile_layer* tile_layer, s32 index) {
-    tile_layer->tiles[index] = tile_layer->tiles[--tile_layer->count];
 }
 
 struct tile* tile_layer_tile_at(struct tile_layer* tile_layer, s32 x, s32 y) {
@@ -4194,18 +4216,6 @@ void tile_layer_remove_at(struct tile_layer* tile_layer, s32 x, s32 y) {
     }
 }
 
-struct tile* tile_layer_push(struct tile_layer* tile_layer, struct tile tile) {
-    struct tile* new_tile = &tile_layer->tiles[tile_layer->count++];
-    *new_tile = tile;
-    return new_tile;
-}
-
-struct trigger_level_transition_list trigger_level_transition_list_reserved(struct memory_arena* arena, s32 capacity) {
-    struct trigger_level_transition_list result = {};
-    result.capacity = capacity;
-    result.transitions = memory_arena_push(arena, sizeof(*result.transitions) * capacity);
-    return result;
-}
 struct trigger_level_transition* trigger_level_transition_list_transition_at(struct trigger_level_transition_list* list, v2f32 point) {
     for (s32 index = 0; index < list->count; ++index) {
         struct trigger_level_transition* current_trigger = list->transitions + index;
@@ -4216,72 +4226,29 @@ struct trigger_level_transition* trigger_level_transition_list_transition_at(str
 
     return NULL;
 }
-struct trigger_level_transition* trigger_level_transition_list_push(struct trigger_level_transition_list* list, struct trigger_level_transition transition) {
-    struct trigger_level_transition* result = &list->transitions[list->count++];
-    *result = transition;
-    return result;
-}
-void trigger_level_transition_list_remove(struct trigger_level_transition_list* list, s32 index) {
-    list->transitions[index] = list->transitions[--list->count];
+struct entity_chest* entity_chest_list_find_at(struct entity_chest_list* list, v2f32 position) {
+    for (s32 chest_index = 0; chest_index < list->count; ++chest_index) {
+        struct entity_chest* current_chest = list->chests + chest_index;
+
+        if (rectangle_f32_intersect(rectangle_f32(current_chest->position.x, current_chest->position.y, current_chest->scale.x, current_chest->scale.y), rectangle_f32(position.x, position.y, 0.05, 0.05))) {
+            return current_chest;
+        }
+    } 
+
+    return NULL;
 }
 
-void serialize_trigger_level_transition_list(struct binary_serializer* serializer, struct memory_arena* arena, s32 version, struct trigger_level_transition_list* list) {
-    serialize_s32(serializer, &list->count);
-    if (list->capacity == 0) {
-        list->transitions = memory_arena_push(arena, sizeof(*list->transitions) * list->count);
-    } else {
-        assertion(list->count < list->capacity && "Too many level transitions!");
-    }
-
+struct trigger* trigger_list_trigger_at(struct trigger_list* list, v2f32 point) {
     for (s32 index = 0; index < list->count; ++index) {
-        serialize_trigger_level_transition(serializer, version, list->transitions + index);
+        struct trigger* current_trigger = list->triggers + index;
+        if (rectangle_f32_intersect(current_trigger->bounds, rectangle_f32(point.x, point.y, 0.05, 0.05))) {
+            return current_trigger;
+        }
     }
+
+    return NULL;
 }
 
-void trigger_level_transition_list_clear(struct trigger_level_transition_list* list) {
-    list->count = 0;
-}
-struct entity_chest_list entity_chest_list_reserved(struct memory_arena* arena, s32 capacity);
-struct entity_chest* entity_chest_list_push(struct entity_chest_list* list);
-struct entity_chest* entity_chest_list_find_at(struct entity_chest_list* list, v2f32 position);
-void entity_chest_list_remove(struct entity_chest_list* list, s32 index);
-void entity_chest_list_clear(struct entity_chest_list* list);
-void serialize_entity_chest_list(struct binary_serializer* serializer, struct memory_arena* arena, s32 version, struct entity_chest_list* list);
-
-struct trigger_list trigger_list_reserved(struct memory_arena* arena, s32 capacity);
-struct trigger* trigger_list_transition_at(struct trigger_list* list, v2f32 point);
-struct trigger* trigger_list_push(struct trigger_list* list);
-void trigger_list_remove(struct trigger_list* list, s32 index);
-void trigger_list_clear(struct trigger_list* list);
-void serialize_trigger_list(struct binary_serializer* serializer, struct memory_arena* arena, s32 version, struct trigger_list* list);
-
-struct light_list light_list_reserved(struct memory_arena* arena, s32 capacity);
-struct light* light_list_push(struct light_list* list, struct light_def light);
-struct light* light_list_find_light_at(struct light_list* list, v2f32 point);
-void light_list_remove(struct light_list* list, s32 index);
-void light_list_clear(struct light_list* list);
-void serialize_light_list(struct binary_serializer* serializer, struct memory_arena* arena, s32 version, struct light_list* list);
-
-struct level_area_savepoint_list level_area_savepoint_list_reserved(struct memory_arena* arena, s32 capacity);
-void level_area_savepoint_list_clear(struct level_area_savepoint_list* list);
-struct level_area_savepoint* level_area_savepoint_list_push(struct level_area_savepoint_list* list, struct level_area_savepoint savepoint);
-struct level_area_savepoint* level_area_savepoint_list_find_savepoint_at(struct level_area_savepoint_list* list, v2f32 point);
-void level_area_savepoint_list_remove(struct level_area_savepoint_list* list, s32 index);
-void serialize_level_area_savepoint_list(struct binary_serializer* serializer, struct memory_arena* arena, s32 version, struct level_area_savepoint_list* list);
-
-struct level_area_battle_safe_square_list level_area_battle_safe_square_list_reserved(struct memory_arena* arena, s32 capacity);
-struct level_area_battle_safe_square* level_area_battle_safe_square_list_push(struct level_area_battle_safe_square_list* list, struct level_area_battle_safe_square square);
-struct level_area_battle_safe_square* level_area_battle_safe_square_list_tile_at(struct level_area_battle_safe_square_list* list, s32 x, s32 y);
-void level_area_battle_safe_square_list_remove(struct level_area_battle_safe_square_list* list, s32 index);
-void level_area_battle_safe_square_list_clear(struct level_area_battle_safe_square_list* list);
-void level_area_battle_safe_square_list_remove_at(struct level_area_battle_safe_square_list* list, s32 x, s32 y);
-void serialize_level_area_battle_safe_square_list(struct binary_serializer* serializer, struct memory_arena* arena, s32 version, struct level_area_battle_safe_square_list* list);
-
-struct level_area_entity_list level_area_entity_list_reserved(struct memory_arena* arena, s32 capacity);
-struct level_area_entity* level_area_entity_list_push(struct level_area_entity_list* list);
-struct level_area_entity* level_area_entity_list_find_entity_at(struct level_area_entity_list* list, v2f32 point);
-void level_area_entity_list_remove(struct level_area_entity_list* list, s32 index);
-void level_area_entity_list_clear(struct level_area_entity_list* list);
-void serialize_level_area_entity_list(struct binary_serializer* serializer, struct memory_arena* arena, s32 version struct level_area_entity_list* list);
-
+#undef Define_Common_List_Type_Procedures
+#undef Define_Common_List_Type_Procedures_Alloc_Push
 #include "entity_ability.c"

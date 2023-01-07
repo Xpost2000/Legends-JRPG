@@ -51,6 +51,7 @@
 
    NOTE: might not do this, but I might forget to remove the markup...
  */
+#define MACROSTRING(x) #x
 #define SERIALIZE
 #define SERIALIZE_SAVE
 #define SERIALIZE_VERSIONS(...)

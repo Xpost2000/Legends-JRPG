@@ -585,15 +585,15 @@ void apply_save_data(struct game_state* state) {
 
 local void apply_save_record_chest_entry(struct save_record_entity_chest* chest_record, struct game_state* state) {
     struct level_area* area = &state->loaded_area;
-    area->chests[chest_record->id].flags = chest_record->flags;
+    area->chests.chests[chest_record->id].flags = chest_record->flags;
 }
 
 local void apply_save_record_light_entry(struct save_record_entity_light* light_record, struct game_state* state) {
     struct level_area* area                 = &state->loaded_area;
-    area->lights[light_record->id].position = light_record->where;
-    area->lights[light_record->id].power    = light_record->power;
-    area->lights[light_record->id].color    = light_record->color;
-    area->lights[light_record->id].flags    = light_record->flags;
+    area->lights.lights[light_record->id].position = light_record->where;
+    area->lights.lights[light_record->id].power    = light_record->power;
+    area->lights.lights[light_record->id].color    = light_record->color;
+    area->lights.lights[light_record->id].flags    = light_record->flags;
 }
 
 local void apply_save_record_savepoint_entry(struct save_record_entity_savepoint* savepoint_record, struct game_state* state) {
@@ -755,7 +755,7 @@ void save_data_register_chest(u32 chest_id) {
 
     new_record->type                       = SAVE_RECORD_TYPE_ENTITY_CHEST;
     new_record->chest_record.id = chest_id;
-    struct entity_chest* chest             = game_state->loaded_area.chests + chest_id;
+    struct entity_chest* chest             = game_state->loaded_area.chests.chests + chest_id;
     new_record->chest_record.flags  = chest->flags;
 }
 
@@ -768,7 +768,7 @@ void save_data_register_light(u32 light_id) {
     }
 
     new_record->type                       = SAVE_RECORD_TYPE_ENTITY_LIGHT;
-    struct light_def* light = game_state->loaded_area.lights + light_id;
+    struct light_def* light = game_state->loaded_area.lights.lights + light_id;
     new_record->light_record.id = light_id;
     new_record->light_record.where = light->position;
     new_record->light_record.power = light->power;

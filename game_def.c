@@ -340,8 +340,8 @@ struct light_list {
 };
 
 struct light_list light_list_reserved(struct memory_arena* arena, s32 capacity);
-struct light*     light_list_push(struct light_list* list, struct light_def light);
-struct light*     light_list_find_light_at(struct light_list* list, v2f32 point);
+struct light_def* light_list_push(struct light_list* list, struct light_def light);
+struct light_def* light_list_find_light_at(struct light_list* list, v2f32 point);
 void              light_list_remove(struct light_list* list, s32 index);
 void              light_list_clear(struct light_list* list);
 void              serialize_light_list(struct binary_serializer* serializer, struct memory_arena* arena, s32 version, struct light_list* list);
@@ -771,7 +771,7 @@ void dialogue_ui_set_target_node(s32 id);
 
 #include "save_data_def.c"
 void handle_entity_level_trigger_interactions(struct game_state* state, struct entity* entity, struct trigger_level_transition_list* trigger_level_transitions, f32 dt);
-void handle_entity_scriptable_trigger_interactions(struct game_state* state, struct entity* entity, s32 trigger_count, struct trigger* triggers, f32 dt);
+void handle_entity_scriptable_trigger_interactions(struct game_state* state, struct entity* entity, struct trigger_list* list, f32 dt);
 
 local v2f32 get_mouse_in_world_space(struct camera* camera, s32 screen_width, s32 screen_height) {
     return camera_project(camera, mouse_location(), screen_width, screen_height);
