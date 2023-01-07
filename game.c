@@ -30,6 +30,15 @@ local void announce_battle_action(struct entity_id who, string what);
 local struct level_area_battle_zone_bounding_box* level_area_find_current_battle_zone(struct level_area* level, s32 x, s32 y);
 local bool level_area_battle_zone_bounding_box_is_safe_battle_block(struct level_area* level, struct level_area_battle_zone_bounding_box* zone, s32 x, s32 y);
 
+local void queue_level_load(string where, v2f32 spawn_location, s32 new_facing_direction);
+local void queue_level_load_at_default(string where, s32 new_facing_direction);
+
+local void game_open_overworld(string where, v2f32 spawn_location, s32 new_facing_direction);
+local void game_open_overworld_at_default(string where, s32 new_facing_direction);
+
+local void game_open_worldmap(string where, v2f32 spawn_location, f32 facing_angle);
+local void game_open_worldmap_at_default(string where);
+
 local void set_scrollable_ui_bounds(s32 selection, s32* bottom_index, s32* top_index, s32 max_limit, s32 FIRST_SCROLLING_Y, s32 MAX_DISPLAYABLE_ITEMS) {
     assertion(bottom_index && top_index && "need pointers for those values");
     if ((MAX_DISPLAYABLE_ITEMS % 2) == 0) {
@@ -1238,6 +1247,11 @@ struct world_map* world_map_list_find_existing(struct world_map_list* list, u32 
 
 struct world_map* world_map_list_push(struct world_map_list* list) {
     return &list->world_maps[list->count++];
+}
+
+struct world_map* game_current_world_map(void) {
+    struct world_map* world_map = game_state->world_maps.world_maps + game_state->current_world_map_id;
+    return world_map;
 }
 
 local void load_world_map_script(struct memory_arena* arena, struct world_map* area);
@@ -2743,83 +2757,92 @@ local void game_apply_constant_camera_trauma_as(f32 amount) {
 local void update_game_camera_exploration_mode(struct game_state* state, f32 dt) {
     struct camera* camera = &state->camera;
 
-    struct entity* player = game_get_player(state);
+    switch (submode) {
+        case GAME_SUBMODE_OVERWORLD: {
+            struct entity* player = game_get_party_leader();
 
-    /* NOTE/TODO/FINISHLATER hacky death camera */
-    /*
-      In reality, I want to do more with the camera, but right now I'm just going to leave this hacky code in
-      here so I can do stuff later.
-    */
-    if (game_total_party_knockout()) {
-        camera->xy.y -= dt * 25;
-        return;
-    }
+            /* NOTE/TODO/FINISHLATER hacky death camera */
+            /*
+              In reality, I want to do more with the camera, but right now I'm just going to leave this hacky code in
+              here so I can do stuff later.
+            */
+            if (game_total_party_knockout()) {
+                camera->xy.y -= dt * 25;
+                return;
+            }
 
-    if (!cutscene_active()) {
-        camera->tracking_xy = player->position;
-    }
+            if (!cutscene_active()) {
+                camera->tracking_xy = player->position;
+            }
 
-    /*
-      NOTE(jerry):
-      Make a separate cutscene camera.
-    */
-    if (!cutscene_viewing_separate_area()) {
-        /* kind of like a project on everythign */
-        v2f32                projected_rectangle_position = camera_project(camera, v2f32(camera->travel_bounds.x, camera->travel_bounds.y), SCREEN_WIDTH, SCREEN_HEIGHT);
-        struct rectangle_f32 projected_rectangle          = rectangle_f32(projected_rectangle_position.x, projected_rectangle_position.y, camera->travel_bounds.w / camera->zoom, camera->travel_bounds.h / camera->zoom);
-        struct rectangle_f32 player_rectangle             = entity_rectangle_collision_bounds(player);
-        f32                  new_w                        = projected_rectangle.w * 0.6;
-        f32                  new_h                        = projected_rectangle.h * 0.6;
-        f32                  delta_w                      = projected_rectangle.w - new_w;
-        f32                  delta_h                      = projected_rectangle.w - new_h;
+            /*
+              NOTE(jerry):
+              Make a separate cutscene camera.
+            */
+            if (!cutscene_viewing_separate_area()) {
+                /* kind of like a project on everythign */
+                v2f32                projected_rectangle_position = camera_project(camera, v2f32(camera->travel_bounds.x, camera->travel_bounds.y), SCREEN_WIDTH, SCREEN_HEIGHT);
+                struct rectangle_f32 projected_rectangle          = rectangle_f32(projected_rectangle_position.x, projected_rectangle_position.y, camera->travel_bounds.w / camera->zoom, camera->travel_bounds.h / camera->zoom);
+                struct rectangle_f32 player_rectangle             = entity_rectangle_collision_bounds(player);
+                f32                  new_w                        = projected_rectangle.w * 0.6;
+                f32                  new_h                        = projected_rectangle.h * 0.6;
+                f32                  delta_w                      = projected_rectangle.w - new_w;
+                f32                  delta_h                      = projected_rectangle.w - new_h;
 
-        projected_rectangle.x += delta_w/2;
-        projected_rectangle.y += delta_h/2;
-        projected_rectangle.w = new_w;
-        projected_rectangle.h = new_h;
+                projected_rectangle.x += delta_w/2;
+                projected_rectangle.y += delta_h/2;
+                projected_rectangle.w = new_w;
+                projected_rectangle.h = new_h;
 /* #define OLD_CAMERA_BEHAVIOR */
 
-        bool pushing_left_edge   = (player_rectangle.x < projected_rectangle.x);
-        bool pushing_right_edge  = (player_rectangle.x + player_rectangle.w > projected_rectangle.x + projected_rectangle.w);
-        bool pushing_top_edge    = (player_rectangle.y < projected_rectangle.y);
-        bool pushing_bottom_edge = (player_rectangle.y + player_rectangle.h > projected_rectangle.y + projected_rectangle.h);
+                bool pushing_left_edge   = (player_rectangle.x < projected_rectangle.x);
+                bool pushing_right_edge  = (player_rectangle.x + player_rectangle.w > projected_rectangle.x + projected_rectangle.w);
+                bool pushing_top_edge    = (player_rectangle.y < projected_rectangle.y);
+                bool pushing_bottom_edge = (player_rectangle.y + player_rectangle.h > projected_rectangle.y + projected_rectangle.h);
 
 #ifdef OLD_CAMERA_BEHAVIOR
-        if (!camera->try_interpolation[0]) {
-            if (pushing_right_edge || pushing_left_edge) {
-                camera->interpolation_t[0] = 0;
-                camera->try_interpolation[0] = true;
-                camera->start_interpolation_values[0] = camera->xy.x;
-            }
-        }
+                if (!camera->try_interpolation[0]) {
+                    if (pushing_right_edge || pushing_left_edge) {
+                        camera->interpolation_t[0] = 0;
+                        camera->try_interpolation[0] = true;
+                        camera->start_interpolation_values[0] = camera->xy.x;
+                    }
+                }
 
-        if (!camera->try_interpolation[1]) {
-            if (pushing_bottom_edge || pushing_top_edge) {
-                camera->interpolation_t[1] = 0;
-                camera->try_interpolation[1] = true;
-                camera->start_interpolation_values[1] = camera->xy.y;
-            }
-        }
+                if (!camera->try_interpolation[1]) {
+                    if (pushing_bottom_edge || pushing_top_edge) {
+                        camera->interpolation_t[1] = 0;
+                        camera->try_interpolation[1] = true;
+                        camera->start_interpolation_values[1] = camera->xy.y;
+                    }
+                }
 #else
 
-        if (pushing_right_edge) {
-            camera->xy.x += DEFAULT_VELOCITY*dt;
-        }
+                if (pushing_right_edge) {
+                    camera->xy.x += DEFAULT_VELOCITY*dt;
+                }
 
-        if (pushing_left_edge) {
-            camera->xy.x -= DEFAULT_VELOCITY*dt;
-        }
+                if (pushing_left_edge) {
+                    camera->xy.x -= DEFAULT_VELOCITY*dt;
+                }
 
 
-        if (pushing_bottom_edge) {
-            camera->xy.y += DEFAULT_VELOCITY*dt;
-        }
+                if (pushing_bottom_edge) {
+                    camera->xy.y += DEFAULT_VELOCITY*dt;
+                }
 
-        if (pushing_top_edge) {
-            camera->xy.y -= DEFAULT_VELOCITY*dt;
-        }
-    }
+                if (pushing_top_edge) {
+                    camera->xy.y -= DEFAULT_VELOCITY*dt;
+                }
+            }
 #endif
+        } break;
+        case GAME_SUBMODE_WORLDMAP: {
+            /* This is easy for the mode 7 to work with... */
+            camera->xy.x = game_state->world_map_explore_state.player_position.x;
+            camera->xy.y = game_state->world_map_explore_state.player_position.y;
+        } break;
+    }
 }
 
 local void update_game_camera(struct game_state* state, f32 dt) {
@@ -2959,6 +2982,11 @@ void load_level_queued_for_transition(void* callback_data) {
                                           data->spawn_location.x * TILE_UNIT_SIZE,
                                           data->spawn_location.y * TILE_UNIT_SIZE
                                       ));
+    } else {
+        game_set_all_party_members_to(v2f32(
+                                          game_state->loaded_area.default_player_spawn.x * TILE_UNIT_SIZE,
+                                          game_state->loaded_area.default_player_spawn.y * TILE_UNIT_SIZE
+                                      ));
     }
 
     if (data->new_facing_direction != DIRECTION_RETAINED) {
@@ -2984,28 +3012,9 @@ void handle_entity_level_trigger_interactions(struct game_state* state, struct e
         u8    new_facing_direction = current_trigger->new_facing_direction;
 
         if (rectangle_f32_intersect(current_trigger->bounds, entity_collision_bounds)) {
-            string copy = format_temp_s("%s", current_trigger->target_level);
-
-            if (!transition_fading()) {
-                if (!transition_faded_in()) {
-                    struct queued_load_level_data data = (struct queued_load_level_data) {
-                        .use_default_spawn_location = false,
-                        .spawn_location             = spawn_location,
-                        .new_facing_direction       = new_facing_direction,
-                        .length_of_destination      = copy.length,
-                    };
-                    if (copy.length > array_count(data.destination_string_buffer)) {
-                        copy.length = array_count(data.destination_string_buffer);
-                    }
-
-                    cstring_copy(copy.data, data.destination_string_buffer, copy.length);
-
-                    do_color_transition_in(color32f32(0, 0, 0, 1), 0.0, 0.45);
-                    transition_register_on_finish(load_level_queued_for_transition, (u8*)&data, sizeof(data));
-                    disable_game_input = true;
-                }
-            }
-
+            queue_level_load(string_from_cstring(current_trigger->target_level),
+                             current_trigger->spawn_location,
+                             current_trigger->new_facing_direction);
             return;
         }
     }
@@ -3365,8 +3374,18 @@ void update_and_render_game_console(struct game_state* state, struct software_fr
 }
 
 local void update_and_render_game_worldmap(struct software_framebuffer* framebuffer, f32 dt) {
-    struct world_map* world_map = game_state->world_maps.world_maps + game_state->current_world_map_id;
+    struct world_map* world_map = game_current_world_map();
     execute_world_map_scripts(game_state, world_map, dt);
+
+    /* worldmap player controls */
+    {
+    }
+
+    /* render world */
+    struct render_commands        commands      = render_commands(&scratch_arena, 16384, game_state->camera);
+    struct sortable_draw_entities draw_entities = sortable_draw_entities(&scratch_arena, 8192*4);
+    commands.should_clear_buffer                = true;
+    commands.clear_buffer_color                 = color32u8(100, 128, 148, 255);
 }
 
 local void update_and_render_game_overworld(struct software_framebuffer* framebuffer, f32 dt) {
@@ -3800,6 +3819,76 @@ void serialize_tile_layer(struct binary_serializer* serializer, s32 version, s32
     for (s32 index = 0; index < *counter; ++index) {
         serialize_tile(serializer, version, tile+index);
     }
+}
+
+local void queue_level_load(string where, v2f32 spawn_location, s32 new_facing_direction) {
+    string copy = where;
+    if (!transition_fading()) {
+        if (!transition_faded_in()) {
+            struct queued_load_level_data data = (struct queued_load_level_data) {
+                .use_default_spawn_location = false,
+                .spawn_location             = spawn_location,
+                .new_facing_direction       = new_facing_direction,
+                .length_of_destination      = copy.length,
+            };
+            if (copy.length > array_count(data.destination_string_buffer)) {
+                copy.length = array_count(data.destination_string_buffer);
+            }
+
+            cstring_copy(copy.data, data.destination_string_buffer, copy.length);
+
+            do_color_transition_in(color32f32(0, 0, 0, 1), 0.0, 0.45);
+            transition_register_on_finish(load_level_queued_for_transition, (u8*)&data, sizeof(data));
+            disable_game_input = true;
+        }
+    }
+}
+local void queue_level_load_at_default(string where, s32 new_facing_direction) {
+    string copy = where;
+    if (!transition_fading()) {
+        if (!transition_faded_in()) {
+            struct queued_load_level_data data = (struct queued_load_level_data) {
+                .use_default_spawn_location = false,
+                .new_facing_direction       = new_facing_direction,
+                .length_of_destination      = copy.length,
+            };
+            if (copy.length > array_count(data.destination_string_buffer)) {
+                copy.length = array_count(data.destination_string_buffer);
+            }
+
+            cstring_copy(copy.data, data.destination_string_buffer, copy.length);
+
+            do_color_transition_in(color32f32(0, 0, 0, 1), 0.0, 0.45);
+            transition_register_on_finish(load_level_queued_for_transition, (u8*)&data, sizeof(data));
+            disable_game_input = true;
+        }
+    }
+}
+
+/* This also fades, but I don't do an additional fade since it's part of the queued level load */
+local void game_open_overworld(string where, v2f32 spawn_location, s32 new_facing_direction) {
+    submode = GAME_SUBMODE_OVERWORLD;
+    queue_level_load(where, spawn_location, new_facing_direction);
+}
+local void game_open_overworld_at_default(string where, s32 new_facing_direction) {
+    submode = GAME_SUBMODE_OVERWORLD;
+    queue_level_load_at_default(where,  new_facing_direction);
+}
+
+/* TODO transition */
+local void game_open_worldmap(string where, v2f32 spawn_location, f32 facing_angle) {
+    submode = GAME_SUBMODE_WORLDMAP;
+    load_worldmap_from_file(game_state, where);
+
+    game_state->world_map_explore_state.player_position     = spawn_location;
+    game_state->world_map_explore_state.view_angle = facing_angle;
+}
+local void game_open_worldmap_at_default(string where) {
+    submode = GAME_SUBMODE_WORLDMAP;
+    load_worldmap_from_file(game_state, where);
+    struct world_map* world_map = game_current_world_map();
+    game_state->world_map_explore_state.player_position   = world_map->default_player_spawn;
+    game_state->world_map_explore_state.view_angle = 0;
 }
 
 #include "game_script.c"

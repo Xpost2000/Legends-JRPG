@@ -620,8 +620,18 @@ struct world_map_list {
 struct world_map* world_map_list_find_existing(struct world_map_list* list, u32 hashid);
 struct world_map* world_map_list_push(struct world_map_list* list);
 
+struct world_map_exploration_state {
+    v2f32 player_position;
+    f32   view_angle;
+    /*
+      TODO: boat information?
+     */
+};
+
 struct game_state {
     struct memory_arena* arena;
+
+    struct world_map_exploration_state world_map_explore_state;
 
     /* This can't be guaranteed to be synchronized to whatever audio parallel crap I need */
     /* but I need this state here, which is useful for when I migrate to OpenAL */
