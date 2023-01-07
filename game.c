@@ -1288,7 +1288,7 @@ void load_worldmap_from_file(struct game_state* state, string filename) {
     }
 }
 
-void _serialize_level_area(struct memory_arena* arena, struct binary_serializer* serializer, struct level_area* level, s32 level_type) {
+void _serialize_level_area(struct memory_arena* arena, struct binary_serializer* serializer, struct level_area* level) {
     {
         _debugprintf("reading version");
         serialize_u32(serializer, &level->version);
@@ -1390,7 +1390,7 @@ void serialize_level_area(struct game_state* state, struct binary_serializer* se
     memory_arena_clear_top(state->arena);
     memory_arena_set_allocation_region_top(state->arena);
     {
-        _serialize_level_area(state->arena, serializer, level, ENTITY_LIST_STORAGE_TYPE_PER_LEVEL);
+        _serialize_level_area(state->arena, serializer, level);
         cstring_copy(level->area_name, game_state->loaded_area_name, array_count(level->area_name));
         /* unpack steps */
         { /* Entities */

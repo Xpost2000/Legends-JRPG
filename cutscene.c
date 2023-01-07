@@ -48,7 +48,32 @@ void cutscene_load_area(string path) {
         struct binary_serializer serializer = open_read_file_serializer(fullpath);
 #endif
         {
-            _serialize_level_area(&cutscene_state.arena, &serializer, &cutscene_state.loaded_area, ENTITY_LIST_STORAGE_TYPE_PER_LEVEL_CUTSCENE);
+            /* _serialize_level_area(&cutscene_state.arena, &serializer, &cutscene_state.loaded_area, ENTITY_LIST_STORAGE_TYPE_PER_LEVEL_CUTSCENE); */
+            _serialize_level_area(&cutscene_state.arena, &serializer, &cutscene_state.loaded_area);
+            {
+                struct level_area* level = &cutscene_state.loaded_area;
+                { /* Entities */
+                    level->entities = entity_list_create(&cutscene_state.arena, level->load_entities.count, ENTITY_LIST_STORAGE_TYPE_PER_LEVEL);
+
+                    for (s32 entity_index = 0; entity_index < level->load_entities.count; ++entity_index) {
+                        struct level_area_entity* current_packed_entity = level->load_entities.entities + entity_index;
+                        entity_id                 new_ent               = entity_list_create_entity(&level->entities);
+                        struct entity*            current_entity        = entity_list_dereference_entity(&level->entities, new_ent);
+                        level_area_entity_unpack(current_packed_entity, current_entity);
+                    }
+                }
+                { /* Savepoints */
+                    level->entity_savepoint_count = level->load_savepoints.count;
+                    level->savepoints             = memory_arena_push(&cutscene_state.arena, sizeof(*level->savepoints) * level->entity_savepoint_count);
+                    for (s32 savepoint_index = 0; savepoint_index < level->load_savepoints.count; ++savepoint_index) {
+                        struct level_area_savepoint* packed_entity = level->load_savepoints.savepoints + savepoint_index;
+                        struct entity_savepoint*     unpack_entity = level->savepoints + savepoint_index;
+                        level_area_entity_savepoint_unpack(packed_entity, unpack_entity);
+                    }
+                }
+                build_navigation_map_for_level_area(&cutscene_state.arena, level);
+                build_battle_zone_bounding_boxes_for_level_area(&cutscene_state.arena, level);
+            }
             load_area_script(&cutscene_state.arena, &cutscene_state.loaded_area, string_concatenate(&scratch_arena, string_slice(fullpath, 0, (fullpath.length+1)-sizeof("area")), string_literal("area_script")));
             cutscene_state.viewing_loaded_area            = true;
             cutscene_state.loaded_area.on_enter_triggered = false;

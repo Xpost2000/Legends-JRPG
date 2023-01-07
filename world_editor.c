@@ -572,7 +572,7 @@ void update_and_render_pause_world_editor_menu_ui(struct game_state* state, stru
                 world_editor_state->world_map.script_string = file_buffer_as_string(&script_filebuffer);
 
                 struct binary_serializer serializer = open_write_file_serializer(to_save_as);
-                serialize_world_map(world_editor_state->arena, &serializer, &world_editor_state->world_map);
+                serialize_world_map(NULL, &serializer, &world_editor_state->world_map);
                 serializer_finish(&serializer);
 
                 file_buffer_free(&script_filebuffer);
@@ -591,7 +591,7 @@ void update_and_render_pause_world_editor_menu_ui(struct game_state* state, stru
                         world_editor_clear_all_allocations();
 
                         struct binary_serializer serializer = open_read_file_serializer(string_concatenate(&scratch_arena, string_literal(GAME_DEFAULT_WORLDMAPS_PATH), string_from_cstring(current_file->name)));
-                        serialize_world_map(world_editor_state->arena, &serializer, &world_editor_state->world_map);
+                        serialize_world_map(NULL, &serializer, &world_editor_state->world_map);
                         OS_create_directory(string_literal("temp/"));
                         write_string_into_entire_file(string_literal("temp/WORLDMAP_SCRIPT.txt"), world_editor_state->world_map.script_string);
                         serializer_finish(&serializer);

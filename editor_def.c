@@ -115,34 +115,13 @@ struct editor_state {
     s32           painting_tile_id;
     s32           trigger_placement_type;
     s32           entity_placement_type;
+    s32 current_tile_layer;
 
-    s32                                   current_tile_layer;
-    struct tile_layer                     tile_layers[TILE_LAYER_COUNT];
-    struct trigger_level_transition_list  trigger_level_transitions;
-    s32                                   entity_chest_count;
-    s32                                   entity_chest_capacity;
-    struct entity_chest*                  entity_chests;
-    s32                                   generic_trigger_count;
-    s32                                   generic_trigger_capacity;
-    struct trigger*                       generic_triggers;
-    s32                                   entity_count;
-    s32                                   entity_capacity;
-    struct level_area_entity*             entities;
-    s32                                   light_capacity;
-    s32                                   light_count;
-    s32                                   entity_savepoint_count;
-    s32                                   entity_savepoint_capacity;
-    struct level_area_savepoint*          entity_savepoints;
-    struct light_def*                     lights;
-    s32                                   battle_safe_square_capacity;
-    s32                                   battle_safe_square_count;
-    struct level_area_battle_safe_square* battle_safe_squares;
-    struct position_marker_list           position_markers;
+    struct level_area editing_area;
 
     bool fullbright;
     
     struct camera camera;
-    v2f32 default_player_spawn;
 
     /* I should force a relative mouse mode? but later */
     /* scroll drag data */
@@ -166,7 +145,6 @@ struct editor_state {
     f32 serialize_menu_t;
 
     s32 tab_menu_open;
-    string level_script_string;
     struct editor_drag_data drag_data;
 
     /* another context pointer. Use this for the ctrl-tab menu */
