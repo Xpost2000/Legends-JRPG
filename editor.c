@@ -116,22 +116,12 @@ void editor_serialize_area(struct binary_serializer* serializer) {
     serialize_f32(serializer, &editor_state->default_player_spawn.y);
     _debugprintf("reading tiles");
 
+    IAllocator allocator = heap_allocator();
     if (version_id >= 12) {
         { /* NOTE: My primitive leak check will say this is a memory leak, which I think it *is*, but it's the kind that doesn't matter. */
 
             serialize_bytes(serializer, editor_state->level_settings.area_name, array_count(editor_state->level_settings.area_name));
-            IAllocator allocator = heap_allocator();
-
-            if (serializer->mode == BINARY_SERIALIZER_READ) {
-                serialize_string(&allocator, serializer, &editor_state->level_script_string);
-                OS_create_directory(string_literal("temp/"));
-                write_string_into_entire_file(string_literal("temp/SCRIPT.txt"), editor_state->level_script_string);
-            } else {
-                struct file_buffer script_filebuffer = OS_read_entire_file(allocator, string_literal("temp/SCRIPT.txt"));
-                editor_state->level_script_string = file_buffer_as_string(&script_filebuffer);
-                serialize_string(&allocator, serializer, &editor_state->level_script_string);
-                file_buffer_free(&script_filebuffer);
-            }
+            serialize_string(&allocator, serializer, &editor_state->level_script_string);
         }
     }
 
@@ -952,8 +942,12 @@ local void update_and_render_pause_editor_menu_ui(struct game_state* state, stru
                                 string to_save_as = string_concatenate(&scratch_arena, string_literal("areas/"), string_from_cstring(editor_state->current_save_name));
                                 _debugprintf("save as: %.*s\n", to_save_as.length, to_save_as.data);
                                 struct binary_serializer serializer = open_write_file_serializer(to_save_as);
+                                IAllocator allocator = heap_allocator();
+                                struct file_buffer script_filebuffer = OS_read_entire_file(allocator, string_literal("temp/SCRIPT.txt"));
+                                editor_state->level_script_string = file_buffer_as_string(&script_filebuffer);
                                 editor_serialize_area(&serializer);
                                 serializer_finish(&serializer);
+                                file_buffer_free(&script_filebuffer);
                             }
                         } else {
                         
@@ -1051,6 +1045,8 @@ local void update_and_render_pause_editor_menu_ui(struct game_state* state, stru
                                 case 0: {
                                     struct binary_serializer serializer = open_read_file_serializer(string_concatenate(&scratch_arena, string_literal("areas/"), string_from_cstring(current_file->name)));
                                     editor_serialize_area(&serializer);
+                                    OS_create_directory(string_literal("temp/"));
+                                    write_string_into_entire_file(string_literal("temp/SCRIPT.txt"), editor_state->level_script_string);
                                     serializer_finish(&serializer);
 
                                     cstring_copy(current_file->name, editor_state->current_save_name, array_count(editor_state->current_save_name));
