@@ -4175,11 +4175,54 @@ Define_Common_List_Type_Procedures(level_area_savepoint_list, level_area_savepoi
 Define_Common_List_Type_Procedures(level_area_battle_safe_square_list, level_area_battle_safe_square, squares, serialize_battle_safe_square);
 Define_Common_List_Type_Procedures_Alloc_Push(level_area_entity_list, level_area_entity, entities, serialize_level_area_entity);
 
-struct light_def* light_list_find_light_at(struct light_list* list, v2f32 point);
-struct level_area_savepoint* level_area_savepoint_list_find_savepoint_at(struct level_area_savepoint_list* list, v2f32 point);
-struct level_area_battle_safe_square* level_area_battle_safe_square_list_tile_at(struct level_area_battle_safe_square_list* list, s32 x, s32 y);
-void level_area_battle_safe_square_list_remove_at(struct level_area_battle_safe_square_list* list, s32 x, s32 y);
-struct level_area_entity* level_area_entity_list_find_entity_at(struct level_area_entity_list* list, v2f32 point);
+struct light_def* light_list_find_light_at(struct light_list* list, v2f32 point) {
+    for (s32 index = 0; index < list->count; ++index) {
+        struct light_def* current_light = list->lights + index;
+        if (rectangle_f32_intersect(rectangle_f32(current_light->position.x, current_light->position.y, 1, 1), rectangle_f32(point.x, point.y, 0.05, 0.05))) {
+            return current_light;
+        }
+    }
+
+    return NULL;
+}
+struct level_area_savepoint* level_area_savepoint_list_find_savepoint_at(struct level_area_savepoint_list* list, v2f32 point) {
+    for (s32 index = 0; index < list->count; ++index) {
+        struct level_area_savepoint* current_savepoint = list->savepoints + index;
+        if (rectangle_f32_intersect(rectangle_f32(current_savepoint->position.x, current_savepoint->position.y, 1, 1), rectangle_f32(point.x, point.y, 0.05, 0.05))) {
+            return current_savepoint;
+        }
+    }
+
+    return NULL;
+}
+struct level_area_battle_safe_square* level_area_battle_safe_square_list_tile_at(struct level_area_battle_safe_square_list* list, s32 x, s32 y) {
+    for (s32 index = 0; index < list->count; ++index) {
+        struct level_area_battle_safe_square* current_tile = list->squares + index;
+
+        if (current_tile->x == x && current_tile->y == y) {
+            return current_tile;
+        }
+    }
+
+    return NULL;
+}
+void level_area_battle_safe_square_list_remove_at(struct level_area_battle_safe_square_list* list, s32 x, s32 y) {
+    struct level_area_battle_safe_square* existing_square = level_area_battle_safe_square_list_tile_at(list, x, y);
+    if (existing_square) {
+        s32 index = existing_square - list->squares;
+        level_area_battle_safe_square_list_remove(list, index);
+    }
+}
+struct level_area_entity* level_area_entity_list_find_entity_at(struct level_area_entity_list* list, v2f32 point) {
+    for (s32 index = 0; index < list->count; ++index) {
+        struct level_area_entity* current_entity = list->entities + index;
+        if (rectangle_f32_intersect(rectangle_f32(current_entity->position.x, current_entity->position.y, current_entity->scale.x, current_entity->scale.y), rectangle_f32(point.x, point.y, 0.05, 0.05))) {
+            return current_entity;
+        }
+    }
+
+    return NULL;
+}
 
 void tile_layer_bounding_box(struct tile_layer* tile_layer, s32* min_x, s32* min_y, s32* max_x, s32* max_y) {
     for (s32 tile_index = 0; tile_index < tile_layer->count; ++tile_index) {
