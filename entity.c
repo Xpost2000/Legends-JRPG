@@ -972,8 +972,8 @@ void update_entities(struct game_state* state, f32 dt, struct entity_iterator it
                         current_entity->position.x += current_entity->velocity.x * dt;
 
                         if (!current_entity->ai.current_action) {
-                            for (s32 index = 0; index < area->tile_counts[TILE_LAYER_OBJECT] && !stop_horizontal_movement; ++index) {
-                                struct tile* current_tile = area->tile_layers[TILE_LAYER_OBJECT] + index;
+                            for (s32 index = 0; index < area->tile_layers[TILE_LAYER_OBJECT].count && !stop_horizontal_movement; ++index) {
+                                struct tile* current_tile = area->tile_layers[TILE_LAYER_OBJECT].tiles + index;
                                 struct tile_data_definition* tile_data = tile_table_data + current_tile->id;
 
                                 if (Get_Bit(tile_data->flags, TILE_DATA_FLAGS_SOLID)) {
@@ -999,8 +999,8 @@ void update_entities(struct game_state* state, f32 dt, struct entity_iterator it
                                         continue;
                                     }
 
-                                    for (s32 index = 0; index < area->tile_counts[layer_index] && !stop_horizontal_movement; ++index) {
-                                        struct tile* current_tile = area->tile_layers[layer_index] + index;
+                                    for (s32 index = 0; index < area->tile_layers[layer_index].count && !stop_horizontal_movement; ++index) {
+                                        struct tile* current_tile = area->tile_layers[layer_index].tiles + index;
                                         struct tile_data_definition* tile_data = tile_table_data + current_tile->id;
 
                                         if (Get_Bit(tile_data->flags, TILE_DATA_FLAGS_SOLID)) {
@@ -1011,8 +1011,8 @@ void update_entities(struct game_state* state, f32 dt, struct entity_iterator it
                                 }
                             }
 
-                            for (s32 index = 0; index < area->tile_counts[TILE_LAYER_GROUND] && !stop_horizontal_movement; ++index) {
-                                struct tile* current_tile = area->tile_layers[TILE_LAYER_GROUND] + index;
+                            for (s32 index = 0; index < area->tile_layers[TILE_LAYER_GROUND].count && !stop_horizontal_movement; ++index) {
+                                struct tile* current_tile = area->tile_layers[TILE_LAYER_GROUND].tiles + index;
                                 struct tile_data_definition* tile_data = tile_table_data + current_tile->id;
 
                                 if (Get_Bit(tile_data->flags, TILE_DATA_FLAGS_SOLID)) {
@@ -1038,8 +1038,8 @@ void update_entities(struct game_state* state, f32 dt, struct entity_iterator it
                         bool stop_vertical_movement = false;
 
                         if (!current_entity->ai.current_action) {
-                            for (s32 index = 0; index < area->tile_counts[TILE_LAYER_OBJECT] && !stop_vertical_movement; ++index) {
-                                struct tile* current_tile = area->tile_layers[TILE_LAYER_OBJECT] + index;
+                            for (s32 index = 0; index < area->tile_layers[TILE_LAYER_OBJECT].count && !stop_vertical_movement; ++index) {
+                                struct tile* current_tile = area->tile_layers[TILE_LAYER_OBJECT].tiles + index;
                                 struct tile_data_definition* tile_data = tile_table_data + current_tile->id;
 
                                 if (Get_Bit(tile_data->flags, TILE_DATA_FLAGS_SOLID)) {
@@ -1065,8 +1065,8 @@ void update_entities(struct game_state* state, f32 dt, struct entity_iterator it
                                         continue;
                                     }
 
-                                    for (s32 index = 0; index < area->tile_counts[layer_index] && !stop_horizontal_movement; ++index) {
-                                        struct tile* current_tile = area->tile_layers[layer_index] + index;
+                                    for (s32 index = 0; index < area->tile_layers[layer_index].count && !stop_horizontal_movement; ++index) {
+                                        struct tile* current_tile = area->tile_layers[layer_index].tiles + index;
                                         struct tile_data_definition* tile_data = tile_table_data + current_tile->id;
 
                                         if (Get_Bit(tile_data->flags, TILE_DATA_FLAGS_SOLID)) {
@@ -1077,8 +1077,8 @@ void update_entities(struct game_state* state, f32 dt, struct entity_iterator it
                                 }
                             }
 
-                            for (s32 index = 0; index < area->tile_counts[TILE_LAYER_GROUND] && !stop_vertical_movement; ++index) {
-                                struct tile* current_tile = area->tile_layers[TILE_LAYER_GROUND] + index;
+                            for (s32 index = 0; index < area->tile_layers[TILE_LAYER_GROUND].count && !stop_vertical_movement; ++index) {
+                                struct tile* current_tile = area->tile_layers[TILE_LAYER_GROUND].tiles + index;
                                 struct tile_data_definition* tile_data = tile_table_data + current_tile->id;
 
                                 if (Get_Bit(tile_data->flags, TILE_DATA_FLAGS_SOLID)) {
@@ -3375,6 +3375,19 @@ struct position_marker_list position_marker_list_reserved(struct memory_arena* a
     return result;
 }
 
+void serialize_tile_layer(struct binary_serializer* serializer, struct memory_arena* arena, s32 version, struct tile_layer* tile_layer) {
+    serialize_s32(serializer, &tile_layer->count);
+    if (tile_layer->capacity == 0) {
+        tile_layer->tiles = memory_arena_push(arena, sizeof(*tile_layer->tiles) * tile_layer->count);
+    } else {
+        assertion(tile_layer->count > tile_layer->capacity && "That's bad... Cannot store this many tile layers!");
+    }
+
+    for (s32 tile_index = 0; tile_index < tile_layer->count; ++tile_index) {
+        serialize_tile(serializer, version, tile_layer->tiles + tile_index);
+    }
+}
+
 void serialize_position_marker_list(struct binary_serializer* serializer, struct memory_arena* arena, s32 version, struct position_marker_list* list) {
     serialize_s32(serializer, &list->count);
     if (list->capacity == 0) {
@@ -4129,6 +4142,60 @@ struct entity_status_effect status_effect_poison(s32 turn_duration) {
         .turn_duration = turn_duration,
         .particle_emitter_id = particle_emitter_id,
     };
+}
+
+struct tile_layer tile_layer_reserved(struct memory_arena* arena, s32 capacity) {
+    struct tile_layer result = {};
+    result.capacity = capacity;
+    result.tiles    = memory_arena_push(arena, sizeof(*result.tiles) * capacity);
+    return result;
+}
+
+void tile_layer_bounding_box(struct tile_layer* tile_layer, s32* min_x, s32* min_y, s32* max_x, s32* max_y) {
+    for (s32 tile_index = 0; tile_index < tile_layer->count; ++tile_index) {
+        struct tile* it = tile_layer->tiles + tile_index;
+        if ((s32)it->x < *min_x) *min_x = (s32)(it->x);
+        if ((s32)it->y < *min_y) *min_y = (s32)(it->y);
+        if ((s32)it->x > *max_x) *max_x = (s32)(it->x);
+        if ((s32)it->y > *max_y) *max_y = (s32)(it->y);
+    }
+
+    return;
+}
+void tile_layer_clear(struct tile_layer* tile_layer) {
+    tile_layer->count = 0;
+}
+
+void tile_layer_remove(struct tile_layer* tile_layer, s32 index) {
+    tile_layer->tiles[index] = tile_layer->tiles[--tile_layer->count];
+}
+
+struct tile* tile_layer_tile_at(struct tile_layer* tile_layer, s32 x, s32 y) {
+    for (s32 index = 0; index < tile_layer->count; ++index) {
+        struct tile* current_tile = tile_layer->tiles + index;
+
+        if (current_tile->x == x && current_tile->y == y) {
+            return current_tile;
+        }
+    }
+
+    return NULL;
+}
+
+void tile_layer_remove_at(struct tile_layer* tile_layer, s32 x, s32 y) {
+    for (s32 index = 0; index < tile_layer->count; ++index) {
+        struct tile* current_tile = tile_layer->tiles + index;
+
+        if (current_tile->x == x && current_tile->y == y) {
+            tile_layer_remove(tile_layer, index);
+            return;
+        }
+    }
+}
+
+struct tile* tile_layer_push(struct tile_layer* tile_layer) {
+    struct tile* new_tile = &tile_layer->tiles[tile_layer->count++];
+    return new_tile;
 }
 
 #include "entity_ability.c"

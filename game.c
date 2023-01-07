@@ -346,18 +346,19 @@ void game_finish_conversation(struct game_state* state) {
 }
 
 local void render_combat_area_information(struct game_state* state, struct render_commands* commands, struct level_area* area);
-local void render_tile_layer_ex(struct render_commands* commands, struct level_area* area, s32 layer, f32 x_off, f32 y_off, union color32f32 modulation) {
-    for (s32 index = 0; index < area->tile_counts[layer]; ++index) {
-        s32 tile_id = area->tile_layers[layer][index].id;
+local void render_tile_layer_ex(struct render_commands* commands, struct level_area* area, struct tile_layer* tile_layer, f32 x_off, f32 y_off, union color32f32 modulation) {
+    for (s32 index = 0; index < tile_layer->count; ++index) {
+        struct tile*                 tile      = &tile_layer->tiles[index];
+        s32                          tile_id   = tile->id;
         struct tile_data_definition* tile_data = tile_table_data + tile_id;
-        image_id tex = get_tile_image_id(tile_data);
+        image_id                     tex       = get_tile_image_id(tile_data);
 
         union color32f32 color = color32f32(1, 1, 1, 1);
         {
-            if (game_state->combat_state.active_combat) {
-                struct level_area_battle_zone_bounding_box* current_battle_zone = level_area_find_current_battle_zone(area, area->tile_layers[layer][index].x, area->tile_layers[layer][index].y);
+            if (game_state->combat_state.active_combat && area) {
+                struct level_area_battle_zone_bounding_box* current_battle_zone = level_area_find_current_battle_zone(area, tile->x, tile->y);
                 if (!current_battle_zone ||
-                    !level_area_battle_zone_bounding_box_is_safe_battle_block(area, current_battle_zone, area->tile_layers[layer][index].x, area->tile_layers[layer][index].y)) {
+                    !level_area_battle_zone_bounding_box_is_safe_battle_block(area, current_battle_zone, tile->x, tile->y)) {
                     color.r = color.g = color.b = lerp_f32(1, 0.3, game_state->combat_state.battle_zone_dark_fade_t);
                 }
             }
@@ -365,23 +366,26 @@ local void render_tile_layer_ex(struct render_commands* commands, struct level_a
 
         render_commands_push_image(commands,
                                    graphics_assets_get_image_by_id(&graphics_assets, tex),
-                                   rectangle_f32(area->tile_layers[layer][index].x * TILE_UNIT_SIZE, area->tile_layers[layer][index].y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE),
+                                   rectangle_f32(tile->x * TILE_UNIT_SIZE, tile->y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE),
                                    tile_data->sub_rectangle,
                                    color, NO_FLAGS, BLEND_MODE_ALPHA);
 
-        switch (layer) {
-            case TILE_LAYER_GROUND: {
-                render_commands_set_shader(commands, game_background_things_shader, NULL);
-            } break;
-            default: {
-                render_commands_set_shader(commands, game_foreground_things_shader, NULL);
-            } break;
+        if (area) { /* some weirdness since this is required by the game. */
+            s32 layer_index = tile_layer - area->tile_layers;
+            switch (layer_index) {
+                case TILE_LAYER_GROUND: {
+                    render_commands_set_shader(commands, game_background_things_shader, NULL);
+                } break;
+                default: {
+                    render_commands_set_shader(commands, game_foreground_things_shader, NULL);
+                } break;
+            }
         }
     }
 }
 
 local void render_tile_layer(struct render_commands* commands, struct level_area* area, s32 layer) {
-    render_tile_layer_ex(commands, area, layer, 0, 0, color32f32_WHITE);
+    render_tile_layer_ex(commands, area, &area->tile_layers[layer], 0, 0, color32f32_WHITE);
 }
 
 local void render_scriptable_tile_layers_that_qualify_as(struct render_commands* commands, struct level_area* area, s32 layer) {
@@ -395,7 +399,7 @@ local void render_scriptable_tile_layers_that_qualify_as(struct render_commands*
             f32 offset_x = current_scriptable_layer_property->offset_x;
             f32 offset_y = current_scriptable_layer_property->offset_y;
 
-            render_tile_layer_ex(commands, area, layer_index, offset_x, offset_y, color32f32_WHITE);
+            render_tile_layer_ex(commands, area, &area->tile_layers[layer_index], offset_x, offset_y, color32f32_WHITE);
         }
     }
 }
@@ -647,7 +651,7 @@ struct entity* game_get_player(struct game_state* state) {
 
 /* does not account for layers right now. That's okay. */
 struct tile* level_area_find_tile(struct level_area* level, s32 x, s32 y, s32 layer) {
-    Array_For_Each(it, struct tile, level->tile_layers[layer], level->tile_counts[layer]) {
+    Array_For_Each(it, struct tile, level->tile_layers[layer].tiles, level->tile_layers[layer].count) {
         if ((s32)(it->x)== x && (s32)(it->y) == y) {
             return it;
         }
@@ -658,8 +662,8 @@ struct tile* level_area_find_tile(struct level_area* level, s32 x, s32 y, s32 la
 
 /* NOTE: also builds other run time data but I don't want to change the name. */
 local void build_navigation_map_for_level_area(struct memory_arena* arena, struct level_area* level) {
-    if (level->tile_counts[TILE_LAYER_OBJECT] > 0 ||
-        level->tile_counts[TILE_LAYER_GROUND]) {
+    if (level->tile_layers[TILE_LAYER_OBJECT].count > 0 ||
+        level->tile_layers[TILE_LAYER_GROUND].count) {
         struct level_area_navigation_map* navigation_map = &level->navigation_data;
 
         s32 min_x = INT_MAX;
@@ -667,18 +671,8 @@ local void build_navigation_map_for_level_area(struct memory_arena* arena, struc
         s32 max_x = -INT_MAX;
         s32 max_y = -INT_MAX;
 
-        Array_For_Each(it, struct tile, level->tile_layers[TILE_LAYER_OBJECT], level->tile_counts[TILE_LAYER_OBJECT]) {
-            if ((s32)it->x < min_x) min_x = (s32)(it->x);
-            if ((s32)it->y < min_y) min_y = (s32)(it->y);
-            if ((s32)it->x > max_x) max_x = (s32)(it->x);
-            if ((s32)it->y > max_y) max_y = (s32)(it->y);
-        }
-        Array_For_Each(it, struct tile, level->tile_layers[TILE_LAYER_GROUND], level->tile_counts[TILE_LAYER_GROUND]) {
-            if ((s32)it->x < min_x) min_x = (s32)(it->x);
-            if ((s32)it->y < min_y) min_y = (s32)(it->y);
-            if ((s32)it->x > max_x) max_x = (s32)(it->x);
-            if ((s32)it->y > max_y) max_y = (s32)(it->y);
-        }
+        tile_layer_bounding_box(&level->tile_layers[TILE_LAYER_OBJECT], &min_x, &min_y, &max_x, &max_y);
+        tile_layer_bounding_box(&level->tile_layers[TILE_LAYER_GROUND], &min_x, &min_y, &max_x, &max_y);
 
         navigation_map->min_x = min_x;
         navigation_map->min_y = min_y;
@@ -1221,28 +1215,15 @@ void serialize_world_map(struct memory_arena* arena, struct binary_serializer* s
     s32 version_id      = world_map->version;
 
     if (version_id >= 1) {
-#define Serialize_Tile_Layer(LAYER)                                     \
-            do {                                                        \
-                 {                                                      \
-                     serialize_s32(serializer, &world_map->tile_counts[LAYER]); \
-                     _debugprintf("%d tiles in this layer(%.*s)", world_map->tile_counts[LAYER], world_tile_layer_strings[LAYER].length, world_tile_layer_strings[LAYER].data); \
-                     world_map->tile_layers[LAYER] = memory_arena_push(arena, world_map->tile_counts[LAYER]*sizeof(*world_map->tile_layers[LAYER])); \
-                     for (s32 _index = 0; _index < world_map->tile_counts[LAYER]; ++_index) { \
-                         serialize_tile(serializer, area_version_id, &world_map->tile_layers[LAYER][_index]); \
-                     }                                                  \
-                 }                                                      \
-            } while(0)
         for (s32 tile_layer = 0; tile_layer < WORLD_TILE_LAYER_COUNT; ++tile_layer) {
-            Serialize_Tile_Layer(tile_layer);
-            /* serialize_tile_layer(serializer, area_version_id, &world_map->tile_counts[tile_layer], world_map->tile_layers[tile_layer]); */
+            serialize_tile_layer(serializer, arena, area_version_id, &world_map->tile_layers[tile_layer]);
         }
-#undef Serialize_Tile_Layer
 
         IAllocator allocator = memory_arena_allocator(arena);
         serialize_string(&allocator, serializer, &world_map->script_string);
-            if (world_map->script_string.length > 0) {
-                world_map->script.present   = true;
-            }
+        if (world_map->script_string.length > 0) {
+            world_map->script.present   = true;
+        }
     }
 
     if (version_id >= 2) {
@@ -1325,25 +1306,14 @@ void _serialize_level_area(struct memory_arena* arena, struct binary_serializer*
             }
         }
         if (level->version >= 4) {
-#define Serialize_Tile_Layer(LAYER)                                     \
-            do {                                                        \
-                 {                                                      \
-                     serialize_s32(serializer, &level->tile_counts[LAYER]); \
-                     _debugprintf("%d tiles in this layer", level->tile_counts[LAYER]); \
-                     level->tile_layers[LAYER] = memory_arena_push(arena, level->tile_counts[LAYER]*sizeof(*level->tile_layers[LAYER])); \
-                     for (s32 _index = 0; _index < level->tile_counts[LAYER]; ++_index) { \
-                         serialize_tile(serializer, level->version, &level->tile_layers[LAYER][_index]); \
-                     }                                                  \
-                 }                                                      \
-            } while(0)
             if (level->version < CURRENT_LEVEL_AREA_VERSION) {
                 /* for older versions I have to know what the tile layers were and assign them like this. */
                 switch (level->version) {
                     case 4: {
-                        Serialize_Tile_Layer(TILE_LAYER_GROUND);
-                        Serialize_Tile_Layer(TILE_LAYER_OBJECT);
-                        Serialize_Tile_Layer(TILE_LAYER_ROOF);
-                        Serialize_Tile_Layer(TILE_LAYER_FOREGROUND);
+                        serialize_tile_layer(serializer, arena, level->version, &level->tile_layers[TILE_LAYER_GROUND]);
+                        serialize_tile_layer(serializer, arena, level->version, &level->tile_layers[TILE_LAYER_OBJECT]);
+                        serialize_tile_layer(serializer, arena, level->version, &level->tile_layers[TILE_LAYER_ROOF]);
+                        serialize_tile_layer(serializer, arena, level->version, &level->tile_layers[TILE_LAYER_FOREGROUND]);
                     } break;
                     case 5:
                     case 6:
@@ -1352,12 +1322,12 @@ void _serialize_level_area(struct memory_arena* arena, struct binary_serializer*
                     case 9:
                     case 10:
                     case 11: {
-                        Serialize_Tile_Layer(TILE_LAYER_GROUND);
-                        Serialize_Tile_Layer(TILE_LAYER_OBJECT);
-                        Serialize_Tile_Layer(TILE_LAYER_CLUTTER_DECOR);
-                        Serialize_Tile_Layer(TILE_LAYER_OVERHEAD);
-                        Serialize_Tile_Layer(TILE_LAYER_ROOF);
-                        Serialize_Tile_Layer(TILE_LAYER_FOREGROUND);
+                        serialize_tile_layer(serializer, arena, level->version, &level->tile_layers[TILE_LAYER_GROUND]);
+                        serialize_tile_layer(serializer, arena, level->version, &level->tile_layers[TILE_LAYER_OBJECT]);
+                        serialize_tile_layer(serializer, arena, level->version, &level->tile_layers[TILE_LAYER_CLUTTER_DECOR]);
+                        serialize_tile_layer(serializer, arena, level->version, &level->tile_layers[TILE_LAYER_OVERHEAD]);
+                        serialize_tile_layer(serializer, arena, level->version, &level->tile_layers[TILE_LAYER_ROOF]);
+                        serialize_tile_layer(serializer, arena, level->version, &level->tile_layers[TILE_LAYER_FOREGROUND]);
                     } break;
                     default: {
                         goto didnt_change_level_tile_format_from_current;
@@ -1367,11 +1337,11 @@ void _serialize_level_area(struct memory_arena* arena, struct binary_serializer*
                 /* the current version of the tile layering, we can just load them in order. */
             didnt_change_level_tile_format_from_current:
                 for (s32 I = 0; I < TILE_LAYER_COUNT; ++I) {
-                    Serialize_Tile_Layer(I);
+                    serialize_tile_layer(serializer, arena, level->version, &level->tile_layers[I]);
                 }
             }
         } else {
-            Serialize_Tile_Layer(TILE_LAYER_OBJECT);
+            serialize_tile_layer(serializer, arena, level->version, &level->tile_layers[TILE_LAYER_GROUND]);
         }
 
         if (level->version >= 1) {
@@ -3833,14 +3803,6 @@ void serialize_tile(struct binary_serializer* serializer, s32 version, struct ti
             serialize_s16(serializer, &tile->reserved_);
             serialize_s16(serializer, NULL);
         } break;
-    }
-}
-
-void serialize_tile_layer(struct binary_serializer* serializer, s32 version, s32* counter, struct tile* tile) {
-    serialize_s32(serializer, counter);
-    _debugprintf("%d tiles in this layer", *counter);
-    for (s32 index = 0; index < *counter; ++index) {
-        serialize_tile(serializer, version, tile+index);
     }
 }
 

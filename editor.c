@@ -51,7 +51,9 @@ local v2f32 editor_get_world_space_mouse_location(void) {
 #include "editor_imgui.c"
 
 void editor_clear_all_allocations(struct editor_state* state) {
-    zero_array(state->tile_counts);
+    for (s32 index = 0; index < TILE_LAYER_COUNT; ++index) {
+        tile_layer_clear(&state->tile_layers[index]);
+    }
     state->trigger_level_transition_count = 0;
     state->entity_chest_count             = 0;
     state->generic_trigger_count          = 0;
@@ -72,15 +74,6 @@ void editor_clear_all(struct editor_state* state) {
 
 void editor_initialize(struct editor_state* state) {
     state->arena = &editor_arena;
-    {
-        s32 index;
-        for (index = 0; index < TILE_LAYER_SCRIPTABLE_0; ++index) {
-            state->tile_capacities[index] = 65535*2;
-        }
-        for (; index < TILE_LAYER_COUNT; ++index) {
-            state->tile_capacities[index] = 4096;
-        }
-    }
     state->trigger_level_transition_capacity = 1024*2;
     state->entity_chest_capacity             = 1024*2;
     state->generic_trigger_capacity          = 1024*2;
@@ -89,9 +82,16 @@ void editor_initialize(struct editor_state* state) {
     state->light_capacity                    = 256*2;
     state->battle_safe_square_capacity       = 512*5;
 
-    for (s32 index = 0; index < TILE_LAYER_COUNT; ++index) {
-        state->tile_layers[index] = memory_arena_push(state->arena, state->tile_capacities[index] * sizeof(*state->tile_layers[0]));
+    {
+        s32 index;
+        for (index = 0; index < TILE_LAYER_SCRIPTABLE_0; ++index) {
+            state->tile_layers[index] = tile_layer_reserved(state->arena, 65535*2);
+        }
+        for (; index < TILE_LAYER_COUNT; ++index) {
+            state->tile_layers[index] = tile_layer_reserved(state->arena, 4096);
+        }
     }
+
     state->trigger_level_transitions                = memory_arena_push(state->arena, state->trigger_level_transition_capacity * sizeof(*state->trigger_level_transitions));
     state->entity_chests                            = memory_arena_push(state->arena, state->entity_chest_capacity             * sizeof(*state->entity_chests));
     state->generic_triggers                         = memory_arena_push(state->arena, state->generic_trigger_capacity          * sizeof(*state->generic_triggers));
@@ -141,10 +141,10 @@ void editor_serialize_area(struct binary_serializer* serializer) {
             /* for older versions I have to know what the tile layers were and assign them like this. */
             switch (version_id) {
                 case 4: {
-                    serialize_tile_layer(serializer, version_id, &editor_state->tile_counts[TILE_LAYER_GROUND],     editor_state->tile_layers[TILE_LAYER_GROUND]);
-                    serialize_tile_layer(serializer, version_id, &editor_state->tile_counts[TILE_LAYER_OBJECT],     editor_state->tile_layers[TILE_LAYER_OBJECT]);
-                    serialize_tile_layer(serializer, version_id, &editor_state->tile_counts[TILE_LAYER_ROOF],       editor_state->tile_layers[TILE_LAYER_ROOF]);
-                    serialize_tile_layer(serializer, version_id, &editor_state->tile_counts[TILE_LAYER_FOREGROUND], editor_state->tile_layers[TILE_LAYER_FOREGROUND]);
+                    serialize_tile_layer(serializer, editor_state->arena, version_id, &editor_state->tile_layers[TILE_LAYER_GROUND]);
+                    serialize_tile_layer(serializer, editor_state->arena, version_id, &editor_state->tile_layers[TILE_LAYER_OBJECT]);
+                    serialize_tile_layer(serializer, editor_state->arena, version_id, &editor_state->tile_layers[TILE_LAYER_ROOF]);
+                    serialize_tile_layer(serializer, editor_state->arena, version_id, &editor_state->tile_layers[TILE_LAYER_FOREGROUND]);
                 } break;
                 case 5:
                 case 6:
@@ -153,12 +153,12 @@ void editor_serialize_area(struct binary_serializer* serializer) {
                 case 9:
                 case 10:
                 case 11: {
-                    serialize_tile_layer(serializer, version_id, &editor_state->tile_counts[TILE_LAYER_GROUND],     editor_state->tile_layers[TILE_LAYER_GROUND]);
-                    serialize_tile_layer(serializer, version_id, &editor_state->tile_counts[TILE_LAYER_OBJECT],     editor_state->tile_layers[TILE_LAYER_OBJECT]);
-                    serialize_tile_layer(serializer, version_id, &editor_state->tile_counts[TILE_LAYER_CLUTTER_DECOR],       editor_state->tile_layers[TILE_LAYER_CLUTTER_DECOR]);
-                    serialize_tile_layer(serializer, version_id, &editor_state->tile_counts[TILE_LAYER_OVERHEAD],       editor_state->tile_layers[TILE_LAYER_OVERHEAD]);
-                    serialize_tile_layer(serializer, version_id, &editor_state->tile_counts[TILE_LAYER_ROOF],       editor_state->tile_layers[TILE_LAYER_ROOF]);
-                    serialize_tile_layer(serializer, version_id, &editor_state->tile_counts[TILE_LAYER_FOREGROUND],       editor_state->tile_layers[TILE_LAYER_FOREGROUND]);
+                    serialize_tile_layer(serializer, editor_state->arena, version_id, &editor_state->tile_layers[TILE_LAYER_GROUND]);
+                    serialize_tile_layer(serializer, editor_state->arena, version_id, &editor_state->tile_layers[TILE_LAYER_OBJECT]);
+                    serialize_tile_layer(serializer, editor_state->arena, version_id, &editor_state->tile_layers[TILE_LAYER_CLUTTER_DECOR]);
+                    serialize_tile_layer(serializer, editor_state->arena, version_id, &editor_state->tile_layers[TILE_LAYER_OVERHEAD]);
+                    serialize_tile_layer(serializer, editor_state->arena, version_id, &editor_state->tile_layers[TILE_LAYER_ROOF]);
+                    serialize_tile_layer(serializer, editor_state->arena, version_id, &editor_state->tile_layers[TILE_LAYER_FOREGROUND]);
                 } break;
                 default: {
                     goto didnt_change_level_tile_format_from_current;
@@ -168,17 +168,11 @@ void editor_serialize_area(struct binary_serializer* serializer) {
             /* the current version of the tile layering, we can just load them in order. */
         didnt_change_level_tile_format_from_current:
             for (s32 index = 0; index < TILE_LAYER_COUNT; ++index) {
-                serialize_tile_layer(serializer, version_id, &editor_state->tile_counts[index], editor_state->tile_layers[index]);
-
-                /* serialize_s32(serializer, counter); */
-                /* _debugprintf("%d tiles in this layer", *counter); */
-                /* for (s32 index = 0; index < *counter; ++index) { */
-                /*     serialize_tile(serializer, version, tile+index); */
-                /* } */
+                serialize_tile_layer(serializer, editor_state->arena, version_id, &editor_state->tile_layers[index]);
             }
         }
     } else {
-        serialize_tile_layer(serializer, version_id, &editor_state->tile_counts[TILE_LAYER_OBJECT],     editor_state->tile_layers[TILE_LAYER_OBJECT]);
+        serialize_tile_layer(serializer, editor_state->arena, version_id, &editor_state->tile_layers[TILE_LAYER_OBJECT]);
     }
 
     if (version_id >= 1) {
@@ -229,22 +223,18 @@ void editor_serialize_area(struct binary_serializer* serializer) {
 }
 
 void editor_remove_tile_at(v2f32 point_in_tilespace) {
-    s32 where_x = point_in_tilespace.x;
-    s32 where_y = point_in_tilespace.y;
+    s32                where_x    = point_in_tilespace.x;
+    s32                where_y    = point_in_tilespace.y;
+    struct tile_layer* tile_layer = &editor_state->tile_layers[editor_state->current_tile_layer];
+    struct tile*       tile       = tile_layer_tile_at(tile_layer, where_x, where_y);
 
-    for (s32 index = 0; index < editor_state->tile_counts[editor_state->current_tile_layer]; ++index) {
-        struct tile* current_tile = editor_state->tile_layers[editor_state->current_tile_layer] + index;
-
-        /* override */
-        if (current_tile->x == where_x && current_tile->y == where_y) {
-            if (current_tile == editor_state->last_selected) editor_state->last_selected = 0;
-
-            current_tile->id = 0;
-            editor_state->tile_layers[editor_state->current_tile_layer][index] = editor_state->tile_layers[editor_state->current_tile_layer][--editor_state->tile_counts[editor_state->current_tile_layer]];
-            return;
-        }
+    if (tile == editor_state->last_selected) {
+        editor_state->last_selected = 0;
     }
+
+    tile_layer_remove(tile_layer, tile - tile_layer->tiles);
 }
+
 void editor_remove_battle_tile_at(v2f32 point_in_tilespace) {
     s32 where_x = point_in_tilespace.x;
     s32 where_y = point_in_tilespace.y;
@@ -298,22 +288,19 @@ void editor_place_tile_at(v2f32 point_in_tilespace) {
     s32 where_x = point_in_tilespace.x;
     s32 where_y = point_in_tilespace.y;
 
-    for (s32 index = 0; index < editor_state->tile_counts[editor_state->current_tile_layer]; ++index) {
-        struct tile* current_tile = editor_state->tile_layers[editor_state->current_tile_layer] + index;
+    struct tile_layer* tile_layer    = &editor_state->tile_layers[editor_state->current_tile_layer];
+    struct tile*       existing_tile = tile_layer_tile_at(tile_layer, where_x, where_y);
 
-        /* override */
-        if (current_tile->x == where_x && current_tile->y == where_y) {
-            current_tile->id = editor_state->painting_tile_id;
-            editor_state->last_selected = current_tile;
-            return;
-        }
+    if (existing_tile) {
+        existing_tile->id           = editor_state->painting_tile_id;
+        editor_state->last_selected = existing_tile;
+    } else {
+        struct tile* new_tile       = tile_layer_push(tile_layer);
+        new_tile->id                = editor_state->painting_tile_id;
+        new_tile->x                 = where_x;
+        new_tile->y                 = where_y;
+        editor_state->last_selected = new_tile;
     }
-
-    struct tile* new_tile = editor_state->tile_layers[editor_state->current_tile_layer] + (editor_state->tile_counts[editor_state->current_tile_layer]++);
-    new_tile->id = editor_state->painting_tile_id;
-    new_tile->x  = where_x;
-    new_tile->y  = where_y;
-    editor_state->last_selected = new_tile;
 }
 
 void editor_place_battle_tile_at(v2f32 point_in_tilespace) {
@@ -1823,6 +1810,34 @@ union color32f32 editor_lighting_shader(struct software_framebuffer* framebuffer
     return result;
 }
 
+/*
+  NOTE:
+  While I would like to reuse render_tile_layer_ex, I don't want to pollute it with more editor logic
+  so let me just keep this here.
+*/
+local void editor_mode_render_tile_layer(struct render_commands* commands, struct tile_layer* tile_layer, s32 layer_index, s32 current_tile_layer) {
+    for (s32 tile_index = 0; tile_index < tile_layer->count; ++tile_index) {
+        struct tile*                 current_tile = tile_layer->tiles + tile_index;
+        s32                          tile_id      = current_tile->id;
+        struct tile_data_definition* tile_data    = tile_table_data + tile_id;
+        image_id                     tex          = get_tile_image_id(tile_data); 
+
+        f32 alpha = 1;
+        if (layer_index != current_tile_layer) {
+            alpha = 0.5;
+        }
+
+        render_commands_push_image(commands,
+                                   graphics_assets_get_image_by_id(&graphics_assets, tex),
+                                   rectangle_f32(current_tile->x * TILE_UNIT_SIZE,
+                                                 current_tile->y * TILE_UNIT_SIZE,
+                                                 TILE_UNIT_SIZE,
+                                                 TILE_UNIT_SIZE),
+                                   tile_data->sub_rectangle,
+                                   color32f32(1,1,1,alpha), NO_FLAGS, BLEND_MODE_ALPHA);
+    }
+}
+
 void update_and_render_editor(struct software_framebuffer* framebuffer, f32 dt) {
     struct render_commands commands = render_commands(&scratch_arena, 16384, editor_state->camera);
 
@@ -1851,27 +1866,9 @@ void update_and_render_editor(struct software_framebuffer* framebuffer, f32 dt) 
         {
             /* rendering the editor world */
             for (s32 layer_index = 0; layer_index < array_count(editor_state->tile_layers); ++layer_index) {
-                for (s32 tile_index = 0; tile_index < editor_state->tile_counts[layer_index]; ++tile_index) {
-                    struct tile*                 current_tile = editor_state->tile_layers[layer_index] + tile_index;
-                    s32                          tile_id      = current_tile->id;
-                    struct tile_data_definition* tile_data    = tile_table_data + tile_id;
-                    image_id                     tex          = get_tile_image_id(tile_data); 
-
-                    f32 alpha = 1;
-                    if (layer_index != editor_state->current_tile_layer) {
-                        alpha = 0.5;
-                    }
-
-                    render_commands_push_image(&commands,
-                                               graphics_assets_get_image_by_id(&graphics_assets, tex),
-                                               rectangle_f32(current_tile->x * TILE_UNIT_SIZE,
-                                                             current_tile->y * TILE_UNIT_SIZE,
-                                                             TILE_UNIT_SIZE,
-                                                             TILE_UNIT_SIZE),
-                                               tile_data->sub_rectangle,
-                                               color32f32(1,1,1,alpha), NO_FLAGS, BLEND_MODE_ALPHA);
-                }
+                editor_mode_render_tile_layer(&commands, &editor_state->tile_layers[layer_index], layer_index, editor_state->current_tile_layer);
             }
+
             struct font_cache* font = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_BLUE]);
             for (s32 trigger_level_transition_index = 0; trigger_level_transition_index < editor_state->trigger_level_transition_count; ++trigger_level_transition_index) {
                 struct trigger_level_transition* current_trigger = editor_state->trigger_level_transitions + trigger_level_transition_index;

@@ -42,9 +42,7 @@ struct world_editor_state {
     s32    tab_menu_open;
     s32           entity_placement_type;
 
-    s32          tile_counts[WORLD_TILE_LAYER_COUNT];
-    s32          tile_capacities[WORLD_TILE_LAYER_COUNT];
-    struct tile* tile_layers[WORLD_TILE_LAYER_COUNT];
+    struct tile_layer tile_layers[WORLD_TILE_LAYER_COUNT];
     s32          current_tile_layer;
     struct position_marker_list position_markers;
 

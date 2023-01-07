@@ -393,14 +393,26 @@ struct level_area_tilemap_tile {
   or something, but since all combat positions are gridlocked it's a PITA to guarantee these will not break during combat since these
   things can move outside of the grid
  */
+struct tile_layer {
+    s32          capacity;
+    s32          count;
+    struct tile* tiles;
+};
+struct tile_layer  tile_layer_reserved(struct memory_arena* arena, s32 capacity);
+void               tile_layer_bounding_box(struct tile_layer* tile_layer, s32* min_x, s32* min_y, s32* max_x, s32* max_y);
+void               tile_layer_clear(struct tile_layer* tile_layer);
+void               tile_layer_remove(struct tile_layer* tile_layer, s32 index);
+void               tile_layer_remove_at(struct tile_layer* tile_layer, s32 x, s32 y);
+struct tile*       tile_layer_tile_at(struct tile_layer* tile_layer, s32 x, s32 y);
+struct tile*       tile_layer_push(struct tile_layer* tile_layer);
+
 struct level_area { /* this cannot be automatically serialized because of the unpack stage. I can use macros to reduce the burden though */
     /* keep reference of a name. */
     u32          version SERIALIZE_VERSIONS(level, 1 to CURRENT);
     v2f32        default_player_spawn;
 
-    struct       scriptable_tile_layer_property scriptable_layer_properties[SCRIPTABLE_TILE_LAYER_COUNT];
-    s32                                         tile_counts[TILE_LAYER_COUNT];
-    struct tile*                                tile_layers[TILE_LAYER_COUNT];
+    struct scriptable_tile_layer_property scriptable_layer_properties[SCRIPTABLE_TILE_LAYER_COUNT];
+    struct tile_layer                     tile_layers[TILE_LAYER_COUNT];
 
 
     char area_name[260];
@@ -462,28 +474,12 @@ struct entity_chest* level_area_get_chest_at(struct level_area* area, s32 x, s32
     return NULL;
 }
 
-struct tile* level_area_get_tile_at(struct level_area* area, s32 tile_layer, s32 x, s32 y) {
-    s32 tile_count = area->tile_counts[tile_layer];
-
-    for (s32 tile_index = 0; tile_index < tile_count; ++tile_index) {
-        struct tile* current_tile = area->tile_layers[tile_layer] + tile_index;
+struct tile* tile_layer_get_tile_at(struct tile_layer* layer, s32 x, s32 y) {
+    for (s32 tile_index = 0; tile_index < layer->count; ++tile_index) {
+        struct tile* current_tile = layer->tiles + tile_index;
 
         s32 tile_x = current_tile->x;
         s32 tile_y = current_tile->y;
-
-        if (tile_index >= TILE_LAYER_SCRIPTABLE_0 && tile_index <= TILE_LAYER_SCRIPTABLE_31) {
-            struct scriptable_tile_layer_property* layer_properties = area->scriptable_layer_properties + (tile_layer - TILE_LAYER_SCRIPTABLE_0);
-
-            if (layer_properties->flags & SCRIPTABLE_TILE_LAYER_FLAGS_HIDDEN) {
-                return NULL;
-            }
-
-            f32 tile_xf32 = tile_x + layer_properties->offset_x;
-            f32 tile_yf32 = tile_y + layer_properties->offset_y;
-
-            tile_x = roundf(tile_xf32);
-            tile_y = roundf(tile_yf32);
-        }
 
         if (tile_x == x && tile_y == y) {
             return current_tile;
@@ -491,6 +487,21 @@ struct tile* level_area_get_tile_at(struct level_area* area, s32 tile_layer, s32
     }
 
     return NULL;
+}
+
+struct tile* level_area_get_tile_at(struct level_area* area, s32 tile_layer, s32 x, s32 y) {
+    if (tile_layer >= TILE_LAYER_SCRIPTABLE_0 && tile_layer <= TILE_LAYER_SCRIPTABLE_31) {
+        struct scriptable_tile_layer_property* layer_properties = area->scriptable_layer_properties + (tile_layer - TILE_LAYER_SCRIPTABLE_0);
+
+        if (layer_properties->flags & SCRIPTABLE_TILE_LAYER_FLAGS_HIDDEN) {
+            return NULL;
+        }
+
+        x -= layer_properties->offset_x;
+        y -= layer_properties->offset_y;
+    }
+
+    return tile_layer_get_tile_at(&area->tile_layers[tile_layer], x, y);
 }
 
 bool level_area_any_obstructions_at(struct level_area* area, s32 x, s32 y) {
@@ -536,11 +547,12 @@ bool level_area_any_obstructions_at(struct level_area* area, s32 x, s32 y) {
 /* also because the game doesn't use dynamic memory often, there has to be a slightly different allocator and container for the editor version */
 /* void serialize_tilemap_object_level_editor(struct binary_serializer* serializer, s32 version, struct level_area_tilemap_object* tilemap_object, struct memory_arena* arena); */
 
+void serialize_tile_layer(struct binary_serializer* serializer, struct memory_arena* arena, s32 version, struct tile_layer* tile_layer);
+
 void serialize_position_marker_list(struct binary_serializer* serializer, struct memory_arena* arena, s32 version, struct position_marker_list* list);
 void serialize_position_marker(struct binary_serializer* serializer, s32 version, struct position_marker* marker);
 
 void serialize_tile(struct binary_serializer* serializer, s32 version, struct tile* tile);
-void serialize_tile_layer(struct binary_serializer* serializer, s32 version, s32* counter, struct tile* tile);
 void serialize_battle_safe_square(struct binary_serializer* serializer, s32 version, struct level_area_battle_safe_square* square);
 void serialize_level_area_entity_savepoint(struct binary_serializer* serializer, s32 version, struct level_area_savepoint* entity);
 void serialize_generic_trigger(struct binary_serializer* serializer, s32 version, struct trigger* trigger);

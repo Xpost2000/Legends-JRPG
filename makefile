@@ -60,7 +60,7 @@ gen-asm: $(wildcard *.c *.h)
 	-mkdir asm
 	$(CC) $(SOURCE_FILE_MODULES) $(CFLAGS) $(CLIBS) -S -masm=intel -O2 -fverbose-asm -o asm/release.s
 cloc:
-	cloc *.c bigfilemaker/*.c
+	cloc --by-file *.c bigfilemaker/*.c
 clean:
 	-rm data.bigfile
 	-rm game.exe

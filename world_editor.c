@@ -1,8 +1,8 @@
 /* maybe i would like to polish these editor tools? */
 
 void world_editor_clear_all_allocations(void) {
-    for (s32 tile_count_index = 0; tile_count_index < WORLD_TILE_LAYER_COUNT; ++tile_count_index) {
-        world_editor_state->tile_counts[tile_count_index] = 0;
+    for (s32 layer_index = 0; layer_index < WORLD_TILE_LAYER_COUNT; ++layer_index) {
+        tile_layer_clear(world_editor_state->tile_layers + layer_index);
     }
     position_marker_list_clear(&world_editor_state->position_markers);
 }
@@ -23,11 +23,8 @@ void world_editor_initialize(struct world_editor_state* state) {
     state->arena = &world_editor_arena;
 
     {
-        for (s32 tile_count_index = 0; tile_count_index < WORLD_TILE_LAYER_COUNT; ++tile_count_index) {
-            state->tile_capacities[tile_count_index] = 32768 * 4;
-        }
         for (s32 tile_layer_index = 0; tile_layer_index < WORLD_TILE_LAYER_COUNT; ++tile_layer_index) {
-            state->tile_layers[tile_layer_index] = memory_arena_push(state->arena, sizeof(*state->tile_layers) * state->tile_capacities[tile_layer_index]);
+            state->tile_layers[tile_layer_index] = tile_layer_reserved(state->arena, 32768*4);
         }
     }
 
@@ -43,21 +40,13 @@ void world_editor_update_bounding_box_of_world(void) {
     world_editor_state->current_max_y = INT_MIN;
 
     for (s32 layer_index = 0; layer_index < array_count(world_editor_state->tile_layers); ++layer_index) {
-        for (s32 tile_index = 0; tile_index < world_editor_state->tile_counts[layer_index]; ++tile_index) {
-            struct tile*                 current_tile = world_editor_state->tile_layers[layer_index] + tile_index;
-            if (current_tile->x < world_editor_state->current_min_x) {
-                world_editor_state->current_min_x = current_tile->x;
-            }
-            if (current_tile->x > world_editor_state->current_max_x) {
-                world_editor_state->current_max_x = current_tile->x;
-            }
-            if (current_tile->y < world_editor_state->current_min_y) {
-                world_editor_state->current_min_y = current_tile->y;
-            }
-            if (current_tile->y > world_editor_state->current_max_x) {
-                world_editor_state->current_max_y = current_tile->y;
-            }
-        }
+        tile_layer_bounding_box(
+            world_editor_state->tile_layers + layer_index,
+            &world_editor_state->current_min_x,
+            &world_editor_state->current_min_y,
+            &world_editor_state->current_max_x,
+            &world_editor_state->current_max_y
+        );
     }
 }
 
@@ -85,40 +74,32 @@ void world_editor_place_tile_at(v2f32 point_in_tilespace) {
     s32 where_x = point_in_tilespace.x;
     s32 where_y = point_in_tilespace.y;
 
-    for (s32 index = 0; index < world_editor_state->tile_counts[world_editor_state->current_tile_layer]; ++index) {
-        struct tile* current_tile = world_editor_state->tile_layers[world_editor_state->current_tile_layer] + index;
+    struct tile_layer* tile_layer    = &world_editor_state->tile_layers[world_editor_state->current_tile_layer];
+    struct tile*       existing_tile = tile_layer_tile_at(tile_layer, where_x, where_y);
 
-        /* override */
-        if (current_tile->x == where_x && current_tile->y == where_y) {
-            current_tile->id = world_editor_state->painting_tile_id;
-            world_editor_state->last_selected = current_tile;
-            return;
-        }
+    if (existing_tile) {
+        existing_tile->id                 = world_editor_state->painting_tile_id;
+        world_editor_state->last_selected = existing_tile;
+    } else {
+        struct tile* new_tile             = tile_layer_push(tile_layer);
+        new_tile->id                      = world_editor_state->painting_tile_id;
+        new_tile->x                       = where_x;
+        new_tile->y                       = where_y;
+        world_editor_state->last_selected = new_tile;
     }
-
-    struct tile* new_tile = world_editor_state->tile_layers[world_editor_state->current_tile_layer] + (world_editor_state->tile_counts[world_editor_state->current_tile_layer]++);
-    new_tile->id = world_editor_state->painting_tile_id;
-    new_tile->x  = where_x;
-    new_tile->y  = where_y;
-    world_editor_state->last_selected = new_tile;
 }
 
 void world_editor_remove_tile_at(v2f32 point_in_tilespace) {
-    s32 where_x = point_in_tilespace.x;
-    s32 where_y = point_in_tilespace.y;
+    s32                where_x    = point_in_tilespace.x;
+    s32                where_y    = point_in_tilespace.y;
+    struct tile_layer* tile_layer = &world_editor_state->tile_layers[world_editor_state->current_tile_layer];
+    struct tile*       tile       = tile_layer_tile_at(tile_layer, where_x, where_y);
 
-    for (s32 index = 0; index < world_editor_state->tile_counts[world_editor_state->current_tile_layer]; ++index) {
-        struct tile* current_tile = world_editor_state->tile_layers[world_editor_state->current_tile_layer] + index;
-
-        /* override */
-        if (current_tile->x == where_x && current_tile->y == where_y) {
-            if (current_tile == world_editor_state->last_selected) world_editor_state->last_selected = 0;
-
-            current_tile->id = 0;
-            world_editor_state->tile_layers[world_editor_state->current_tile_layer][index] = world_editor_state->tile_layers[world_editor_state->current_tile_layer][--world_editor_state->tile_counts[world_editor_state->current_tile_layer]];
-            return;
-        }
+    if (tile == editor_state->last_selected) {
+        editor_state->last_selected = 0;
     }
+
+    tile_layer_remove(tile_layer, tile - tile_layer->tiles);
 }
 
 local void world_editor_brush_place_tile_at(v2f32 tile_space_mouse_location) {
@@ -162,7 +143,7 @@ local void world_editor_serialize_map(struct binary_serializer* serializer) {
         serialize_f32(serializer, &world_editor_state->default_player_spawn.y);
 
         for (s32 tile_layer = 0; tile_layer < WORLD_TILE_LAYER_COUNT; ++tile_layer) {
-            serialize_tile_layer(serializer, area_version_id, &world_editor_state->tile_counts[tile_layer], world_editor_state->tile_layers[tile_layer]);
+            serialize_tile_layer(serializer, world_editor_state->arena, area_version_id, &world_editor_state->tile_layers[tile_layer]);
         }
 
         IAllocator allocator = heap_allocator();
@@ -315,26 +296,7 @@ void update_and_render_world_editor(struct software_framebuffer* framebuffer, f3
     }
 
     for (s32 layer_index = 0; layer_index < array_count(world_editor_state->tile_layers); ++layer_index) {
-        for (s32 tile_index = 0; tile_index < world_editor_state->tile_counts[layer_index]; ++tile_index) {
-            struct tile*                 current_tile = world_editor_state->tile_layers[layer_index] + tile_index;
-            s32                          tile_id      = current_tile->id;
-            struct tile_data_definition* tile_data    = world_tile_table_data + tile_id;
-            image_id                     tex          = get_tile_image_id(tile_data); 
-
-            f32 alpha = 1;
-            if (layer_index != world_editor_state->current_tile_layer) {
-                alpha = 0.5;
-            }
-
-            render_commands_push_image(&commands,
-                                       graphics_assets_get_image_by_id(&graphics_assets, tex),
-                                       rectangle_f32(current_tile->x * TILE_UNIT_SIZE,
-                                                     current_tile->y * TILE_UNIT_SIZE,
-                                                     TILE_UNIT_SIZE,
-                                                     TILE_UNIT_SIZE),
-                                       tile_data->sub_rectangle,
-                                       color32f32(1,1,1,alpha), NO_FLAGS, BLEND_MODE_ALPHA);
-        }
+        editor_mode_render_tile_layer(&commands, world_editor_state->tile_layers + layer_index, layer_index, world_editor_state->current_tile_layer);
     }
 
     struct font_cache* font = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_BLUE]);

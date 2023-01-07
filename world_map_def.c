@@ -127,19 +127,15 @@ struct world_map_script_data {
     struct world_map_listener listeners[WORLD_MAP_LISTEN_EVENT_COUNT];
 };
 struct world_map {
-    u32   hash_id;              /* NOTE: used to lazy load them into permenant memory. */
-    s32   version;
-    s32   area_format_version;
-    v2f32 default_player_spawn;
-
-    struct       scriptable_tile_layer_property scriptable_layer_properties[WORLD_SCRIPTABLE_TILE_LAYER_COUNT];
-    struct tile*                                tile_layers[WORLD_TILE_LAYER_COUNT];
-    s32                                         tile_counts[WORLD_TILE_LAYER_COUNT];
-    struct position_marker_list position_markers;
-
-    string script_string;
-    /* runtime data */
-    struct world_map_script_data script;
+    u32                                   hash_id; /* NOTE: used to lazy load them into permenant memory. */
+    s32                                   version;
+    s32                                   area_format_version;
+    v2f32                                 default_player_spawn;
+    struct scriptable_tile_layer_property scriptable_layer_properties[WORLD_SCRIPTABLE_TILE_LAYER_COUNT];
+    struct tile_layer                     tile_layers[WORLD_TILE_LAYER_COUNT];
+    struct position_marker_list           position_markers;
+    string                                script_string;
+    struct world_map_script_data          script;
 };
 
 void serialize_world_map(struct memory_arena* arena, struct binary_serializer* serializer, struct world_map* world_map);
