@@ -140,6 +140,7 @@ struct battle_ui_state {
       (Mainly it circumvents the weird problem of entity snapping)
     */
     bool      formations_placed;
+    bool first_battle_turn;
 } global_battle_ui_state;
 
 local void announce_battle_action(struct entity_id who, string what) {
@@ -304,6 +305,7 @@ local string battle_menu_main_option_descriptions[] = {
 
 local void start_combat_ui(void) {
     zero_memory(&global_battle_ui_state, sizeof(global_battle_ui_state));
+    global_battle_ui_state.first_battle_turn = true;
     battle_clear_all_killed_entities();
     battle_clear_loot_results();
 }
@@ -1580,7 +1582,7 @@ local void update_and_render_battle_ui(struct game_state* state, struct software
             f32 t = global_battle_ui_state.timer / max_t;
             if (t > 1.0) t = 1.0;
 
-            if (global_battle_ui_state.phase == BATTLE_UI_FADE_IN_DARK) {
+            if (global_battle_ui_state.phase == BATTLE_UI_FADE_IN_DARK && global_battle_ui_state.first_battle_turn) {
                 state->combat_state.battle_zone_dark_fade_t = t;
             }
             software_framebuffer_draw_quad(framebuffer, rectangle_f32(0,0,SCREEN_WIDTH,SCREEN_HEIGHT), color32u8(0,0,0, 128 * t), BLEND_MODE_ALPHA);
@@ -1680,6 +1682,7 @@ local void update_and_render_battle_ui(struct game_state* state, struct software
                 4,
                 BATTLE_UI_FADE_OUT_END_TURN_TEXT
             );
+            global_battle_ui_state.first_battle_turn = false;
         } break;
 
         case BATTLE_UI_FADE_OUT_END_TURN_TEXT: {
@@ -1689,7 +1692,7 @@ local void update_and_render_battle_ui(struct game_state* state, struct software
                 dt,
                 string_literal("ROUND END!"),
                 4,
-                BATTLE_UI_FADE_IN_DARK_END_TURN
+                BATTLE_UI_FADE_IN_DARK
             );
         } break;
 
