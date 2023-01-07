@@ -1,11 +1,13 @@
 #ifndef WORLD_MAP_DEF_C
 #define WORLD_MAP_DEF_C
 
-#define CURRENT_WORLD_MAP_VERSION (1)
+#define CURRENT_WORLD_MAP_VERSION (2)
 
 /*
   VERSION 1:
   Tiles only + Player Spawn
+  VERSION 2:
+  Position Marker for metadata
 */
 
 #define WORLD_SCRIPTABLE_TILE_LAYER_COUNT (32)

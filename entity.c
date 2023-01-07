@@ -3360,6 +3360,10 @@ struct position_marker* position_marker_list_push(struct position_marker_list* l
     return &list->markers[list->count-1];
 }
 
+void position_marker_list_clear(struct position_marker_list* list) {
+    list->count = 0;
+}
+
 void position_marker_list_remove(struct position_marker_list* list, s32 index) {
     list->markers[index] = list->markers[--list->count];
 }

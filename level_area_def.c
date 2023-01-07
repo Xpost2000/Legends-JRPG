@@ -147,11 +147,12 @@ struct position_marker_list {
     struct position_marker* markers;
 };
 
-struct position_marker* position_marker_list_find_marker_with_name(struct position_marker_list* list, string name);
-struct position_marker* position_marker_list_find_marker_at(struct position_marker_list* list, v2f32 where);
-struct position_marker* position_marker_list_find_marker_at_with_rect(struct position_marker_list* list, v2f32 where);
-struct position_marker* position_marker_list_push(struct position_marker_list* list, struct position_marker marker);
-void position_marker_list_remove(struct position_marker_list* list, s32 index);
+void                        position_marker_list_clear(struct position_marker_list* list);
+struct position_marker*     position_marker_list_find_marker_with_name(struct position_marker_list* list, string name);
+struct position_marker*     position_marker_list_find_marker_at(struct position_marker_list* list, v2f32 where);
+struct position_marker*     position_marker_list_find_marker_at_with_rect(struct position_marker_list* list, v2f32 where);
+struct position_marker*     position_marker_list_push(struct position_marker_list* list, struct position_marker marker);
+void                        position_marker_list_remove(struct position_marker_list* list, s32 index);
 struct position_marker_list position_marker_list_reserved(struct memory_arena* arena, s32 capacity);
 
 struct tile {
@@ -427,7 +428,7 @@ struct level_area { /* this cannot be automatically serialized because of the un
 
       Oh well. I know this is heavily inconsistent right now but I'll fix it in the future!
      */
-    struct position_marker_list           position_markers;
+    struct position_marker_list           position_markers; /* these are metadata purely. */
 
     /* runtime data */
     struct level_area_script_data    script;

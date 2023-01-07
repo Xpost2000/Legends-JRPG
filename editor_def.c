@@ -1,6 +1,17 @@
 #ifndef EDITOR_DEF_C
 #define EDITOR_DEF_C
 
+/*
+  NOTE:
+
+  I should've probably made separate list types or (
+  any list type at all, but I don't know why I never did.
+
+  Most of this is pretty easy to generalize into procedures that provide swathes of the editor behaviors...
+  I guess if I have a couple of hours on a weekend. I'll refactor it.
+  )
+*/
+
 enum editor_tool_mode {
     EDITOR_TOOL_TILE_PAINTING,
     EDITOR_TOOL_BATTLETILE_PAINTING,
@@ -38,14 +49,16 @@ enum entity_placement_type {
     ENTITY_PLACEMENT_TYPE_chest,
     ENTITY_PLACEMENT_TYPE_light,
     ENTITY_PLACEMENT_TYPE_savepoint,
+    ENTITY_PLACEMENT_TYPE_position_marker,
     ENTITY_PLACEMENT_TYPE_count,
 };
 static string entity_placement_type_strings[] = {
-    [ENTITY_PLACEMENT_TYPE_actor]     = string_literal("Actor"),
-    [ENTITY_PLACEMENT_TYPE_chest]     = string_literal("Chest"),
-    [ENTITY_PLACEMENT_TYPE_light]     = string_literal("Light"),
-    [ENTITY_PLACEMENT_TYPE_savepoint] = string_literal("Savepoint"),
-    [ENTITY_PLACEMENT_TYPE_count]     = string_literal("(count)"),
+    [ENTITY_PLACEMENT_TYPE_actor]           = string_literal("Actor"),
+    [ENTITY_PLACEMENT_TYPE_chest]           = string_literal("Chest"),
+    [ENTITY_PLACEMENT_TYPE_light]           = string_literal("Light"),
+    [ENTITY_PLACEMENT_TYPE_savepoint]       = string_literal("Savepoint"),
+    [ENTITY_PLACEMENT_TYPE_position_marker] = string_literal("Position Marker"),
+    [ENTITY_PLACEMENT_TYPE_count]           = string_literal("(count)"),
 };
 struct entity_chest_placement_property_menu {
     /* bool item_edit_open; */
@@ -129,6 +142,7 @@ struct editor_state {
     s32                                      battle_safe_square_capacity;
     s32                                      battle_safe_square_count;
     struct level_area_battle_safe_square*    battle_safe_squares;
+    struct position_marker_list              position_markers;
 
     bool fullbright;
     

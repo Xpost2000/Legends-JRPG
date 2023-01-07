@@ -59,6 +59,7 @@ void editor_clear_all_allocations(struct editor_state* state) {
     state->light_count                    = 0;
     state->entity_savepoint_count         = 0;
     state->battle_safe_square_count       = 0;
+    position_marker_list_clear(&editor_state->position_markers);
 }
 
 void editor_clear_all(struct editor_state* state) {
@@ -98,6 +99,7 @@ void editor_initialize(struct editor_state* state) {
     state->entity_savepoints                        = memory_arena_push(state->arena, state->entity_capacity                   * sizeof(*state->entity_savepoints));
     state->lights                                   = memory_arena_push(state->arena, state->light_capacity                    * sizeof(*state->lights));
     state->battle_safe_squares                      = memory_arena_push(state->arena, state->battle_safe_square_capacity       * sizeof(*state->battle_safe_squares));
+    state->position_markers                         = position_marker_list_reserved(state->arena, 8192);
     cstring_copy("DefaultAreaName<>", state->level_settings.area_name, array_count(state->level_settings.area_name));
     editor_clear_all(state);
 }
@@ -220,6 +222,9 @@ void editor_serialize_area(struct binary_serializer* serializer) {
         for (s32 battle_safe_square_index = 0; battle_safe_square_index < editor_state->battle_safe_square_count; ++battle_safe_square_index) {
             serialize_battle_safe_square(serializer, version_id, &editor_state->battle_safe_squares[battle_safe_square_index]);
         }
+    }
+    if (version_id >= 13) {
+        serialize_position_marker_list(serializer, &editor_arena, version_id, &editor_state->position_markers);
     }
 }
 
@@ -374,6 +379,20 @@ void editor_place_or_drag_level_transition_trigger(v2f32 point_in_tilespace) {
     }
 }
 
+void editor_place_or_drag_position_marker(v2f32 point_in_tilespace) {
+    if (is_dragging(&editor_state->drag_data)) {
+        return;
+    }
+
+    struct position_marker* marker = position_marker_list_find_marker_at_with_rect(&editor_state->position_markers, point_in_tilespace);
+
+    if (!marker) {
+        editor_state->last_selected = position_marker_list_push(&editor_state->position_markers, position_marker(string_literal("noname"), point_in_tilespace));
+    } else {
+        set_drag_candidate(&editor_state->drag_data, marker, get_mouse_in_tile_space(&editor_state->camera, SCREEN_WIDTH, SCREEN_HEIGHT), marker->position);
+    }
+}
+
 void editor_place_or_drag_savepoint(v2f32 point_in_tilespace) {
     if (is_dragging(&editor_state->drag_data)) {
         return;
@@ -409,6 +428,14 @@ void editor_remove_savepoint_at(v2f32 point_in_tilespace) {
             Fixed_Array_Remove_And_Swap(editor_state->entity_savepoints, entity_savepoint_index, editor_state->entity_savepoint_count);
             return;
         }
+    }
+}
+
+void editor_remove_position_marker_at(v2f32 point_in_tilespace) {
+    struct position_marker* marker = position_marker_list_find_marker_at_with_rect(&editor_state->position_markers, point_in_tilespace);
+    
+    if (marker) {
+        position_marker_list_remove(&editor_state->position_markers, marker - editor_state->position_markers.markers);
     }
 }
 
@@ -725,6 +752,7 @@ local void handle_editor_tool_mode_input(struct software_framebuffer* framebuffe
                 Placement_Procedure_For(chest);
                 Placement_Procedure_For(light);
                 Placement_Procedure_For(savepoint);
+                Placement_Procedure_For(position_marker);
 #undef Placement_Procedure_For
             }
         } break;
@@ -1273,7 +1301,7 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
                 }
                 draw_cursor_y += 12 * 1.5 * 3;
             }
-        } else if (editor_state->tab_menu_open & TAB_MENU_CTRL_BIT) {
+        } else if (editor_state->tab_menu_open & TAB_MENU_CTRL_BIT) { /* TAB MENU CONTEXT  */
             if (!editor_state->last_selected) {
                 editor_state->tab_menu_open = 0;
             } else {
@@ -1449,6 +1477,15 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
                                     }
                                 }
 
+                            } break;
+                            case ENTITY_PLACEMENT_TYPE_position_marker: {
+                                struct position_marker* marker = editor_state->last_selected;
+                                f32 draw_cursor_y = 70;
+                                const f32 text_scale = 1;
+
+                                {
+                                    EDITOR_imgui_text_edit_cstring(framebuffer, font, highlighted_font, 2, v2f32(10, draw_cursor_y), string_literal("name"), marker->name, array_count(marker->name));
+                                }
                             } break;
                             case ENTITY_PLACEMENT_TYPE_chest: {
                                 f32 draw_cursor_y = 70;
@@ -1957,6 +1994,21 @@ void update_and_render_editor(struct software_framebuffer* framebuffer, f32 dt) 
                 s32 savepoint_id          = current_savepoint - editor_state->entity_savepoints;
                 render_commands_push_text(&commands, font, 1, v2f32(current_savepoint->position.x * TILE_UNIT_SIZE, current_savepoint->position.y * TILE_UNIT_SIZE),
                                           copy_cstring_to_scratch(format_temp("(savepoint %d)", savepoint_id)), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+            }
+
+            for (s32 position_marker_index = 0; position_marker_index < editor_state->position_markers.count; ++position_marker_index) {
+                struct position_marker* current_marker = editor_state->position_markers.markers + position_marker_index;
+                if (editor_state->last_selected == current_marker) {
+                    render_commands_push_quad(&commands, rectangle_f32(current_marker->position.x * TILE_UNIT_SIZE, current_marker->position.y * TILE_UNIT_SIZE,
+                                                                       current_marker->scale.x * TILE_UNIT_SIZE,    current_marker->scale.y * TILE_UNIT_SIZE),
+                                              color32u8(0, 255, 0, 255), BLEND_MODE_ALPHA);
+                } else {
+                    render_commands_push_quad(&commands, rectangle_f32(current_marker->position.x * TILE_UNIT_SIZE, current_marker->position.y * TILE_UNIT_SIZE,
+                                                                       current_marker->scale.x * TILE_UNIT_SIZE,    current_marker->scale.y * TILE_UNIT_SIZE),
+                                              color32u8(255, 0, 0, 255), BLEND_MODE_ALPHA);
+                }
+                render_commands_push_text(&commands, font, 1, v2f32(current_marker->position.x * TILE_UNIT_SIZE, current_marker->position.y * TILE_UNIT_SIZE),
+                                          copy_cstring_to_scratch(format_temp("(pmarker \"%s\")", current_marker->name)), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
             }
 
             if (editor_state->tool_mode == EDITOR_TOOL_BATTLETILE_PAINTING) {

@@ -1348,6 +1348,9 @@ void _serialize_level_area(struct memory_arena* arena, struct binary_serializer*
                 serialize_battle_safe_square(serializer, level->version, level->battle_safe_squares + battle_safe_square_index);
             }
         }
+        if (level->version >= 13) {
+            serialize_position_marker_list(serializer, arena, level->version, &level->position_markers);
+        }
 
         build_navigation_map_for_level_area(arena, level);
         build_battle_zone_bounding_boxes_for_level_area(arena, level);
