@@ -540,6 +540,15 @@ char* format_temp(const char* fmt, ...) {
 
 #define NO_FLAGS (0)
 
+inline static const f32 degree_to_radians(f32 x) {
+    return x * M_PI/180.0f;
+}
+
+inline static const f32 radians_to_degrees(f32 x) {
+    return x * 180.0f/M_PI;
+}
+
+
 #include "prng.c"
 #include "v2.c"
 #include "string.c"

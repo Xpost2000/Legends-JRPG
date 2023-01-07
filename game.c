@@ -408,6 +408,22 @@ local void render_scriptable_tile_layers_that_qualify_as(s32 tile_palette, struc
         }
     }
 }
+/* NOTE: a bit too lazy to generalize this after this morning. */
+local void world_render_scriptable_tile_layers_that_qualify_as(s32 tile_palette, struct render_commands* commands, struct world_map* area, s32 layer) {
+    for (s32 layer_index = WORLD_TILE_LAYER_SCRIPTABLE_0; layer_index < WORLD_TILE_LAYER_COUNT; ++layer_index) {
+        struct scriptable_tile_layer_property* current_scriptable_layer_property = area->scriptable_layer_properties + layer_index - WORLD_TILE_LAYER_SCRIPTABLE_0; 
+        if (current_scriptable_layer_property->flags & SCRIPTABLE_TILE_LAYER_FLAGS_HIDDEN) {
+            continue;
+        }
+
+        if (current_scriptable_layer_property->draw_layer == layer) {
+            f32 offset_x = current_scriptable_layer_property->offset_x;
+            f32 offset_y = current_scriptable_layer_property->offset_y;
+
+            render_tile_layer_ex(tile_palette, commands, NULL, &area->tile_layers[layer_index], offset_x, offset_y, color32f32_WHITE);
+        }
+    }
+}
 
 void render_foreground_area(struct game_state* state, struct render_commands* commands, struct level_area* area) {
     {
@@ -2110,7 +2126,7 @@ void game_initialize(void) {
     PrintStructSize(struct entity_ai_data);
     PrintStructSize(struct used_battle_action_stack);
     game_arena   = memory_arena_create_from_heap("Game Memory", Megabyte(64));
-    scratch_arena = memory_arena_create_from_heap("Scratch Buffer", Megabyte(8));
+    scratch_arena = memory_arena_create_from_heap("Scratch Buffer", Megabyte(16));
 #ifdef USE_EDITOR
     editor_arena = memory_arena_create_from_heap("Editor Memory", Megabyte(128));
     world_editor_arena = memory_arena_create_from_heap("World Editor Memory", Megabyte(128));
@@ -2812,8 +2828,8 @@ local void update_game_camera_exploration_mode(struct game_state* state, f32 dt)
         } break;
         case GAME_SUBMODE_WORLDMAP: {
             /* This is easy for the mode 7 to work with... */
-            camera->xy.x = game_state->world_map_explore_state.player_position.x;
-            camera->xy.y = game_state->world_map_explore_state.player_position.y;
+            camera->xy.x = game_state->world_map_explore_state.player_position.x+TILE_UNIT_SIZE/2;
+            camera->xy.y = game_state->world_map_explore_state.player_position.y+TILE_UNIT_SIZE/2;
         } break;
     }
 }
@@ -3347,18 +3363,232 @@ void update_and_render_game_console(struct game_state* state, struct software_fr
 }
 
 local void update_and_render_game_worldmap(struct software_framebuffer* framebuffer, f32 dt) {
+    update_game_camera(game_state, dt);
+
     struct world_map* world_map = game_current_world_map();
     execute_world_map_scripts(game_state, world_map, dt);
 
-    /* worldmap player controls */
+    /*
+      NOTE: default view angle will be 0 as north, since I want 0 degrees to be forward.
+
+      The mode7 rendering does no translation/camera work. It's just projecting this flat 2D view into a canvas.
+    */
+    v2f32 view_direction = v2f32_direction_from_degree(game_state->world_map_explore_state.view_angle-90); /* x cos, y sin */
+
+    /* worldmap player controls  (3D mode controls)*/
     {
+        const f32 WORLD_VELOCITY = TILE_UNIT_SIZE*4.0;
+        const f32 TURN_VELOCITY  = 90;
+        bool allow_explore_player_entity_movement(struct game_state* state);
+
+        f32 move_forward = is_action_down(INPUT_ACTION_MOVE_UP);
+        f32 move_back    = is_action_down(INPUT_ACTION_MOVE_DOWN);
+        f32 move_left    = is_action_down(INPUT_ACTION_MOVE_LEFT);
+        f32 move_right   = is_action_down(INPUT_ACTION_MOVE_RIGHT);
+
+        if (allow_explore_player_entity_movement(game_state)) {
+            if (move_forward) {
+                game_state->world_map_explore_state.player_position.x += WORLD_VELOCITY * view_direction.x * dt;
+                game_state->world_map_explore_state.player_position.y += WORLD_VELOCITY * view_direction.y * dt;
+            } else if (move_back) {
+                game_state->world_map_explore_state.player_position.x += WORLD_VELOCITY * -view_direction.x * dt;
+                game_state->world_map_explore_state.player_position.y += WORLD_VELOCITY * -view_direction.y * dt;
+            }
+
+            if (move_right) {
+                game_state->world_map_explore_state.view_angle += dt * TURN_VELOCITY;
+            } else if (move_left) {
+                game_state->world_map_explore_state.view_angle += dt * -TURN_VELOCITY;
+            }
+        }
     }
 
-    /* render world */
-    struct render_commands        commands      = render_commands(&scratch_arena, 16384, game_state->camera);
-    struct sortable_draw_entities draw_entities = sortable_draw_entities(&scratch_arena, 8192*4);
-    commands.should_clear_buffer                = true;
-    commands.clear_buffer_color                 = color32u8(100, 128, 148, 255);
+    /* render world in 2D */
+    /* I unfortunately do not have a baked world map image, so I construct it in memory. */
+    struct software_framebuffer mode7_buffer = software_framebuffer_create_from_arena(&scratch_arena, framebuffer->width*2, framebuffer->height*2);
+    {
+        /* hack */
+        SCREEN_WIDTH = framebuffer->width*2;
+        SCREEN_HEIGHT = framebuffer->height*2;
+        struct render_commands        commands      = render_commands(&scratch_arena, 8192, game_state->camera);
+        struct sortable_draw_entities draw_entities = sortable_draw_entities(&scratch_arena, 8192*4);
+        commands.should_clear_buffer                = true;
+        commands.clear_buffer_color                 = color32u8(100, 128, 148, 255);
+        {
+            for (s32 layer = WORLD_TILE_LAYER_GROUND; layer <= WORLD_TILE_LAYER_OVERHEAD; ++layer) {
+                struct tile_layer* current_layer = world_map->tile_layers + layer;
+                render_tile_layer_ex(TILE_PALETTE_WORLD_MAP, &commands, NULL, current_layer, 0, 0, color32f32(1,1,1,1));
+                world_render_scriptable_tile_layers_that_qualify_as(TILE_PALETTE_WORLD_MAP, &commands, world_map, layer);
+            }
+        }
+        software_framebuffer_render_commands(&mode7_buffer, &commands);
+
+#if 1
+        {
+            render_commands_push_quad(&commands,
+                                      rectangle_f32(game_state->world_map_explore_state.player_position.x,
+                                                    game_state->world_map_explore_state.player_position.y,
+                                                    TILE_UNIT_SIZE, TILE_UNIT_SIZE),
+                                      color32u8(0, 255, 0, 255), BLEND_MODE_ALPHA);
+            { /* viewline 2D mode */
+                v2f32 start = v2f32(game_state->world_map_explore_state.player_position.x+TILE_UNIT_SIZE/2, game_state->world_map_explore_state.player_position.y+TILE_UNIT_SIZE/2);
+                v2f32 view_dir = v2f32_direction_from_degree(game_state->world_map_explore_state.view_angle-90);
+                v2f32 end   = v2f32_add(start, v2f32_scale(view_dir, TILE_UNIT_SIZE*2));
+                render_commands_push_line(&commands, start, end, color32u8(255, 0, 0, 255), BLEND_MODE_ALPHA);
+            }
+        }
+        software_framebuffer_render_commands(&mode7_buffer, &commands);
+#endif
+        SCREEN_WIDTH = framebuffer->width;
+        SCREEN_HEIGHT = framebuffer->height;
+    }
+
+    /* reproject into a plane */
+    {
+        struct image_buffer* img = (struct image_buffer*)&mode7_buffer;
+
+        s32 fw = framebuffer->width;
+        s32 fh = framebuffer->height;
+
+        s32 iw = img->width;
+        s32 ih = img->height;
+
+        f32 max_depth = fh/2;
+
+        /* need to play with these... */
+        f32 scale=0,focus=0,horizon=0;
+        static s32 rrr = 0;
+        static s32 do_anim = 0;
+        static s32 anim_done = 0;
+        static f32 t   = 0;
+
+        if (is_key_pressed(KEY_F7)) {
+            do_anim = 1;   
+            anim_done = 0;
+            rrr ^= 1;
+            t = 0;
+        }
+
+        if (do_anim) {
+            if (!anim_done) {
+                if (rrr) {
+                    scale = lerp_f32(500, 200, t);;
+                    focus = lerp_f32(400*3, 700*2.5, t);;
+                    horizon = lerp_f32(-1000, -660, t);;
+                } else {
+                    scale = lerp_f32(200, 500, t);;
+                    focus = lerp_f32(700*2.5, 400*3, t);;
+                    horizon = lerp_f32(-660, -1000, t);;
+                }
+
+                t += dt;
+
+                if (t >= 1.0) {
+                    anim_done = 1;
+                    do_anim = 0;
+                    t = 0;
+                }
+            } else {
+                anim_done = 0;
+                do_anim = 0;
+                t = 0;
+            }
+        } else {
+            if (rrr) {
+                /* SETTING A: Default */
+                scale     = 200;
+                focus     = 700*2.5;
+                horizon   = -660;
+            } else {
+                scale     = 500;
+                focus     = 400*3;
+                horizon   = -1000;
+            }
+        }
+
+        /* cam params end */
+
+        f32 cosine = cosf(degree_to_radians(game_state->world_map_explore_state.view_angle));
+        f32 sine   = sinf(degree_to_radians(game_state->world_map_explore_state.view_angle));
+
+        union color32u8 fog_color = color32u8(100, 100, 255, 255);
+
+        for (s32 y = -fh/2; y < fh/2; ++y) {
+            s32 perspective_z = fabs(y - horizon);
+
+            for (s32 x = -fw/2; x < fw/2; ++x) {
+
+                if (perspective_z==0) {
+                    s32 paint_x = x + fw/2;
+                    s32 paint_y = y + fh/2;
+                    framebuffer->pixels[paint_y * fw*4 + paint_x*4 + 0] = 255;
+                    framebuffer->pixels[paint_y * fw*4 + paint_x*4 + 1] = 0;
+                    framebuffer->pixels[paint_y * fw*4 + paint_x*4 + 2] = 0;
+                    continue;
+                }
+
+                v2s32 perspective = point_project_perspective(v2s32(x, y), focus, scale, perspective_z);
+
+                s32 sample_x = perspective.x+iw/2;
+                s32 sample_y = perspective.y;
+
+                if (x > 0) {
+                    sample_x = iw - sample_x;
+                }
+                sample_y = ih - sample_y;
+
+                f32 horizon_y = fh/2+horizon;
+                {
+                    {
+                        sample_x -= iw/2;
+                        sample_y -= ih/2;
+                    }
+
+                    f32 nsample_x = sample_x;
+                    f32 nsample_y = sample_y;
+
+                    nsample_x = sample_x * cosine - sample_y * sine;
+                    nsample_y = sample_x * sine   + sample_y * cosine;
+
+                    sample_x = nsample_x;
+                    sample_y = nsample_y;
+
+                    {
+                        sample_x += iw/2;
+                        sample_y += ih/2;
+                    }
+                }
+
+
+                s32 paint_x = x + fw/2;
+                s32 paint_y = y + fh/2;
+
+                paint_x = fw - paint_x;
+
+                f32 perspective_z_norm = perspective_z / max_depth*0.25;
+                f32 brightness = clamp_f32(((perspective_z_norm*perspective_z_norm)), 0.0, 1);
+
+                if (sample_x >= iw ||
+                    sample_x < 0 ||
+                    sample_y >= ih ||
+                    sample_y < 0) {
+                    framebuffer->pixels[paint_y * fw*4 + paint_x*4 + 0] = fog_color.r*brightness;
+                    framebuffer->pixels[paint_y * fw*4 + paint_x*4 + 1] = fog_color.g*brightness;
+                    framebuffer->pixels[paint_y * fw*4 + paint_x*4 + 2] = fog_color.b*brightness;
+                    continue;
+                } else
+                    if (paint_y < horizon_y) {
+                        framebuffer->pixels[paint_y * fw*4 + paint_x*4 + 0] = fog_color.r*brightness;
+                        framebuffer->pixels[paint_y * fw*4 + paint_x*4 + 1] = fog_color.g*brightness;
+                        framebuffer->pixels[paint_y * fw*4 + paint_x*4 + 2] = fog_color.b*brightness;
+                    } else {
+                        framebuffer->pixels[paint_y * fw*4 + paint_x*4 + 0] = img->pixels[sample_y*iw*4+sample_x*4+0]*brightness;
+                        framebuffer->pixels[paint_y * fw*4 + paint_x*4 + 1] = img->pixels[sample_y*iw*4+sample_x*4+1]*brightness;
+                        framebuffer->pixels[paint_y * fw*4 + paint_x*4 + 2] = img->pixels[sample_y*iw*4+sample_x*4+2]*brightness;
+                    }
+            }
+        }
+    }
 }
 
 local void update_and_render_game_overworld(struct software_framebuffer* framebuffer, f32 dt) {
@@ -3489,14 +3719,13 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                 switch (submode) {
                     case GAME_SUBMODE_OVERWORLD: {
                         update_and_render_game_overworld(framebuffer, dt);
+                        game_postprocess_blur_ingame(framebuffer, 2, 0.62, BLEND_MODE_ALPHA);
                     } break;
                     case GAME_SUBMODE_WORLDMAP: {
                         update_and_render_game_worldmap(framebuffer, dt);
                     } break;
                 }
                 
-                game_postprocess_blur_ingame(framebuffer, 2, 0.62, BLEND_MODE_ALPHA);
-
                 {
                     struct render_commands commands = render_commands(&scratch_arena, 1024, game_state->camera);
                     do_ui_passive_speaking_dialogue(&commands, dt);

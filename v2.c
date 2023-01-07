@@ -67,3 +67,11 @@ v2s32 v2f32_to_v2s32(v2f32 a) {
 v2f32 v2s32_to_v2f32(v2s32 a) {
     return v2f32(a.x, a.y);
 }
+
+v2f32 v2f32_direction_from_degree(f32 x) {
+    return v2f32(cosf(degree_to_radians(x)), sinf(degree_to_radians(x)));
+}
+
+v2f32 v2f32_perpendicular(v2f32 a) {
+    return v2f32(-a.y, a.x); 
+}

@@ -691,30 +691,49 @@ local bool entity_is_dead(struct entity* entity) {
 /* TODO fix implicit decls, linker hasn't killed game yet */
 void player_handle_radial_interactables(struct game_state* state, struct entity* entity, f32 dt);
 
+bool allow_explore_player_entity_movement(struct game_state* state) {
+    if (game_command_console_enabled) {
+        return false;
+    }
+
+    if (disable_game_input) {
+        return false;
+    }
+
+    if (cutscene_active()) {
+        return false;
+    }
+
+    if (global_popup_state.message_count > 0) {
+        return false;
+    }
+
+    /* combat has it's own special movement rules. */
+    if (state->combat_state.active_combat) {
+        return false;
+    }
+
+    if (region_zone_animation_block_input) {
+        return false;
+    }
+    if (storyboard_active) {
+        return false;
+    }
+    /* conversations should be in it's own "module" like region_change_presentation.c */
+    if (state->is_conversation_active) {
+        return false;
+    }
+
+    return true;
+}
+
 void entity_handle_player_controlled(struct game_state* state, struct entity* entity, f32 dt) {
     /* all the input blockers. */
+    if (!allow_explore_player_entity_movement(state)) {
+        return;
+    }
+
     {
-        if (game_command_console_enabled) {
-            return;
-        }
-
-        if (disable_game_input) {
-            return;
-        }
-
-        if (cutscene_active()) {
-            return;
-        }
-
-        if (global_popup_state.message_count > 0) {
-            return;
-        }
-
-        /* combat has it's own special movement rules. */
-        if (state->combat_state.active_combat) {
-            return;
-        }
-
         if (game_get_party_leader() != entity) {
             f32            flock_radius    = TILE_UNIT_SIZE*0.85 * game_get_party_number(entity)*1.12;
             f32            flock_radius_sq = flock_radius*flock_radius;
@@ -727,17 +746,6 @@ void entity_handle_player_controlled(struct game_state* state, struct entity* en
                 entity->velocity.y = direction.y * DEFAULT_VELOCITY;
             }
             entity_look_at(entity, leader->position);
-            return;
-        }
-
-        if (region_zone_animation_block_input) {
-            return;
-        }
-        if (storyboard_active) {
-            return;
-        }
-        /* conversations should be in it's own "module" like region_change_presentation.c */
-        if (state->is_conversation_active) {
             return;
         }
     }

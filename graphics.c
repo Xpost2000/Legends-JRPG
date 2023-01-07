@@ -1032,6 +1032,8 @@ void software_framebuffer_render_commands(struct software_framebuffer* framebuff
 
     thread_pool_synchronize_tasks();
 #endif
+    commands->should_clear_buffer = 0;
+    commands->command_count       = 0;
 }
 
 /* requires an arena because we need an original copy of our framebuffer. */

@@ -13,7 +13,7 @@ EMCC=emcc
 all: package-all-builds build-run-tree packer.exe depack.exe game.exe game-debug.exe
 
 data.bigfile: pack.exe
-	./pack $@ areas dlg res scenes shops
+	./pack $@ worldmaps areas dlg res scenes shops
 pack.exe: bigfilemaker/bigfile_packer.c bigfilemaker/bigfile_def.c
 	$(CC) bigfilemaker/bigfile_packer.c -o $@ -O2
 gamescript_metagen.exe: gamescript_metagen.c
