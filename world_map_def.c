@@ -104,7 +104,28 @@ local string world_tile_layer_strings[] = {
   the world map version id is mainly for structure while the area format is for the sub
   structures.
 */
+enum world_map_listen_event {
+    WORLD_MAP_LISTEN_EVENT_COUNT,
+};
+struct world_map_listener {
+    s32 subscribers;
+    struct lisp_form* subscriber_codes;
+};
+local string world_map_listen_event_form_names[] = {
+    [WORLD_MAP_LISTEN_EVENT_COUNT] = string_literal("(count)"),
+};
+struct world_map_script_data {
+    bool present;
+    string internal_buffer; /* this is just script_string but I want to be able to copy and paste the code for the level area since it's identical. */
+    struct lisp_list* code_forms;
+    struct lisp_form* on_enter;
+    struct lisp_form* on_frame;
+    struct lisp_form* on_exit;
+
+    struct world_map_listener listeners[WORLD_MAP_LISTEN_EVENT_COUNT];
+};
 struct world_map {
+    u32   hash_id;              /* NOTE: used to lazy load them into permenant memory. */
     s32   version;
     s32   area_format_version;
     v2f32 default_player_spawn;
@@ -112,8 +133,13 @@ struct world_map {
     struct       scriptable_tile_layer_property scriptable_layer_properties[WORLD_SCRIPTABLE_TILE_LAYER_COUNT];
     struct tile*                                tile_layers[WORLD_TILE_LAYER_COUNT];
     s32                                         tile_counts[WORLD_TILE_LAYER_COUNT];
+    struct position_marker_list position_markers;
 
     string script_string;
+    /* runtime data */
+    struct world_map_script_data script;
 };
+
+void serialize_world_map(struct memory_arena* arena, struct binary_serializer* serializer, struct world_map* world_map);
 
 #endif

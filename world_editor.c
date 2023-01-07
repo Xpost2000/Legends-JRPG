@@ -172,7 +172,7 @@ local void world_editor_serialize_map(struct binary_serializer* serializer) {
             OS_create_directory(string_literal("temp/"));
             write_string_into_entire_file(string_literal("temp/WORLDMAP_SCRIPT.txt"), world_editor_state->map_script_string);
         } else {
-            struct file_buffer script_filebuffer = OS_read_entire_file(allocator, string_literal("temp/SCRIPT.txt"));
+            struct file_buffer script_filebuffer = OS_read_entire_file(allocator, string_literal("temp/WORLDMAP_SCRIPT.txt"));
             world_editor_state->map_script_string = file_buffer_as_string(&script_filebuffer);
             serialize_string(&allocator, serializer, &world_editor_state->map_script_string);
             file_buffer_free(&script_filebuffer);

@@ -1199,7 +1199,77 @@ struct navigation_path navigation_path_find(struct memory_arena* arena, struct l
     return results;
 }
 
-/* NEEDS TO BE REWRITTEN TO BE CONTEXT DEPENDENT */
+/* NOTE:
+   World maps are permenant memory and never unloaded. Always.
+*/
+void serialize_world_map(struct memory_arena* arena, struct binary_serializer* serializer, struct world_map* world_map) {
+    serialize_s32(serializer, &world_map->version);
+    serialize_s32(serializer, &world_map->area_format_version);
+    serialize_f32(serializer, &world_map->default_player_spawn.x);
+    serialize_f32(serializer, &world_map->default_player_spawn.y);
+
+    s32 area_version_id = world_map->area_format_version;
+    s32 version_id      = world_map->version;
+
+    if (version_id >= 1) {
+        for (s32 tile_layer = 0; tile_layer < WORLD_TILE_LAYER_COUNT; ++tile_layer) {
+            serialize_tile_layer(serializer, area_version_id, &world_map->tile_counts[tile_layer], world_map->tile_layers[tile_layer]);
+        }
+
+        IAllocator allocator = memory_arena_allocator(arena);
+        serialize_string(&allocator, serializer, &world_map->script_string);
+    }
+
+    if (version_id >= 2) {
+        serialize_position_marker_list(serializer, arena, area_version_id, &world_map->position_markers);
+    }
+
+}
+struct world_map* world_map_list_find_existing(struct world_map_list* list, u32 hashid) {
+    for (s32 index = 0; index < list->count; ++index) {
+        struct world_map* current_world_map = list->world_maps + index;
+        if (current_world_map->hash_id == hashid) {
+            return current_world_map;
+        }
+    }
+
+    return NULL;
+}
+
+struct world_map* world_map_list_push(struct world_map_list* list) {
+    return &list->world_maps[list->count++];
+}
+
+local void load_world_map_script(struct memory_arena* arena, struct world_map* area);
+void load_worldmap_from_file(struct game_state* state, string filename) {
+    u32 filehash = hash_bytes_fnv1a((u8*)filename.data, filename.length);
+    string fullpath = string_concatenate(&scratch_arena, string_literal("worldmaps/"), filename);
+
+    {
+        struct world_map* existing = world_map_list_find_existing(&state->world_maps, filehash); 
+        if (existing) {
+            state->current_world_map_id = existing - state->world_maps.world_maps;
+            return;
+        }
+    }
+
+    if (file_exists(fullpath)) {
+        struct file_buffer file = read_entire_file(memory_arena_allocator(&scratch_arena), fullpath);
+        struct binary_serializer serializer = open_read_memory_serializer(file.buffer, file.length);
+        file_buffer_free(&file);
+
+        struct world_map* world_map = world_map_list_push(&state->world_maps);
+
+        serialize_world_map(state->arena, &serializer, world_map);
+        load_world_map_script(state->arena, world_map);
+        serializer_finish(&serializer);
+
+        state->current_world_map_id = world_map - state->world_maps.world_maps;
+    } else {
+        _debugprintf("world map does not exist! (%.*s)", filename.length, filename.data);
+    }
+}
+
 void _serialize_level_area(struct memory_arena* arena, struct binary_serializer* serializer, struct level_area* level, s32 level_type) {
     memory_arena_set_allocation_region_top(arena); {
         _debugprintf("%llu memory used", arena->used + arena->used_top);
@@ -1370,6 +1440,93 @@ void serialize_level_area(struct game_state* state, struct binary_serializer* se
     state->camera.xy.y = player->position.y;
 }
 
+local void load_world_map_script(struct memory_arena* arena, struct world_map* area) {
+    /* NOTE: all of this stuff needs to allocate memory from the top!!! */
+    struct world_map_script_data* script_data = &area->script;
+
+    if (area->script_string.length <= 0) {
+        return;
+    } else {
+        script_data->internal_buffer = area->script_string;
+    }
+
+    script_data->code_forms  = memory_arena_push(arena, sizeof(*script_data->code_forms));
+    *script_data->code_forms = lisp_read_string_into_forms(arena, script_data->internal_buffer);
+
+    {
+        /* search for on_enter, on_frame, on_exit */
+        {
+            for (s32 index = 0;
+                 index < script_data->code_forms->count &&
+                     ((!script_data->on_enter) ||
+                      (!script_data->on_frame) ||
+                      (!script_data->on_exit));
+                 ++index) {
+                struct lisp_form* form = script_data->code_forms->forms + index;
+
+                if (lisp_form_as_function_list_check_fn_name(form, string_literal("on-enter"))) {
+                    if (script_data->on_enter) {
+                        _debugprintf("already assigned event on-enter!");
+                    } else {
+                        script_data->on_enter = form;
+                    }
+                } else if (lisp_form_as_function_list_check_fn_name(form, string_literal("on-frame"))) {
+                    if (script_data->on_frame) {
+                        _debugprintf("already assigned event on-frame");
+                    } else {
+                        script_data->on_frame = form;
+                    }
+                } else if (lisp_form_as_function_list_check_fn_name(form, string_literal("on-ext"))) {
+                    if (script_data->on_exit) {
+                        _debugprintf("already assigned event on-exit");
+                    } else {
+                        script_data->on_exit = form;
+                    }
+                }
+            }
+        }
+
+        {
+            s32 event_listener_type_counters[WORLD_MAP_LISTEN_EVENT_COUNT] = {};
+
+            /* count */
+            {
+                for (s32 index = 0; index < script_data->code_forms->count; ++index) {
+                    struct lisp_form* form = script_data->code_forms->forms + index;
+
+                    for (s32 name_index = 0; name_index < WORLD_MAP_LISTEN_EVENT_COUNT; ++name_index) {
+                        if (lisp_form_as_function_list_check_fn_name(form, level_area_listen_event_form_names[name_index])) {
+                            event_listener_type_counters[name_index] += 1;
+                            _debugprintf("found an event listener: \"%s\"", level_area_listen_event_form_names[name_index].data);
+                        }
+                    }
+                }
+            }
+
+            /* allocate */
+            {
+                for (s32 event_listener_type = 0; event_listener_type < WORLD_MAP_LISTEN_EVENT_COUNT; ++event_listener_type) {
+                    script_data->listeners[event_listener_type].subscriber_codes =
+                        memory_arena_push(arena, sizeof(*script_data->listeners->subscriber_codes) * event_listener_type_counters[event_listener_type]);
+                }
+            }
+
+            /* assign */
+            {
+                for (s32 index = 0; index < script_data->code_forms->count; ++index) {
+                    struct lisp_form* form = script_data->code_forms->forms + index;
+
+                    for (s32 name_index = 0; name_index < LEVEL_AREA_LISTEN_EVENT_COUNT; ++name_index) {
+                        if (lisp_form_as_function_list_check_fn_name(form, level_area_listen_event_form_names[name_index])) {
+                            script_data->listeners[name_index].subscriber_codes[script_data->listeners[name_index].subscribers++] = *form;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 local void load_area_script(struct memory_arena* arena, struct level_area* area, string script_name) {
     /* NOTE: all of this stuff needs to allocate memory from the top!!! */
     struct level_area_script_data* script_data = &area->script;
@@ -1487,7 +1644,9 @@ struct lisp_form level_area_find_listener_for_object(struct game_state* state, s
 /* this is used for cheating or to setup the game I suppose. */
 local void level_area_clean_up(struct level_area* area) {
     if (area->script.present) {
-        file_buffer_free(&area->script.buffer);
+        if (!area->script.isbuiltin) {
+            file_buffer_free(&area->script.buffer);
+        }
         zero_memory(area, sizeof(*area));
     }
 }

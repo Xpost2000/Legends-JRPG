@@ -68,6 +68,7 @@ enum entity_game_script_target_types {
     GAME_SCRIPT_TARGET_TRIGGER,
     /* EVENTS
        ON-TOUCH
+       ON-ACTIVATE
        ** TODO: ON-LEAVE
      */
     GAME_SCRIPT_TARGET_ENTITY,
@@ -77,7 +78,7 @@ enum entity_game_script_target_types {
      */
     GAME_SCRIPT_TARGET_CHEST, 
     /* EVENTS
-       ON_LOOT
+       ON-LOOT
      */
     GAME_SCRIPT_TARGET_TRANSITION_TRIGGER,
     /* EVENTS
@@ -97,15 +98,20 @@ enum entity_game_script_target_types {
        ON-LEAVE
        ROUTINE???
      */
+    GAME_SCRIPT_TARGET_POSITION_MARKER,
+    /* EVENTS
+       NONE
+     */
 };
 local string entity_game_script_target_type_name[] = {
-    [GAME_SCRIPT_TARGET_TRIGGER] = string_literal("trigger"),
-    [GAME_SCRIPT_TARGET_ENTITY]  = string_literal("entity"),
-    [GAME_SCRIPT_TARGET_CHEST]   = string_literal("chest"),
+    [GAME_SCRIPT_TARGET_TRIGGER]            = string_literal("trigger"),
+    [GAME_SCRIPT_TARGET_ENTITY]             = string_literal("entity"),
+    [GAME_SCRIPT_TARGET_CHEST]              = string_literal("chest"),
     [GAME_SCRIPT_TARGET_TRANSITION_TRIGGER] = string_literal("transition-trigger"),
-    [GAME_SCRIPT_TARGET_SAVEPOINT]  = string_literal("savepoint"),
-    [GAME_SCRIPT_TARGET_LIGHT]   = string_literal("light"),
+    [GAME_SCRIPT_TARGET_SAVEPOINT]          = string_literal("savepoint"),
+    [GAME_SCRIPT_TARGET_LIGHT]              = string_literal("light"),
     [GAME_SCRIPT_TARGET_SCRIPTABLE_LAYER]   = string_literal("script-layer"),
+    [GAME_SCRIPT_TARGET_POSITION_MARKER]    = string_literal("pmarker"),
 };
 
 enum activation_type {
@@ -596,6 +602,13 @@ enum current_theme_track_type {
 
 #define MAX_PARTY_MEMBERS (16)
 
+struct world_map_list {
+    s32              count;
+    struct world_map world_maps[64];
+};
+struct world_map* world_map_list_find_existing(struct world_map_list* list, u32 hashid);
+struct world_map* world_map_list_push(struct world_map_list* list);
+
 struct game_state {
     struct memory_arena* arena;
 
@@ -616,6 +629,8 @@ struct game_state {
     s32 in_editor;
 
     struct game_variables variables;
+    struct world_map_list world_maps;
+    s32                   current_world_map_id;
 
     /* name is saved here so we can hash it's name later... */
     char              loaded_area_name[260];
