@@ -859,7 +859,7 @@ struct game_script_typed_ptr game_script_object_handle_decode(struct lisp_form o
                 if (!lisp_form_get_s32(*id_form, &real_id)) {
                     return result;
                 }
-                result.ptr = area->trigger_level_transitions + real_id;
+                result.ptr = area->trigger_level_transitions.transitions + real_id;
             } break;
             case GAME_SCRIPT_TARGET_TRIGGER: {
                 if (!lisp_form_get_s32(*id_form, &real_id)) {

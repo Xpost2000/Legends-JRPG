@@ -1112,7 +1112,7 @@ void update_entities(struct game_state* state, f32 dt, struct entity_iterator it
 
                 /* handle trigger interactions */
                 /* NPCs should not be able to leave areas for now */
-                handle_entity_level_trigger_interactions(state, current_entity, area->trigger_level_transition_count, area->trigger_level_transitions, dt);
+                handle_entity_level_trigger_interactions(state, current_entity, &area->trigger_level_transitions, dt);
                 handle_entity_scriptable_trigger_interactions(state, current_entity, area->script_trigger_count, area->script_triggers, dt);
             } else {
                 current_entity->position.x += current_entity->velocity.x * dt;
@@ -4193,9 +4193,52 @@ void tile_layer_remove_at(struct tile_layer* tile_layer, s32 x, s32 y) {
     }
 }
 
-struct tile* tile_layer_push(struct tile_layer* tile_layer) {
+struct tile* tile_layer_push(struct tile_layer* tile_layer, struct tile tile) {
     struct tile* new_tile = &tile_layer->tiles[tile_layer->count++];
+    *new_tile = tile;
     return new_tile;
+}
+
+struct trigger_level_transition_list trigger_level_transition_list_reserved(struct memory_arena* arena, s32 capacity) {
+    struct trigger_level_transition_list result = {};
+    result.capacity = capacity;
+    result.transitions = memory_arena_push(arena, sizeof(*result.transitions) * capacity);
+    return result;
+}
+struct trigger_level_transition* trigger_level_transition_list_transition_at(struct trigger_level_transition_list* list, v2f32 point) {
+    for (s32 index = 0; index < list->count; ++index) {
+        struct trigger_level_transition* current_trigger = list->transitions + index;
+        if (rectangle_f32_intersect(current_trigger->bounds, rectangle_f32(point.x, point.y, 0.05, 0.05))) {
+            return current_trigger;
+        }
+    }
+
+    return NULL;
+}
+struct trigger_level_transition* trigger_level_transition_list_push(struct trigger_level_transition_list* list, struct trigger_level_transition transition) {
+    struct trigger_level_transition* result = &list->transitions[list->count++];
+    *result = transition;
+    return result;
+}
+void trigger_level_transition_list_remove(struct trigger_level_transition_list* list, s32 index) {
+    list->transitions[index] = list->transitions[--list->count];
+}
+
+void serialize_trigger_level_transition_list(struct binary_serializer* serializer, struct memory_arena* arena, s32 version, struct trigger_level_transition_list* list) {
+    serialize_s32(serializer, &list->count);
+    if (list->capacity == 0) {
+        list->transitions = memory_arena_push(arena, sizeof(*list->transitions) * list->count);
+    } else {
+        assertion(list->count >= list->capacity && "Too many level transitions!");
+    }
+
+    for (s32 index = 0; index < list->count; ++index) {
+        serialize_trigger_level_transition(serializer, version, list->transitions + index);
+    }
+}
+
+void trigger_level_transition_list_clear(struct trigger_level_transition_list* list) {
+    list->count = 0;
 }
 
 #include "entity_ability.c"

@@ -116,11 +116,9 @@ struct editor_state {
     s32           trigger_placement_type;
     s32           entity_placement_type;
 
-    struct tile_layer                     tile_layers[TILE_LAYER_COUNT];
     s32                                   current_tile_layer;
-    s32                                   trigger_level_transition_count;
-    s32                                   trigger_level_transition_capacity;
-    struct trigger_level_transition*      trigger_level_transitions;
+    struct tile_layer                     tile_layers[TILE_LAYER_COUNT];
+    struct trigger_level_transition_list  trigger_level_transitions;
     s32                                   entity_chest_count;
     s32                                   entity_chest_capacity;
     struct entity_chest*                  entity_chests;

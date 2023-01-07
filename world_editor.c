@@ -81,10 +81,7 @@ void world_editor_place_tile_at(v2f32 point_in_tilespace) {
         existing_tile->id                 = world_editor_state->painting_tile_id;
         world_editor_state->last_selected = existing_tile;
     } else {
-        struct tile* new_tile             = tile_layer_push(tile_layer);
-        new_tile->id                      = world_editor_state->painting_tile_id;
-        new_tile->x                       = where_x;
-        new_tile->y                       = where_y;
+        struct tile* new_tile       = tile_layer_push(tile_layer, tile(world_editor_state->painting_tile_id, 0, where_x, where_y));
         world_editor_state->last_selected = new_tile;
     }
 }
@@ -99,7 +96,7 @@ void world_editor_remove_tile_at(v2f32 point_in_tilespace) {
         editor_state->last_selected = 0;
     }
 
-    tile_layer_remove(tile_layer, tile - tile_layer->tiles);
+    if (tile) tile_layer_remove(tile_layer, tile - tile_layer->tiles);
 }
 
 local void world_editor_brush_place_tile_at(v2f32 tile_space_mouse_location) {

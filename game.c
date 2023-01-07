@@ -1346,12 +1346,7 @@ void _serialize_level_area(struct memory_arena* arena, struct binary_serializer*
 
         if (level->version >= 1) {
             _debugprintf("reading level transitions");
-            serialize_s32(serializer, &level->trigger_level_transition_count);
-            _debugprintf("%d level transitions to read", level->trigger_level_transition_count);
-            level->trigger_level_transitions = memory_arena_push(arena, sizeof(*level->trigger_level_transitions) * level->trigger_level_transition_count);
-            for (s32 trigger_index = 0; trigger_index < level->trigger_level_transition_count; ++trigger_index) {
-                serialize_trigger_level_transition(serializer, level->version, level->trigger_level_transitions + trigger_index);
-            }
+            serialize_trigger_level_transition_list(serializer, arena, level->version, &level->trigger_level_transitions);
         }
         if (level->version >= 2) {
             _debugprintf("reading containers");
@@ -2987,13 +2982,13 @@ void load_level_queued_for_transition(void* callback_data) {
     }
 }
 
-void handle_entity_level_trigger_interactions(struct game_state* state, struct entity* entity, s32 trigger_level_transition_count, struct trigger_level_transition* trigger_level_transitions, f32 dt) {
+void handle_entity_level_trigger_interactions(struct game_state* state, struct entity* entity, struct trigger_level_transition_list* trigger_level_transitions, f32 dt) {
     if (!(entity->flags & ENTITY_FLAGS_PLAYER_CONTROLLED))
         return;
 
     struct rectangle_f32 entity_collision_bounds = rectangle_f32_scale(entity_rectangle_collision_bounds(entity), 1.0/TILE_UNIT_SIZE);
-    for (s32 index = 0; index < trigger_level_transition_count; ++index) {
-        struct trigger_level_transition* current_trigger = trigger_level_transitions + index;
+    for (s32 index = 0; index < trigger_level_transitions->count; ++index) {
+        struct trigger_level_transition* current_trigger = trigger_level_transitions->transitions + index;
         v2f32 spawn_location       = current_trigger->spawn_location;
         u8    new_facing_direction = current_trigger->new_facing_direction;
 

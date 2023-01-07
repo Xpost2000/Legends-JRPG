@@ -164,8 +164,21 @@ struct tile {
     /* old: layer field */
     s16 reserved_;
 };
+struct tile tile(s32 id, u32 flags, s16 x, s16 y) {
+    struct tile result = {
+        .id    = id,
+        .flags = flags,
+        .x     = x,
+        .y     = y,
+    };
+    return result;
+}
 void serialize_tile(struct binary_serializer* serializer, s32 version, struct tile* tile);
 
+/*
+  I don't know why I still keep this around...
+  I want to introduce flags and have some events on these...
+*/
 struct trigger_level_transition { /* TODO: Allow these to also be registered "on-trigger" events, except these can return a final value (T/F) for whether you can allow the transition */
     /* assume to be in tile coordinates. */
     struct rectangle_f32 bounds;
@@ -175,6 +188,26 @@ struct trigger_level_transition { /* TODO: Allow these to also be registered "on
     u8    new_facing_direction;
     v2f32 spawn_location;
 };
+struct trigger_level_transition trigger_level_transition(struct rectangle_f32 bounds, string target_level, u8 new_facing_direction, v2f32 spawn_location) {
+    struct trigger_level_transition result = {
+        .bounds = bounds,
+        .new_facing_direction = new_facing_direction,
+        .spawn_location = spawn_location,
+    };
+    copy_string_into_cstring(target_level, result.target_level, array_count(result.target_level));
+    return result;
+}
+
+struct trigger_level_transition_list {
+    s32                              capacity;
+    s32                              count;
+    struct trigger_level_transition* transitions;
+};
+struct trigger_level_transition_list trigger_level_transition_list_reserved(struct memory_arena* arena, s32 capacity);
+struct trigger_level_transition*     trigger_level_transition_list_transition_at(struct trigger_level_transition_list* list, v2f32 point);
+struct trigger_level_transition*     trigger_level_transition_list_push(struct trigger_level_transition_list* list, struct trigger_level_transition transition);
+void                                 trigger_level_transition_list_remove(struct trigger_level_transition_list* list, s32 index);
+void                                 trigger_level_transition_list_clear(struct trigger_level_transition_list* list);
 
 struct level_area_navigation_map_tile {
     f32 score_modifier; 
@@ -404,7 +437,7 @@ void               tile_layer_clear(struct tile_layer* tile_layer);
 void               tile_layer_remove(struct tile_layer* tile_layer, s32 index);
 void               tile_layer_remove_at(struct tile_layer* tile_layer, s32 x, s32 y);
 struct tile*       tile_layer_tile_at(struct tile_layer* tile_layer, s32 x, s32 y);
-struct tile*       tile_layer_push(struct tile_layer* tile_layer);
+struct tile*       tile_layer_push(struct tile_layer* tile_layer, struct tile);
 
 struct level_area { /* this cannot be automatically serialized because of the unpack stage. I can use macros to reduce the burden though */
     /* keep reference of a name. */
@@ -420,8 +453,7 @@ struct level_area { /* this cannot be automatically serialized because of the un
       Address in script file as (trigger (id) or (name-string?(when supported.)))
      */
 
-    s32                                   trigger_level_transition_count;
-    struct trigger_level_transition*      trigger_level_transitions SERIALIZE_VERSIONS(level, 1 to CURRENT) VARIABLE_ARRAY(trigger_level_transition_count);
+    struct trigger_level_transition_list  trigger_level_transitions;
     s32                                   entity_chest_count;
     struct entity_chest*                  chests SERIALIZE_VERSIONS(level, 2 to CURRENT) VARIABLE_ARRAY(entity_chest_count);
     s32                                   script_trigger_count;
@@ -556,6 +588,9 @@ void serialize_tile(struct binary_serializer* serializer, s32 version, struct ti
 void serialize_battle_safe_square(struct binary_serializer* serializer, s32 version, struct level_area_battle_safe_square* square);
 void serialize_level_area_entity_savepoint(struct binary_serializer* serializer, s32 version, struct level_area_savepoint* entity);
 void serialize_generic_trigger(struct binary_serializer* serializer, s32 version, struct trigger* trigger);
+
+void serialize_trigger_level_transition_list(struct binary_serializer* serializer, struct memory_arena* arena, s32 version, struct trigger_level_transition_list* list);
 void serialize_trigger_level_transition(struct binary_serializer* serializer, s32 version, struct trigger_level_transition* trigger);
+
 void serialize_level_area_entity(struct binary_serializer* serializer, s32 version, struct level_area_entity* entity);
 #endif

@@ -54,7 +54,7 @@ void editor_clear_all_allocations(struct editor_state* state) {
     for (s32 index = 0; index < TILE_LAYER_COUNT; ++index) {
         tile_layer_clear(&state->tile_layers[index]);
     }
-    state->trigger_level_transition_count = 0;
+    trigger_level_transition_list_clear(&state->trigger_level_transitions);
     state->entity_chest_count             = 0;
     state->generic_trigger_count          = 0;
     state->entity_count                   = 0;
@@ -74,7 +74,6 @@ void editor_clear_all(struct editor_state* state) {
 
 void editor_initialize(struct editor_state* state) {
     state->arena = &editor_arena;
-    state->trigger_level_transition_capacity = 1024*2;
     state->entity_chest_capacity             = 1024*2;
     state->generic_trigger_capacity          = 1024*2;
     state->entity_savepoint_capacity         = 128;
@@ -92,7 +91,7 @@ void editor_initialize(struct editor_state* state) {
         }
     }
 
-    state->trigger_level_transitions                = memory_arena_push(state->arena, state->trigger_level_transition_capacity * sizeof(*state->trigger_level_transitions));
+    state->trigger_level_transitions                = trigger_level_transition_list_reserved(state->arena, 2048);
     state->entity_chests                            = memory_arena_push(state->arena, state->entity_chest_capacity             * sizeof(*state->entity_chests));
     state->generic_triggers                         = memory_arena_push(state->arena, state->generic_trigger_capacity          * sizeof(*state->generic_triggers));
     state->entities                                 = memory_arena_push(state->arena, state->entity_capacity                   * sizeof(*state->entities));
@@ -176,10 +175,7 @@ void editor_serialize_area(struct binary_serializer* serializer) {
     }
 
     if (version_id >= 1) {
-        serialize_s32(serializer, &editor_state->trigger_level_transition_count);
-        for (s32 trigger_index = 0; trigger_index < editor_state->trigger_level_transition_count; ++trigger_index) {
-            serialize_trigger_level_transition(serializer, version_id, editor_state->trigger_level_transitions + trigger_index);
-        }
+        serialize_trigger_level_transition_list(serializer, editor_state->arena, version_id, &editor_state->trigger_level_transitions);
     }
     if (version_id >= 2) {
         serialize_s32(serializer, &editor_state->entity_chest_count);
@@ -232,7 +228,7 @@ void editor_remove_tile_at(v2f32 point_in_tilespace) {
         editor_state->last_selected = 0;
     }
 
-    tile_layer_remove(tile_layer, tile - tile_layer->tiles);
+    if (tile) tile_layer_remove(tile_layer, tile - tile_layer->tiles);
 }
 
 void editor_remove_battle_tile_at(v2f32 point_in_tilespace) {
@@ -274,13 +270,11 @@ void editor_remove_scriptable_transition_trigger_at(v2f32 point_in_tilespace) {
     }
 }
 void editor_remove_level_transition_trigger_at(v2f32 point_in_tilespace) {
-    for (s32 index = 0; index < editor_state->trigger_level_transition_count; ++index) {
-        struct trigger_level_transition* current_trigger = editor_state->trigger_level_transitions + index;
-
-        if (rectangle_f32_intersect(current_trigger->bounds, rectangle_f32(point_in_tilespace.x, point_in_tilespace.y, 0.25, 0.25))) {
-            editor_state->trigger_level_transitions[index] = editor_state->trigger_level_transitions[--editor_state->trigger_level_transition_count];
-            return;
-        }
+    struct trigger_level_transition* existing_trigger = trigger_level_transition_list_transition_at(&editor_state->trigger_level_transitions, point_in_tilespace);
+    if (existing_trigger == editor_state->last_selected)  {
+        editor_state->last_selected = 0;
+    } else {
+        trigger_level_transition_list_remove(&editor_state->trigger_level_transitions, existing_trigger - editor_state->trigger_level_transitions.transitions);
     }
 }
 
@@ -295,10 +289,7 @@ void editor_place_tile_at(v2f32 point_in_tilespace) {
         existing_tile->id           = editor_state->painting_tile_id;
         editor_state->last_selected = existing_tile;
     } else {
-        struct tile* new_tile       = tile_layer_push(tile_layer);
-        new_tile->id                = editor_state->painting_tile_id;
-        new_tile->x                 = where_x;
-        new_tile->y                 = where_y;
+        struct tile* new_tile       = tile_layer_push(tile_layer, tile(editor_state->painting_tile_id, 0, where_x, where_y));
         editor_state->last_selected = new_tile;
     }
 }
@@ -342,27 +333,22 @@ void editor_place_or_drag_level_transition_trigger(v2f32 point_in_tilespace) {
         return; 
     }
 
-    {
-        for (s32 index = 0; index < editor_state->trigger_level_transition_count; ++index) {
-            struct trigger_level_transition* current_trigger = editor_state->trigger_level_transitions + index;
-
-            if (rectangle_f32_intersect(current_trigger->bounds, rectangle_f32(point_in_tilespace.x, point_in_tilespace.y, 0.25, 0.25))) {
-                editor_state->last_selected = current_trigger;
-                set_drag_candidate_rectangle(&editor_state->drag_data, current_trigger, get_mouse_in_tile_space(&editor_state->camera, SCREEN_WIDTH, SCREEN_HEIGHT),
-                                             v2f32(current_trigger->bounds.x, current_trigger->bounds.y),
-                                             v2f32(current_trigger->bounds.w, current_trigger->bounds.h));
-                return;
-            }
-        }
-
-
-        /* otherwise no touch, place a new one at default size 1 1 */
-        struct trigger_level_transition* new_transition_trigger = &editor_state->trigger_level_transitions[editor_state->trigger_level_transition_count++];
-        new_transition_trigger->bounds.x = point_in_tilespace.x;
-        new_transition_trigger->bounds.y = point_in_tilespace.y;
-        new_transition_trigger->bounds.w = 1;
-        new_transition_trigger->bounds.h = 1;
-        editor_state->last_selected      = new_transition_trigger;
+    struct trigger_level_transition* existing_trigger = trigger_level_transition_list_transition_at(&editor_state->trigger_level_transitions, point_in_tilespace);
+    if (existing_trigger) {
+        editor_state->last_selected = existing_trigger;
+        set_drag_candidate_rectangle(&editor_state->drag_data, existing_trigger, get_mouse_in_tile_space(&editor_state->camera, SCREEN_WIDTH, SCREEN_HEIGHT),
+                                     v2f32(existing_trigger->bounds.x, existing_trigger->bounds.y),
+                                     v2f32(existing_trigger->bounds.w, existing_trigger->bounds.h));
+    } else {
+        editor_state->last_selected = trigger_level_transition_list_push(
+            &editor_state->trigger_level_transitions,
+            trigger_level_transition(
+                rectangle_f32(point_in_tilespace.x, point_in_tilespace.y, 1, 1),
+                string_literal(""),
+                DIRECTION_RETAINED,
+                v2f32(0, 0)
+            )
+        );
     }
 }
 
@@ -1870,8 +1856,8 @@ void update_and_render_editor(struct software_framebuffer* framebuffer, f32 dt) 
             }
 
             struct font_cache* font = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_BLUE]);
-            for (s32 trigger_level_transition_index = 0; trigger_level_transition_index < editor_state->trigger_level_transition_count; ++trigger_level_transition_index) {
-                struct trigger_level_transition* current_trigger = editor_state->trigger_level_transitions + trigger_level_transition_index;
+            for (s32 trigger_level_transition_index = 0; trigger_level_transition_index < editor_state->trigger_level_transitions.count; ++trigger_level_transition_index) {
+                struct trigger_level_transition* current_trigger = editor_state->trigger_level_transitions.transitions + trigger_level_transition_index;
                 if (editor_state->last_selected == current_trigger) {
                     render_commands_push_quad(&commands, rectangle_f32(current_trigger->bounds.x * TILE_UNIT_SIZE, current_trigger->bounds.y * TILE_UNIT_SIZE,
                                                                        current_trigger->bounds.w * TILE_UNIT_SIZE, current_trigger->bounds.h * TILE_UNIT_SIZE),
