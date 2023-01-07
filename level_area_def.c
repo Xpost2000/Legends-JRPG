@@ -23,8 +23,9 @@
    Version 10: Format fix
    Version 11: Battle Safe Square
    Verions 12: AreaName BuiltIn & BuiltIn scripts & Extra Tile Layers
+   Version 13: Position Markers
 */
-#define CURRENT_LEVEL_AREA_VERSION (12)
+#define CURRENT_LEVEL_AREA_VERSION (13)
 
 #define SCRIPTABLE_TILE_LAYER_COUNT (32)
 enum scriptable_tile_layer_flags {
@@ -125,6 +126,33 @@ local string tile_layer_strings[] = {
     string_literal("(scriptable 31)"),
     string_literal("(count)"),
 };
+
+#define AREA_MARKER_SCRIPTNAME_MAX (32)
+struct position_marker {
+    v2f32 position;
+    v2f32 scale;
+    char  name[AREA_MARKER_SCRIPTNAME_MAX];
+};
+struct position_marker position_marker(string name, v2f32 position) {
+    struct position_marker result = {};
+    result.position = position;
+    result.scale    = v2f32(1,1);
+    copy_string_into_cstring(name, result.name, array_count(result.name));
+    return result;
+}
+
+struct position_marker_list {
+    s32 capacity;
+    s32 count;
+    struct position_marker* markers;
+};
+
+struct position_marker* position_marker_list_find_marker_with_name(struct position_marker_list* list, string name);
+struct position_marker* position_marker_list_find_marker_at(struct position_marker_list* list, v2f32 where);
+struct position_marker* position_marker_list_find_marker_at_with_rect(struct position_marker_list* list, v2f32 where);
+struct position_marker* position_marker_list_push(struct position_marker_list* list, struct position_marker marker);
+void position_marker_list_remove(struct position_marker_list* list, s32 index);
+struct position_marker_list position_marker_list_reserved(struct memory_arena* arena, s32 capacity);
 
 struct tile {
     s32 id;
@@ -392,6 +420,14 @@ struct level_area { /* this cannot be automatically serialized because of the un
     struct entity_savepoint*              savepoints SERIALIZE_VERSIONS(level, 9 to CURRENT) VARIABLE_ARRAY(entity_savepoint_count) PACKED_AS(struct level_area_savepoint);
     s32                                   battle_safe_square_count;
     struct level_area_battle_safe_square* battle_safe_squares SERIALIZE_VERSIONS(level, 11 to CURRENT) VARIABLE_ARRAY(battle_safe_square_count);
+    /*
+      NOTE:
+      ... It's a bit too late for me to start doing something like this,
+      considering it's a bit different compared to the rest of the stuff ain't it?
+
+      Oh well. I know this is heavily inconsistent right now but I'll fix it in the future!
+     */
+    struct position_marker_list           position_markers;
 
     /* runtime data */
     struct level_area_script_data    script;
@@ -498,6 +534,9 @@ bool level_area_any_obstructions_at(struct level_area* area, s32 x, s32 y) {
 /* this thing is variably sized, so it needs an arena */
 /* also because the game doesn't use dynamic memory often, there has to be a slightly different allocator and container for the editor version */
 /* void serialize_tilemap_object_level_editor(struct binary_serializer* serializer, s32 version, struct level_area_tilemap_object* tilemap_object, struct memory_arena* arena); */
+
+void serialize_position_marker_list(struct binary_serializer* serializer, struct memory_arena* arena, s32 version, struct position_marker_list* list);
+void serialize_position_marker(struct binary_serializer* serializer, s32 version, struct position_marker* marker);
 
 void serialize_tile(struct binary_serializer* serializer, s32 version, struct tile* tile);
 void serialize_tile_layer(struct binary_serializer* serializer, s32 version, s32* counter, struct tile* tile);

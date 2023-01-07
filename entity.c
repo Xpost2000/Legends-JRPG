@@ -3319,6 +3319,86 @@ struct entity_loot_table* entity_lookup_loot_table(struct entity_database* entit
     return entity_database->loot_tables + loot_table_id_index;
 }
 
+struct position_marker* position_marker_list_find_marker_with_name(struct position_marker_list* list, string name) {
+    for (s32 marker_index = 0; marker_index < list->count; ++marker_index) {
+        struct position_marker* marker = list->markers + marker_index;
+
+        if (string_equal(string_from_cstring(marker->name), name)) {
+            return marker;
+        }
+    }
+
+    return NULL;
+}
+
+struct position_marker* position_marker_list_find_marker_at_with_rect(struct position_marker_list* list, v2f32 where) {
+    for (s32 marker_index = 0; marker_index < list->count; ++marker_index) {
+        struct position_marker* marker = list->markers + marker_index;
+
+        if (rectangle_f32_intersect(rectangle_f32(where.x, where.y, 0.05, 0.05), rectangle_f32(marker->position.x, marker->position.y, 1, 1))) {
+            return marker;
+        }
+    }
+
+    return NULL;
+}
+
+struct position_marker* position_marker_list_find_marker_at(struct position_marker_list* list, v2f32 where) {
+    for (s32 marker_index = 0; marker_index < list->count; ++marker_index) {
+        struct position_marker* marker = list->markers + marker_index;
+
+        if (marker->position.x == where.x && marker->position.y == where.y) {
+            return marker;
+        }
+    }
+
+    return NULL;
+}
+
+struct position_marker* position_marker_list_push(struct position_marker_list* list, struct position_marker marker) {
+    list->markers[list->count++] = marker;
+    return &list->markers[list->count-1];
+}
+
+void position_marker_list_remove(struct position_marker_list* list, s32 index) {
+    list->markers[index] = list->markers[--list->count];
+}
+
+struct position_marker_list position_marker_list_reserved(struct memory_arena* arena, s32 capacity) {
+    struct position_marker_list result = {};
+    result.capacity = capacity;
+    result.markers  = memory_arena_push(arena, sizeof(*result.markers) * capacity);
+    return result;
+}
+
+void serialize_position_marker_list(struct binary_serializer* serializer, struct memory_arena* arena, s32 version, struct position_marker_list* list) {
+    serialize_s32(serializer, &list->count);
+    if (list->capacity != 0) {
+        list->markers = memory_arena_push(arena, sizeof(*list->markers) * list->count);
+    } else {
+        assertion(list->count > list->capacity && "That's bad... Cannot store this many markers!");
+    }
+
+
+    for (s32 marker_index = 0; marker_index < list->count; ++marker_index) {
+        serialize_position_marker(serializer, version, &list->markers[marker_index]);
+    }
+}
+
+void serialize_position_marker(struct binary_serializer* serializer, s32 version, struct position_marker* marker) {
+    marker->scale = v2f32(1,1);
+    switch (version) {
+        case 13: {
+            serialize_f32(serializer, &marker->position.x);
+            serialize_f32(serializer, &marker->position.y);
+            serialize_bytes(serializer, marker->name, array_count(marker->name));
+        } break;
+        default: {
+            unimplemented("No support for position markers yet");
+        } break;
+    }
+}
+
 void serialize_trigger_level_transition(struct binary_serializer* serializer, s32 version, struct trigger_level_transition* trigger) {
     switch (version) {
         default:
