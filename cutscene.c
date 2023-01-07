@@ -53,7 +53,7 @@ void cutscene_load_area(string path) {
             {
                 struct level_area* level = &cutscene_state.loaded_area;
                 { /* Entities */
-                    level->entities = entity_list_create(&cutscene_state.arena, level->load_entities.count, ENTITY_LIST_STORAGE_TYPE_PER_LEVEL);
+                    level->entities = entity_list_create(&cutscene_state.arena, level->load_entities.count, ENTITY_LIST_STORAGE_TYPE_PER_LEVEL_CUTSCENE);
 
                     for (s32 entity_index = 0; entity_index < level->load_entities.count; ++entity_index) {
                         struct level_area_entity* current_packed_entity = level->load_entities.entities + entity_index;

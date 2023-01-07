@@ -919,6 +919,7 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                 }
             }
 
+            /* NOTE: this is sometimes broken... */
             entity_id enemy_id = target_display_list_indices[global_battle_ui_state.selection];
 
             if (!entity_id_equal(enemy_id, global_battle_ui_state.currently_selected_entity_id)) {
@@ -1688,7 +1689,7 @@ local void update_and_render_battle_ui(struct game_state* state, struct software
                 dt,
                 string_literal("ROUND END!"),
                 4,
-                BATTLE_UI_FADE_IN_DARK
+                BATTLE_UI_FADE_IN_DARK_END_TURN
             );
         } break;
 
