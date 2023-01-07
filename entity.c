@@ -4241,5 +4241,46 @@ void serialize_trigger_level_transition_list(struct binary_serializer* serialize
 void trigger_level_transition_list_clear(struct trigger_level_transition_list* list) {
     list->count = 0;
 }
+struct entity_chest_list entity_chest_list_reserved(struct memory_arena* arena, s32 capacity);
+struct entity_chest* entity_chest_list_push(struct entity_chest_list* list);
+struct entity_chest* entity_chest_list_find_at(struct entity_chest_list* list, v2f32 position);
+void entity_chest_list_remove(struct entity_chest_list* list, s32 index);
+void entity_chest_list_clear(struct entity_chest_list* list);
+void serialize_entity_chest_list(struct binary_serializer* serializer, struct memory_arena* arena, s32 version, struct entity_chest_list* list);
+
+struct trigger_list trigger_list_reserved(struct memory_arena* arena, s32 capacity);
+struct trigger* trigger_list_transition_at(struct trigger_list* list, v2f32 point);
+struct trigger* trigger_list_push(struct trigger_list* list);
+void trigger_list_remove(struct trigger_list* list, s32 index);
+void trigger_list_clear(struct trigger_list* list);
+void serialize_trigger_list(struct binary_serializer* serializer, struct memory_arena* arena, s32 version, struct trigger_list* list);
+
+struct light_list light_list_reserved(struct memory_arena* arena, s32 capacity);
+struct light* light_list_push(struct light_list* list, struct light_def light);
+struct light* light_list_find_light_at(struct light_list* list, v2f32 point);
+void light_list_remove(struct light_list* list, s32 index);
+void light_list_clear(struct light_list* list);
+void serialize_light_list(struct binary_serializer* serializer, struct memory_arena* arena, s32 version, struct light_list* list);
+
+struct level_area_savepoint_list level_area_savepoint_list_reserved(struct memory_arena* arena, s32 capacity);
+void level_area_savepoint_list_clear(struct level_area_savepoint_list* list);
+struct level_area_savepoint* level_area_savepoint_list_push(struct level_area_savepoint_list* list, struct level_area_savepoint savepoint);
+struct level_area_savepoint* level_area_savepoint_list_find_savepoint_at(struct level_area_savepoint_list* list, v2f32 point);
+void level_area_savepoint_list_remove(struct level_area_savepoint_list* list, s32 index);
+void serialize_level_area_savepoint_list(struct binary_serializer* serializer, struct memory_arena* arena, s32 version, struct level_area_savepoint_list* list);
+
+struct level_area_battle_safe_square_list level_area_battle_safe_square_list_reserved(struct memory_arena* arena, s32 capacity);
+struct level_area_battle_safe_square* level_area_battle_safe_square_list_push(struct level_area_battle_safe_square_list* list, struct level_area_battle_safe_square square);
+struct level_area_battle_safe_square* level_area_battle_safe_square_list_tile_at(struct level_area_battle_safe_square_list* list, s32 x, s32 y);
+void level_area_battle_safe_square_list_remove(struct level_area_battle_safe_square_list* list, s32 index);
+void level_area_battle_safe_square_list_clear(struct level_area_battle_safe_square_list* list);
+void level_area_battle_safe_square_list_remove_at(struct level_area_battle_safe_square_list* list, s32 x, s32 y);
+void serialize_level_area_battle_safe_square_list(struct binary_serializer* serializer, struct memory_arena* arena, s32 version, struct level_area_battle_safe_square_list* list);
+
+struct level_area_entity_list level_area_entity_list_reserved(struct memory_arena* arena, s32 capacity);
+struct level_area_entity* level_area_entity_list_push(struct level_area_entity_list* list);
+struct level_area_entity* level_area_entity_list_find_entity_at(struct level_area_entity_list* list, v2f32 point);
+void level_area_entity_list_remove(struct level_area_entity_list* list, s32 index);
+void level_area_entity_list_clear(struct level_area_entity_list* list);
 
 #include "entity_ability.c"

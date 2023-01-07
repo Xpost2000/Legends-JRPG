@@ -233,6 +233,25 @@ struct level_area_savepoint {
     v2f32 scale;
     u32   flags;
 };
+struct level_area_savepoint level_area_savepoint(v2f32 position, u32 flags) {
+    struct level_area_savepoint result = {
+        .position = position,
+        .scale = v2f32(1,1),
+        .flags = flags,
+    };
+    return result;
+}
+struct level_area_savepoint_list {
+    s32 capacity;
+    s32 count;
+    struct level_area_savepoint* savepoints;
+};
+struct level_area_savepoint_list level_area_savepoint_list_reserved(struct memory_arena* arena, s32 capacity);
+void                             level_area_savepoint_list_clear(struct level_area_savepoint_list* list);
+struct level_area_savepoint*     level_area_savepoint_list_push(struct level_area_savepoint_list* list, struct level_area_savepoint savepoint);
+struct level_area_savepoint*     level_area_savepoint_list_find_savepoint_at(struct level_area_savepoint_list* list, v2f32 point);
+void                             level_area_savepoint_list_remove(struct level_area_savepoint_list* list, s32 index);
+void                             serialize_level_area_savepoint_list(struct binary_serializer* serializer, struct memory_arena* arena, s32 version, struct level_area_savepoint_list* list);
 
 /* need to determine how to make an accurate id system for this */
 /* I should honestly reduce the size, but on average these things(The level_areas on disk) are small anyways, so I'm not going to be too concerned about this */
@@ -260,53 +279,53 @@ enum level_area_entity_spawn_flags {
      */
     /* LEVEL_AREA_ENTITY_SPAWN_FLAGS_RANDOM_SPAWN = BIT(1), */
 };
-struct level_area_entity UNPACK_INTO(struct entity) {
+struct level_area_entity {
     /*
       This is only a rectangle because it allows me to use it for the drag candidate system in the
       editor.
       
       we always use the model size when unpacking.
      */
-    SERIALIZE_VERSIONS(level, 5 to CURRENT) v2f32 position;
-    SERIALIZE_VERSIONS(level, 5 to CURRENT) v2f32 scale;
+    v2f32 position;
+    v2f32 scale;
 
     /* look this up in the entity dictionary */
     /* I would like to hash but don't want to risk changing hashing later. */
     /* NOTE: Turns out I don't hash in the DB, so we could keep an index but that requires data changes. */
-    SERIALIZE_VERSIONS(level, 5 to CURRENT) char  base_name[ENTITY_BASENAME_LENGTH_MAX];
-    SERIALIZE_VERSIONS(level, 5 to CURRENT) char  script_name[ENTITY_BASENAME_LENGTH_MAX]; /* Use this to refer for game script reasons */
-    SERIALIZE_VERSIONS(level, 5 to CURRENT) char  dialogue_file[ENTITY_BASENAME_LENGTH_MAX];
+    char  base_name[ENTITY_BASENAME_LENGTH_MAX];
+    char  script_name[ENTITY_BASENAME_LENGTH_MAX]; /* Use this to refer for game script reasons */
+    char  dialogue_file[ENTITY_BASENAME_LENGTH_MAX];
 
     /* not editted */
     /* Currently not editted. */
-    SERIALIZE_VERSIONS(level, 5 to CURRENT) s32 health_override UNPACK_INTO(health.value, DEFAULT(-1, 0)); /* -1 == default */
-    SERIALIZE_VERSIONS(level, 5 to CURRENT) s32 magic_override  UNPACK_INTO(magic.value,  DEFAULT(-1, 0));  /* -1 == default */
+    s32 health_override; /* -1 == default */
+    s32 magic_override;  /* -1 == default */
 
-    SERIALIZE_VERSIONS(level, 5 to CURRENT) u8  facing_direction;
+    u8  facing_direction;
 
-#if 0
-    SERIALIZE_VERSIONS(level, 8 to 10)u8 pad0;
-    SERIALIZE_VERSIONS(level, 8 to 10)u8 pad1;
-    SERIALIZE_VERSIONS(level, 8 to 10)u8 pad2;
-#endif
-
-    /* TODO: none of the flags are editted */
-    /* for the most part look at enum entity_flags */
-    SERIALIZE_VERSIONS(level, 5 to CURRENT) u32 flags;
+    u32 flags;
     /* look at enum entity_ai_flags */
-    SERIALIZE_VERSIONS(level, 5 to CURRENT) u32 ai_flags;
-    SERIALIZE_VERSIONS(level, 5 to CURRENT) u32 spawn_flags;
+    u32 ai_flags;
+    u32 spawn_flags;
 
     /* TODO not editted yet */
     /* use for quicker script referencing */
     /* not used? */
-    SERIALIZE_VERSIONS(level, 5,6,8 to CURRENT) u32 group_ids[16];
-#if 0
-    SERIALIZE_VERSIONS(level, 5,6) u8 unused[128];
-#endif
-    /* ???  */
-    SERIALIZE_VERSIONS(level, 8 to CURRENT) s32 loot_table_id_index;
+    u32 group_ids[16];
+    s32 loot_table_id_index;
 };
+struct level_area_entity_list {
+    s32                       capacity;
+    s32                       count;
+    struct level_area_entity* entities;
+};
+
+struct level_area_entity_list level_area_entity_list_reserved(struct memory_arena* arena, s32 capacity);
+struct level_area_entity*     level_area_entity_list_push(struct level_area_entity_list* list);
+struct level_area_entity*     level_area_entity_list_find_entity_at(struct level_area_entity_list* list, v2f32 point);
+void                          level_area_entity_list_remove(struct level_area_entity_list* list, s32 index);
+void                          level_area_entity_list_clear(struct level_area_entity_list* list);
+
 
 void serialize_level_area_entity_savepoint(struct binary_serializer* serializer, s32 version, struct level_area_savepoint* entity);
 void serialize_level_area_entity(struct binary_serializer* serializer, s32 version, struct level_area_entity* entity);
@@ -380,6 +399,16 @@ struct trigger {
     u8                   active;
     char                 unique_name[32];
 };
+struct trigger_list {
+    s32             capacity;
+    s32             count;
+    struct trigger* triggers;
+};
+struct trigger_list trigger_list_reserved(struct memory_arena* arena, s32 capacity);
+struct trigger*     trigger_list_transition_at(struct trigger_list* list, v2f32 point);
+struct trigger*     trigger_list_push(struct trigger_list* list);
+void                trigger_list_remove(struct trigger_list* list, s32 index);
+void                trigger_list_clear(struct trigger_list* list);
 
 /*
   Since levels may have triggers and lots of other things, we want to avoid
@@ -410,7 +439,27 @@ struct level_area_battle_safe_square { /* thankfully these are obvious to implem
     /* runtime data, associate with a battle zone */
     u16                            island_index;
 };
+struct level_area_battle_safe_square level_area_battle_safe_square(s32 x, s32 y) {
+    struct level_area_battle_safe_square result = {
+        .x = x,
+        .y = y,
+    };
+    return result;
+}
 
+struct level_area_battle_safe_square_list {
+    s32 capacity;
+    s32 count;
+    struct level_area_battle_safe_square* squares;
+};
+
+struct level_area_battle_safe_square_list level_area_battle_safe_square_list_reserved(struct memory_arena* arena, s32 capacity);
+struct level_area_battle_safe_square*     level_area_battle_safe_square_list_push(struct level_area_battle_safe_square_list* list, struct level_area_battle_safe_square square);
+struct level_area_battle_safe_square*     level_area_battle_safe_square_list_tile_at(struct level_area_battle_safe_square_list* list, s32 x, s32 y);
+void                                      level_area_battle_safe_square_list_remove(struct level_area_battle_safe_square_list* list, s32 index);
+void                                      level_area_battle_safe_square_list_clear(struct level_area_battle_safe_square_list* list);
+void                                      level_area_battle_safe_square_list_remove_at(struct level_area_battle_safe_square_list* list, s32 x, s32 y);
+void                                      serialize_level_area_battle_safe_square_list(struct binary_serializer* serializer, struct memory_arena* arena, s32 version, struct level_area_battle_safe_square_list* list);
 
 struct level_area_tilemap_tile {
     s32 id;
@@ -439,9 +488,9 @@ void               tile_layer_remove_at(struct tile_layer* tile_layer, s32 x, s3
 struct tile*       tile_layer_tile_at(struct tile_layer* tile_layer, s32 x, s32 y);
 struct tile*       tile_layer_push(struct tile_layer* tile_layer, struct tile);
 
-struct level_area { /* this cannot be automatically serialized because of the unpack stage. I can use macros to reduce the burden though */
+struct level_area {
     /* keep reference of a name. */
-    u32          version SERIALIZE_VERSIONS(level, 1 to CURRENT);
+    u32          version;
     v2f32        default_player_spawn;
 
     struct scriptable_tile_layer_property scriptable_layer_properties[SCRIPTABLE_TILE_LAYER_COUNT];
@@ -453,26 +502,37 @@ struct level_area { /* this cannot be automatically serialized because of the un
       Address in script file as (trigger (id) or (name-string?(when supported.)))
      */
 
-    struct trigger_level_transition_list  trigger_level_transitions;
-    s32                                   entity_chest_count;
-    struct entity_chest*                  chests SERIALIZE_VERSIONS(level, 2 to CURRENT) VARIABLE_ARRAY(entity_chest_count);
-    s32                                   script_trigger_count;
-    struct trigger*                       script_triggers SERIALIZE_VERSIONS(level, 3 to CURRENT) VARIABLE_ARRAY(script_trigger_count);
-    struct entity_list                    entities SERIALIZE_VERSIONS(level, 5 to CURRENT) VARIABLE_ARRAY(create=entity_list_create alloc=entity_list_create_entity) PACKED_AS(struct level_area_entity);
-    s32                                   light_count;
-    struct light_def*                     lights SERIALIZE_VERSIONS(level, 6 to CURRENT) VARIABLE_ARRAY(light_count);
-    s32                                   entity_savepoint_count;
-    struct entity_savepoint*              savepoints SERIALIZE_VERSIONS(level, 9 to CURRENT) VARIABLE_ARRAY(entity_savepoint_count) PACKED_AS(struct level_area_savepoint);
-    s32                                   battle_safe_square_count;
-    struct level_area_battle_safe_square* battle_safe_squares SERIALIZE_VERSIONS(level, 11 to CURRENT) VARIABLE_ARRAY(battle_safe_square_count);
+    struct trigger_level_transition_list      trigger_level_transitions;
+    struct entity_chest_list                  chests;
+    struct trigger_list                       triggers;
+    struct entity_list                        entities;
+    struct light_list                         lights;
+    struct level_area_battle_safe_square_list battle_safe_squares;
+    struct position_marker_list               position_markers; /* these are metadata purely. */
+
     /*
       NOTE:
-      ... It's a bit too late for me to start doing something like this,
-      considering it's a bit different compared to the rest of the stuff ain't it?
+      Ideally at runtime these shouldn't exist. However since they're small,
+      and keeping these allows me to simplify the code...
 
-      Oh well. I know this is heavily inconsistent right now but I'll fix it in the future!
-     */
-    struct position_marker_list           position_markers; /* these are metadata purely. */
+      I'll just keep them sitting in memory... It shouldn't be a big deal.
+
+      (
+      or I can add some special case code for the editor scenario... Which while not ideal is also a perfectly
+      acceptable option.
+
+      Since I forgot I store flat cstrings and those tend to be pretty big (64*3 bytes?)
+
+      idk, I'll probably just not do anything about it for now, and if I need more memory for whatever reason I'll
+      return it back.
+      )
+    */
+    struct level_area_savepoint_list          load_savepoints;
+    struct level_area_entity_list             load_entities;
+
+    /* NOTE: does not endure *_list conversion yet. */
+    s32                                   entity_savepoint_count;
+    struct entity_savepoint*              savepoints SERIALIZE_VERSIONS(level, 9 to CURRENT) VARIABLE_ARRAY(entity_savepoint_count) PACKED_AS(struct level_area_savepoint);
 
     /* runtime data */
     struct level_area_script_data    script;

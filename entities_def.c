@@ -185,6 +185,18 @@ struct entity_chest {
     item_id                       key_item  SERIALIZE_VERSIONS(level, 2 to CURRENT);
 };
 
+struct entity_chest_list {
+    s32 capacity;
+    s32 count;
+    struct entity_chest* chests;
+};
+
+struct entity_chest_list entity_chest_list_reserved(struct memory_arena* arena, s32 capacity);
+struct entity_chest*     entity_chest_list_push(struct entity_chest_list* list);
+struct entity_chest*     entity_chest_list_find_at(struct entity_chest_list* list, v2f32 position);
+void                     entity_chest_list_remove(struct entity_chest_list* list, s32 index);
+void                     entity_chest_list_clear(struct entity_chest_list* list);
+
 enum entity_savepoint_flags {
     ENTITY_SAVEPOINT_FLAGS_NONE     = 0,
     ENTITY_SAVEPOINT_FLAGS_DISABLED = BIT(31),
@@ -948,6 +960,7 @@ void sortable_draw_entities_sort_keys(struct sortable_draw_entities* entities);
 
 void render_entities(struct game_state* state, struct sortable_draw_entities* draw_entities);
 
+void serialize_entity_chest_list(struct binary_serializer* serializer, struct memory_arena* arena, s32 version, struct entity_chest_list* list);
 void serialize_entity_chest(struct binary_serializer* serializer, s32 version, struct entity_chest* chest);
 void serialize_entity_id(struct binary_serializer* serializer, s32 version, entity_id* id);
 

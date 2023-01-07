@@ -317,6 +317,34 @@ struct light_def {
     union color32u8 color;
     u32   flags;
 };
+struct light_def light(v2f32 position, f32 power, union color32u8 color) {
+    struct light_def result = {
+        .position = position,
+        .scale    = v2f32(1,1),
+        .power    = power,
+        .color    = color,
+    };
+
+    return result;
+}
+
+/*
+  NOTE:
+   I'm not replacing the dynamic lights inside of game_state with this list struct yet.
+   It's a good idea but this is still a refactor and otherwise it still works.
+ */
+struct light_list { 
+    s32 capacity;
+    s32 count;
+    struct light_def* lights;
+};
+
+struct light_list light_list_reserved(struct memory_arena* arena, s32 capacity);
+struct light*     light_list_push(struct light_list* list, struct light_def light);
+struct light*     light_list_find_light_at(struct light_list* list, v2f32 point);
+void              light_list_remove(struct light_list* list, s32 index);
+void              light_list_clear(struct light_list* list);
+void              serialize_light_list(struct binary_serializer* serializer, struct memory_arena* arena, s32 version, struct light_list* list);
 
 /* These are slightly different as they do different things on the "special_effects" behavior  */
 /* also some of these will have code designated for things like entities */
