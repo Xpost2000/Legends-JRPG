@@ -3445,6 +3445,7 @@ local void update_and_render_game_worldmap(struct software_framebuffer* framebuf
 
     /* reproject into a plane */
     {
+        f32 scale=0,focus=0,horizon=0;
         struct image_buffer* img = (struct image_buffer*)&mode7_buffer;
 
         s32 fw = framebuffer->width;
@@ -3456,11 +3457,15 @@ local void update_and_render_game_worldmap(struct software_framebuffer* framebuf
         f32 max_depth = fh/2;
 
         /* need to play with these... */
-        f32 scale=0,focus=0,horizon=0;
         static s32 rrr = 0;
         static s32 do_anim = 0;
         static s32 anim_done = 0;
         static f32 t   = 0;
+
+        static f32 dx = 0;
+        static f32 dy = 0;
+        static f32 dw = 0;
+        static f32 dh = 0;
 
         if (is_key_pressed(KEY_F7)) {
             do_anim = 1;   
@@ -3475,10 +3480,20 @@ local void update_and_render_game_worldmap(struct software_framebuffer* framebuf
                     scale = lerp_f32(500, 200, t);;
                     focus = lerp_f32(400*3, 700*2.5, t);;
                     horizon = lerp_f32(-1000, -660, t);;
+
+                    dx = lerp_f32(262 + TILE_UNIT_SIZE, 283 + TILE_UNIT_SIZE/2, 1-t);
+                    dy = lerp_f32(272, 343 - TILE_UNIT_SIZE/2, 1-t);
+                    dw = lerp_f32(TILE_UNIT_SIZE*2, TILE_UNIT_SIZE, 1-t);
+                    dw = lerp_f32(TILE_UNIT_SIZE*2, TILE_UNIT_SIZE, 1-t);
                 } else {
                     scale = lerp_f32(200, 500, t);;
                     focus = lerp_f32(700*2.5, 400*3, t);;
                     horizon = lerp_f32(-660, -1000, t);;
+
+                    dx = lerp_f32(262 + TILE_UNIT_SIZE, 283 + TILE_UNIT_SIZE/2, t);
+                    dy = lerp_f32(272, 343 - TILE_UNIT_SIZE/2, t);
+                    dw = lerp_f32(TILE_UNIT_SIZE*2, TILE_UNIT_SIZE, t);
+                    dw = lerp_f32(TILE_UNIT_SIZE*2, TILE_UNIT_SIZE, t);
                 }
 
                 t += dt;
@@ -3499,10 +3514,19 @@ local void update_and_render_game_worldmap(struct software_framebuffer* framebuf
                 scale     = 200;
                 focus     = 700*2.5;
                 horizon   = -660;
+
+                dx = 262 + TILE_UNIT_SIZE;
+                dy = 272;
+                dw = TILE_UNIT_SIZE*2;
+                dh = TILE_UNIT_SIZE*2;
             } else {
                 scale     = 500;
                 focus     = 400*3;
                 horizon   = -1000;
+                dx = 283 + TILE_UNIT_SIZE/2;
+                dy = 343 - TILE_UNIT_SIZE/2;
+                dw = TILE_UNIT_SIZE;
+                dh = TILE_UNIT_SIZE;
             }
         }
 
@@ -3587,6 +3611,11 @@ local void update_and_render_game_worldmap(struct software_framebuffer* framebuf
                         framebuffer->pixels[paint_y * fw*4 + paint_x*4 + 2] = img->pixels[sample_y*iw*4+sample_x*4+2]*brightness;
                     }
             }
+        }
+
+        /* I am going to put the sprite at known fixed positions... */
+        {
+            software_framebuffer_draw_quad(framebuffer, rectangle_f32(dx, dy, TILE_UNIT_SIZE, TILE_UNIT_SIZE), color32u8(0, 0, 255, 255), BLEND_MODE_ALPHA);
         }
     }
 }
