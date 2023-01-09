@@ -116,6 +116,24 @@ local string world_map_listen_event_form_names[] = {
     [WORLD_MAP_LISTEN_EVENT_ROUTINE] = string_literal("routine"),
     [WORLD_MAP_LISTEN_EVENT_COUNT]   = string_literal("(count)"),
 };
+#define WORLD_LOCATION_STRING_LENGTH (128)
+#define WORLD_LOCATION_AREA_LENGTH (32)
+enum world_location_flags {
+    WORLD_LOCATION_FLAG_HIDDEN = BIT(31),
+};
+struct world_location_entrance_placement {
+    char  area_name[WORLD_LOCATION_AREA_LENGTH];
+    s8    direction;
+    v2f32 where;
+};
+struct world_location {
+    v2f32 position;
+    v2f32 scale;
+    u32   flags;
+    char  preview_name[WORLD_LOCATION_STRING_LENGTH];
+
+    struct world_location_entrance_placement entrances[4];
+};
 struct world_map_script_data {
     bool present;
     string internal_buffer; /* this is just script_string but I want to be able to copy and paste the code for the level area since it's identical. */
