@@ -2139,6 +2139,7 @@ void game_initialize(void) {
     Report_Memory_Status_Region(&game_arena, "Conversation Arena & Game Variables Initialization");
 
     cutscene_initialize(&game_arena);
+    initialize_progression_tables(&game_arena);
     game_state->entity_database     = entity_database_create(&game_arena);
     Report_Memory_Status_Region(&game_arena, "Entity Database allocation");
     
@@ -4130,3 +4131,4 @@ local void game_open_worldmap_at_default(string where) {
 #include "cutscene.c"
 #include "special_effects.c"
 #include "rich_text.c"
+#include "xp_tables.c"

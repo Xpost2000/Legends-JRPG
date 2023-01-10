@@ -17,6 +17,11 @@ higher resolutions (or even the base resolution.)
 It's heavily inspired by games of the late SNES era, and some tactics RPGs. It aims to
 be essentially inspired by a game of the era, but is distinctly not of the era.
 
+(NOTE: there will probably not be a full hardware accelerated option. It's not impossible, but it's a bit annoying
+for me to do right now. I might go back and do this at some point but there's little point in doing so since it doesn't really
+make the game look better, and since the software renderer works at a very low base resolution it won't improve performance by much...
+
+It might fix the battery life issue though.)
+
 ## Latest Screenshot
 ![Latest screenshot](./scr.png)
-"In development!"

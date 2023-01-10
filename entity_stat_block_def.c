@@ -30,26 +30,26 @@ enum stat_id {
     }
 
 local string entity_stat_name_strings[] = {
-    string_literal("Vigor"),
-    string_literal("Strength"),
-    string_literal("Constitution"),
-    string_literal("Willpower"),
-    string_literal("Agility"),
-    string_literal("Speed"),
-    string_literal("Intelligence"),
-    string_literal("Luck"),
-    string_literal("Counter"),
+    [STAT_VIGOR]        = string_literal("Vigor"),
+    [STAT_STRENGTH]     = string_literal("Strength"),
+    [STAT_CONSTITUTION] = string_literal("Constitution"),
+    [STAT_WILLPOWER]    = string_literal("Willpower"),
+    [STAT_AGILITY]      = string_literal("Agility"),
+    [STAT_SPEED]        = string_literal("Speed"),
+    [STAT_INTELLIGENCE] = string_literal("Intelligence"),
+    [STAT_LUCK]         = string_literal("Luck"),
+    [STAT_COUNTER]      = string_literal("Counter"),
 };
 local string entity_stat_description_strings[] = {
-    string_literal("One's robustness. Determines initial HP and HP gain on level up."),
-    string_literal("One's physical power. Determines physical attack."),
-    string_literal("One's hardiness. Determines physical defense."),
-    string_literal("One's resilience. Determines magical defense."),
-    string_literal("One's deftness. Determines damage reduction."),
-    string_literal("One's hastiness. Determines movement, and likelihood to dodge."),
-    string_literal("One's mind. Determines magic attack."),
-    string_literal("One's fortune. Helps in the most unexpected ways."),
-    string_literal("One's ability to retaliate. Determines maximum counter-attacks."),
+    [STAT_VIGOR]        = string_literal("One's robustness. Determines HP gain on level up."),
+    [STAT_STRENGTH]     = string_literal("One's physical power. Determines physical attack."),
+    [STAT_CONSTITUTION] = string_literal("One's hardiness. Determines physical defense."),
+    [STAT_WILLPOWER]    = string_literal("One's resilience. Determines magical defense."),
+    [STAT_AGILITY]      = string_literal("One's deftness. Determines damage reduction."),
+    [STAT_SPEED]        = string_literal("One's hastiness. Determines movement, and likelihood to dodge."),
+    [STAT_INTELLIGENCE] = string_literal("One's mind. Determines magic attack."),
+    [STAT_LUCK]         = string_literal("One's fortune. Helps in the most unexpected ways."),
+    [STAT_COUNTER]      = string_literal("One's ability to retaliate. Determines maximum counter-attacks."),
 };
 
 struct entity_stat_block {

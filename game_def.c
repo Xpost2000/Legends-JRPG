@@ -356,6 +356,7 @@ union color32f32 game_foreground_entity_things_shader(struct software_framebuffe
 #include "entities_def.c"
 #include "level_area_def.c"
 #include "world_map_def.c"
+#include "xp_tables_def.c"
 
 /* use this instead of entity_list_dereference */
 struct entity* game_dereference_entity(struct game_state* state, entity_id id);
