@@ -138,6 +138,8 @@ local void parse_stat_growth_table(struct lisp_form* form) {
 void initialize_progression_tables(struct memory_arena* arena) {
     global_game_xp_table               = memory_arena_push(arena, sizeof(*global_game_xp_table));
     global_stat_growth_tables          = memory_arena_push(arena, sizeof(*global_stat_growth_tables));
+
+    *global_stat_growth_tables         = stat_growth_table_list(arena);
     
     struct lisp_list progression_forms = lisp_read_entire_file_into_forms(&scratch_arena, string_literal(GAME_DEFAULT_XP_PROGRESSION_FILE));
 
