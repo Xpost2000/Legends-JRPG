@@ -1,4 +1,26 @@
 (game_disable_input)
+
+(storyboard
+ '(page
+   (wait 1.5)
+   (line "Long ago, gods descended upon the world.")
+   (spacer)
+   (wait 0.3)
+   (line "The first people were the elves")
+   (wait-for-continue)
+   )
+ '(page
+   (wait 0.3)
+   (line "Then, came the humans, who waged war upon the elves.")
+   (wait-for-continue)
+   )
+ '(page
+   (wait 0.3)
+   (line "Okay. story's done. I'm too lazy for this.")
+   (wait-for-continue)
+   )
+ )
+
 (wait 1.5)
 (entity_speak '(entity player) "The Bridge of Faith")
 (wait 3)

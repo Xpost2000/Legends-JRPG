@@ -1250,6 +1250,14 @@ GAME_LISP_FUNCTION(TOGGLE_VISIBILITY) {
     return LISP_nil;
 }
 
+GAME_LISP_FUNCTION(STORYBOARD) {
+    for (s32 index = 0; index < argument_count; ++index) {
+        load_storyboard_page(arguments + index);
+    }
+    start_storyboard();
+    return LISP_nil;
+}
+
 #undef GAME_LISP_FUNCTION
 
 #define STRINGIFY(x) #x

@@ -2138,6 +2138,7 @@ void game_initialize(void) {
     game_state->conversation_arena  = memory_arena_push_sub_arena(&game_arena, Kilobyte(64));
     Report_Memory_Status_Region(&game_arena, "Conversation Arena & Game Variables Initialization");
 
+    initialize_storyboard(&game_arena);
     cutscene_initialize(&game_arena);
     initialize_progression_tables(&game_arena);
     game_state->entity_database     = entity_database_create(&game_arena);

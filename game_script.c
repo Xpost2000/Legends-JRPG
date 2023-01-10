@@ -1041,6 +1041,14 @@ bool game_script_waiting_on_form(struct game_script_script_instance* script_stat
                 return true;
             }
         }
+
+        if (lisp_form_symbol_matching(*first, string_literal("storyboard"))) {
+            if (storyboard_active) {
+                return false;
+            } else {
+                return true;
+            }
+        }
     }
 
     return true;
