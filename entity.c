@@ -3363,6 +3363,27 @@ struct position_marker* position_marker_list_find_marker_at(struct position_mark
     return NULL;
 }
 
+void serialize_world_location(struct binary_serializer* serializer, s32 version, struct world_location* location) {
+    /* version is a world map version */
+    switch (version) {
+        default:
+        case 3: {
+            serialize_f32(serializer,   &location->position.x);
+            serialize_f32(serializer,   &location->position.y);
+            serialize_f32(serializer,   &location->scale.x);
+            serialize_f32(serializer,   &location->scale.y);
+            serialize_u32(serializer,   &location->flags);
+            serialize_bytes(serializer, location->preview_name, array_count(location->preview_name));
+            {
+                serialize_bytes(serializer, location->entrance.area_name, array_count(location->entrance.area_name));
+                serialize_s8(serializer,    &location->entrance.direction);
+                serialize_f32(serializer,   &location->entrance.where.x);
+                serialize_f32(serializer,   &location->entrance.where.y);
+            }
+        } break;
+    }
+}
+
 void serialize_position_marker(struct binary_serializer* serializer, s32 version, struct position_marker* marker) {
     marker->scale = v2f32(1,1);
     switch (version) {
@@ -4182,6 +4203,7 @@ Define_Common_List_Type_Procedures_Alloc_Push(trigger_list, trigger, triggers, s
 Define_Common_List_Type_Procedures(level_area_savepoint_list, level_area_savepoint, savepoints, serialize_level_area_entity_savepoint);
 Define_Common_List_Type_Procedures(level_area_battle_safe_square_list, level_area_battle_safe_square, squares, serialize_battle_safe_square);
 Define_Common_List_Type_Procedures_Alloc_Push(level_area_entity_list, level_area_entity, entities, serialize_level_area_entity);
+Define_Common_List_Type_Procedures(world_location_list, world_location, locations, serialize_world_location);
 
 struct light_def* light_list_find_light_at(struct light_list* list, v2f32 point) {
     for (s32 index = 0; index < list->count; ++index) {
@@ -4270,6 +4292,7 @@ void tile_layer_remove_at(struct tile_layer* tile_layer, s32 x, s32 y) {
 struct trigger_level_transition* trigger_level_transition_list_transition_at(struct trigger_level_transition_list* list, v2f32 point) {
     for (s32 index = 0; index < list->count; ++index) {
         struct trigger_level_transition* current_trigger = list->transitions + index;
+
         if (rectangle_f32_intersect(current_trigger->bounds, rectangle_f32(point.x, point.y, 0.05, 0.05))) {
             return current_trigger;
         }
@@ -4296,6 +4319,28 @@ struct trigger* trigger_list_trigger_at(struct trigger_list* list, v2f32 point) 
             return current_trigger;
         }
     }
+
+    return NULL;
+}
+
+struct world_location world_location(v2f32 position, v2f32 scale, string name) {
+    struct world_location result = {
+        .position = position,
+        .scale    = scale,
+    };
+
+    copy_string_into_cstring(name, result.preview_name, array_count(result.preview_name));
+    return result;
+}
+
+struct world_location* world_location_list_location_at(struct world_location_list* list, v2f32 position) {
+    for (s32 location_index = 0; location_index < list->count; ++location_index) {
+        struct world_location* current_location = list->locations + location_index;
+
+        if (rectangle_f32_intersect(rectangle_f32(current_location->position.x, current_location->position.y, current_location->scale.x, current_location->scale.y), rectangle_f32(position.x, position.y, 0.05, 0.05))) {
+            return current_location;
+        }
+    } 
 
     return NULL;
 }

@@ -1,13 +1,15 @@
 #ifndef WORLD_MAP_DEF_C
 #define WORLD_MAP_DEF_C
 
-#define CURRENT_WORLD_MAP_VERSION (2)
+#define CURRENT_WORLD_MAP_VERSION (3)
 
 /*
   VERSION 1:
   Tiles only + Player Spawn
   VERSION 2:
   Position Marker for metadata
+  VERSION 3:
+  World Locations
 */
 
 #define WORLD_SCRIPTABLE_TILE_LAYER_COUNT (32)
@@ -126,14 +128,28 @@ struct world_location_entrance_placement {
     s8    direction;
     v2f32 where;
 };
-struct world_location {
+struct world_location { /* in tile positions */
     v2f32 position;
     v2f32 scale;
     u32   flags;
     char  preview_name[WORLD_LOCATION_STRING_LENGTH];
-
-    struct world_location_entrance_placement entrances[4];
+    struct world_location_entrance_placement entrance;
 };
+struct world_location_list {
+    s32                    capacity;
+    s32                    count;
+    struct world_location* locations;
+};
+
+struct world_location      world_location(v2f32 position, v2f32 scale, string name);
+struct world_location_list world_location_list_reserved(struct memory_arena* arena, s32 capacity);
+struct world_location*     world_location_list_push(struct world_location_list* list, struct world_location location);
+void                       world_location_list_remove(struct world_location_list* list, s32 index);
+void                       world_location_list_clear(struct world_location_list* list);
+struct world_location*     world_location_list_location_at(struct world_location_list* list, v2f32 where);
+void                       serialize_world_location(struct binary_serializer* serializer, s32 version, struct world_location* location);
+void                       serialize_world_location_list(struct binary_serializer* serializer, struct memory_arena* arena, s32 version, struct world_location_list* list);
+
 struct world_map_script_data {
     bool present;
     string internal_buffer; /* this is just script_string but I want to be able to copy and paste the code for the level area since it's identical. */
@@ -152,6 +168,7 @@ struct world_map {
     struct scriptable_tile_layer_property scriptable_layer_properties[WORLD_SCRIPTABLE_TILE_LAYER_COUNT];
     struct tile_layer                     tile_layers[WORLD_TILE_LAYER_COUNT];
     struct position_marker_list           position_markers;
+    struct world_location_list            world_locations;
     string                                script_string;
     struct world_map_script_data          script;
 };
