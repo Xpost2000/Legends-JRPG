@@ -107,6 +107,17 @@ struct editor_drag_data {
     v2f32 initial_object_dimensions;
 };
 
+enum editor_screen_state {
+    EDITOR_SCREEN_MAIN,
+    EDITOR_SCREEN_FILE_SELECTION_FOR_TRANSITION,
+    EDITOR_SCREEN_PLACING_TRANSITION_SPAWN_LEVEL_AREA,
+    EDITOR_SCREEN_PLACING_TRANSITION_SPAWN_WORLD_MAP,
+};
+
+struct editor_transition_placement_data {
+    struct camera camera_before_trying_transition_placement;
+};
+
 struct editor_state {
     struct memory_arena* arena;
     s32           tool_mode;
@@ -118,6 +129,8 @@ struct editor_state {
     s32 current_tile_layer;
 
     struct level_area editing_area;
+
+    struct editor_transition_placement_data transition_placement;
 
     bool fullbright;
     
@@ -158,9 +171,13 @@ struct editor_state {
 
     /* for edits that may require cross area interaction */
     /* we just load another full level and display it normally without editor mode stuff */
-    char loaded_area_name[260]; /* level_areas don't know where they come from... */
+    char              loaded_area_name[260]; /* level_areas don't know where they come from... */
     struct level_area loaded_area;
-    bool       viewing_loaded_area;
+
+    char             loaded_world_map_name[260];
+    struct world_map loaded_world_map;
+
+    s32               screen_state;
 };
 
 #define EDITOR_BRUSH_SQUARE_SIZE (5)

@@ -3400,8 +3400,7 @@ void serialize_position_marker(struct binary_serializer* serializer, s32 version
 
 void serialize_trigger_level_transition(struct binary_serializer* serializer, s32 version, struct trigger_level_transition* trigger) {
     switch (version) {
-        default:
-        case CURRENT_LEVEL_AREA_VERSION: {
+        default: {
             serialize_f32(serializer,   &trigger->bounds.x);
             serialize_f32(serializer,   &trigger->bounds.y);
 
@@ -3415,6 +3414,21 @@ void serialize_trigger_level_transition(struct binary_serializer* serializer, s3
             serialize_u8(serializer, 0);
             serialize_u8(serializer, 0);
             serialize_u8(serializer, 0);
+
+            serialize_f32(serializer,   &trigger->spawn_location.x);
+            serialize_f32(serializer,   &trigger->spawn_location.y);
+        } break;
+        case CURRENT_LEVEL_AREA_VERSION: {
+            serialize_f32(serializer,   &trigger->bounds.x);
+            serialize_f32(serializer,   &trigger->bounds.y);
+
+            serialize_f32(serializer,   &trigger->bounds.w);
+            serialize_f32(serializer,   &trigger->bounds.h);
+
+            serialize_bytes(serializer, trigger->target_level, 128);
+
+            serialize_u8(serializer,    &trigger->new_facing_direction); /* should not be here */
+            serialize_u8(serializer,    &trigger->type);
 
             serialize_f32(serializer,   &trigger->spawn_location.x);
             serialize_f32(serializer,   &trigger->spawn_location.y);

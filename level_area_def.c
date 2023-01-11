@@ -24,8 +24,9 @@
    Version 11: Battle Safe Square
    Verions 12: AreaName BuiltIn & BuiltIn scripts & Extra Tile Layers
    Version 13: Position Markers
+   Version 14: Level Area Transition triggers can now target world map areas
 */
-#define CURRENT_LEVEL_AREA_VERSION (13) 
+#define CURRENT_LEVEL_AREA_VERSION (14) 
 
 #define SCRIPTABLE_TILE_LAYER_COUNT (32)
 enum scriptable_tile_layer_flags {
@@ -179,6 +180,14 @@ void serialize_tile(struct binary_serializer* serializer, s32 version, struct ti
   I don't know why I still keep this around...
   I want to introduce flags and have some events on these...
 */
+enum trigger_level_transition_type {
+    TRIGGER_LEVEL_TRANSITION_TYPE_TO_LEVEL_AREA,
+    TRIGGER_LEVEL_TRANSITION_TYPE_TO_WORLD_MAP,
+};
+local string trigger_level_transition_type_strings[] = {
+    [TRIGGER_LEVEL_TRANSITION_TYPE_TO_LEVEL_AREA] = string_literal("(level_area)"),
+    [TRIGGER_LEVEL_TRANSITION_TYPE_TO_WORLD_MAP]  = string_literal("(world_map)"),
+};
 struct trigger_level_transition { /* TODO: Allow these to also be registered "on-trigger" events, except these can return a final value (T/F) for whether you can allow the transition */
     /* assume to be in tile coordinates. */
     struct rectangle_f32 bounds;
@@ -186,6 +195,7 @@ struct trigger_level_transition { /* TODO: Allow these to also be registered "on
     char  target_level[128];
     /* anchoring to an object, might be very niche... */
     u8    new_facing_direction;
+    u8    type;
     v2f32 spawn_location;
 };
 struct trigger_level_transition trigger_level_transition(struct rectangle_f32 bounds, string target_level, u8 new_facing_direction, v2f32 spawn_location) {

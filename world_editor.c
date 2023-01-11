@@ -317,29 +317,31 @@ void update_and_render_world_editor(struct software_framebuffer* framebuffer, f3
     commands.clear_buffer_color  = color32u8(100, 128, 148, 255);
 
     if (game_state->ui_state == UI_STATE_INGAME) {
-        if (is_key_down(KEY_W)) {
-            world_editor_state->camera.xy.y -= 160 * dt;
-        } else if (is_key_down(KEY_S)) {
-            world_editor_state->camera.xy.y += 160 * dt;
-        }
-        if (is_key_down(KEY_A)) {
-            world_editor_state->camera.xy.x -= 160 * dt;
-        } else if (is_key_down(KEY_D)) {
-            world_editor_state->camera.xy.x += 160 * dt;
-        }
+        if (!is_editing_text()) {
+            if (is_key_down(KEY_W)) {
+                world_editor_state->camera.xy.y -= 160 * dt;
+            } else if (is_key_down(KEY_S)) {
+                world_editor_state->camera.xy.y += 160 * dt;
+            }
+            if (is_key_down(KEY_A)) {
+                world_editor_state->camera.xy.x -= 160 * dt;
+            } else if (is_key_down(KEY_D)) {
+                world_editor_state->camera.xy.x += 160 * dt;
+            }
 
-        if (is_key_down(KEY_SHIFT) && is_key_pressed(KEY_TAB)) {
-            world_editor_state->tab_menu_open ^= TAB_MENU_OPEN_BIT;
-            world_editor_state->tab_menu_open ^= TAB_MENU_SHIFT_BIT;
-        } else if (is_key_down(KEY_CTRL) && is_key_pressed(KEY_TAB)) {
-            world_editor_state->tab_menu_open ^= TAB_MENU_OPEN_BIT;
-            world_editor_state->tab_menu_open ^= TAB_MENU_CTRL_BIT;
-        } else if (is_key_pressed(KEY_TAB)) {
-            world_editor_state->tab_menu_open ^= TAB_MENU_OPEN_BIT;
+            if (is_key_down(KEY_SHIFT) && is_key_pressed(KEY_TAB)) {
+                world_editor_state->tab_menu_open ^= TAB_MENU_OPEN_BIT;
+                world_editor_state->tab_menu_open ^= TAB_MENU_SHIFT_BIT;
+            } else if (is_key_down(KEY_CTRL) && is_key_pressed(KEY_TAB)) {
+                world_editor_state->tab_menu_open ^= TAB_MENU_OPEN_BIT;
+                world_editor_state->tab_menu_open ^= TAB_MENU_CTRL_BIT;
+            } else if (is_key_pressed(KEY_TAB)) {
+                world_editor_state->tab_menu_open ^= TAB_MENU_OPEN_BIT;
 
-            if (!(world_editor_state->tab_menu_open & TAB_MENU_OPEN_BIT)) world_editor_state->tab_menu_open = 0;
-        } else {
-            handle_world_editor_tool_mode_input(framebuffer);
+                if (!(world_editor_state->tab_menu_open & TAB_MENU_OPEN_BIT)) world_editor_state->tab_menu_open = 0;
+            } else {
+                handle_world_editor_tool_mode_input(framebuffer);
+            }
         }
     }
 
@@ -734,7 +736,12 @@ void update_and_render_world_editor_game_menu_ui(struct game_state* state, struc
                         copy_string_into_cstring(string_from_cstring(current_file->name), world_editor_state->loaded_area_name, array_count(world_editor_state->loaded_area_name));
 
                         struct binary_serializer serializer = open_read_file_serializer(string_concatenate(&scratch_arena, string_literal("areas/"), string_from_cstring(current_file->name)));
-                        serialize_level_area(state, &serializer, &world_editor_state->loaded_area, true);
+                        memory_arena_clear_top(world_editor_state->arena);
+
+                        memory_arena_set_allocation_region_top(world_editor_state->arena); {
+                            _serialize_level_area(world_editor_state->arena, &serializer, &world_editor_state->loaded_area);
+                        } memory_arena_set_allocation_region_bottom(world_editor_state->arena);
+
                         serializer_finish(&serializer);
                         break;
                     }
