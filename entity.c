@@ -812,6 +812,31 @@ void entity_handle_player_controlled(struct game_state* state, struct entity* en
     player_handle_radial_interactables(state, entity, dt);
 }
 
+
+struct rectangle_f32 push_out_horizontal_edges(struct rectangle_f32 collider, struct rectangle_f32 collidant, bool* stop_horizontal_movement) {
+    struct rectangle_f32 entity_bounds = collider;
+
+    f32 entity_left_edge   = entity_bounds.x;
+    f32 entity_right_edge  = entity_bounds.x + entity_bounds.w;
+    f32 entity_top_edge    = entity_bounds.y;
+    f32 entity_bottom_edge = entity_bounds.y + entity_bounds.h;
+
+    f32 collidant_left_edge   = collidant.x;
+    f32 collidant_top_edge    = collidant.y;
+    f32 collidant_bottom_edge = collidant.y + collidant.h;
+    f32 collidant_right_edge  = collidant.x + collidant.w;
+
+    if (rectangle_f32_intersect(entity_bounds, collidant)) {
+        if (entity_right_edge > collidant_right_edge) {
+            collider.x = collidant_right_edge;
+        } else if (entity_right_edge > collidant_left_edge) {
+            collider.x = collidant_left_edge - entity_bounds.w;
+        }
+        *stop_horizontal_movement = true;
+    }
+
+    return collider;
+}
 bool entity_push_out_horizontal_edges(struct entity* entity, struct rectangle_f32 collidant) {
     struct rectangle_f32 entity_bounds = entity_rectangle_collision_bounds(entity);
 
@@ -837,7 +862,30 @@ bool entity_push_out_horizontal_edges(struct entity* entity, struct rectangle_f3
 
     return false;
 }
+struct rectangle_f32 push_out_vertical_edges(struct rectangle_f32 collider, struct rectangle_f32 collidant, bool* stop_vertical_movement) {
+    struct rectangle_f32 entity_bounds = collider;
 
+    f32 entity_left_edge   = entity_bounds.x;
+    f32 entity_right_edge  = entity_bounds.x + entity_bounds.w;
+    f32 entity_top_edge    = entity_bounds.y;
+    f32 entity_bottom_edge = entity_bounds.y + entity_bounds.h;
+
+    f32 collidant_left_edge   = collidant.x;
+    f32 collidant_top_edge    = collidant.y;
+    f32 collidant_bottom_edge = collidant.y + collidant.h;
+    f32 collidant_right_edge  = collidant.x + collidant.w;
+
+    if (rectangle_f32_intersect(entity_bounds, collidant)) {
+        if (entity_bottom_edge > collidant_top_edge && entity_bottom_edge < collidant_bottom_edge) {
+            collider.y = collidant_top_edge - entity_bounds.h;
+        } else if (entity_top_edge < collidant_bottom_edge && entity_bottom_edge > collidant_bottom_edge) {
+            collider.y = collidant_bottom_edge;
+        }
+        *stop_vertical_movement = true;
+    }
+
+    return collider;
+}
 bool entity_push_out_vertical_edges(struct entity* entity, struct rectangle_f32 collidant) {
     struct rectangle_f32 entity_bounds = entity_rectangle_collision_bounds(entity);
 
@@ -1073,7 +1121,7 @@ void update_entities(struct game_state* state, f32 dt, struct entity_iterator it
                                         continue;
                                     }
 
-                                    for (s32 index = 0; index < area->tile_layers[layer_index].count && !stop_horizontal_movement; ++index) {
+                                    for (s32 index = 0; index < area->tile_layers[layer_index].count && !stop_vertical_movement; ++index) {
                                         struct tile* current_tile = area->tile_layers[layer_index].tiles + index;
                                         struct tile_data_definition* tile_data = tile_table_data + current_tile->id;
 
