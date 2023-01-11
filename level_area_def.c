@@ -183,10 +183,12 @@ void serialize_tile(struct binary_serializer* serializer, s32 version, struct ti
 enum trigger_level_transition_type {
     TRIGGER_LEVEL_TRANSITION_TYPE_TO_LEVEL_AREA,
     TRIGGER_LEVEL_TRANSITION_TYPE_TO_WORLD_MAP,
+    TRIGGER_LEVEL_TRANSITION_TYPE_COUNT,
 };
 local string trigger_level_transition_type_strings[] = {
     [TRIGGER_LEVEL_TRANSITION_TYPE_TO_LEVEL_AREA] = string_literal("(level_area)"),
     [TRIGGER_LEVEL_TRANSITION_TYPE_TO_WORLD_MAP]  = string_literal("(world_map)"),
+    [TRIGGER_LEVEL_TRANSITION_TYPE_COUNT]         = string_literal("(count)"),
 };
 struct trigger_level_transition { /* TODO: Allow these to also be registered "on-trigger" events, except these can return a final value (T/F) for whether you can allow the transition */
     /* assume to be in tile coordinates. */

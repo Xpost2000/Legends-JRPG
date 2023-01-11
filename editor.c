@@ -532,8 +532,8 @@ local void handle_editor_tool_mode_input(struct software_framebuffer* framebuffe
 
             if (left_clicked) {
                 struct trigger_level_transition* transition = editor_state->last_selected;
-                transition->bounds.x = tile_space_mouse_location.x;
-                transition->bounds.y = tile_space_mouse_location.y;
+                transition->spawn_location.x = tile_space_mouse_location.x;
+                transition->spawn_location.y = tile_space_mouse_location.y;
             }
         } break;
         case EDITOR_SCREEN_PLACING_TRANSITION_SPAWN_WORLD_MAP: {
@@ -546,8 +546,8 @@ local void handle_editor_tool_mode_input(struct software_framebuffer* framebuffe
 
             if (left_clicked) {
                 struct trigger_level_transition* transition = editor_state->last_selected;
-                transition->bounds.x = tile_space_mouse_location.x;
-                transition->bounds.y = tile_space_mouse_location.y;
+                transition->spawn_location.x = tile_space_mouse_location.x;
+                transition->spawn_location.y = tile_space_mouse_location.y;
             }
         } break;
         case EDITOR_SCREEN_MAIN: {
@@ -947,6 +947,34 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
         tile_space_mouse_location.y = floorf(world_space_mouse_location.y / TILE_UNIT_SIZE);
     }
 
+    if (!is_editing_text()) {
+        if (is_key_down(KEY_W)) {
+            editor_state->camera.xy.y -= 160 * dt;
+        } else if (is_key_down(KEY_S)) {
+            editor_state->camera.xy.y += 160 * dt;
+        }
+        if (is_key_down(KEY_A)) {
+            editor_state->camera.xy.x -= 160 * dt;
+        } else if (is_key_down(KEY_D)) {
+            editor_state->camera.xy.x += 160 * dt;
+        }
+    }
+    
+    /* Consider using tab + radial/fuzzy menu selection for this */
+    if (is_key_down(KEY_SHIFT) && is_key_pressed(KEY_TAB)) {
+        editor_state->tab_menu_open ^= TAB_MENU_OPEN_BIT;
+        editor_state->tab_menu_open ^= TAB_MENU_SHIFT_BIT;
+    } else if (is_key_down(KEY_CTRL) && is_key_pressed(KEY_TAB)) {
+        editor_state->tab_menu_open ^= TAB_MENU_OPEN_BIT;
+        editor_state->tab_menu_open ^= TAB_MENU_CTRL_BIT;
+    } else if (is_key_pressed(KEY_TAB)) {
+        editor_state->tab_menu_open ^= TAB_MENU_OPEN_BIT;
+
+        if (!(editor_state->tab_menu_open & TAB_MENU_OPEN_BIT)) editor_state->tab_menu_open = 0;
+    } else {
+        handle_editor_tool_mode_input(framebuffer);
+    }
+
     switch (editor_state->screen_state) {
         case EDITOR_SCREEN_MAIN: {
             if (is_key_pressed(KEY_ESCAPE)) {
@@ -998,34 +1026,6 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
                     editor_state->camera.xy.x -= delta_x;
                     editor_state->camera.xy.y -= delta_y;
                 }
-            }
-
-            if (!is_editing_text()) {
-                if (is_key_down(KEY_W)) {
-                    editor_state->camera.xy.y -= 160 * dt;
-                } else if (is_key_down(KEY_S)) {
-                    editor_state->camera.xy.y += 160 * dt;
-                }
-                if (is_key_down(KEY_A)) {
-                    editor_state->camera.xy.x -= 160 * dt;
-                } else if (is_key_down(KEY_D)) {
-                    editor_state->camera.xy.x += 160 * dt;
-                }
-            }
-    
-            /* Consider using tab + radial/fuzzy menu selection for this */
-            if (is_key_down(KEY_SHIFT) && is_key_pressed(KEY_TAB)) {
-                editor_state->tab_menu_open ^= TAB_MENU_OPEN_BIT;
-                editor_state->tab_menu_open ^= TAB_MENU_SHIFT_BIT;
-            } else if (is_key_down(KEY_CTRL) && is_key_pressed(KEY_TAB)) {
-                editor_state->tab_menu_open ^= TAB_MENU_OPEN_BIT;
-                editor_state->tab_menu_open ^= TAB_MENU_CTRL_BIT;
-            } else if (is_key_pressed(KEY_TAB)) {
-                editor_state->tab_menu_open ^= TAB_MENU_OPEN_BIT;
-
-                if (!(editor_state->tab_menu_open & TAB_MENU_OPEN_BIT)) editor_state->tab_menu_open = 0;
-            } else {
-                handle_editor_tool_mode_input(framebuffer);
             }
 
             /* I refuse to code a UI library, unless *absolutely* necessary... Since the editor is the only part that requires this kind of standardized UI... */
@@ -1155,8 +1155,8 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
                                         draw_cursor_y += 12 * 1.2 * 2;
 
                                         if(EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(16, draw_cursor_y), format_temp_s("target type: %.*s", trigger_level_transition_type_strings[trigger->type].length, trigger_level_transition_type_strings[trigger->type].data))) {
-                                            trigger->new_facing_direction += 1;
-                                            if (trigger->new_facing_direction > 4) trigger->new_facing_direction = 0;
+                                            trigger->type += 1;
+                                            if (trigger->type > TRIGGER_LEVEL_TRANSITION_TYPE_COUNT) trigger->type = 0;
                                         }
 
                                         draw_cursor_y += 12 * 1.2 * 2;
@@ -1617,7 +1617,8 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
                     struct directory_file* current_file = listing.files + index;
                     draw_position.y += 2 * 12 * 1;
                     if(EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, draw_position, string_from_cstring(current_file->name))) {
-
+                        editor_state->transition_placement.camera_before_trying_transition_placement = editor_state->camera;
+                        editor_state->camera.xy = v2f32(0,0);
                         if (transition->type == TRIGGER_LEVEL_TRANSITION_TYPE_TO_LEVEL_AREA) {
                             struct binary_serializer serializer = open_read_file_serializer(string_concatenate(&scratch_arena, string_literal("areas/"), string_from_cstring(current_file->name)));
                             copy_string_into_cstring(string_from_cstring(current_file->name), editor_state->loaded_area_name, array_count(editor_state->loaded_area_name));
@@ -1741,8 +1742,12 @@ local void editor_mode_render_tile_layer(s32 palette, struct render_commands* co
         image_id                     tex          = get_tile_image_id(tile_data); 
 
         f32 alpha = 1;
-        if (layer_index != current_tile_layer) {
-            alpha = 0.5;
+        if (layer_index == -1) {
+            
+        } else {
+            if (layer_index != current_tile_layer) {
+                alpha = 0.5;
+            }
         }
 
         render_commands_push_image(commands,
@@ -1758,11 +1763,7 @@ local void editor_mode_render_tile_layer(s32 palette, struct render_commands* co
 
 local void editor_common_render_world_map_for_preview(struct render_commands* commands, struct world_map* world_map) {
     for (s32 layer_index = 0; layer_index < array_count(world_map->tile_layers); ++layer_index) {
-        editor_mode_render_tile_layer(TILE_PALETTE_WORLD_MAP,
-                                      commands,
-                                      world_map->tile_layers + layer_index,
-                                      layer_index,
-                                      -9999);
+        editor_mode_render_tile_layer(TILE_PALETTE_WORLD_MAP, commands, world_map->tile_layers + layer_index, layer_index, -1);
     }
 }
 

@@ -622,6 +622,7 @@ void update_and_render_world_editor_game_menu_ui(struct game_state* state, struc
                                         if(EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(16, draw_cursor_y), format_temp_s("visit location<%3.3f,%3.3f> : %s", trigger->entrance.where.x, trigger->entrance.where.y, trigger->entrance.area_name))) {
                                             world_editor_state->screen_state = WORLD_EDITOR_SCREEN_FILE_SELECTION_FOR_SETTING_LOCATION_ENTRANCE;
                                             world_editor_state->setting_entrance_location.camera_before_trying_to_set_location_entrance = world_editor_state->camera;
+                                            editor_state->camera.xy = v2f32(0,0);
                                         }
                                     } break;
                                     default: {
