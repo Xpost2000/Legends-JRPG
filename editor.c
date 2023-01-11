@@ -1688,6 +1688,69 @@ local void editor_mode_render_tile_layer(s32 palette, struct render_commands* co
     }
 }
 
+local void editor_common_render_level_area_for_preview(struct render_commands* commands, struct level_area* loaded_area) {
+    struct font_cache* font = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_BLUE]);
+    render_ground_area(game_state, commands, loaded_area);
+    {
+        for (s32 entity_index = 0; entity_index < loaded_area->load_entities.count; ++entity_index) {
+            struct level_area_entity* current_entity = loaded_area->load_entities.entities + entity_index;
+            struct rectangle_f32 bounds = rectangle_f32(current_entity->position.x, current_entity->position.y-1, 1, 2);
+
+            render_commands_push_quad(commands, rectangle_f32(bounds.x * TILE_UNIT_SIZE, bounds.y * TILE_UNIT_SIZE, bounds.w * TILE_UNIT_SIZE, bounds.h * TILE_UNIT_SIZE),
+                                      color32u8(255, 0, 0, normalized_sinf(global_elapsed_time*2) * 0.5*255 + 64), BLEND_MODE_ALPHA);
+
+            {
+                    
+                struct entity_base_data* base_def = entity_database_find_by_name(&game_state->entity_database, string_from_cstring(current_entity->base_name));
+                struct entity_animation* anim = find_animation_by_name(base_def->model_index, string_concatenate(&scratch_arena, string_literal("idle_"), facing_direction_strings_normal[current_entity->facing_direction]));
+
+                if (anim) {
+                    image_id sprite_to_use = anim->sprites[0];
+
+                    union color32f32 color = color32f32_WHITE;
+
+                    if (current_entity->flags & ENTITY_FLAGS_HIDDEN) {
+                        color.r /= 2;
+                        color.g /= 2;
+                        color.b /= 2;
+                        color.a /= 2;
+                    }
+
+                    render_commands_push_image(commands, graphics_assets_get_image_by_id(&graphics_assets, sprite_to_use),
+                                               rectangle_f32_scale(bounds, TILE_UNIT_SIZE), RECTANGLE_F32_NULL, color, NO_FLAGS, BLEND_MODE_ALPHA);
+                }
+            }
+            s32 entity_id          = current_entity - editor_state->editing_area.load_entities.entities;
+            render_commands_push_text(commands, font, 1, v2f32(bounds.x * TILE_UNIT_SIZE, bounds.y * TILE_UNIT_SIZE), string_from_cstring(format_temp("(entity %d)", entity_id)), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+        }
+
+        for (s32 chest_index = 0; chest_index < loaded_area->chests.count; ++chest_index) {
+            struct entity_chest* current_chest = loaded_area->chests.chests + chest_index;
+
+            render_commands_push_image(commands,
+                                       graphics_assets_get_image_by_id(&graphics_assets, chest_closed_img),
+                                       rectangle_f32(current_chest->position.x * TILE_UNIT_SIZE,
+                                                     current_chest->position.y * TILE_UNIT_SIZE,
+                                                     current_chest->scale.x * TILE_UNIT_SIZE,
+                                                     current_chest->scale.y * TILE_UNIT_SIZE),
+                                       RECTANGLE_F32_NULL,
+                                       color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
+        }
+
+        for (s32 entity_savepoint_index = 0; entity_savepoint_index < loaded_area->load_savepoints.count; ++entity_savepoint_index) {
+            struct level_area_savepoint* current_savepoint = loaded_area->load_savepoints.savepoints + entity_savepoint_index;
+            render_commands_push_quad(commands, rectangle_f32(current_savepoint->position.x * TILE_UNIT_SIZE, current_savepoint->position.y * TILE_UNIT_SIZE,
+                                                               current_savepoint->scale.x * TILE_UNIT_SIZE,    current_savepoint->scale.y * TILE_UNIT_SIZE),
+                                      color32u8(255, 0, 0, 255), BLEND_MODE_ALPHA);
+            s32 savepoint_id          = current_savepoint - loaded_area->load_savepoints.savepoints;
+            render_commands_push_text(commands, font, 1, v2f32(current_savepoint->position.x * TILE_UNIT_SIZE, current_savepoint->position.y * TILE_UNIT_SIZE),
+                                      copy_cstring_to_scratch(format_temp("(savepoint %d)", savepoint_id)), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+        }
+    }
+
+    render_foreground_area(game_state, commands, loaded_area);
+}
+
 void update_and_render_editor(struct software_framebuffer* framebuffer, f32 dt) {
     struct render_commands commands = render_commands(&scratch_arena, 16384, editor_state->camera);
 

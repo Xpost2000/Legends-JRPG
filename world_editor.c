@@ -196,7 +196,13 @@ local void handle_world_editor_tool_mode_input(struct software_framebuffer* fram
     bool middle_clicked = 0;
 
     /* do not check for mouse input when our special tab menu is open */
-    if (world_editor_state->tab_menu_open == TAB_MENU_CLOSED) {
+    if (world_editor_state->screen_state == WORLD_EDITOR_SCREEN_MAIN) {
+        if (world_editor_state->tab_menu_open == TAB_MENU_CLOSED) {
+            get_mouse_buttons(&left_clicked,
+                              &middle_clicked,
+                              &right_clicked);
+        }
+    } else {
         get_mouse_buttons(&left_clicked,
                           &middle_clicked,
                           &right_clicked);
@@ -293,11 +299,13 @@ local void handle_world_editor_tool_mode_input(struct software_framebuffer* fram
             if (is_key_pressed(KEY_RETURN)) {
                 world_editor_state->screen_state = WORLD_EDITOR_SCREEN_MAIN;
                 world_editor_state->camera       = world_editor_state->setting_entrance_location.camera_before_trying_to_set_location_entrance;
+                struct world_location* location = world_editor_state->last_selected;
+                copy_string_into_cstring(string_from_cstring(world_editor_state->loaded_area_name), location->entrance.area_name, array_count(location->entrance.area_name));
             }
 
             if (left_clicked) {
                 struct world_location* location = world_editor_state->last_selected;
-                location->entrance.where        = get_mouse_in_tile_space(&world_editor_state->camera, SCREEN_WIDTH, SCREEN_HEIGHT);
+                location->entrance.where        = tile_space_mouse_location;
             }
         } break;
     }
@@ -421,21 +429,18 @@ void update_and_render_world_editor(struct software_framebuffer* framebuffer, f3
                                       color32u8(0, 255, 0, normalized_sinf(global_elapsed_time*4) * 0.5*255 + 64), BLEND_MODE_ALPHA);
         } break;
         case WORLD_EDITOR_SCREEN_SETTING_LOCATION_ENTRANCE: {
-            /* this is pretty old, so I'd probably avoid using this part... */
-            /* yeah this is a big mess */
-            render_ground_area(game_state, &commands, &world_editor_state->loaded_area);
-            struct render_commands        commands      = render_commands(&scratch_arena, 16384, world_editor_state->camera);
-            struct sortable_draw_entities draw_entities = sortable_draw_entities(&scratch_arena, 8192*4);
-            render_entities(game_state, &draw_entities);
-            sortable_draw_entities_submit(&commands, &graphics_assets, &draw_entities, dt);
-            render_foreground_area(game_state, &commands, &world_editor_state->loaded_area);
-            if (world_editor_state->last_selected) {
-                struct world_location* trigger = world_editor_state->last_selected;
-                render_commands_push_quad(&commands, rectangle_f32(trigger->entrance.where.x * TILE_UNIT_SIZE, trigger->entrance.where.y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE),
-                                          color32u8(0, 255, 255, normalized_sinf(global_elapsed_time*4) * 0.5*255 + 64), BLEND_MODE_ALPHA);
+            editor_common_render_level_area_for_preview(&commands, &world_editor_state->loaded_area);
+
+            struct world_location* trigger = world_editor_state->last_selected;
+            if (trigger) {
+                render_commands_push_quad(&commands,
+                                          rectangle_f32(trigger->entrance.where.x * TILE_UNIT_SIZE, trigger->entrance.where.y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE),
+                                          color32u8(0, 255, 255, 255), BLEND_MODE_ALPHA);
             }
+
         } break;
     }
+
 
     software_framebuffer_render_commands(framebuffer, &commands);
     EDITOR_imgui_end_frame();
