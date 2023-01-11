@@ -5,6 +5,8 @@ void world_editor_clear_all_allocations(void) {
         tile_layer_clear(world_editor_state->world_map.tile_layers + layer_index);
     }
     position_marker_list_clear(&world_editor_state->world_map.position_markers);
+    trigger_list_clear(&world_editor_state->world_map.triggers);
+    world_location_list_clear(&world_editor_state->world_map.locations);
 }
 local v2f32 world_editor_get_world_space_mouse_location(void) {
     s32 mouse_location[2];
@@ -29,6 +31,8 @@ void world_editor_initialize(struct world_editor_state* state) {
     }
 
     state->world_map.position_markers = position_marker_list_reserved(state->arena, 8192);
+    state->world_map.triggers         = trigger_list_reserved(state->arena, 8192);
+    state->world_map.locations        = world_location_list_reserved(state->arena, 8192);
     world_editor_clear_all();
 }
 
@@ -67,6 +71,67 @@ void world_editor_remove_position_marker_at(v2f32 point_in_tilespace) {
     
     if (marker) {
         position_marker_list_remove(&world_editor_state->world_map.position_markers, marker - world_editor_state->world_map.position_markers.markers);
+    }
+}
+void world_editor_place_or_drag_trigger(v2f32 point_in_tilespace) {
+    if (is_dragging(&world_editor_state->drag_data)) {
+        return; 
+    }
+
+    {
+        struct trigger* existing_trigger = trigger_list_trigger_at(&world_editor_state->world_map.triggers, point_in_tilespace);
+        if (existing_trigger) {
+            world_editor_state->last_selected = existing_trigger;
+            set_drag_candidate_rectangle(&world_editor_state->drag_data, existing_trigger, get_mouse_in_tile_space(&world_editor_state->camera, SCREEN_WIDTH, SCREEN_HEIGHT),
+                                         v2f32(existing_trigger->bounds.x, existing_trigger->bounds.y),
+                                         v2f32(existing_trigger->bounds.w, existing_trigger->bounds.h));
+            return;
+        } else {
+            /* otherwise no touch, place a new one at default size 1 1 */
+            struct trigger* new_trigger = trigger_list_push(&world_editor_state->world_map.triggers);
+            new_trigger->bounds.x       = point_in_tilespace.x;
+            new_trigger->bounds.y       = point_in_tilespace.y;
+            new_trigger->bounds.w       = 1;
+            new_trigger->bounds.h       = 1;
+            world_editor_state->last_selected = new_trigger;
+            return;
+        }
+    }
+}
+void world_editor_remove_trigger_at(v2f32 point_in_tilespace) {
+    struct trigger* existing_trigger = trigger_list_trigger_at(&world_editor_state->world_map.triggers, point_in_tilespace);
+    if (existing_trigger == world_editor_state->last_selected)  {
+        world_editor_state->last_selected = 0;
+    } else if (existing_trigger) {
+        trigger_list_remove(&world_editor_state->world_map.triggers, existing_trigger - world_editor_state->world_map.triggers.triggers);
+    }
+}
+void world_editor_place_or_drag_location(v2f32 point_in_tilespace) {
+    if (is_dragging(&world_editor_state->drag_data)) {
+        return; 
+    }
+
+    {
+        struct world_location* existing_trigger = world_location_list_location_at(&world_editor_state->world_map.locations, point_in_tilespace);
+        if (existing_trigger) {
+            world_editor_state->last_selected = existing_trigger;
+            set_drag_candidate_rectangle(&world_editor_state->drag_data, existing_trigger, get_mouse_in_tile_space(&world_editor_state->camera, SCREEN_WIDTH, SCREEN_HEIGHT),
+                                         v2f32(existing_trigger->position.x, existing_trigger->position.y),
+                                         v2f32(existing_trigger->scale.x, existing_trigger->scale.y));
+            return;
+        } else {
+            /* otherwise no touch, place a new one at default size 1 1 */
+            world_editor_state->last_selected = world_location_list_push(&world_editor_state->world_map.locations, world_location(point_in_tilespace, v2f32(1,1), string_literal("")));
+            return;
+        }
+    }
+}
+void world_editor_remove_location_at(v2f32 point_in_tilespace) {
+    struct world_location* existing_trigger = world_location_list_location_at(&world_editor_state->world_map.locations, point_in_tilespace);
+    if (existing_trigger == editor_state->last_selected)  {
+        world_editor_state->last_selected = 0;
+    } else if (existing_trigger) {
+        world_location_list_remove(&world_editor_state->world_map.locations, existing_trigger - world_editor_state->world_map.locations.locations);
     }
 }
 
@@ -203,15 +268,19 @@ local void handle_world_editor_tool_mode_input(struct software_framebuffer* fram
         } break;
         case WORLD_EDITOR_TOOL_ENTITY_PLACEMENT: {
 #define Placement_Procedure_For(type)                                   \
-                case ENTITY_PLACEMENT_TYPE_ ## type: {                  \
-                    if (left_clicked) {                                 \
-                        world_editor_place_or_drag_##type(tile_space_mouse_location); \
-                    } else if (right_clicked) {                         \
-                        world_editor_remove_##type##_at(tile_space_mouse_location); \
-                    }                                                   \
+            case WORLD_ENTITY_PLACEMENT_TYPE_ ## type: {                \
+                if (left_clicked) {                                     \
+                    world_editor_place_or_drag_##type(tile_space_mouse_location); \
+                } else if (right_clicked) {                             \
+                    world_editor_remove_##type##_at(tile_space_mouse_location); \
+                }                                                       \
             } break
 
-            Placement_Procedure_For(position_marker);
+            switch (world_editor_state->entity_placement_type) {
+                Placement_Procedure_For(position_marker);
+                Placement_Procedure_For(trigger);
+                Placement_Procedure_For(location);
+            }
 #undef Placement_Procedure_For
         } break;
         default: {
@@ -264,6 +333,41 @@ void update_and_render_world_editor(struct software_framebuffer* framebuffer, f3
     }
 
     struct font_cache* font = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_BLUE]);
+    
+    for (s32 location_trigger_index = 0; location_trigger_index < world_editor_state->world_map.locations.count; ++location_trigger_index) {
+        struct world_location* current_trigger = world_editor_state->world_map.locations.locations + location_trigger_index;
+
+        if (world_editor_state->last_selected == current_trigger) {
+            render_commands_push_quad(&commands, rectangle_f32(current_trigger->position.x * TILE_UNIT_SIZE, current_trigger->position.y * TILE_UNIT_SIZE,
+                                                               current_trigger->scale.x * TILE_UNIT_SIZE, current_trigger->scale.y * TILE_UNIT_SIZE),
+                                      color32u8(255, 255, 255, normalized_sinf(global_elapsed_time*2) * 0.5*255 + 64), BLEND_MODE_ALPHA);
+        } else {
+            render_commands_push_quad(&commands, rectangle_f32(current_trigger->position.x * TILE_UNIT_SIZE, current_trigger->position.y * TILE_UNIT_SIZE,
+                                                               current_trigger->scale.x * TILE_UNIT_SIZE, current_trigger->scale.y * TILE_UNIT_SIZE),
+                                      color32u8(255, 0, 0, normalized_sinf(global_elapsed_time*2) * 0.5*255 + 64), BLEND_MODE_ALPHA);
+        }
+        s32 trigger_id          = current_trigger - world_editor_state->world_map.locations.locations;
+        render_commands_push_text(&commands, font, 1, v2f32(current_trigger->position.x * TILE_UNIT_SIZE, current_trigger->position.y * TILE_UNIT_SIZE),
+                                  copy_cstring_to_scratch(format_temp("(world_location %d)", trigger_id)), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+    }
+
+    for (s32 generic_trigger_index = 0; generic_trigger_index < world_editor_state->world_map.triggers.count; ++generic_trigger_index) {
+        struct trigger* current_trigger = world_editor_state->world_map.triggers.triggers + generic_trigger_index;
+
+        if (world_editor_state->last_selected == current_trigger) {
+            render_commands_push_quad(&commands, rectangle_f32(current_trigger->bounds.x * TILE_UNIT_SIZE, current_trigger->bounds.y * TILE_UNIT_SIZE,
+                                                               current_trigger->bounds.w * TILE_UNIT_SIZE, current_trigger->bounds.h * TILE_UNIT_SIZE),
+                                      color32u8(255, 255, 255, normalized_sinf(global_elapsed_time*2) * 0.5*255 + 64), BLEND_MODE_ALPHA);
+        } else {
+            render_commands_push_quad(&commands, rectangle_f32(current_trigger->bounds.x * TILE_UNIT_SIZE, current_trigger->bounds.y * TILE_UNIT_SIZE,
+                                                               current_trigger->bounds.w * TILE_UNIT_SIZE, current_trigger->bounds.h * TILE_UNIT_SIZE),
+                                      color32u8(255, 0, 0, normalized_sinf(global_elapsed_time*2) * 0.5*255 + 64), BLEND_MODE_ALPHA);
+        }
+        s32 trigger_id          = current_trigger - world_editor_state->world_map.triggers.triggers;
+        render_commands_push_text(&commands, font, 1, v2f32(current_trigger->bounds.x * TILE_UNIT_SIZE, current_trigger->bounds.y * TILE_UNIT_SIZE),
+                                  copy_cstring_to_scratch(format_temp("(trigger %d)", trigger_id)), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+    }
+
     for (s32 position_marker_index = 0; position_marker_index < world_editor_state->world_map.position_markers.count; ++position_marker_index) {
         struct position_marker* current_marker = world_editor_state->world_map.position_markers.markers + position_marker_index;
         if (world_editor_state->last_selected == current_marker) {
@@ -419,7 +523,7 @@ void update_and_render_world_editor_game_menu_ui(struct game_state* state, struc
             if (!world_editor_state->last_selected) {
                 world_editor_state->tab_menu_open = 0;
             } else {
-                switch (world_editor_state->tool_mode) {
+                switch (world_editor_state->tool_mode) { /* PER OBJECT PROPERTY VIEW */
                     /* I would show images, but this is easier for now */
                     case WORLD_EDITOR_TOOL_TILE_PAINTING:
                     case WORLD_EDITOR_TOOL_LEVEL_SETTINGS: {
@@ -434,6 +538,50 @@ void update_and_render_world_editor_game_menu_ui(struct game_state* state, struc
 
                                 {
                                     EDITOR_imgui_text_edit_cstring(framebuffer, font, highlighted_font, 2, v2f32(10, draw_cursor_y), string_literal("name"), marker->name, array_count(marker->name));
+                                }
+                            } break;
+                            case WORLD_ENTITY_PLACEMENT_TYPE_trigger: { /* there are only generic triggers thankfully. */
+                                struct trigger* trigger = world_editor_state->last_selected;
+                                s32 trigger_id          = trigger - world_editor_state->world_map.triggers.triggers;
+
+                                f32 draw_cursor_y = 30;
+                                string activation_type_string = activation_type_strings[trigger->activation_method];
+                                if(EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(16, draw_cursor_y),
+                                                       string_from_cstring(format_temp("Activation Type: %.*s", activation_type_string.length, activation_type_string.data)))) {
+                                    trigger->activation_method += 1;
+                                    if (trigger->activation_method >= ACTIVATION_TYPE_COUNT) {
+                                        trigger->activation_method = 0;
+                                    }
+                                }
+                            } break;
+                            case WORLD_ENTITY_PLACEMENT_TYPE_location: { /* there are only generic triggers thankfully. */
+                                struct world_location* trigger = world_editor_state->last_selected;
+
+                                f32 draw_cursor_y = 30;
+                                {
+                                    EDITOR_imgui_text_edit_cstring(framebuffer, font, highlighted_font, 2, v2f32(10, draw_cursor_y), string_literal("preview name"), trigger->preview_name, array_count(trigger->preview_name));
+                                    draw_cursor_y += 2 * 16 * 1.5;
+                                }
+                                draw_cursor_y += 2 * 16 * 1.5;
+                                {
+                                    string facing_direction_string = facing_direction_strings[trigger->entrance.facing_direction];
+                                    string s = string_clone(&scratch_arena, string_from_cstring(format_temp("facing direction: %.*s", facing_direction_string.length, facing_direction_string.data)));
+                                    s32 result = EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(10, draw_cursor_y), s);
+
+                                    if (result == 1) {
+                                        trigger->entrance.facing_direction += 1;
+                                        if (trigger->entrance.facing_direction > 3) trigger->entrance.facing_direction = 0;
+                                    } else if (result == 2) {
+                                        if (trigger->entrance.facing_direction == 0) {
+                                            trigger->entrance.facing_direction = 3;
+                                        } else {
+                                            trigger->entrance.facing_direction -= 1;
+                                        }
+                                    }
+                                }
+                                draw_cursor_y += 2 * 16 * 1.5;
+                                if(EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(16, draw_cursor_y), format_temp_s("visit location<%3.3f,%3.3f> : %s", trigger->entrance.where.x, trigger->entrance.where.y, trigger->entrance.area_name))) {
+                                    unimplemented("lol");
                                 }
                             } break;
                             default: {

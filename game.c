@@ -1252,6 +1252,10 @@ void serialize_world_map(struct memory_arena* arena, struct binary_serializer* s
         serialize_position_marker_list(serializer, arena, area_version_id, &world_map->position_markers);
     }
 
+    if (version_id >= 3) {
+        serialize_trigger_list(serializer, arena, area_version_id, &world_map->triggers);
+        serialize_world_location_list(serializer, arena, version_id, &world_map->locations);
+    }
 }
 struct world_map* world_map_list_find_existing(struct world_map_list* list, u32 hashid) {
     for (s32 index = 0; index < list->count; ++index) {

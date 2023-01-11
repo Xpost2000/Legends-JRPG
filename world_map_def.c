@@ -9,7 +9,7 @@
   VERSION 2:
   Position Marker for metadata
   VERSION 3:
-  World Locations
+  World Locations + Triggers
 */
 
 #define WORLD_SCRIPTABLE_TILE_LAYER_COUNT (32)
@@ -125,7 +125,7 @@ enum world_location_flags {
 };
 struct world_location_entrance_placement {
     char  area_name[WORLD_LOCATION_AREA_LENGTH];
-    s8    direction;
+    s8    facing_direction;
     v2f32 where;
 };
 struct world_location { /* in tile positions */
@@ -168,7 +168,8 @@ struct world_map {
     struct scriptable_tile_layer_property scriptable_layer_properties[WORLD_SCRIPTABLE_TILE_LAYER_COUNT];
     struct tile_layer                     tile_layers[WORLD_TILE_LAYER_COUNT];
     struct position_marker_list           position_markers;
-    struct world_location_list            world_locations;
+    struct world_location_list            locations;
+    struct trigger_list                   triggers;
     string                                script_string;
     struct world_map_script_data          script;
 };

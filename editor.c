@@ -129,7 +129,7 @@ local void editor_brush_remove_tile_at(v2f32 tile_space_mouse_location) {
         }
     }
 }
-void editor_remove_scriptable_transition_trigger_at(v2f32 point_in_tilespace) {
+void editor_remove_scriptable_trigger_at(v2f32 point_in_tilespace) {
     struct trigger* existing_trigger = trigger_list_trigger_at(&editor_state->editing_area.triggers, point_in_tilespace);
     if (existing_trigger == editor_state->last_selected)  {
         editor_state->last_selected = 0;
@@ -353,7 +353,7 @@ void editor_remove_actor_at(v2f32 point_in_tilespace) {
     }
 }
 
-void editor_place_or_drag_scriptable_transition_trigger(v2f32 point_in_tilespace) {
+void editor_place_or_drag_scriptable_trigger(v2f32 point_in_tilespace) {
     if (is_dragging(&editor_state->drag_data)) {
         return; 
     }
@@ -620,9 +620,9 @@ local void handle_editor_tool_mode_input(struct software_framebuffer* framebuffe
                 case TRIGGER_PLACEMENT_TYPE_SCRIPTABLE_TRIGGER: {
                     if (left_clicked) {
                         /* NOTE check the trigger mode */
-                        editor_place_or_drag_scriptable_transition_trigger(tile_space_mouse_location);
+                        editor_place_or_drag_scriptable_trigger(tile_space_mouse_location);
                     } else if (right_clicked) {
-                        editor_remove_scriptable_transition_trigger_at(tile_space_mouse_location);
+                        editor_remove_scriptable_trigger_at(tile_space_mouse_location);
                     }
                 } break;
             }

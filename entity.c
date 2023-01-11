@@ -3376,7 +3376,7 @@ void serialize_world_location(struct binary_serializer* serializer, s32 version,
             serialize_bytes(serializer, location->preview_name, array_count(location->preview_name));
             {
                 serialize_bytes(serializer, location->entrance.area_name, array_count(location->entrance.area_name));
-                serialize_s8(serializer,    &location->entrance.direction);
+                serialize_s8(serializer,    &location->entrance.facing_direction);
                 serialize_f32(serializer,   &location->entrance.where.x);
                 serialize_f32(serializer,   &location->entrance.where.y);
             }
