@@ -919,6 +919,7 @@ local void update_and_render_pause_editor_menu_ui(struct game_state* state, stru
                                     return;
                                 } break;
                                 case 1: {
+                                    /* hmmm...that's kind of weird. */
                                     struct binary_serializer serializer = open_read_file_serializer(string_concatenate(&scratch_arena, string_literal("areas/"), string_from_cstring(current_file->name)));
                                     cstring_copy(current_file->name, editor_state->loaded_area_name, array_count(editor_state->loaded_area_name));
                                     serialize_level_area(state, &serializer, &editor_state->loaded_area, true);
@@ -1705,12 +1706,12 @@ void update_and_render_editor(struct software_framebuffer* framebuffer, f32 dt) 
         struct sortable_draw_entities draw_entities = sortable_draw_entities(&scratch_arena, 8192*4);
         render_entities(game_state, &draw_entities);
         sortable_draw_entities_submit(&commands, &graphics_assets, &draw_entities, dt);
+        render_foreground_area(game_state, &commands, &editor_state->loaded_area);
         if (editor_state->last_selected && editor_state->tool_mode == EDITOR_TOOL_TRIGGER_PLACEMENT) {
             struct trigger_level_transition* trigger = editor_state->last_selected;
             render_commands_push_quad(&commands, rectangle_f32(trigger->spawn_location.x * TILE_UNIT_SIZE, trigger->spawn_location.y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE),
                                       color32u8(0, 255, 255, normalized_sinf(global_elapsed_time*4) * 0.5*255 + 64), BLEND_MODE_ALPHA);
         }
-        render_foreground_area(game_state, &commands, &editor_state->loaded_area);
     } else {
         {
             /* rendering the editor world */

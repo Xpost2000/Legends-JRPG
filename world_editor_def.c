@@ -35,12 +35,27 @@ static string world_entity_placement_type_strings[] = {
     [WORLD_ENTITY_PLACEMENT_TYPE_position_marker] = string_literal("Position Marker"),
     [WORLD_ENTITY_PLACEMENT_TYPE_count]           = string_literal("(count)"),
 };
+enum world_editor_screen_state {
+    WORLD_EDITOR_SCREEN_MAIN,
+    WORLD_EDITOR_SCREEN_SETTING_LOCATION_ENTRANCE,
+    WORLD_EDITOR_SCREEN_FILE_SELECTION_FOR_SETTING_LOCATION_ENTRANCE,
+    WORLD_EDITOR_SCREEN_COUNT,
+};
+
+struct world_editor_screen_state_setting_location_entrance_data {
+    v2f32 camera_position_before_trying_to_set_location_entrance;
+    struct camera camera_before_trying_to_set_location_entrance;
+};
+
 struct world_editor_state {
     struct memory_arena* arena;
     s32    painting_tile_id;
     s32    tool_mode;
     s32    tab_menu_open;
     s32    entity_placement_type;
+
+    s32 screen_state;
+    struct world_editor_screen_state_setting_location_entrance_data setting_entrance_location;
 
     struct world_map world_map;
 
@@ -68,9 +83,9 @@ struct world_editor_state {
     /* ??? */
     /* for edits that may require cross area interaction */
     /* we just load another full level and display it normally without editor mode stuff */
-    char loaded_area_name[260]; /* level_areas don't know where they come from... */
+    /* this needs to be changed. */
+    char              loaded_area_name[260];
     struct level_area loaded_area;
-    bool       viewing_loaded_area;
 
     /* we're going to use a custom pause menu for this since I want the editor code to generally be self-contained */
     /* also because hooking into the normal pause menu is weird */

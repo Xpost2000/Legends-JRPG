@@ -1405,6 +1405,11 @@ void _serialize_level_area(struct memory_arena* arena, struct binary_serializer*
 
     }
 }
+
+/* NOTE:
+   This always allocates from the game arena, which I fear has some weird implications on the memory state for the level editors.
+   This function is totally fine at runtime though. It's just a note.
+*/
 void serialize_level_area(struct game_state* state, struct binary_serializer* serializer, struct level_area* level, bool use_default_spawn) {
     _debugprintf("%llu memory used", state->arena->used + state->arena->used_top);
     memory_arena_clear_top(state->arena);
