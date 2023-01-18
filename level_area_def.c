@@ -26,7 +26,7 @@
    Version 13: Position Markers
    Version 14: Level Area Transition triggers can now target world map areas
 */
-#define CURRENT_LEVEL_AREA_VERSION (14) 
+#define CURRENT_LEVEL_AREA_VERSION (15) 
 
 #define SCRIPTABLE_TILE_LAYER_COUNT (32)
 enum scriptable_tile_layer_flags {

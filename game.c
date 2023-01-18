@@ -3001,6 +3001,27 @@ void load_level_queued_for_transition(void* callback_data) {
     }
 }
 
+/* NOTE: 0 degrees is north/up. Also this is in degrees. */
+local f32 facing_direction_to_world_map_facing_angle(s32 direction) {
+    switch (direction) {
+        case DIRECTION_RETAINED:
+        case DIRECTION_UP: {
+            return 0;
+        } break;
+        case DIRECTION_DOWN: {
+            return 180; 
+        } break;
+        case DIRECTION_RIGHT: {
+            return 90; 
+        } break;
+        case DIRECTION_LEFT: {
+            return 270; 
+        } break;
+    }
+    assertion(!"This is impossible");
+    return 0;
+}
+
 void handle_entity_level_trigger_interactions(struct game_state* state, struct entity* entity, struct trigger_level_transition_list* trigger_level_transitions, f32 dt) {
     if (!(entity->flags & ENTITY_FLAGS_PLAYER_CONTROLLED))
         return;
@@ -3012,9 +3033,18 @@ void handle_entity_level_trigger_interactions(struct game_state* state, struct e
         u8    new_facing_direction = current_trigger->new_facing_direction;
 
         if (rectangle_f32_intersect(current_trigger->bounds, entity_collision_bounds)) {
-            queue_level_load(string_from_cstring(current_trigger->target_level),
-                             current_trigger->spawn_location,
-                             current_trigger->new_facing_direction);
+            switch (current_trigger->type) {
+                case TRIGGER_LEVEL_TRANSITION_TYPE_TO_LEVEL_AREA: {
+                    game_open_overworld(string_from_cstring(current_trigger->target_level),
+                                        current_trigger->spawn_location,
+                                        current_trigger->new_facing_direction);
+                } break;
+                case TRIGGER_LEVEL_TRANSITION_TYPE_TO_WORLD_MAP: {
+                    game_open_worldmap(string_from_cstring(current_trigger->target_level),
+                                       current_trigger->spawn_location,
+                                       facing_direction_to_world_map_facing_angle(current_trigger->new_facing_direction));
+                } break;
+            }
             return;
         }
     }
