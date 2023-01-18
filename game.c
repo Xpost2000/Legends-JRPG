@@ -3414,6 +3414,7 @@ local void update_and_render_game_worldmap(struct software_framebuffer* framebuf
             }
 
             /* this is a little cumbersome since collidant objects are not easily iterable right now. Will need to fix this at some point. Or make it more generic */
+#if 0
             {
                 struct rectangle_f32 world_rectangle = rectangle_f32(game_state->world_map_explore_state.player_position.x,
                                                                      game_state->world_map_explore_state.player_position.y,
@@ -3526,6 +3527,41 @@ local void update_and_render_game_worldmap(struct software_framebuffer* framebuf
                 game_state->world_map_explore_state.player_position.x = world_rectangle.x;
                 game_state->world_map_explore_state.player_position.y = world_rectangle.y;
             }
+#else
+            {
+                struct rectangle_f32 world_rectangle = rectangle_f32(game_state->world_map_explore_state.player_position.x, game_state->world_map_explore_state.player_position.y, TILE_UNIT_SIZE, TILE_UNIT_SIZE);
+                {
+                    bool stop_horizontal_movement = false;
+                    {
+                        world_rectangle.x += dt * desired_velocity.x;
+
+                        struct collidable_object_iterator collidables = world_map_collidables_iterator(world_map);
+
+                        for (struct collidable_object object = collidable_object_iterator_begin(&collidables);
+                             !collidable_object_iterator_finished(&collidables);
+                             collidable_object_iterator_advance(&collidables)) {
+                            world_rectangle = push_out_horizontal_edges(world_rectangle, object.collision_rectangle, &stop_horizontal_movement);
+                        }
+                    }
+                }
+                {
+                    bool stop_vertical_movement = false;
+                    {
+                        world_rectangle.y += dt * desired_velocity.y;
+
+                        struct collidable_object_iterator collidables = world_map_collidables_iterator(world_map);
+
+                        for (struct collidable_object object = collidable_object_iterator_begin(&collidables);
+                             !collidable_object_iterator_finished(&collidables);
+                             collidable_object_iterator_advance(&collidables)) {
+                            world_rectangle = push_out_horizontal_edges(world_rectangle, object.collision_rectangle, &stop_horizontal_movement);
+                        }
+                    }
+                }
+                game_state->world_map_explore_state.player_position.x = world_rectangle.x;
+                game_state->world_map_explore_state.player_position.y = world_rectangle.y;
+            }
+#endif
         }
     }
 

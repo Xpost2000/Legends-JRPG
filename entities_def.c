@@ -966,4 +966,41 @@ void serialize_entity_id(struct binary_serializer* serializer, s32 version, enti
 
 bool entity_has_dialogue(struct entity* entity);
 
+/*
+  Specialized iterator on level_area and world_map types.
+
+  This is mainly the reduce the code duplication on the collision parts of the code so I don't accidently
+  make a mistake, whenever I try to add more collidable things.
+*/
+enum collidable_object_iterator_type {
+    COLLIDABLE_OBJECT_ITERATOR_WORLD_MAP,
+    COLLIDABLE_OBJECT_ITERATOR_LEVEL_AREA,
+};
+/* I may or may not need more fields, but I don't think I need more than the rectangle usually. */
+struct collidable_object { 
+    struct rectangle_f32 rectangle;
+};
+struct collidable_object_iterator_world_map {
+    s32 tile_layer_object_index;
+    s32 tile_layer_ground_index;
+    s32 tile_layer_scriptable_index;
+    s32 tile_index;
+};
+struct collidable_object_iterator_level_area {
+    s32 tile_layer_object_index;
+    s32 tile_layer_ground_index;
+    s32 tile_layer_scriptable_index;
+    s32 tile_index;
+    s32 chest_index;
+};
+struct collidable_object_iterator {
+    u8    type;
+    void* parent;
+
+    bool done;
+
+    struct collidable_object_iterator_world_map  world_map;
+    struct collidable_object_iterator_level_area level_area;
+};
+
 #endif
