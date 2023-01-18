@@ -169,3 +169,7 @@ static void initialize_static_table_data(void) {
     load_tile_data_into_table(file_buffer_as_string(&tile_data_source_file), 0);
     load_tile_data_into_table(file_buffer_as_string(&world_tile_data_source_file), 1);
 }
+
+struct rectangle_f32 tile_rectangle(struct tile* t) {
+    return rectangle_f32(t->x * TILE_UNIT_SIZE, t->y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE);
+}

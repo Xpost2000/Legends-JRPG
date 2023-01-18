@@ -3538,9 +3538,9 @@ local void update_and_render_game_worldmap(struct software_framebuffer* framebuf
                         struct collidable_object_iterator collidables = world_map_collidables_iterator(world_map);
 
                         for (struct collidable_object object = collidable_object_iterator_begin(&collidables);
-                             !collidable_object_iterator_finished(&collidables);
+                             !collidable_object_iterator_done(&collidables);
                              collidable_object_iterator_advance(&collidables)) {
-                            world_rectangle = push_out_horizontal_edges(world_rectangle, object.collision_rectangle, &stop_horizontal_movement);
+                            world_rectangle = push_out_horizontal_edges(world_rectangle, object.rectangle, &stop_horizontal_movement);
                         }
                     }
                 }
@@ -3552,9 +3552,9 @@ local void update_and_render_game_worldmap(struct software_framebuffer* framebuf
                         struct collidable_object_iterator collidables = world_map_collidables_iterator(world_map);
 
                         for (struct collidable_object object = collidable_object_iterator_begin(&collidables);
-                             !collidable_object_iterator_finished(&collidables);
+                             !collidable_object_iterator_done(&collidables);
                              collidable_object_iterator_advance(&collidables)) {
-                            world_rectangle = push_out_horizontal_edges(world_rectangle, object.collision_rectangle, &stop_horizontal_movement);
+                            world_rectangle = push_out_vertical_edges(world_rectangle, object.rectangle, &stop_vertical_movement);
                         }
                     }
                 }

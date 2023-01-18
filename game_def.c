@@ -295,6 +295,7 @@ struct game_ui_nine_patch game_ui_nine_patch_load_from_directory(struct graphics
 /* forward decl avoid linking problems (cause C can't have define anywhere.) */
 struct entity_list;
 struct level_area;
+struct world_map;
 
 bool special_effects_active(void);
 void special_effect_start_inversion(void);
@@ -357,6 +358,8 @@ union color32f32 game_foreground_entity_things_shader(struct software_framebuffe
 #include "level_area_def.c"
 #include "world_map_def.c"
 #include "xp_tables_def.c"
+
+struct rectangle_f32 tile_rectangle(struct tile* t);
 
 /* use this instead of entity_list_dereference */
 struct entity* game_dereference_entity(struct game_state* state, entity_id id);

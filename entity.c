@@ -1,5 +1,11 @@
 #include "entities_def.c"
 
+/*
+  NOTE: this file is gigantic and is really involves a lot of the games' exploration logic (since that's most of the update code...)
+
+  A lot of things happened to be related to entities which is why this file is so large. Weird.
+*/
+
 /* TODO: remove checking for active entities since the iterator should take care of it now */
 
 /*
@@ -4418,4 +4424,123 @@ struct world_location* world_location_list_location_at(struct world_location_lis
 
 #undef Define_Common_List_Type_Procedures
 #undef Define_Common_List_Type_Procedures_Alloc_Push
+
+struct collidable_object_iterator world_map_collidables_iterator(struct world_map* world_map) {
+    struct collidable_object_iterator result = {};
+    result.type                              = COLLIDABLE_OBJECT_ITERATOR_WORLD_MAP;
+    result.parent                            = world_map;
+    return result;
+}
+
+struct collidable_object_iterator level_area_collidables_iterator(struct level_area* level_area) {
+    struct collidable_object_iterator result = {};
+    result.type                              = COLLIDABLE_OBJECT_ITERATOR_LEVEL_AREA;
+    result.parent                            = level_area;
+    return result;
+}
+
+struct collidable_object collidable_object_iterator_begin(struct collidable_object_iterator* iterator) {
+    return collidable_object_iterator_advance(iterator);
+}
+
+local void _collidable_object_iterator_set_status(struct collidable_object_iterator* iterator) {
+    switch (iterator->type) {
+        case COLLIDABLE_OBJECT_ITERATOR_WORLD_MAP: {
+            struct world_map* world_map = iterator->parent;
+            if (iterator->world_map.tile_layer_object_index >= world_map->tile_layers[WORLD_TILE_LAYER_OBJECT].count) {
+                iterator->done = true;
+                return;
+            }
+            if (iterator->world_map.tile_layer_ground_index >= world_map->tile_layers[WORLD_TILE_LAYER_GROUND].count) {
+                iterator->done = true;
+                return;
+            }
+            if (iterator->world_map.tile_layer_scriptable_layer_index >= WORLD_SCRIPTABLE_TILE_LAYER_COUNT) {
+                iterator->done = true;
+                return;
+            }
+        } break;
+        case COLLIDABLE_OBJECT_ITERATOR_LEVEL_AREA: {
+            struct level_area* level_area = iterator->parent;
+            unimplemented("Not done");
+        } break;
+    }
+}
+
+bool collidable_object_iterator_done(struct collidable_object_iterator* iterator) {
+    return iterator->done;
+}
+
+struct collidable_object collidable_object_iterator_advance(struct collidable_object_iterator* iterator) {
+    struct collidable_object result = {};
+
+    if (!iterator->done) {
+        switch (iterator->type) {
+            case COLLIDABLE_OBJECT_ITERATOR_WORLD_MAP: {
+                struct world_map* world_map = iterator->parent;
+
+                while (iterator->world_map.tile_layer_object_index < world_map->tile_layers[WORLD_TILE_LAYER_OBJECT].count) {
+                    struct tile*                 current_tile = &world_map->tile_layers[WORLD_TILE_LAYER_OBJECT].tiles[iterator->world_map.tile_layer_object_index++];
+                    struct tile_data_definition* tile_data    = world_tile_table_data + current_tile->id;
+
+                    if (tile_data->flags & TILE_DATA_FLAGS_SOLID) {
+                        result.rectangle = tile_rectangle(current_tile);
+                        return result;
+                    } else {
+                        continue;
+                    }
+                }
+
+                while (iterator->world_map.tile_layer_ground_index < world_map->tile_layers[WORLD_TILE_LAYER_GROUND].count) {
+                    struct tile*                 current_tile = &world_map->tile_layers[WORLD_TILE_LAYER_GROUND].tiles[iterator->world_map.tile_layer_ground_index++];
+                    struct tile_data_definition* tile_data    = world_tile_table_data + current_tile->id;
+
+                    if (tile_data->flags & TILE_DATA_FLAGS_SOLID) {
+                        result.rectangle = tile_rectangle(current_tile);
+                        return result;
+                    } else {
+                        continue;
+                    }
+                }
+
+                while (iterator->world_map.tile_layer_scriptable_layer_index < WORLD_SCRIPTABLE_TILE_LAYER_COUNT) {
+                    struct tile_layer*                  current_scriptable_tile_layer       = &world_map->tile_layers[WORLD_TILE_LAYER_SCRIPTABLE_0 + iterator->world_map.tile_layer_scriptable_layer_index];
+                    struct scriptable_tile_layer_property* current_scriptable_layer_properties = &world_map->scriptable_layer_properties[iterator->world_map.tile_layer_scriptable_layer_index];
+
+                    while (iterator->world_map.tile_layer_scriptable_tile_index < current_scriptable_tile_layer->count) {
+                        if (current_scriptable_layer_properties->draw_layer != WORLD_TILE_LAYER_OBJECT) {
+                            break;
+                        }
+                        if (current_scriptable_layer_properties->flags & SCRIPTABLE_TILE_LAYER_FLAGS_HIDDEN) {
+                            break;
+                        }
+                        if (current_scriptable_layer_properties->flags & SCRIPTABLE_TILE_LAYER_FLAGS_NOCOLLIDE) {
+                            break;
+                        }
+
+                        struct tile*                 current_tile = &current_scriptable_tile_layer->tiles[iterator->world_map.tile_layer_scriptable_tile_index++];
+                        struct tile_data_definition* tile_data    = world_tile_table_data + current_tile->id;
+
+                        if (tile_data->flags & TILE_DATA_FLAGS_SOLID) {
+                            result.rectangle = tile_rectangle(current_tile);
+                            return result;
+                        } else {
+                            continue;
+                        }
+                    }
+
+                    iterator->world_map.tile_layer_scriptable_layer_index += 1;
+                }
+            } break;
+            case COLLIDABLE_OBJECT_ITERATOR_LEVEL_AREA: {
+                struct level_area* level_area = iterator->parent;
+                unimplemented("Not done");
+            } break;
+        }
+    }
+
+    _collidable_object_iterator_set_status(iterator);
+    return result;
+}
+
 #include "entity_ability.c"

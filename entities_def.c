@@ -983,14 +983,14 @@ struct collidable_object {
 struct collidable_object_iterator_world_map {
     s32 tile_layer_object_index;
     s32 tile_layer_ground_index;
-    s32 tile_layer_scriptable_index;
-    s32 tile_index;
+
+    s32 tile_layer_scriptable_layer_index;
+    s32 tile_layer_scriptable_tile_index;
 };
 struct collidable_object_iterator_level_area {
     s32 tile_layer_object_index;
     s32 tile_layer_ground_index;
-    s32 tile_layer_scriptable_index;
-    s32 tile_index;
+    s32 tile_layer_scriptable_layer_index;
     s32 chest_index;
 };
 struct collidable_object_iterator {
@@ -1002,5 +1002,11 @@ struct collidable_object_iterator {
     struct collidable_object_iterator_world_map  world_map;
     struct collidable_object_iterator_level_area level_area;
 };
+
+struct collidable_object_iterator world_map_collidables_iterator(struct world_map* world_map);
+struct collidable_object_iterator level_area_collidables_iterator(struct level_area* level_area);
+struct collidable_object collidable_object_iterator_begin(struct collidable_object_iterator* iterator);
+bool                     collidable_object_iterator_done(struct collidable_object_iterator* iterator);
+struct collidable_object collidable_object_iterator_advance(struct collidable_object_iterator* iterator);
 
 #endif
