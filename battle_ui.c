@@ -1808,6 +1808,18 @@ local void end_combat_ui(void) {
         global_battle_ui_state.timer = 0;
         global_battle_ui_state.phase = BATTLE_UI_FADE_OUT_DETAILS_AFTER_BATTLE_COMPLETION;
         populate_post_battle_loot_table();
+
+        /* end battle events. */
+        /* not going to be very fancy about it. Revive all "dead party members". */
+        {
+            for (s32 party_member_index = 0; party_member_index < game_state->party_member_count; ++party_member_index) {
+                struct entity* party_member = game_dereference_entity(game_state, game_state->party_members[party_member_index]);
+
+                if (!(party_member->flags & ENTITY_FLAGS_ALIVE)) {
+                    entity_set_health(party_member, 1);
+                }
+            }
+        }
     }
 }
 

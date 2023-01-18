@@ -2071,8 +2071,17 @@ bool entity_validate_death(struct entity* entity) {
     return false;
 }
 
+void entity_set_health(struct entity* entity, s32 hp) {
+    if (entity->health.value > entity->health.max) {
+        hp = entity->health.max;
+    }
+    entity->health.value = hp;
+    entity_validate_death(entity);
+}
+
 void entity_do_healing(struct entity* entity, s32 healing) {
     entity->health.value += healing;
+    entity_validate_death(entity);
     notify_healing(v2f32_sub(entity->position, v2f32(0, TILE_UNIT_SIZE)), healing);
 }
 

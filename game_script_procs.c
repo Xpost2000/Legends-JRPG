@@ -811,11 +811,7 @@ GAME_LISP_FUNCTION(SET_HEALTH) {
     struct entity*               entity = game_dereference_entity(state, ptr.entity_id);
     s32                          value  = 0;
     Fatal_Script_Error(lisp_form_get_s32(arguments[1], &value) && "Stat accessor set needs to be a number");
-    entity->health.value = value;
-    if (entity->health.value > entity->health.max) {
-        entity->health.value = entity->health.max;
-    }
-    (entity_validate_death(entity));
+    entity_set_health(entity);
     return lisp_form_integer(value);
 }
 /* return position as a tile grid unit */
