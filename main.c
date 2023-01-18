@@ -318,8 +318,6 @@ local void initialize_framebuffer(void) {
     SCREEN_WIDTH  = framebuffer_resolution.x;
     SCREEN_HEIGHT = ENGINE_BASE_VERTICAL_RESOLUTION;
 
-
-    /* TODO: Seems to be a variable crash sometimes. Check this later. */
     _debugprintf("framebuffer resolution is: (%d, %d) vs (%d, %d) real resolution", SCREEN_WIDTH, SCREEN_HEIGHT, REAL_SCREEN_WIDTH, REAL_SCREEN_HEIGHT);
     global_default_framebuffer = software_framebuffer_create(framebuffer_resolution.x, framebuffer_resolution.y);
     global_copy_framebuffer    = software_framebuffer_create(framebuffer_resolution.x, framebuffer_resolution.y);

@@ -117,8 +117,20 @@ f32 font_cache_text_width(struct font_cache* font_cache, string text, f32 scale)
     return font_cache->tile_width * text.length * scale;
 }
 
+/*
+  NOTE:
+  adding padding bytes because somewhere in my rendering procedures I have an access violation at somepoint,
+  I probably forget to clip some bounds somewhere, but I can't really spend too much time trying to track it down.
+
+  This fixes the segfault/heap error that may happen if the framebuffer is at specific sizes...
+
+  Thankfully there's very little heap allocation in the engine, and essentially none in the game code so a heap error
+  wasn't really going to break anything in a lot of cases, but that's just a note.
+
+  I'll look for it at some point in the future.
+*/
 struct software_framebuffer software_framebuffer_create(u32 width, u32 height) {
-    u8* pixels = system_heap_memory_allocate(width * height * sizeof(u32));
+    u8* pixels = system_heap_memory_allocate(width * height * sizeof(u32)+16);
 
     return (struct software_framebuffer) {
         .width  = width,
@@ -128,7 +140,7 @@ struct software_framebuffer software_framebuffer_create(u32 width, u32 height) {
 }
 
 struct software_framebuffer software_framebuffer_create_from_arena(struct memory_arena* arena, u32 width, u32 height) {
-    u8* pixels = memory_arena_push(arena, width * height * sizeof(u32));
+    u8* pixels = memory_arena_push(arena, width * height * sizeof(u32)+16);
 
     return (struct software_framebuffer) {
         .width  = width,
