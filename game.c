@@ -3426,8 +3426,20 @@ local void update_and_render_game_worldmap(struct software_framebuffer* framebuf
         f32 move_back    = is_action_down(INPUT_ACTION_MOVE_DOWN);
         f32 move_left    = is_action_down(INPUT_ACTION_MOVE_LEFT);
         f32 move_right   = is_action_down(INPUT_ACTION_MOVE_RIGHT);
+        bool action_cancel = is_action_pressed(INPUT_ACTION_CANCEL);
+        bool action_confirm = is_action_pressed(INPUT_ACTION_CONFIRMATION);
 
-        if (allow_explore_player_entity_movement(game_state)) {
+        if (game_state->world_map_explore_state.prompt_for_entering) {
+            if (action_confirm) {
+                game_state->world_map_explore_state.prompt_for_entering      = false;
+
+                struct world_location* location = world_map->locations.locations + (game_state->world_map_explore_state.current_location_trigger-1);
+                game_open_overworld(string_from_cstring(location->entrance.area_name), location->entrance.where, location->entrance.facing_direction);
+                game_state->world_map_explore_state.current_location_trigger = 0;
+            } else if (action_cancel) {
+                game_state->world_map_explore_state.prompt_for_entering = false;
+            }
+        } else if (allow_explore_player_entity_movement(game_state)) {
             v2f32 desired_velocity = v2f32(0,0);
             if (move_forward) {
                 desired_velocity.x = WORLD_VELOCITY * view_direction.x;
@@ -3707,6 +3719,88 @@ local void update_and_render_game_worldmap(struct software_framebuffer* framebuf
         /* I am going to put the sprite at known fixed positions... */
         {
             software_framebuffer_draw_quad(framebuffer, rectangle_f32(dx, dy, TILE_UNIT_SIZE, TILE_UNIT_SIZE), color32u8(0, 0, 255, 255), BLEND_MODE_ALPHA);
+        }
+    }
+
+    /* Trigger interactions */
+    {
+        struct rectangle_f32 world_rectangle = rectangle_f32(game_state->world_map_explore_state.player_position.x, game_state->world_map_explore_state.player_position.y, TILE_UNIT_SIZE, TILE_UNIT_SIZE);
+
+        bool hit_any_locations = false;
+        for (s32 location_index = 0; location_index < world_map->locations.count && !hit_any_locations; ++location_index) {
+            struct world_location* location = world_map->locations.locations + location_index;
+
+            if (rectangle_f32_intersect(rectangle_f32(location->position.x * TILE_UNIT_SIZE,
+                                                      location->position.y * TILE_UNIT_SIZE,
+                                                      location->scale.x * TILE_UNIT_SIZE,
+                                                      location->scale.y * TILE_UNIT_SIZE),
+                                        world_rectangle)) {
+                hit_any_locations = true;
+                if (game_state->world_map_explore_state.current_location_trigger != location_index+1) {
+                    game_state->world_map_explore_state.current_location_trigger = location_index+1;
+                }
+            }
+        }
+
+        if (!hit_any_locations) {
+            game_state->world_map_explore_state.prompt_for_entering = false;
+            game_state->world_map_explore_state.current_location_trigger = 0;
+        } else {
+            game_state->world_map_explore_state.prompt_for_entering = true;
+        }
+    }
+
+    /* Draw all the UI */
+    {
+
+        /* World Map Compass */
+        {
+            struct {
+                string name;
+                f32 angle;
+            } compass_display_elements[] = {
+                { .name = string_literal("N"), 0 },
+                { .name = string_literal("E"), 90 },
+                { .name = string_literal("S"), 180 },
+                { .name = string_literal("W"), 270 },
+            };
+
+            const f32 DISPLAY_ELEMENT_RADIUS = 40;
+
+            /* draw a compass UI thing or something... */
+            {
+                f32 widget_x = SCREEN_WIDTH-(10+DISPLAY_ELEMENT_RADIUS*1.2);
+                f32 widget_y = (10+DISPLAY_ELEMENT_RADIUS*1.2);
+                software_framebuffer_draw_quad(framebuffer, rectangle_f32(widget_x-DISPLAY_ELEMENT_RADIUS, widget_y-DISPLAY_ELEMENT_RADIUS, DISPLAY_ELEMENT_RADIUS*2.3, DISPLAY_ELEMENT_RADIUS*3), color32u8(0, 0, 0, 128), BLEND_MODE_ALPHA);
+                for (s32 element_index = 0; element_index < array_count(compass_display_elements); ++element_index) {
+                    compass_display_elements[element_index].angle -= 90;
+                    compass_display_elements[element_index].angle -= game_state->world_map_explore_state.view_angle;
+
+                    f32 as_radians = degree_to_radians(compass_display_elements[element_index].angle);
+
+                    f32 x_cursor = cosf(as_radians) * DISPLAY_ELEMENT_RADIUS;
+                    f32 y_cursor = sinf(as_radians) * DISPLAY_ELEMENT_RADIUS;
+
+                    struct font_cache* font = game_get_font(MENU_FONT_COLOR_STEEL);
+
+                    if (element_index == 0) {
+                        font = game_get_font(MENU_FONT_COLOR_BLOODRED);
+                    }
+
+                    software_framebuffer_draw_text(framebuffer, font, 4, v2f32(widget_x+x_cursor, widget_y+y_cursor), compass_display_elements[element_index].name, color32f32_WHITE, BLEND_MODE_ALPHA);
+                }
+            }
+        }
+
+        /* World Map Enter area prompt */
+        {
+            if (game_state->world_map_explore_state.prompt_for_entering) {
+                struct world_location* location = world_map->locations.locations + (game_state->world_map_explore_state.current_location_trigger-1);
+                f32 widget_x = 0;
+                f32 widget_y = 0;
+                struct font_cache* font = game_get_font(MENU_FONT_COLOR_STEEL);
+                software_framebuffer_draw_text(framebuffer, font, 4, v2f32(widget_x, widget_y), string_from_cstring(location->preview_name), color32f32_WHITE, BLEND_MODE_ALPHA);
+            }
         }
     }
 }

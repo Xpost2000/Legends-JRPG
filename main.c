@@ -63,8 +63,6 @@ local u32 SCREEN_HEIGHT = 0;
 local bool SCREEN_IS_FULLSCREEN = false;
 
 /* real res */
-/* consider a better way to decouple this from the editor logic. */
-/* game logic is okay because we don't use the mouse for UI. (I mean I probably should allow it, but whatever.) */
 local u32 REAL_SCREEN_WIDTH  = 640;
 local u32 REAL_SCREEN_HEIGHT = 480;
 /* local u32 REAL_SCREEN_WIDTH  = 640; */

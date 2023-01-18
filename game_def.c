@@ -659,6 +659,13 @@ struct world_map* world_map_list_push(struct world_map_list* list);
 struct world_map_exploration_state {
     v2f32 player_position;
     f32   view_angle;
+
+    /*
+      Visit area prompt information
+     */
+    bool prompt_for_entering;
+    s32  current_location_trigger; /* 0 for none. Index minus one addressing */
+
     /*
       TODO: boat information?
      */
