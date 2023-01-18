@@ -4447,17 +4447,11 @@ local void _collidable_object_iterator_set_status(struct collidable_object_itera
     switch (iterator->type) {
         case COLLIDABLE_OBJECT_ITERATOR_WORLD_MAP: {
             struct world_map* world_map = iterator->parent;
-            if (iterator->world_map.tile_layer_object_index >= world_map->tile_layers[WORLD_TILE_LAYER_OBJECT].count) {
+
+            if (iterator->world_map.tile_layer_ground_index >= world_map->tile_layers[WORLD_TILE_LAYER_GROUND].count &&
+                iterator->world_map.tile_layer_object_index >= world_map->tile_layers[WORLD_TILE_LAYER_OBJECT].count &&
+                iterator->world_map.tile_layer_scriptable_layer_index >= WORLD_SCRIPTABLE_TILE_LAYER_COUNT) {
                 iterator->done = true;
-                return;
-            }
-            if (iterator->world_map.tile_layer_ground_index >= world_map->tile_layers[WORLD_TILE_LAYER_GROUND].count) {
-                iterator->done = true;
-                return;
-            }
-            if (iterator->world_map.tile_layer_scriptable_layer_index >= WORLD_SCRIPTABLE_TILE_LAYER_COUNT) {
-                iterator->done = true;
-                return;
             }
         } break;
         case COLLIDABLE_OBJECT_ITERATOR_LEVEL_AREA: {
@@ -4482,6 +4476,7 @@ struct collidable_object collidable_object_iterator_advance(struct collidable_ob
                 while (iterator->world_map.tile_layer_object_index < world_map->tile_layers[WORLD_TILE_LAYER_OBJECT].count) {
                     struct tile*                 current_tile = &world_map->tile_layers[WORLD_TILE_LAYER_OBJECT].tiles[iterator->world_map.tile_layer_object_index++];
                     struct tile_data_definition* tile_data    = world_tile_table_data + current_tile->id;
+                    _collidable_object_iterator_set_status(iterator);
 
                     if (tile_data->flags & TILE_DATA_FLAGS_SOLID) {
                         result.rectangle = tile_rectangle(current_tile);
@@ -4494,9 +4489,11 @@ struct collidable_object collidable_object_iterator_advance(struct collidable_ob
                 while (iterator->world_map.tile_layer_ground_index < world_map->tile_layers[WORLD_TILE_LAYER_GROUND].count) {
                     struct tile*                 current_tile = &world_map->tile_layers[WORLD_TILE_LAYER_GROUND].tiles[iterator->world_map.tile_layer_ground_index++];
                     struct tile_data_definition* tile_data    = world_tile_table_data + current_tile->id;
+                    _collidable_object_iterator_set_status(iterator);
 
                     if (tile_data->flags & TILE_DATA_FLAGS_SOLID) {
                         result.rectangle = tile_rectangle(current_tile);
+                        _collidable_object_iterator_set_status(iterator);
                         return result;
                     } else {
                         continue;
@@ -4530,7 +4527,10 @@ struct collidable_object collidable_object_iterator_advance(struct collidable_ob
                     }
 
                     iterator->world_map.tile_layer_scriptable_layer_index += 1;
+                    _collidable_object_iterator_set_status(iterator);
                 }
+
+                _collidable_object_iterator_set_status(iterator);
             } break;
             case COLLIDABLE_OBJECT_ITERATOR_LEVEL_AREA: {
                 struct level_area* level_area = iterator->parent;
@@ -4539,7 +4539,6 @@ struct collidable_object collidable_object_iterator_advance(struct collidable_ob
         }
     }
 
-    _collidable_object_iterator_set_status(iterator);
     return result;
 }
 
