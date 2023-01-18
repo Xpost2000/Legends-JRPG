@@ -17,14 +17,30 @@
 
 
 /*
-  used for some scripts to make life easier, since I don't have variables. I can probably create a few CONTEXT_BINDING_VARs,
+  used for some scripts to make life easier, since I don't have variables(not the normal kind). I can probably create a few CONTEXT_BINDING_VARs,
   since I don't want to have an actual variable system. (lexical bindings be scary and overkill for this)
 */
 enum context_binding_ids {
     CONTEXT_BINDING_SELF,
     CONTEXT_BINDING_TOUCHER,
     CONTEXT_BINDING_HITTER,
+    CONTEXT_BINDING_TEMP0,
+    CONTEXT_BINDING_TEMP1,
+    CONTEXT_BINDING_TEMP2,
+    CONTEXT_BINDING_TEMP3,
+    CONTEXT_BINDING_TEMP4,
     CONTEXT_BINDING_ID_COUNT,
+};
+
+local string context_binding_id_strings[] = {
+    [CONTEXT_BINDING_SELF]    = string_literal("self"),
+    [CONTEXT_BINDING_TOUCHER] = string_literal("toucher"),
+    [CONTEXT_BINDING_HITTER]  = string_literal("hitter"),
+    [CONTEXT_BINDING_TEMP0]   = string_literal("temp0"),
+    [CONTEXT_BINDING_TEMP1]   = string_literal("temp1"),
+    [CONTEXT_BINDING_TEMP2]   = string_literal("temp2"),
+    [CONTEXT_BINDING_TEMP3]   = string_literal("temp3"),
+    [CONTEXT_BINDING_TEMP4]   = string_literal("temp4"),
 };
 
 

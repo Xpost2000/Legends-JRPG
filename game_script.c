@@ -290,15 +290,11 @@ bool game_script_look_up_contextual_binding(struct lisp_form name, struct lisp_f
 
     struct game_script_script_instance* current_running_script = &running_scripts[running_script_index];
 
-    {
-        if (lisp_form_symbol_matching(name, string_literal("self"))           && current_running_script->bindings_present[CONTEXT_BINDING_SELF]) {
-            *output = current_running_script->bindings[CONTEXT_BINDING_SELF];
-            return true;
-        } else if (lisp_form_symbol_matching(name, string_literal("toucher")) && current_running_script->bindings_present[CONTEXT_BINDING_TOUCHER]) {
-            *output = current_running_script->bindings[CONTEXT_BINDING_TOUCHER];
-            return true;
-        } else if (lisp_form_symbol_matching(name, string_literal("hitter"))  && current_running_script->bindings_present[CONTEXT_BINDING_HITTER]) {
-            *output = current_running_script->bindings[CONTEXT_BINDING_HITTER];
+    for (s32 context_binding_index = 0; context_binding_index < array_count(context_binding_id_strings); ++context_binding_index) {
+        string name_id = context_binding_id_strings[context_binding_index];
+
+        if (lisp_form_symbol_matching(name, name_id) && current_running_script->bindings_present[context_binding_index]) {
+            *output = current_running_script->bindings[context_binding_index];
             return true;
         }
     }
