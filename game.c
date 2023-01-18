@@ -3414,120 +3414,6 @@ local void update_and_render_game_worldmap(struct software_framebuffer* framebuf
             }
 
             /* this is a little cumbersome since collidant objects are not easily iterable right now. Will need to fix this at some point. Or make it more generic */
-#if 0
-            {
-                struct rectangle_f32 world_rectangle = rectangle_f32(game_state->world_map_explore_state.player_position.x,
-                                                                     game_state->world_map_explore_state.player_position.y,
-                                                                     TILE_UNIT_SIZE, TILE_UNIT_SIZE);
-                {
-                    bool stop_horizontal_movement = false;
-                    {
-                        world_rectangle.x += dt * desired_velocity.x;
-                        {
-                            for (s32 index = 0; index < world_map->tile_layers[WORLD_TILE_LAYER_OBJECT].count && !stop_horizontal_movement; ++index) {
-                                struct tile* current_tile = world_map->tile_layers[WORLD_TILE_LAYER_OBJECT].tiles + index;
-                                struct tile_data_definition* tile_data = world_tile_table_data + current_tile->id;
-
-                                if (Get_Bit(tile_data->flags, TILE_DATA_FLAGS_SOLID)) {
-                                    world_rectangle = push_out_horizontal_edges(world_rectangle, rectangle_f32(current_tile->x * TILE_UNIT_SIZE, current_tile->y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE), &stop_horizontal_movement);
-                                }
-                            }
-
-                            /* solid objects in the scriptable layer */
-                            {
-                                for (s32 layer_index = WORLD_TILE_LAYER_SCRIPTABLE_0; layer_index <= WORLD_TILE_LAYER_SCRIPTABLE_31; ++layer_index) {
-                                    struct scriptable_tile_layer_property* layer_properties = world_map->scriptable_layer_properties + (layer_index - WORLD_TILE_LAYER_SCRIPTABLE_0);
-
-                                    if (layer_properties->draw_layer != WORLD_TILE_LAYER_OBJECT) {
-                                        continue;
-                                    }
-
-                                    if (layer_properties->flags & SCRIPTABLE_TILE_LAYER_FLAGS_HIDDEN) {
-                                        continue;
-                                    }
-
-                                    if (layer_properties->flags & SCRIPTABLE_TILE_LAYER_FLAGS_NOCOLLIDE) {
-                                        continue;
-                                    }
-
-                                    for (s32 index = 0; index < world_map->tile_layers[layer_index].count && !stop_horizontal_movement; ++index) {
-                                        struct tile* current_tile = world_map->tile_layers[layer_index].tiles + index;
-                                        struct tile_data_definition* tile_data = world_tile_table_data + current_tile->id;
-
-                                        if (Get_Bit(tile_data->flags, TILE_DATA_FLAGS_SOLID)) {
-                                            world_rectangle = push_out_horizontal_edges(world_rectangle, rectangle_f32(current_tile->x * TILE_UNIT_SIZE, current_tile->y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE), &stop_horizontal_movement);
-                                        }
-                                    }
-                                }
-                            }
-
-                            for (s32 index = 0; index < world_map->tile_layers[WORLD_TILE_LAYER_GROUND].count && !stop_horizontal_movement; ++index) {
-                                struct tile* current_tile = world_map->tile_layers[WORLD_TILE_LAYER_GROUND].tiles + index;
-                                struct tile_data_definition* tile_data = world_tile_table_data + current_tile->id;
-
-                                if (Get_Bit(tile_data->flags, TILE_DATA_FLAGS_SOLID)) {
-                                    world_rectangle = push_out_horizontal_edges(world_rectangle, rectangle_f32(current_tile->x * TILE_UNIT_SIZE, current_tile->y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE), &stop_horizontal_movement);
-                                }
-                            }
-                        }
-                    }
-                }
-                {
-                    bool stop_vertical_movement = false;
-
-                    world_rectangle.y += dt * desired_velocity.y;
-                    {
-                        for (s32 index = 0; index < world_map->tile_layers[WORLD_TILE_LAYER_OBJECT].count && !stop_vertical_movement; ++index) {
-                            struct tile* current_tile = world_map->tile_layers[WORLD_TILE_LAYER_OBJECT].tiles + index;
-                            struct tile_data_definition* tile_data = world_tile_table_data + current_tile->id;
-
-                            if (Get_Bit(tile_data->flags, TILE_DATA_FLAGS_SOLID)) {
-                                world_rectangle = push_out_vertical_edges(world_rectangle, rectangle_f32(current_tile->x * TILE_UNIT_SIZE, current_tile->y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE), &stop_vertical_movement);
-                            }
-                        }
-
-                        /* solid objects in the scriptable layer */
-                        {
-                            for (s32 layer_index = WORLD_TILE_LAYER_SCRIPTABLE_0; layer_index <= WORLD_TILE_LAYER_SCRIPTABLE_31; ++layer_index) {
-                                struct scriptable_tile_layer_property* layer_properties = world_map->scriptable_layer_properties + (layer_index - WORLD_TILE_LAYER_SCRIPTABLE_0);
-
-                                if (layer_properties->draw_layer != WORLD_TILE_LAYER_OBJECT) {
-                                    continue;
-                                }
-
-                                if (layer_properties->flags & SCRIPTABLE_TILE_LAYER_FLAGS_HIDDEN) {
-                                    continue;
-                                }
-
-                                if (layer_properties->flags & SCRIPTABLE_TILE_LAYER_FLAGS_NOCOLLIDE) {
-                                    continue;
-                                }
-
-                                for (s32 index = 0; index < world_map->tile_layers[layer_index].count && !stop_vertical_movement; ++index) {
-                                    struct tile* current_tile = world_map->tile_layers[layer_index].tiles + index;
-                                    struct tile_data_definition* tile_data = world_tile_table_data + current_tile->id;
-
-                                    if (Get_Bit(tile_data->flags, TILE_DATA_FLAGS_SOLID)) {
-                                        world_rectangle = push_out_vertical_edges(world_rectangle, rectangle_f32(current_tile->x * TILE_UNIT_SIZE, current_tile->y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE), &stop_vertical_movement);
-                                    }
-                                }
-                            }
-                        }
-
-                        for (s32 index = 0; index < world_map->tile_layers[WORLD_TILE_LAYER_GROUND].count && !stop_vertical_movement; ++index) {
-                            struct tile* current_tile = world_map->tile_layers[WORLD_TILE_LAYER_GROUND].tiles + index;
-                            struct tile_data_definition* tile_data = world_tile_table_data + current_tile->id;
-
-                            if (Get_Bit(tile_data->flags, TILE_DATA_FLAGS_SOLID)) {
-                                world_rectangle = push_out_vertical_edges(world_rectangle, rectangle_f32(current_tile->x * TILE_UNIT_SIZE, current_tile->y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE), &stop_vertical_movement);
-                            }
-                        }
-                    }
-                }
-                game_state->world_map_explore_state.player_position.x = world_rectangle.x;
-                game_state->world_map_explore_state.player_position.y = world_rectangle.y;
-            }
-#else
             {
                 struct rectangle_f32 world_rectangle = rectangle_f32(game_state->world_map_explore_state.player_position.x, game_state->world_map_explore_state.player_position.y, TILE_UNIT_SIZE, TILE_UNIT_SIZE);
                 {
@@ -3538,8 +3424,8 @@ local void update_and_render_game_worldmap(struct software_framebuffer* framebuf
                         struct collidable_object_iterator collidables = world_map_collidables_iterator(world_map);
 
                         for (struct collidable_object object = collidable_object_iterator_begin(&collidables);
-                             !collidable_object_iterator_done(&collidables);
-                             collidable_object_iterator_advance(&collidables)) {
+                             !collidable_object_iterator_done(&collidables) && !stop_horizontal_movement;
+                             object = collidable_object_iterator_advance(&collidables)) {
                             world_rectangle = push_out_horizontal_edges(world_rectangle, object.rectangle, &stop_horizontal_movement);
                         }
                     }
@@ -3552,8 +3438,8 @@ local void update_and_render_game_worldmap(struct software_framebuffer* framebuf
                         struct collidable_object_iterator collidables = world_map_collidables_iterator(world_map);
 
                         for (struct collidable_object object = collidable_object_iterator_begin(&collidables);
-                             !collidable_object_iterator_done(&collidables);
-                             collidable_object_iterator_advance(&collidables)) {
+                             !collidable_object_iterator_done(&collidables) && !stop_vertical_movement;
+                             object = collidable_object_iterator_advance(&collidables)) {
                             world_rectangle = push_out_vertical_edges(world_rectangle, object.rectangle, &stop_vertical_movement);
                         }
                     }
@@ -3561,7 +3447,6 @@ local void update_and_render_game_worldmap(struct software_framebuffer* framebuf
                 game_state->world_map_explore_state.player_position.x = world_rectangle.x;
                 game_state->world_map_explore_state.player_position.y = world_rectangle.y;
             }
-#endif
         }
     }
 

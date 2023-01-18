@@ -4448,8 +4448,8 @@ local void _collidable_object_iterator_set_status(struct collidable_object_itera
         case COLLIDABLE_OBJECT_ITERATOR_WORLD_MAP: {
             struct world_map* world_map = iterator->parent;
 
-            if (iterator->world_map.tile_layer_ground_index >= world_map->tile_layers[WORLD_TILE_LAYER_GROUND].count &&
-                iterator->world_map.tile_layer_object_index >= world_map->tile_layers[WORLD_TILE_LAYER_OBJECT].count &&
+            if (iterator->world_map.tile_layer_ground_index           >= world_map->tile_layers[WORLD_TILE_LAYER_GROUND].count &&
+                iterator->world_map.tile_layer_object_index           >= world_map->tile_layers[WORLD_TILE_LAYER_OBJECT].count &&
                 iterator->world_map.tile_layer_scriptable_layer_index >= WORLD_SCRIPTABLE_TILE_LAYER_COUNT) {
                 iterator->done = true;
             }
@@ -4493,7 +4493,6 @@ struct collidable_object collidable_object_iterator_advance(struct collidable_ob
 
                     if (tile_data->flags & TILE_DATA_FLAGS_SOLID) {
                         result.rectangle = tile_rectangle(current_tile);
-                        _collidable_object_iterator_set_status(iterator);
                         return result;
                     } else {
                         continue;
@@ -4519,7 +4518,9 @@ struct collidable_object collidable_object_iterator_advance(struct collidable_ob
                         struct tile_data_definition* tile_data    = world_tile_table_data + current_tile->id;
 
                         if (tile_data->flags & TILE_DATA_FLAGS_SOLID) {
-                            result.rectangle = tile_rectangle(current_tile);
+                            result.rectangle    = tile_rectangle(current_tile);
+                            result.rectangle.x += TILE_UNIT_SIZE * current_scriptable_layer_properties->offset_x;
+                            result.rectangle.y += TILE_UNIT_SIZE * current_scriptable_layer_properties->offset_y;
                             return result;
                         } else {
                             continue;
@@ -4529,8 +4530,6 @@ struct collidable_object collidable_object_iterator_advance(struct collidable_ob
                     iterator->world_map.tile_layer_scriptable_layer_index += 1;
                     _collidable_object_iterator_set_status(iterator);
                 }
-
-                _collidable_object_iterator_set_status(iterator);
             } break;
             case COLLIDABLE_OBJECT_ITERATOR_LEVEL_AREA: {
                 struct level_area* level_area = iterator->parent;
