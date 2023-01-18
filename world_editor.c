@@ -810,6 +810,7 @@ void update_and_render_pause_world_editor_menu_ui(struct game_state* state, stru
                 world_editor_state->world_map.script_string = file_buffer_as_string(&script_filebuffer);
 
                 struct binary_serializer serializer = open_write_file_serializer(to_save_as);
+                world_editor_state->world_map.version = CURRENT_WORLD_MAP_VERSION;
                 serialize_world_map(NULL, &serializer, &world_editor_state->world_map);
                 serializer_finish(&serializer);
 

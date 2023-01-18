@@ -806,6 +806,7 @@ local void update_and_render_pause_editor_menu_ui(struct game_state* state, stru
                                 IAllocator allocator = heap_allocator();
                                 struct file_buffer script_filebuffer = OS_read_entire_file(allocator, string_literal("temp/SCRIPT.txt"));
                                 editor_state->editing_area.script.internal_buffer = file_buffer_as_string(&script_filebuffer);
+                                editor_state->editing_area.version = CURRENT_LEVEL_AREA_VERSION;
                                 _serialize_level_area(NULL, &serializer, &editor_state->editing_area);
                                 serializer_finish(&serializer);
                                 file_buffer_free(&script_filebuffer);

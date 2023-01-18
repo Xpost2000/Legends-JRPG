@@ -3386,7 +3386,7 @@ local void update_and_render_game_worldmap(struct software_framebuffer* framebuf
     */
     v2f32 view_direction = v2f32_direction_from_degree(game_state->world_map_explore_state.view_angle-90); /* x cos, y sin */
 
-    /* worldmap player controls  (3D mode controls)*/
+    /* NOTE: worldmap player controls  (3D mode controls)*/
     {
         const f32 WORLD_VELOCITY = TILE_UNIT_SIZE*4.0;
         const f32 TURN_VELOCITY  = 90;
@@ -3546,6 +3546,18 @@ local void update_and_render_game_worldmap(struct software_framebuffer* framebuf
                 render_tile_layer_ex(TILE_PALETTE_WORLD_MAP, &commands, NULL, current_layer, 0, 0, color32f32(1,1,1,1));
                 world_render_scriptable_tile_layers_that_qualify_as(TILE_PALETTE_WORLD_MAP, &commands, world_map, layer);
             }
+
+#ifndef RELEASE
+            for (s32 world_location_index = 0; world_location_index < world_map->locations.count; ++world_location_index) {
+                struct world_location* current_world_location = world_map->locations.locations + world_location_index;
+                
+                render_commands_push_quad(&commands, rectangle_f32(current_world_location->position.x * TILE_UNIT_SIZE,
+                                                                   current_world_location->position.y * TILE_UNIT_SIZE,
+                                                                   current_world_location->scale.x * TILE_UNIT_SIZE,
+                                                                   current_world_location->scale.y * TILE_UNIT_SIZE),
+                                          color32u8(255, 0, 0, 128), BLEND_MODE_ALPHA);
+            }
+#endif
         }
         software_framebuffer_render_commands(&mode7_buffer, &commands);
 
@@ -3600,6 +3612,7 @@ local void update_and_render_game_worldmap(struct software_framebuffer* framebuf
             t = 0;
         }
 
+        /* TODO: Experimental animations for the map */
         if (do_anim) {
             if (!anim_done) {
                 if (rrr) {
@@ -3663,6 +3676,7 @@ local void update_and_render_game_worldmap(struct software_framebuffer* framebuf
 
         union color32u8 fog_color = color32u8(100, 100, 255, 255);
 
+        /* Render world onto plane */
         for (s32 y = -fh/2; y < fh/2; ++y) {
             s32 perspective_z = fabs(y - horizon);
 
