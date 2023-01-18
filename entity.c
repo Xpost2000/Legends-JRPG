@@ -1025,142 +1025,35 @@ void update_entities(struct game_state* state, f32 dt, struct entity_iterator it
 
         {
             if (!(current_entity->flags & ENTITY_FLAGS_NOCLIP)) {
-                /* _debugprintf("cx: %f, %f\n", current_entity->velocity.x, current_entity->velocity.y); */
-                /* tile intersection */
-                {
+                if (!current_entity->ai.current_action) {
+                    bool stop_vertical_movement = false;
                     bool stop_horizontal_movement = false;
 
                     {
                         current_entity->position.x += current_entity->velocity.x * dt;
+                        struct collidable_object_iterator collidable_objects = level_area_collidables_iterator(area);
 
-                        if (!current_entity->ai.current_action) {
-                            for (s32 index = 0; index < area->tile_layers[TILE_LAYER_OBJECT].count && !stop_horizontal_movement; ++index) {
-                                struct tile* current_tile = area->tile_layers[TILE_LAYER_OBJECT].tiles + index;
-                                struct tile_data_definition* tile_data = tile_table_data + current_tile->id;
-
-                                if (Get_Bit(tile_data->flags, TILE_DATA_FLAGS_SOLID)) {
-                                    stop_horizontal_movement |=
-                                        entity_push_out_horizontal_edges(current_entity, rectangle_f32(current_tile->x * TILE_UNIT_SIZE, current_tile->y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE));
-                                }
-                            }
-
-                            /* solid objects in the scriptable layer */
-                            {
-                                for (s32 layer_index = TILE_LAYER_SCRIPTABLE_0; layer_index <= TILE_LAYER_SCRIPTABLE_31; ++layer_index) {
-                                    struct scriptable_tile_layer_property* layer_properties = area->scriptable_layer_properties + (layer_index - TILE_LAYER_SCRIPTABLE_0);
-
-                                    if (layer_properties->draw_layer != TILE_LAYER_OBJECT) {
-                                        continue;
-                                    }
-
-                                    if (layer_properties->flags & SCRIPTABLE_TILE_LAYER_FLAGS_HIDDEN) {
-                                        continue;
-                                    }
-
-                                    if (layer_properties->flags & SCRIPTABLE_TILE_LAYER_FLAGS_NOCOLLIDE) {
-                                        continue;
-                                    }
-
-                                    for (s32 index = 0; index < area->tile_layers[layer_index].count && !stop_horizontal_movement; ++index) {
-                                        struct tile* current_tile = area->tile_layers[layer_index].tiles + index;
-                                        struct tile_data_definition* tile_data = tile_table_data + current_tile->id;
-
-                                        if (Get_Bit(tile_data->flags, TILE_DATA_FLAGS_SOLID)) {
-                                            stop_horizontal_movement |=
-                                                entity_push_out_horizontal_edges(current_entity, rectangle_f32(current_tile->x * TILE_UNIT_SIZE, current_tile->y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE));
-                                        }
-                                    }
-                                }
-                            }
-
-                            for (s32 index = 0; index < area->tile_layers[TILE_LAYER_GROUND].count && !stop_horizontal_movement; ++index) {
-                                struct tile* current_tile = area->tile_layers[TILE_LAYER_GROUND].tiles + index;
-                                struct tile_data_definition* tile_data = tile_table_data + current_tile->id;
-
-                                if (Get_Bit(tile_data->flags, TILE_DATA_FLAGS_SOLID)) {
-                                    stop_horizontal_movement |=
-                                        entity_push_out_horizontal_edges(current_entity, rectangle_f32(current_tile->x * TILE_UNIT_SIZE, current_tile->y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE));
-                                }
-                            }
-
-                            for (s32 index = 0; index < area->chests.count && !stop_horizontal_movement; ++index) {
-                                struct entity_chest* chest = area->chests.chests + index;
-
-                                stop_horizontal_movement |=
-                                    entity_push_out_horizontal_edges(current_entity, rectangle_f32(chest->position.x * TILE_UNIT_SIZE, chest->position.y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE));
-                            }
-
-                            if (stop_horizontal_movement) current_entity->velocity.x = 0;
+                        for (struct collidable_object object = collidable_object_iterator_begin(&collidable_objects);
+                             !collidable_object_iterator_done(&collidable_objects) && !stop_horizontal_movement;
+                             object = collidable_object_iterator_advance(&collidable_objects)) {
+                            stop_horizontal_movement = entity_push_out_horizontal_edges(current_entity, object.rectangle);
                         }
                     }
 
-
-                    current_entity->position.y += current_entity->velocity.y * dt;
                     {
-                        bool stop_vertical_movement = false;
+                        current_entity->position.y += current_entity->velocity.y * dt;
+                        struct collidable_object_iterator collidable_objects = level_area_collidables_iterator(area);
 
-                        if (!current_entity->ai.current_action) {
-                            for (s32 index = 0; index < area->tile_layers[TILE_LAYER_OBJECT].count && !stop_vertical_movement; ++index) {
-                                struct tile* current_tile = area->tile_layers[TILE_LAYER_OBJECT].tiles + index;
-                                struct tile_data_definition* tile_data = tile_table_data + current_tile->id;
-
-                                if (Get_Bit(tile_data->flags, TILE_DATA_FLAGS_SOLID)) {
-                                    stop_vertical_movement |=
-                                        entity_push_out_vertical_edges(current_entity, rectangle_f32(current_tile->x * TILE_UNIT_SIZE, current_tile->y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE));
-                                }
-                            }
-
-                            /* solid objects in the scriptable layer */
-                            {
-                                for (s32 layer_index = TILE_LAYER_SCRIPTABLE_0; layer_index <= TILE_LAYER_SCRIPTABLE_31; ++layer_index) {
-                                    struct scriptable_tile_layer_property* layer_properties = area->scriptable_layer_properties + (layer_index - TILE_LAYER_SCRIPTABLE_0);
-
-                                    if (layer_properties->draw_layer != TILE_LAYER_OBJECT) {
-                                        continue;
-                                    }
-
-                                    if (layer_properties->flags & SCRIPTABLE_TILE_LAYER_FLAGS_HIDDEN) {
-                                        continue;
-                                    }
-
-                                    if (layer_properties->flags & SCRIPTABLE_TILE_LAYER_FLAGS_NOCOLLIDE) {
-                                        continue;
-                                    }
-
-                                    for (s32 index = 0; index < area->tile_layers[layer_index].count && !stop_vertical_movement; ++index) {
-                                        struct tile* current_tile = area->tile_layers[layer_index].tiles + index;
-                                        struct tile_data_definition* tile_data = tile_table_data + current_tile->id;
-
-                                        if (Get_Bit(tile_data->flags, TILE_DATA_FLAGS_SOLID)) {
-                                            stop_vertical_movement |=
-                                                entity_push_out_vertical_edges(current_entity, rectangle_f32(current_tile->x * TILE_UNIT_SIZE, current_tile->y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE));
-                                        }
-                                    }
-                                }
-                            }
-
-                            for (s32 index = 0; index < area->tile_layers[TILE_LAYER_GROUND].count && !stop_vertical_movement; ++index) {
-                                struct tile* current_tile = area->tile_layers[TILE_LAYER_GROUND].tiles + index;
-                                struct tile_data_definition* tile_data = tile_table_data + current_tile->id;
-
-                                if (Get_Bit(tile_data->flags, TILE_DATA_FLAGS_SOLID)) {
-                                    stop_vertical_movement |=
-                                        entity_push_out_vertical_edges(current_entity, rectangle_f32(current_tile->x * TILE_UNIT_SIZE, current_tile->y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE));
-                                }
-                            }
-
-                            for (s32 index = 0; index < area->chests.count && !stop_vertical_movement; ++index) {
-                                struct entity_chest* chest = area->chests.chests + index;
-
-                                stop_vertical_movement |=
-                                    entity_push_out_vertical_edges(current_entity, rectangle_f32(chest->position.x * TILE_UNIT_SIZE, chest->position.y * TILE_UNIT_SIZE, TILE_UNIT_SIZE, TILE_UNIT_SIZE));
-                            }
-
-                            if (stop_vertical_movement) current_entity->velocity.y = 0;
+                        for (struct collidable_object object = collidable_object_iterator_begin(&collidable_objects);
+                             !collidable_object_iterator_done(&collidable_objects) && !stop_horizontal_movement;
+                             object = collidable_object_iterator_advance(&collidable_objects)) {
+                            stop_vertical_movement = entity_push_out_vertical_edges(current_entity, object.rectangle);
                         }
                     }
-                }
 
+                    if (stop_horizontal_movement) current_entity->velocity.x = 0;
+                    if (stop_vertical_movement) current_entity->velocity.y = 0;
+                }
 
                 /* any existing actions or action queues will ALWAYS override manual control */
                 entity_update_and_perform_actions(state, current_entity, area, dt);
@@ -4452,11 +4345,19 @@ local void _collidable_object_iterator_set_status(struct collidable_object_itera
                 iterator->world_map.tile_layer_object_index           >= world_map->tile_layers[WORLD_TILE_LAYER_OBJECT].count &&
                 iterator->world_map.tile_layer_scriptable_layer_index >= WORLD_SCRIPTABLE_TILE_LAYER_COUNT) {
                 iterator->done = true;
+                return;
             }
         } break;
         case COLLIDABLE_OBJECT_ITERATOR_LEVEL_AREA: {
             struct level_area* level_area = iterator->parent;
-            unimplemented("Not done");
+
+            if (iterator->level_area.tile_layer_object_index           >= level_area->tile_layers[TILE_LAYER_OBJECT].count &&
+                iterator->level_area.tile_layer_ground_index           >= level_area->tile_layers[TILE_LAYER_GROUND].count &&
+                iterator->level_area.tile_layer_scriptable_layer_index >= SCRIPTABLE_TILE_LAYER_COUNT &&
+                iterator->level_area.chest_index                       >= level_area->chests.count) {
+                iterator->done = true;
+                return;
+            }
         } break;
     }
 }
@@ -4533,7 +4434,81 @@ struct collidable_object collidable_object_iterator_advance(struct collidable_ob
             } break;
             case COLLIDABLE_OBJECT_ITERATOR_LEVEL_AREA: {
                 struct level_area* level_area = iterator->parent;
-                unimplemented("Not done");
+
+                while (iterator->level_area.tile_layer_object_index < level_area->tile_layers[TILE_LAYER_OBJECT].count) {
+                    struct tile*                 current_tile = &level_area->tile_layers[TILE_LAYER_OBJECT].tiles[iterator->level_area.tile_layer_object_index++];
+                    struct tile_data_definition* tile_data    = tile_table_data + current_tile->id;
+                    _collidable_object_iterator_set_status(iterator);
+
+                    if (tile_data->flags & TILE_DATA_FLAGS_SOLID) {
+                        result.rectangle = tile_rectangle(current_tile);
+                        return result;
+                    } else {
+                        continue;
+                    }
+                }
+
+                while (iterator->level_area.tile_layer_ground_index < level_area->tile_layers[TILE_LAYER_GROUND].count) {
+                    struct tile*                 current_tile = &level_area->tile_layers[TILE_LAYER_GROUND].tiles[iterator->level_area.tile_layer_ground_index++];
+                    struct tile_data_definition* tile_data    = tile_table_data + current_tile->id;
+                    _collidable_object_iterator_set_status(iterator);
+
+                    if (tile_data->flags & TILE_DATA_FLAGS_SOLID) {
+                        result.rectangle = tile_rectangle(current_tile);
+                        return result;
+                    } else {
+                        continue;
+                    }
+                }
+
+                while (iterator->level_area.tile_layer_scriptable_layer_index < SCRIPTABLE_TILE_LAYER_COUNT) {
+                    struct tile_layer*                     current_scriptable_tile_layer       = &level_area->tile_layers[TILE_LAYER_SCRIPTABLE_0 + iterator->level_area.tile_layer_scriptable_layer_index];
+                    struct scriptable_tile_layer_property* current_scriptable_layer_properties = &level_area->scriptable_layer_properties[iterator->level_area.tile_layer_scriptable_layer_index];
+
+                    while (iterator->level_area.tile_layer_scriptable_tile_index < current_scriptable_tile_layer->count) {
+                        if (current_scriptable_layer_properties->draw_layer != TILE_LAYER_OBJECT) {
+                            break;
+                        }
+                        if (current_scriptable_layer_properties->flags & SCRIPTABLE_TILE_LAYER_FLAGS_HIDDEN) {
+                            break;
+                        }
+                        if (current_scriptable_layer_properties->flags & SCRIPTABLE_TILE_LAYER_FLAGS_NOCOLLIDE) {
+                            break;
+                        }
+
+                        struct tile*                 current_tile = &current_scriptable_tile_layer->tiles[iterator->level_area.tile_layer_scriptable_tile_index++];
+                        struct tile_data_definition* tile_data    = tile_table_data + current_tile->id;
+
+                        if (tile_data->flags & TILE_DATA_FLAGS_SOLID) {
+                            result.rectangle    = tile_rectangle(current_tile);
+                            result.rectangle.x += TILE_UNIT_SIZE * current_scriptable_layer_properties->offset_x;
+                            result.rectangle.y += TILE_UNIT_SIZE * current_scriptable_layer_properties->offset_y;
+                            return result;
+                        } else {
+                            continue;
+                        }
+                    }
+
+                    iterator->level_area.tile_layer_scriptable_layer_index += 1;
+                    _collidable_object_iterator_set_status(iterator);
+                }
+
+                while (iterator->level_area.chest_index < level_area->chests.count) {
+                    struct entity_chest* current_chest = &level_area->chests.chests[iterator->level_area.chest_index++];
+                    _collidable_object_iterator_set_status(iterator);
+
+                    if (current_chest->flags & ENTITY_CHEST_FLAGS_HIDDEN) {
+                        continue;
+                    } else {
+                        result.rectangle = rectangle_f32(
+                            current_chest->position.x * TILE_UNIT_SIZE,
+                            current_chest->position.y * TILE_UNIT_SIZE,
+                            TILE_UNIT_SIZE,
+                            TILE_UNIT_SIZE
+                        );
+                        return result;
+                    }
+                }
             } break;
         }
     }

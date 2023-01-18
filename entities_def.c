@@ -971,6 +971,9 @@ bool entity_has_dialogue(struct entity* entity);
 
   This is mainly the reduce the code duplication on the collision parts of the code so I don't accidently
   make a mistake, whenever I try to add more collidable things.
+
+  NOTE: if I were to include entities I would have to also bake an entity iterator inside, but thankfully entities
+  don't have to collide with each other so this is completely okay.
 */
 enum collidable_object_iterator_type {
     COLLIDABLE_OBJECT_ITERATOR_WORLD_MAP,
@@ -990,7 +993,9 @@ struct collidable_object_iterator_world_map {
 struct collidable_object_iterator_level_area {
     s32 tile_layer_object_index;
     s32 tile_layer_ground_index;
+
     s32 tile_layer_scriptable_layer_index;
+    s32 tile_layer_scriptable_tile_index;
     s32 chest_index;
 };
 struct collidable_object_iterator {
