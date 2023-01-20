@@ -33,7 +33,8 @@ local string see_you_next_time_phase_strings[] = {
 };
 
 struct see_you_next_time_phase_data {
-    s32 string_index;
+    s32 category_string_index;
+    s32 credit_string_index;
     s32 type_down;
 };
 
@@ -100,8 +101,98 @@ local void _draw_credits_game_title(struct software_framebuffer* framebuffer, f3
 }
 
 /* this is moved into a function since it's more complicated logic than the other stuff */
+struct credit_lines {string* list; s32 count;};
+
+local string credits_categories[] = {
+    string_literal("SCENARIO BY"),
+    string_literal("LEVEL DESIGN"),
+    string_literal("GAME DESIGN"),
+    string_literal("PROGRAMMING"),
+    string_literal("GRAPHICS"),
+    string_literal("SOUND EFFECTS"),
+    string_literal("MUSIC"),
+    string_literal("Q&A"),
+    string_literal("SPECIAL THANKS"),
+};
+
+/*
+  for now credits are hardcoded into the engine executable. Will resolve to fill this out from a data file later,
+  but it's not essential.
+*/
+
+local string writing_credits[] = {
+    string_literal("Jerry Zhu"),
+};
+local string level_design_credits[] = {
+    string_literal("Jerry Zhu"),
+};
+local string game_design_credits[] = {
+    string_literal("Jerry Zhu"),
+    string_literal("With inspiration from Square's Tactics RPGs"),
+    string_literal("With inspiration from Nippon Ichi's Disgaea series"),
+};
+local string programming_credits[] = {
+    string_literal("Jerry Zhu"),
+};
+local string graphics_credits[] = {
+    string_literal("Jerry Zhu"),
+    string_literal("gnsh from OpenGameArt for the font"),
+};
+local string sound_effects_credits[] = {
+    string_literal("Jerry Zhu with the aid of SFXR"),
+};
+local string music_credits[] = {
+    string_literal("no music yet"),
+};
+local string quality_assurance_credits[] = {
+    string_literal("no QA yet"),
+};
+local string special_thanks_credits[] = {
+    string_literal("All of my friends that support me.")
+};
+
+#define new_credit_line(me) (struct credit_lines) {.list = me, .count = array_count(me)},
+
+local struct credit_lines credits_lines[] = {
+    new_credit_line(writing_credits)
+    new_credit_line(level_design_credits)
+    new_credit_line(game_design_credits)
+    new_credit_line(programming_credits)
+    new_credit_line(graphics_credits)
+    new_credit_line(sound_effects_credits)
+    new_credit_line(music_credits)
+    new_credit_line(quality_assurance_credits)
+    new_credit_line(special_thanks_credits)
+};
+
+#undef new_credit_line
+
 local void update_and_render_credits_phase_main_animation(struct software_framebuffer* framebuffer, f32 dt, f32 bottom_of_title_y) {
     struct credits_main_animation_phase_data* main_animation = &credits_state.main_animation;
+
+    struct font_cache* heading_font  = game_get_font(MENU_FONT_COLOR_GOLD);
+    struct font_cache* subtitle_font = game_get_font(MENU_FONT_COLOR_ORANGE);
+    struct font_cache* content_font  = game_get_font(MENU_FONT_COLOR_STEEL);
+
+    switch (main_animation->phase) { 
+        case CREDITS_MAIN_ANIMATION_PHASE_FADE_IN_CATEGORY: {
+            
+        } break;
+
+        case CREDITS_MAIN_ANIMATION_PHASE_SLIDE_CATEGORY_DOWN: 
+        case CREDITS_MAIN_ANIMATION_PHASE_SLIDE_CATEGORY_UP: {
+        
+        } break;
+
+        case CREDITS_MAIN_ANIMATION_PHASE_TYPE_IN_CREDITS:
+        case CREDITS_MAIN_ANIMATION_PHASE_TYPE_OUT_CREDITS: {
+            
+        } break;
+
+        case CREDITS_MAIN_ANIMATION_PHASE_SLIDE_CATEGORY_OUT_OF_FRAME: {
+        
+        } break;
+    }
 }
 
 local void update_and_render_credits_see_you_next_time(struct software_framebuffer* framebuffer, f32 dt) {
