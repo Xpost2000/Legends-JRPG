@@ -3,12 +3,7 @@
 
 # gold is important, try not to change it or it might break
 # the engine with some assumptions?
-("item_gold"
-"Gold"
-"Makes the world go round..."
-(type 'misc)
-(value 1)
-(max-stack -1))
+("item_gold" "Gold" "Makes the world go round..." (type 'misc) (value 1) (max-stack -1))
 
 ("item_trout_fish_5"
 "Dead Trout(?)"
@@ -26,6 +21,16 @@
 (restores-health 35)
 (value 5)
 (max-stack 20))
+
+# TODO
+("item_bomb"
+"Powder Bomb"
+"(45 DMG) A powder bomb."
+(type 'projectile)
+(explodes-for 45)
+(explosive-radius 4)
+(value 250)
+(max-stack 5))
 
 ("item_chocolate_bar"
 "Chocolate Bar"

@@ -588,6 +588,7 @@ enum game_screen_mode {
     GAME_SCREEN_PREVIEW_DEMO_ALERT,
     GAME_SCREEN_MAIN_MENU,
     GAME_SCREEN_INGAME,
+    GAME_SCREEN_CREDITS,
     GAME_SCREEN_COUNT,
 };
 
@@ -599,6 +600,13 @@ enum game_submode {
 
 /* s32 screen_mode = GAME_SCREEN_PREVIEW_DEMO_ALERT; */
 s32 screen_mode = GAME_SCREEN_MAIN_MENU;
+s32 last_screen_mode = GAME_SCREEN_MAIN_MENU;
+
+void set_game_screen_mode(s32 mode) {
+    last_screen_mode = screen_mode;
+    screen_mode      = mode;
+}
+
 s32 submode     = GAME_SUBMODE_OVERWORLD;
 
 /* sized fixed chunks, but still dynamic */
@@ -811,5 +819,7 @@ local void wrap_around_key_selection(s32 decrease_key, s32 increase_key, s32* po
 }
 
 void serialize_light(struct binary_serializer* serializer, s32 version, struct light_def* light);
+
+#include "credits_mode_def.c"
 
 #endif

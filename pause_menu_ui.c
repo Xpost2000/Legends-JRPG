@@ -180,7 +180,7 @@ local void do_party_member_edits_or_selections(struct game_state* state, struct 
                     } break;
                     case PAUSE_MENU_QUIT: {
                         initialize_main_menu();
-                        screen_mode = GAME_SCREEN_MAIN_MENU;
+                        set_game_screen_mode(GAME_SCREEN_MAIN_MENU);
                     } break;
                     case PAUSE_MENU_RETURN_TO_DESKTOP: {
                         global_game_running = false;
@@ -339,7 +339,7 @@ local void update_and_render_pause_game_menu_ui(struct game_state* state, struct
                             } break;
                             case PAUSE_MENU_QUIT: {
                                 initialize_main_menu();
-                                screen_mode = GAME_SCREEN_MAIN_MENU;
+                                set_game_screen_mode(GAME_SCREEN_MAIN_MENU);
                             } break;
                             case PAUSE_MENU_RETURN_TO_DESKTOP: {
                                 global_game_running = false;

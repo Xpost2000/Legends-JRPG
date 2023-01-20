@@ -3494,11 +3494,13 @@ local void update_and_render_game_worldmap(struct software_framebuffer* framebuf
 
     /* render world in 2D */
     /* I unfortunately do not have a baked world map image, so I construct it in memory. */
-    struct software_framebuffer mode7_buffer = software_framebuffer_create_from_arena(&scratch_arena, framebuffer->width*2, framebuffer->height*2);
+    s32 MODE7_BUFFER_WIDTH  = framebuffer->width * 2;
+    s32 MODE7_BUFFER_HEIGHT = framebuffer->height * 2;
+    struct software_framebuffer mode7_buffer = software_framebuffer_create_from_arena(&scratch_arena, MODE7_BUFFER_WIDTH, MODE7_BUFFER_HEIGHT);
     {
         /* hack */
-        SCREEN_WIDTH = framebuffer->width*2;
-        SCREEN_HEIGHT = framebuffer->height*2;
+        SCREEN_WIDTH  = MODE7_BUFFER_WIDTH;
+        SCREEN_HEIGHT = MODE7_BUFFER_HEIGHT;
         struct render_commands        commands      = render_commands(&scratch_arena, 8192, game_state->camera);
         struct sortable_draw_entities draw_entities = sortable_draw_entities(&scratch_arena, 8192*4);
         commands.should_clear_buffer                = true;
@@ -3737,6 +3739,7 @@ local void update_and_render_game_worldmap(struct software_framebuffer* framebuf
                                         world_rectangle)) {
                 hit_any_locations = true;
                 if (game_state->world_map_explore_state.current_location_trigger != location_index+1) {
+                    game_state->world_map_explore_state.prompt_for_entering = true;
                     game_state->world_map_explore_state.current_location_trigger = location_index+1;
                 }
             }
@@ -3746,7 +3749,6 @@ local void update_and_render_game_worldmap(struct software_framebuffer* framebuf
             game_state->world_map_explore_state.prompt_for_entering = false;
             game_state->world_map_explore_state.current_location_trigger = 0;
         } else {
-            game_state->world_map_explore_state.prompt_for_entering = true;
         }
     }
 
@@ -3899,6 +3901,7 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
             game_state->in_editor = 2;
         }
     }
+#endif
     if (is_key_pressed(KEY_F4)) {
         if (submode == GAME_SUBMODE_OVERWORLD) {
             game_open_worldmap_at_default(string_literal("atlas.map"));
@@ -3906,7 +3909,6 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
             game_open_overworld_at_default(string_literal("bforest1.area"), DIRECTION_RETAINED);
         }
     }
-#endif
 
 #ifdef USE_EDITOR
     if (game_state->in_editor == 1) {
@@ -3953,6 +3955,9 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                     software_framebuffer_render_commands(framebuffer, &commands);
                 }
 
+            } break;
+            case GAME_SCREEN_CREDITS: {
+                update_and_render_credits_screen(game_state, framebuffer, dt);
             } break;
             case GAME_SCREEN_MAIN_MENU: {
                 update_and_render_main_menu(game_state, framebuffer, dt);
@@ -4315,4 +4320,5 @@ local void game_open_worldmap_at_default(string where) {
 #include "cutscene.c"
 #include "special_effects.c"
 #include "rich_text.c"
+#include "credits_mode.c"
 #include "xp_tables.c"

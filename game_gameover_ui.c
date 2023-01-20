@@ -115,18 +115,18 @@ local void do_game_over_options(struct software_framebuffer* framebuffer, f32 dt
         y_cursor += font_height;
     }
 
+    /* TODO: LOAD SAVE GAME, Not done yet! Need to move out save menu! */
     switch (selected_option) {
-        case 0: {
+        case 0: /* TODO: Checkpoint */
             /* Who knows? */
-            screen_mode = GAME_SCREEN_INGAME;
+            set_game_screen_mode(GAME_SCREEN_INGAME);
             fade_into_game();
             return ;
         } break;
-        case 1: {
-            /* LOAD SAVE GAME, Not done yet! Need to move out save menu! */
+        case 1: { /* TODO: Load from old save */
             return ;
         } break;
-        case 2: {
+        case 2: { /* Return to main menu */
             global_game_over_ui_state.phase = GAME_OVER_UI_PHASE_BYE;
             global_game_over_ui_state.timer = 0;
             return ;
@@ -248,7 +248,7 @@ local void update_and_render_gameover_game_menu_ui(struct game_state* state, str
 
             if (effective_t >= 1.0) {
                 initialize_main_menu();
-                screen_mode = GAME_SCREEN_MAIN_MENU;
+                set_game_screen_mode(GAME_SCREEN_MAIN_MENU);
             }
         } break;
     }

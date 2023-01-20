@@ -1,0 +1,28 @@
+# Engine XP progression tables
+# and specific character progression tables
+
+
+# a one indexed table
+(XP-TABLE
+        0
+        500
+        1000)
+
+
+# one entry per level
+# test table
+(GROWTH-TABLE "player"
+
+() # first level doesn't need anything
+
+(
+(health 150)
+(strength 100)
+(constitution 120)
+)
+
+(
+(health 9999)
+)
+
+)

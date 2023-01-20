@@ -12,6 +12,8 @@
 /*
   NOTE: there is a major disadvantage and that is the fact most of the UI code is not reusable right now,
   (IE: the options menu isn't usable in the main game pause menu yet. That can change soon though.)
+
+  This needs to be redesigned badly.
 */
 
 enum main_menu_animation_phase {
@@ -61,7 +63,6 @@ struct main_menu_option {
     };
 };
 
-string game_title = string_literal("LEGENDS");
 local struct main_menu_option main_menu_first_page_options[] = {
     (struct main_menu_option) { .choice = ("continue") },
     (struct main_menu_option) { .choice = ("new game") },
@@ -271,7 +272,7 @@ local void update_and_render_main_menu(struct game_state* state, struct software
                 main_menu.currently_selected_option_choice = 0;
                 switch (choice) {
                     case 1: {
-                        screen_mode = GAME_SCREEN_INGAME;
+                        set_game_screen_mode(GAME_SCREEN_INGAME);
                         fade_into_game();
                     } break;
                     case 2: {

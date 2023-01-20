@@ -1025,7 +1025,6 @@ void update_entities(struct game_state* state, f32 dt, struct entity_iterator it
 
         {
             if (!(current_entity->flags & ENTITY_FLAGS_NOCLIP)) {
-                if (!current_entity->ai.current_action) {
                     bool stop_vertical_movement = false;
                     bool stop_horizontal_movement = false;
 
@@ -1033,10 +1032,12 @@ void update_entities(struct game_state* state, f32 dt, struct entity_iterator it
                         current_entity->position.x += current_entity->velocity.x * dt;
                         struct collidable_object_iterator collidable_objects = level_area_collidables_iterator(area);
 
-                        for (struct collidable_object object = collidable_object_iterator_begin(&collidable_objects);
-                             !collidable_object_iterator_done(&collidable_objects) && !stop_horizontal_movement;
-                             object = collidable_object_iterator_advance(&collidable_objects)) {
-                            stop_horizontal_movement = entity_push_out_horizontal_edges(current_entity, object.rectangle);
+                        if (!current_entity->ai.current_action) {
+                            for (struct collidable_object object = collidable_object_iterator_begin(&collidable_objects);
+                                 !collidable_object_iterator_done(&collidable_objects) && !stop_horizontal_movement;
+                                 object = collidable_object_iterator_advance(&collidable_objects)) {
+                                stop_horizontal_movement = entity_push_out_horizontal_edges(current_entity, object.rectangle);
+                            }
                         }
                     }
 
@@ -1044,16 +1045,17 @@ void update_entities(struct game_state* state, f32 dt, struct entity_iterator it
                         current_entity->position.y += current_entity->velocity.y * dt;
                         struct collidable_object_iterator collidable_objects = level_area_collidables_iterator(area);
 
-                        for (struct collidable_object object = collidable_object_iterator_begin(&collidable_objects);
-                             !collidable_object_iterator_done(&collidable_objects) && !stop_horizontal_movement;
-                             object = collidable_object_iterator_advance(&collidable_objects)) {
-                            stop_vertical_movement = entity_push_out_vertical_edges(current_entity, object.rectangle);
+                        if (!current_entity->ai.current_action) {
+                            for (struct collidable_object object = collidable_object_iterator_begin(&collidable_objects);
+                                 !collidable_object_iterator_done(&collidable_objects) && !stop_horizontal_movement;
+                                 object = collidable_object_iterator_advance(&collidable_objects)) {
+                                stop_vertical_movement = entity_push_out_vertical_edges(current_entity, object.rectangle);
+                            }
                         }
                     }
 
                     if (stop_horizontal_movement) current_entity->velocity.x = 0;
                     if (stop_vertical_movement) current_entity->velocity.y = 0;
-                }
 
                 /* any existing actions or action queues will ALWAYS override manual control */
                 entity_update_and_perform_actions(state, current_entity, area, dt);

@@ -35,7 +35,7 @@ gamex86-debug.exe: ./gamescript_metagen.exe $(wildcard *.c *.h)
 web-build/index.html: ./gamescript_metagen.exe $(wildcard *.c *.h) shell_minimal.html
 	./gamescript_metagen.exe
 	-mkdir web-build/
-	$(EMCC) main.c -O2 -lSDL2_mixer -lSDL2 -s USE_SDL_MIXER=2 -s USE_SDL=2 -s USE_WEBGL2=1 -I./dependencies/ --shell-file shell_minimal.html  -o web-build/game.html -s INITIAL_MEMORY=128MB --preload-file res --preload-file areas --preload-file shops --preload-file dlg --preload-file scenes -DRELEASE
+	$(EMCC) main.c -O2 -lSDL2_mixer -lSDL2 -s USE_SDL_MIXER=2 -s USE_SDL=2 -s USE_WEBGL2=1 -I./dependencies/ --shell-file shell_minimal.html  -o web-build/game.html -s INITIAL_MEMORY=128MB --preload-file res --preload-file areas --preload-file shops --preload-file dlg --preload-file scenes --preload-file worldmaps -DRELEASE
 	mv web-build/game.html web-build/index.html
 package-web: web-build/index.html
 	cd web-build && zip gamewebpackage.zip index.html game.data game.js game.wasm && butler push gamewebpackage.zip $(ITCHPROJECT):wasm

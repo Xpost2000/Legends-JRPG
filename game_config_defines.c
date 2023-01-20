@@ -15,3 +15,5 @@
 #define GAME_DEFAULT_XP_PROGRESSION_FILE       GAME_DEFAULT_RESOURCE_PATH "xp_progression.txt"
 #define GAME_DEFAULT_WORLD_TILE_DATA_FILE      GAME_DEFAULT_RESOURCE_PATH "world_tile_data.txt"
 #define GAME_DEFAULT_STARTUP_FILE              GAME_DEFAULT_RESOURCE_PATH "gamestartup.txt"
+
+local string game_title = string_literal("ISELIAN LEGENDS");

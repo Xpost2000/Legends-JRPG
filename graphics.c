@@ -130,7 +130,7 @@ f32 font_cache_text_width(struct font_cache* font_cache, string text, f32 scale)
   I'll look for it at some point in the future.
 */
 struct software_framebuffer software_framebuffer_create(u32 width, u32 height) {
-    u8* pixels = system_heap_memory_allocate(width * height * sizeof(u32)+16);
+    u8* pixels = system_heap_memory_allocate(width * height * sizeof(u32)+64);
 
     return (struct software_framebuffer) {
         .width  = width,
@@ -140,7 +140,7 @@ struct software_framebuffer software_framebuffer_create(u32 width, u32 height) {
 }
 
 struct software_framebuffer software_framebuffer_create_from_arena(struct memory_arena* arena, u32 width, u32 height) {
-    u8* pixels = memory_arena_push(arena, width * height * sizeof(u32)+16);
+    u8* pixels = memory_arena_push(arena, width * height * sizeof(u32)+64);
 
     return (struct software_framebuffer) {
         .width  = width,

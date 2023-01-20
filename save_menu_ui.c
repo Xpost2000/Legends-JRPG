@@ -277,7 +277,7 @@ s32 do_save_menu(struct software_framebuffer* framebuffer, f32 dt) {
                     case SAVE_MENU_INTENT_LOADING: {
                         /* load slot and start the game */
                         if (game_can_load_save(selected_slot)) {
-                            screen_mode = GAME_SCREEN_INGAME;
+                            set_game_screen_mode(GAME_SCREEN_INGAME);
                             fade_into_game();
                             game_load_from_save_slot(selected_slot);
                             return SAVE_MENU_PROCESS_ID_LOADED_EXIT;

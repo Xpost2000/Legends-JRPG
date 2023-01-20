@@ -56,7 +56,7 @@ void update_and_render_preview_demo_alert(struct game_state* state, struct softw
             draw_ui_breathing_text_centered(framebuffer, rectangle_f32(0, 128, framebuffer->width, framebuffer->height), game_get_font(MENU_FONT_COLOR_GOLD), 4, string_literal("THANK YOU!"), 4512, color32f32(1, 1, 1, 1-t));
 
             if (preview_demo_state.timer > max_t) {
-                screen_mode = GAME_SCREEN_MAIN_MENU;
+                set_game_screen_mode(GAME_SCREEN_MAIN_MENU);
                 preview_demo_state.timer = 0;
             }
         } break;
