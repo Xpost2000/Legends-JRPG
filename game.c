@@ -96,7 +96,7 @@ local void play_random_hit_sound(void) {
     play_sound(hit_sounds[random_ranged_integer(&game_state->rng, 0, 1)]);
 }
 
-sound_id test_safe_music = {};
+sound_id test_safe_music   = {};
 sound_id test_battle_music = {};
 
 /* compile out */
