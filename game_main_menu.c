@@ -69,6 +69,7 @@ local struct main_menu_option main_menu_first_page_options[] = {
     (struct main_menu_option) { .choice = ("load game") },
     (struct main_menu_option) { .choice = ("options") },
     (struct main_menu_option) { .choice = ("exit") },
+    (struct main_menu_option) { .choice = ("[test] credits") },
 };
 
 struct option_resolution_pair {
@@ -285,6 +286,9 @@ local void update_and_render_main_menu(struct game_state* state, struct software
                     } break;
                     case 4: {
                         global_game_running = false;
+                    } break;
+                    case 5: {
+                        enter_credits();
                     } break;
                 }
             }

@@ -117,7 +117,7 @@ local void do_game_over_options(struct software_framebuffer* framebuffer, f32 dt
 
     /* TODO: LOAD SAVE GAME, Not done yet! Need to move out save menu! */
     switch (selected_option) {
-        case 0: /* TODO: Checkpoint */
+        case 0: {/* TODO: Checkpoint */
             /* Who knows? */
             set_game_screen_mode(GAME_SCREEN_INGAME);
             fade_into_game();

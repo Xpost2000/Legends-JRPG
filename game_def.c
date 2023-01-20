@@ -61,6 +61,8 @@ enum menu_font_variation {
     MENU_FONT_COLOR_YELLOW,
     MENU_FONT_COLOR_BLOODRED,
 
+    /* I want room to have more fonts though, although GNSH fonts are very very nice. */
+
     MENU_FONT_COUNT,
 };
 

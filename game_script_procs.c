@@ -1254,6 +1254,11 @@ GAME_LISP_FUNCTION(STORYBOARD) {
     return LISP_nil;
 }
 
+GAME_LISP_FUNCTION(BEGIN_CREDITS) {
+    enter_credits();
+    return LISP_nil;
+}
+
 #undef GAME_LISP_FUNCTION
 
 #define STRINGIFY(x) #x
