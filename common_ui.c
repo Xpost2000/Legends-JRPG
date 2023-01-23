@@ -82,16 +82,41 @@ void common_ui_visual_slider(struct common_ui_layout* layout, struct software_fr
         }
     }
 
+    
     f32 old_layout_x = layout->x;
-
-    for (s32 string_index = 0; string_index < count; ++string_index) {
+    if (flags & COMMON_UI_VISUAL_SLIDER_FLAGS_LOTSOFOPTIONS) {
+        s32 string_index = *option_ptr;
         layout->y = position.y;
-        if (common_ui_button(layout, framebuffer, strings[string_index], scale, string_index, option_ptr, COMMON_UI_BUTTON_FLAGS_NONE)) {
-            *option_ptr = string_index;
+        /* TODO: need some more state to fix button stuff  */
+        if (common_ui_button(layout, framebuffer, string_literal("<<"), scale, 0, 0, COMMON_UI_BUTTON_FLAGS_NONE)) {
+            (*option_ptr)--;
+            if ((*option_ptr) < 0) {
+                *option_ptr = count-1;
+            }
         }
-        layout->x += longest_string_width*1.2;
-    }
+        layout->y = position.y;
+        layout->x += font_cache_text_width(common_ui_text_normal, string_literal("<<"), scale) * 3;
+        if (common_ui_button(layout, framebuffer, strings[string_index], scale, string_index, 0, COMMON_UI_BUTTON_FLAGS_NONE)) {
+            /*?*/ 
+        }
+        layout->y = position.y;
+        layout->x += longest_string_width * 1.2;
+        if (common_ui_button(layout, framebuffer, string_literal(">>"), scale, 0, 0, COMMON_UI_BUTTON_FLAGS_NONE)) {
+            (*option_ptr)++;
+            if ((*option_ptr) >= count) {
+                *option_ptr = 0;
+            }
+        }
+    } else {
+        for (s32 string_index = 0; string_index < count; ++string_index) {
+            layout->y = position.y;
+            if (common_ui_button(layout, framebuffer, strings[string_index], scale, string_index, option_ptr, COMMON_UI_BUTTON_FLAGS_NONE)) {
+                *option_ptr = string_index;
+            }
+            layout->x += longest_string_width*1.2;
+        }
 
+    }
     layout->x = old_layout_x;
     layout->y = position.y;
 

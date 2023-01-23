@@ -63,8 +63,8 @@ local u32 SCREEN_HEIGHT = 0;
 local bool SCREEN_IS_FULLSCREEN = false;
 
 /* real res */
-local u32 REAL_SCREEN_WIDTH  = 640*2;
-local u32 REAL_SCREEN_HEIGHT = 480*2;
+local u32 REAL_SCREEN_WIDTH  = 640;
+local u32 REAL_SCREEN_HEIGHT = 480;
 /* local u32 REAL_SCREEN_WIDTH  = 640; */
 /* local u32 REAL_SCREEN_HEIGHT = 480; */
 /* local u32 REAL_SCREEN_WIDTH  = 1280; */
@@ -73,6 +73,60 @@ local u32 REAL_SCREEN_HEIGHT = 480*2;
 local const f32 r16by9Ratio  = 16/9.0f;
 local const f32 r16by10Ratio = 16/10.0f;
 local const f32 r4by3Ratio   = 4/3.0f;
+
+struct screen_resolution {
+    s32 w;
+    s32 h;
+    char str[16];
+};
+
+/* not video modes. */
+/* this is such an absurd number. I'll change it later maybe. */
+#define MAX_QUERIED_SCREEN_RESOLUTIONS (100)
+local s32                      queried_screen_resolution_count                            = 0;
+local struct screen_resolution queried_screen_resolutions[MAX_QUERIED_SCREEN_RESOLUTIONS] = {};
+local string resolution_strings[MAX_QUERIED_SCREEN_RESOLUTIONS];
+
+local s32 queried_resolution_find_index_of(s32 x, s32 y) {
+    for (s32 existing_screen_resolution_index = 0; existing_screen_resolution_index < queried_screen_resolution_count; ++existing_screen_resolution_index) {
+        struct screen_resolution* resolution = queried_screen_resolutions + existing_screen_resolution_index;
+
+        if (resolution->w == x && resolution->h == y) {
+            return existing_screen_resolution_index;
+        }
+    }
+    return -1;
+}
+local void _add_screen_resolution(s32 x, s32 y) {
+    for (s32 existing_screen_resolution_index = 0; existing_screen_resolution_index < queried_screen_resolution_count; ++existing_screen_resolution_index) {
+        struct screen_resolution* resolution = queried_screen_resolutions + existing_screen_resolution_index;
+
+        if (resolution->w == x && resolution->h == y) {
+            return;
+        }
+    }
+
+    struct screen_resolution* new_resolution = &queried_screen_resolutions[queried_screen_resolution_count];
+    new_resolution->w = x;
+    new_resolution->h = y;
+    char* t = format_temp("%dx%d", x, y);
+    cstring_copy(t, new_resolution->str, array_count(new_resolution->str));
+    resolution_strings[queried_screen_resolution_count++] = string_from_cstring(new_resolution->str);
+}
+
+local void query_screen_resolutions(void) {
+    /* only query the first monitor. Usually that's okay? */
+    s32 display_mode_count = SDL_GetNumDisplayModes(0);
+    _debugprintf("Query display? : %s", SDL_GetError());
+    assertion(display_mode_count >= 1 && "Could not query display modes for main display?");
+
+    for (s32 index = 0; index < display_mode_count; ++index) {
+        SDL_DisplayMode mode;
+        SDL_GetDisplayMode(0, index, &mode);
+
+        _add_screen_resolution(mode.w, mode.h);
+    }
+}
 
 local bool close_enough_f32(f32 a, f32 b) {
     const f32 EPISILON = 0.001f;
@@ -620,6 +674,7 @@ int engine_main(int argc, char** argv) {
     finished_fade_out_intro = true;
 #endif
 
+    query_screen_resolutions();
     while (global_game_running || !finished_fade_out_intro) {
         engine_main_loop();
 

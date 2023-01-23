@@ -39,6 +39,7 @@ enum common_ui_button_flags {
 bool common_ui_button(struct common_ui_layout* layout, struct software_framebuffer* framebuffer, string text, f32 scale, s32 button_id, s32* selected_id, u32 flags);
 enum common_ui_visual_slider_flags {
     COMMON_UI_VISUAL_SLIDER_FLAGS_NONE = 0,
+    COMMON_UI_VISUAL_SLIDER_FLAGS_LOTSOFOPTIONS = BIT(0),
 };
 
 /*               ||                     */

@@ -42,6 +42,11 @@ struct options_menu_state options_menu_state;
 void options_menu_open(void) {
     options_menu_state.phase                     = OPTIONS_MENU_PHASE_OPEN;
     options_menu_state.currently_selected_option = 0;
+
+    /* find screen resolution that matches current setting */
+    {
+        options_menu_state.resolution = queried_resolution_find_index_of(REAL_SCREEN_WIDTH, REAL_SCREEN_HEIGHT);
+    }
 }
 
 void options_menu_close(void) {
@@ -60,8 +65,11 @@ local string options_menu_options[] = {
     string_literal("UI Theme"),
 
     string_literal("Resolution"),
+
+    /* check box */
     string_literal("Fullscreen"),
 
+    /* I want discrete sliders? But have them show up as bars I guess */
     string_literal("Music Volume"),
     string_literal("Sound Volume"),
 };
@@ -75,7 +83,7 @@ s32 do_options_menu(struct software_framebuffer* framebuffer, f32 dt) {
     switch (options_menu_state.phase) {
         case OPTIONS_MENU_PHASE_OPEN: {
             const s32          OPTIONS_BOX_WIDTH  = 35;
-            const s32          OPTIONS_BOX_HEIGHT = 27;
+            const s32          OPTIONS_BOX_HEIGHT = 25;
 
             v2f32 options_box_extents        = nine_patch_estimate_extents(ui_chunky, 1, OPTIONS_BOX_WIDTH, OPTIONS_BOX_HEIGHT);
             v2f32 options_box_start_position = v2f32((SCREEN_WIDTH/2 - options_box_extents.x/2), (SCREEN_HEIGHT/2) - options_box_extents.y/2);
@@ -127,7 +135,7 @@ s32 do_options_menu(struct software_framebuffer* framebuffer, f32 dt) {
                         }
                         {
                             Option_Menu_Choice_Label(2);
-                            common_ui_button(&layout, framebuffer, string_literal("option"), 2, 2, &options_menu_state.currently_selected_option, 0);
+                            common_ui_visual_slider(&layout, framebuffer, 2, ui_theme_setting_strings, array_count(ui_theme_setting_strings), &options_menu_state.ui_theme_slider, 2, &options_menu_state.currently_selected_option, 0);
                         }
                     }
                     layout.x = layout_old_x;
@@ -142,7 +150,7 @@ s32 do_options_menu(struct software_framebuffer* framebuffer, f32 dt) {
 
                         {
                             Option_Menu_Choice_Label(3);
-                            common_ui_button(&layout, framebuffer, string_literal("option"), 2, 3, &options_menu_state.currently_selected_option, 0);
+                            common_ui_visual_slider(&layout, framebuffer, 2, resolution_strings, queried_screen_resolution_count, &options_menu_state.resolution, 3, &options_menu_state.currently_selected_option, COMMON_UI_VISUAL_SLIDER_FLAGS_LOTSOFOPTIONS);
                         }
                         {
                             Option_Menu_Choice_Label(4);
