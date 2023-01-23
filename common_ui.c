@@ -26,6 +26,7 @@ bool common_ui_button(struct common_ui_layout* layout, struct software_framebuff
 
     f32 alpha = 1;
 
+    bool result = false;
     if (!(flags & COMMON_UI_BUTTON_FLAGS_DISABLED)) {
         if (rectangle_f32_intersect(rectangle_f32(position.x, position.y, text_width, text_height),
                                     rectangle_f32(mouse_location[0], mouse_location[1], 5, 5))) {
@@ -34,14 +35,14 @@ bool common_ui_button(struct common_ui_layout* layout, struct software_framebuff
             get_mouse_buttons(&left, &middle, &right);
 
             if (left) {
-                return true;
+                result = true;
             }
         }
 
         if (selected_id && *selected_id == button_id) {
             font_to_use = common_ui_text_focused;
             if (is_action_pressed(INPUT_ACTION_CONFIRMATION)) {
-                return true;
+                result = true;
             }
         }
     } else {
@@ -50,5 +51,49 @@ bool common_ui_button(struct common_ui_layout* layout, struct software_framebuff
 
 
     software_framebuffer_draw_text(framebuffer, font_to_use, scale, v2f32(position.x, position.y), text, color32f32(1,1,1,alpha), BLEND_MODE_ALPHA);
-    return false;
+    return result;
+}
+
+void common_ui_visual_slider(struct common_ui_layout* layout, struct software_framebuffer* framebuffer, f32 scale, string* strings, s32 count, s32* option_ptr, s32 slider_id, s32* selected_id, u32 flags) {
+    /* generally all fonts have the same size... They're just different color variations... */
+    struct font_cache* font_to_use = common_ui_text_normal;
+
+    f32 longest_string_width = font_cache_text_width(common_ui_text_normal, longest_string_in_list(strings, count), scale);
+    f32 text_width  = longest_string_width * count;
+    f32 text_height = font_cache_text_height(common_ui_text_normal) * scale;
+
+    v2f32 position = v2f32(layout->x, layout->y);
+    common_ui_layout_advance(layout, text_width, text_height*1.2);
+
+    /* This will also handle arrow key selection */
+    if (selected_id && *selected_id == slider_id) {
+        assertion(option_ptr && "Hmm? Why are you using a slider if there's nothing to select?");
+
+        if (is_action_down_with_repeat(INPUT_ACTION_MOVE_LEFT)) {
+            (*option_ptr)--;
+            if ((*option_ptr) < 0) {
+                *option_ptr = count-1;
+            }
+        } else if (is_action_down_with_repeat(INPUT_ACTION_MOVE_RIGHT)) {
+            (*option_ptr)++;
+            if ((*option_ptr) >= count) {
+                *option_ptr = 0;
+            }
+        }
+    }
+
+    f32 old_layout_x = layout->x;
+
+    for (s32 string_index = 0; string_index < count; ++string_index) {
+        layout->y = position.y;
+        if (common_ui_button(layout, framebuffer, strings[string_index], scale, string_index, option_ptr, COMMON_UI_BUTTON_FLAGS_NONE)) {
+            *option_ptr = string_index;
+        }
+        layout->x += longest_string_width*1.2;
+    }
+
+    layout->x = old_layout_x;
+    layout->y = position.y;
+
+    common_ui_layout_advance(layout, text_width, text_height);
 }
