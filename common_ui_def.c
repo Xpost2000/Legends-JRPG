@@ -33,8 +33,9 @@ void common_ui_init(void);
 /* NOTE: all UI is assumed to happen on an identity transformation */
 /* Ideally I'd also push render commands for this but whatever */
 enum common_ui_button_flags {
-    COMMON_UI_BUTTON_FLAGS_NONE     = 0,
-    COMMON_UI_BUTTON_FLAGS_DISABLED = BIT(0),
+    COMMON_UI_BUTTON_FLAGS_NONE      = 0,
+    COMMON_UI_BUTTON_FLAGS_DISABLED  = BIT(0),
+    COMMON_UI_BUTTON_FLAGS_BREATHING = BIT(1),
 };
 bool common_ui_button(struct common_ui_layout* layout, struct software_framebuffer* framebuffer, string text, f32 scale, s32 button_id, s32* selected_id, u32 flags);
 enum common_ui_visual_slider_flags {

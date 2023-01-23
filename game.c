@@ -2923,6 +2923,8 @@ struct queued_load_level_data {
 local void setup_level_common(void) {
     apply_save_data(game_state);
     /* set the stage */
+    game_state->interactable_state.context           = 0;
+    game_state->interactable_state.interactable_type = 0;
     {
         _debugprintf("setting up stage");
         

@@ -63,8 +63,8 @@ local u32 SCREEN_HEIGHT = 0;
 local bool SCREEN_IS_FULLSCREEN = false;
 
 /* real res */
-local u32 REAL_SCREEN_WIDTH  = 640*2;
-local u32 REAL_SCREEN_HEIGHT = 480*2;
+local u32 REAL_SCREEN_WIDTH  = 1024;
+local u32 REAL_SCREEN_HEIGHT = 768;
 /* local u32 REAL_SCREEN_WIDTH  = 640; */
 /* local u32 REAL_SCREEN_HEIGHT = 480; */
 /* local u32 REAL_SCREEN_WIDTH  = 1280; */

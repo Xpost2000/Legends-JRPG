@@ -277,4 +277,16 @@ s32 string_to_controller_button(string buttonstring) {
     return BUTTON_UNKNOWN;
 }
 
+bool mouse_left(void) {
+    return global_input.current_state.mouse_buttons[MOUSE_BUTTON_LEFT];
+}
+
+bool mouse_middle(void) {
+    return global_input.current_state.mouse_buttons[MOUSE_BUTTON_MIDDLE];
+}
+
+bool mouse_right(void) {
+    return global_input.current_state.mouse_buttons[MOUSE_BUTTON_RIGHT];
+}
+
 #include "input_mapper.c"

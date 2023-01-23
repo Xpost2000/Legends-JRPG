@@ -32,7 +32,11 @@ bool common_ui_button(struct common_ui_layout* layout, struct software_framebuff
     f32 alpha = 1;
 
     bool result = false;
-    if (!(flags & COMMON_UI_BUTTON_FLAGS_DISABLED)) {
+
+    if ((flags & COMMON_UI_BUTTON_FLAGS_DISABLED)) {
+        alpha = 0.5;
+        result = false;
+    } else {
         if (rectangle_f32_intersect(rectangle_f32(position.x, position.y, text_width, text_height), rectangle_f32(mouse_location[0], mouse_location[1], 3, 3))) {
             font_to_use = common_ui_text_highlighted;
             bool left, middle, right;
@@ -49,12 +53,15 @@ bool common_ui_button(struct common_ui_layout* layout, struct software_framebuff
                 result = true;
             }
         }
-    } else {
-        alpha = 0.5;
     }
 
 
-    software_framebuffer_draw_text(framebuffer, font_to_use, scale, v2f32(position.x, position.y), text, color32f32(1,1,1,alpha), BLEND_MODE_ALPHA);
+    if ((flags & COMMON_UI_BUTTON_FLAGS_BREATHING)) {
+        draw_ui_breathing_text(framebuffer, v2f32(position.x, position.y), font_to_use, scale, text, button_id, color32f32(1,1,1,alpha));
+    } else {
+        software_framebuffer_draw_text(framebuffer, font_to_use, scale, v2f32(position.x, position.y), text, color32f32(1,1,1,alpha), BLEND_MODE_ALPHA);
+    }
+
     return result;
 }
 

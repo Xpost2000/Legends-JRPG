@@ -281,6 +281,9 @@ bool controller_any_button_down(struct game_controller* controller);
 
 void get_mouse_location(s32* mx, s32* my);
 void get_mouse_buttons(bool* left, bool* middle, bool* right);
+bool mouse_left(void);
+bool mouse_middle(void);
+bool mouse_right(void);
 v2f32 mouse_location(void);
 
 void begin_input_frame(void);

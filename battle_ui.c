@@ -708,12 +708,13 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
 
     if (disable_game_input) allow_input = false;
 
-    bool selection_down    = is_action_down_with_repeat(INPUT_ACTION_MOVE_DOWN);
-    bool selection_up      = is_action_down_with_repeat(INPUT_ACTION_MOVE_UP);
-    bool selection_left    = is_action_down_with_repeat(INPUT_ACTION_MOVE_LEFT);
-    bool selection_right   = is_action_down_with_repeat(INPUT_ACTION_MOVE_RIGHT);
+    bool selection_down    = is_action_down_with_repeat(INPUT_ACTION_MOVE_DOWN) || is_mouse_wheel_down();
+    bool selection_up      = is_action_down_with_repeat(INPUT_ACTION_MOVE_UP)   || is_mouse_wheel_up();
     bool selection_confirm = is_action_pressed(INPUT_ACTION_CONFIRMATION);
     bool selection_cancel  = is_action_pressed(INPUT_ACTION_CANCEL);
+
+    bool selection_left    = is_action_down_with_repeat(INPUT_ACTION_MOVE_LEFT);
+    bool selection_right   = is_action_down_with_repeat(INPUT_ACTION_MOVE_RIGHT);
 
     /* TODO: weirdo */
     if (!allow_input || game_command_console_enabled) {
@@ -763,28 +764,11 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
             bool disabled_actions[array_count(battle_menu_main_options)] = {};
             battle_ui_determine_disabled_actions(combat_state->participants[combat_state->active_combatant], disabled_actions);
 
-            for (unsigned index = 0; index < array_count(battle_menu_main_options); ++index) {
-                struct font_cache* painting_font = normal_font;
+            struct common_ui_layout layout = common_ui_vertical_layout(x+14, y+15);
 
-                if (index == global_battle_ui_state.selection) {
-                    painting_font = highlighted_font;
-                }
-
-                if (allow_input) {
-                    if (disabled_actions[index]) {
-                        modulation_color = color32f32(0.5, 0.5, 0.5, 1.0);
-                    } else {
-                        modulation_color = color32f32_WHITE;
-                    }
-                }
-
-                draw_ui_breathing_text(framebuffer, v2f32(x + 14, y + 15 + index * 32), painting_font,
-                                       2, battle_menu_main_options[index], index, modulation_color);
-            }
+            s32 options_count = array_count(battle_menu_main_options);
 
             if (allow_input) {
-                s32 options_count = array_count(battle_menu_main_options);
-
                 if (selection_down) {
                     play_sound(ui_blip);
                     do {
@@ -805,53 +789,62 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                         }
                     } while (disabled_actions[global_battle_ui_state.selection]);
                 }
+            }
 
-                if (selection_confirm) {
-                    play_sound(ui_blip);
-                    if (!disabled_actions[global_battle_ui_state.selection]) {
-                        switch (global_battle_ui_state.selection) {
-                            /* NOTE: No ability is expected to really reach outside of your view... Hence the need for a separate view command */
-                            case BATTLE_LOOK: {
-                                global_battle_ui_state.submode = BATTLE_UI_SUBMODE_LOOKING;
-                            } break;
-                            case BATTLE_MOVE: {
-                                global_battle_ui_state.submode = BATTLE_UI_SUBMODE_MOVING;
-                            
-                                struct entity* active_combatant_entity = entity_list_dereference_entity(&state->permenant_entities, combat_state->participants[combat_state->active_combatant]);
-                                level_area_build_movement_visibility_map(&scratch_arena, &state->loaded_area, active_combatant_entity->position.x / TILE_UNIT_SIZE, active_combatant_entity->position.y / TILE_UNIT_SIZE, 6);
+            for (unsigned index = 0; index < array_count(battle_menu_main_options); ++index) {
+                u32 button_flags = COMMON_UI_BUTTON_FLAGS_BREATHING;
 
-                                global_battle_ui_state.movement_start_x                 = floorf((active_combatant_entity->position.x + active_combatant_entity->scale.x/2) / TILE_UNIT_SIZE);
-                                global_battle_ui_state.movement_start_y                 = floorf((active_combatant_entity->position.y + active_combatant_entity->scale.y/2) / TILE_UNIT_SIZE);
-                                global_battle_ui_state.movement_end_x                   = global_battle_ui_state.movement_start_x;
-                                global_battle_ui_state.movement_end_y                   = global_battle_ui_state.movement_start_y;
-                                global_battle_ui_state.max_remembered_path_points_count = 0;
-                            } break;
-                            case BATTLE_ATTACK: {
-                                global_battle_ui_state.submode = BATTLE_UI_SUBMODE_ATTACKING;
-                            } break;
-                            case BATTLE_ABILITY: {
-                                global_battle_ui_state.submode = BATTLE_UI_SUBMODE_USING_ABILITY;
-                                battle_ui_calculate_usable_abilities();
-                            } break;
-                            case BATTLE_ITEM: {
-                                global_battle_ui_state.submode = BATTLE_UI_SUBMODE_USING_ITEM;
-                                setup_item_use_menu();
-                            } break;
-                            case BATTLE_DEFEND: {
-                                entity_combat_submit_defend_action(active_combatant_entity);
-                            } break;
-                            case BATTLE_EQUIPMENT: {
-                                global_battle_ui_state.submode = BATTLE_UI_SUBMODE_EQUIPMENT_MODE;
-                                open_equipment_screen(combat_state->participants[combat_state->active_combatant]);
-                            } break;
-                            case BATTLE_WAIT: {
-                                struct entity* active_combatant_entity   = entity_list_dereference_entity(&state->permenant_entities, combat_state->participants[combat_state->active_combatant]);
-                                active_combatant_entity->waiting_on_turn = false;
-                            } break;
-                        }
-
-                        global_battle_ui_state.selection = 0;
+                if (allow_input) {
+                    if (disabled_actions[index]) {
+                        button_flags |= COMMON_UI_BUTTON_FLAGS_DISABLED;
                     }
+                } else {
+                    button_flags |= COMMON_UI_BUTTON_FLAGS_DISABLED;
+                }
+
+                if (common_ui_button(&layout, framebuffer, battle_menu_main_options[index], 2, index, &global_battle_ui_state.selection, button_flags)) {
+                    switch (index) {
+                        /* NOTE: No ability is expected to really reach outside of your view... Hence the need for a separate view command */
+                        case BATTLE_LOOK: {
+                            global_battle_ui_state.submode = BATTLE_UI_SUBMODE_LOOKING;
+                        } break;
+                        case BATTLE_MOVE: {
+                            global_battle_ui_state.submode = BATTLE_UI_SUBMODE_MOVING;
+                            
+                            struct entity* active_combatant_entity = entity_list_dereference_entity(&state->permenant_entities, combat_state->participants[combat_state->active_combatant]);
+                            level_area_build_movement_visibility_map(&scratch_arena, &state->loaded_area, active_combatant_entity->position.x / TILE_UNIT_SIZE, active_combatant_entity->position.y / TILE_UNIT_SIZE, 6);
+
+                            global_battle_ui_state.movement_start_x                 = floorf((active_combatant_entity->position.x + active_combatant_entity->scale.x/2) / TILE_UNIT_SIZE);
+                            global_battle_ui_state.movement_start_y                 = floorf((active_combatant_entity->position.y + active_combatant_entity->scale.y/2) / TILE_UNIT_SIZE);
+                            global_battle_ui_state.movement_end_x                   = global_battle_ui_state.movement_start_x;
+                            global_battle_ui_state.movement_end_y                   = global_battle_ui_state.movement_start_y;
+                            global_battle_ui_state.max_remembered_path_points_count = 0;
+                        } break;
+                        case BATTLE_ATTACK: {
+                            global_battle_ui_state.submode = BATTLE_UI_SUBMODE_ATTACKING;
+                        } break;
+                        case BATTLE_ABILITY: {
+                            global_battle_ui_state.submode = BATTLE_UI_SUBMODE_USING_ABILITY;
+                            battle_ui_calculate_usable_abilities();
+                        } break;
+                        case BATTLE_ITEM: {
+                            global_battle_ui_state.submode = BATTLE_UI_SUBMODE_USING_ITEM;
+                            setup_item_use_menu();
+                        } break;
+                        case BATTLE_DEFEND: {
+                            entity_combat_submit_defend_action(active_combatant_entity);
+                        } break;
+                        case BATTLE_EQUIPMENT: {
+                            global_battle_ui_state.submode = BATTLE_UI_SUBMODE_EQUIPMENT_MODE;
+                            open_equipment_screen(combat_state->participants[combat_state->active_combatant]);
+                        } break;
+                        case BATTLE_WAIT: {
+                            struct entity* active_combatant_entity   = entity_list_dereference_entity(&state->permenant_entities, combat_state->participants[combat_state->active_combatant]);
+                            active_combatant_entity->waiting_on_turn = false;
+                        } break;
+                    }
+                    global_battle_ui_state.selection = 0;
+                    break;
                 }
             }
         } break;
@@ -1314,8 +1307,8 @@ local void do_after_action_report_screen(struct game_state* state, struct softwa
     struct font_cache* header_font      = game_get_font(MENU_FONT_COLOR_STEEL);
     struct font_cache* highlighted_font = game_get_font(MENU_FONT_COLOR_GOLD);
 
-    bool selection_down    = is_action_down_with_repeat(INPUT_ACTION_MOVE_DOWN);
-    bool selection_up      = is_action_down_with_repeat(INPUT_ACTION_MOVE_UP);
+    bool selection_down    = is_action_down_with_repeat(INPUT_ACTION_MOVE_DOWN) || is_mouse_wheel_down();
+    bool selection_up      = is_action_down_with_repeat(INPUT_ACTION_MOVE_UP)   || is_mouse_wheel_up();
     bool selection_confirm = is_action_pressed(INPUT_ACTION_CONFIRMATION);
     bool selection_cancel  = is_action_pressed(INPUT_ACTION_CANCEL);
 
