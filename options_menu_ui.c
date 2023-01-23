@@ -33,7 +33,9 @@ struct options_menu_state {
     s32  resolution;
     bool is_fullscreen;
 
+    /* 0 to 1.0 */
     f32  music_volume;
+    /* 0 to 1.0 */
     f32  sound_volume;
 };
 
@@ -46,6 +48,7 @@ void options_menu_open(void) {
     /* find screen resolution that matches current setting */
     {
         options_menu_state.resolution = queried_resolution_find_index_of(REAL_SCREEN_WIDTH, REAL_SCREEN_HEIGHT);
+        if (options_menu_state.resolution == -1) options_menu_state.resolution = 0;
     }
 }
 
@@ -92,13 +95,13 @@ s32 do_options_menu(struct software_framebuffer* framebuffer, f32 dt) {
             {
                 if (is_action_down_with_repeat(INPUT_ACTION_MOVE_DOWN)) {
                     options_menu_state.currently_selected_option += 1;
-                    if (options_menu_state.currently_selected_option >= array_count(options_menu_options)-1) {
+                    if (options_menu_state.currently_selected_option >= array_count(options_menu_options)+3) {
                         options_menu_state.currently_selected_option = 0;
                     }
                 } else if (is_action_down_with_repeat(INPUT_ACTION_MOVE_UP)) {
                     options_menu_state.currently_selected_option -= 1;
                     if (options_menu_state.currently_selected_option < 0) {
-                        options_menu_state.currently_selected_option = array_count(options_menu_options)-1;
+                        options_menu_state.currently_selected_option = array_count(options_menu_options)-1+3;
                     }
                 }
             }
@@ -154,7 +157,7 @@ s32 do_options_menu(struct software_framebuffer* framebuffer, f32 dt) {
                         }
                         {
                             Option_Menu_Choice_Label(4);
-                            common_ui_button(&layout, framebuffer, string_literal("option"), 2, 4, &options_menu_state.currently_selected_option, 0);
+                            common_ui_checkbox(&layout, framebuffer, 4, &options_menu_state.currently_selected_option, &options_menu_state.is_fullscreen, 0);
                         }
                     }
                     layout.x = layout_old_x;
@@ -169,11 +172,11 @@ s32 do_options_menu(struct software_framebuffer* framebuffer, f32 dt) {
 
                         {
                             Option_Menu_Choice_Label(5);
-                            common_ui_button(&layout, framebuffer, string_literal("option"), 2, 5, &options_menu_state.currently_selected_option, 0);
+                            common_ui_f32_slider(&layout, framebuffer, 32*4, &options_menu_state.currently_selected_option, 5, &options_menu_state.music_volume, 0, 1, 0);
                         }
                         {
                             Option_Menu_Choice_Label(6);
-                            common_ui_button(&layout, framebuffer, string_literal("option"), 2, 6, &options_menu_state.currently_selected_option, 0);
+                            common_ui_f32_slider(&layout, framebuffer, 32*4, &options_menu_state.currently_selected_option, 6, &options_menu_state.sound_volume, 0, 1, 0);
                         }
                     }
                     layout.x = layout_old_x;

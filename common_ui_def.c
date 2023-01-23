@@ -47,4 +47,10 @@ enum common_ui_visual_slider_flags {
 void common_ui_visual_slider(struct common_ui_layout* layout, struct software_framebuffer* framebuffer, f32 scale, string* strings, s32 count, s32* option_ptr, s32 slider_id, s32* selected_id, u32 flags);
 /* COMMON GAME_UI implementations end */
 
+enum common_ui_checkbox_flags {
+    COMMON_UI_CHECKBOX_FLAGS_NONE = 0,
+};
+void common_ui_checkbox(struct common_ui_layout* layout, struct software_framebuffer* framebuffer, s32 checkbox_id, s32* selected_id, bool* option_ptr, u32 flags);
+void common_ui_f32_slider(struct common_ui_layout* layout, struct software_framebuffer* framebuffer, f32 width, s32* selected_id, s32 slider_id, f32* ptr, f32 min_bound, f32 max_bound, f32 step);
+
 #endif
