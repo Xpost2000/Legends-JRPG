@@ -1,96 +1,7 @@
 /* global main menu code */
 /*
-  NOTE: 1/20/23,
-  the main menu is being redesigned to be more in-line with a JRPG standardized UI format.
-
-  As of now the pause menu is the only menu where this is not true (although I don't dislike the pause menu's design, so it's not changing.)
-
-  I would like to have background details but I probably don't have the chance for it.
-
-  I am still a little hurt at my refusal to write a proper UI library but thankfully these UIs aren't super complicated to write.
+  NOTE: I would like to animate some stuff again in this menu but that's enough work for now lol.
 */
-
-/*
-  COMMON GAME_UI implementations
-  NOTE: semi-standardized UI widgets for the game's UIs.
-
-  With very basic layout.
-*/
-local struct font_cache* common_ui_text_normal;
-local struct font_cache* common_ui_text_highlighted;
-local struct font_cache* common_ui_text_focused;
-
-struct common_ui_layout { /* NOTE: vertical layout for now, since all the game stuff uses that */
-    f32 x;
-    f32 y;
-};
-
-struct common_ui_layout common_ui_vertical_layout(f32 x, f32 y) {
-    return (struct common_ui_layout) {
-        .x = x,
-        .y = y,
-    };
-}
-
-void common_ui_init(void) {
-    common_ui_text_normal      = game_get_font(MENU_FONT_COLOR_WHITE);
-    common_ui_text_highlighted = game_get_font(MENU_FONT_COLOR_BLOODRED);
-    common_ui_text_focused     = game_get_font(MENU_FONT_COLOR_GOLD);
-}
-
-void common_ui_layout_advance(struct common_ui_layout* layout, f32 width, f32 height) {
-    /* would advance differently depending on layout settings, but for now since it's only vertical */
-    layout->y += height;
-}
-
-/* NOTE: all UI is assumed to happen on an identity transformation */
-/* Ideally I'd also push render commands for this but whatever */
-enum common_ui_button_flags {
-    COMMON_UI_BUTTON_FLAGS_NONE     = 0,
-    COMMON_UI_BUTTON_FLAGS_DISABLED = BIT(0),
-};
-bool common_ui_button(struct common_ui_layout* layout, struct software_framebuffer* framebuffer, string text, f32 scale, s32 button_id, s32* selected_id, u32 flags) {
-    /* generally all fonts have the same size... They're just different color variations... */
-    struct font_cache* font_to_use = common_ui_text_normal;
-
-    f32 text_width  = font_cache_text_width(common_ui_text_normal, text, scale);
-    f32 text_height = font_cache_text_height(common_ui_text_normal) * scale;
-
-    s32 mouse_location[2];
-    get_mouse_location(mouse_location, mouse_location+1);
-
-    v2f32 position = v2f32(layout->x, layout->y);
-
-    f32 alpha = 1;
-
-    if (!(flags & COMMON_UI_BUTTON_FLAGS_DISABLED)) {
-        if (rectangle_f32_intersect(rectangle_f32(position.x, position.y, text_width, text_height),
-                                    rectangle_f32(mouse_location[0], mouse_location[1], 5, 5))) {
-            font_to_use = common_ui_text_highlighted;
-            bool left, middle, right;
-            get_mouse_buttons(&left, &middle, &right);
-
-            if (left) {
-                return true;
-            }
-        }
-
-        if (selected_id && *selected_id == button_id) {
-            font_to_use = common_ui_text_focused;
-            if (is_action_pressed(INPUT_ACTION_CONFIRMATION)) {
-                return true;
-            }
-        }
-    } else {
-        alpha = 0.5;
-    }
-
-
-    software_framebuffer_draw_text(framebuffer, font_to_use, scale, v2f32(position.x, position.y), text, color32f32(1,1,1,alpha), BLEND_MODE_ALPHA);
-    common_ui_layout_advance(layout, text_width, text_height*1.1);
-    return false;
-}
-/* COMMON GAME_UI implementations end */
 
 enum main_menu_animation_phase {
     MAIN_MENU_FADE_IN_TITLE,
@@ -285,11 +196,8 @@ local void update_and_render_main_menu(struct game_state* state, struct software
                    main_menu.phase = MAIN_MENU_SAVE_MENU;
                } break;
                case MAIN_MENU_OPTION_OPTIONS: {
-                   /* TODO; */
-#if 0
-                   option_menu_open();
-                   main_menu.phase = MAIN_MENU_OPTION_MENU;
-#endif
+                   options_menu_open();
+                   main_menu.phase = MAIN_MENU_OPTIONS_MENU;
                } break;
                case MAIN_MENU_OPTION_CREDITS: {
                    enter_credits();
@@ -303,20 +211,41 @@ local void update_and_render_main_menu(struct game_state* state, struct software
         case MAIN_MENU_OPTIONS_MENU: {
             /* TODO */
             unimplemented("New options menu not done");
+            s32 options_menu_result = do_options_menu(framebuffer, dt);
+
+            switch (options_menu_result) {
+                case OPTIONS_MENU_PROCESS_ID_EXIT: {
+                    main_menu.phase = MAIN_MENU_IDLE;
+                    main_menu.timer = 0;
+                    main_menu.currently_selected_option_choice = 0;
+                } break;
+
+                default: {
+                    
+                } break;
+            }
         } break;
 
         case MAIN_MENU_SAVE_MENU: {
             s32 save_menu_result = do_save_menu(framebuffer, dt);
+
             switch (save_menu_result) {
                 case SAVE_MENU_PROCESS_ID_EXIT: {
                     main_menu.phase                            = MAIN_MENU_IDLE;
                     main_menu.timer                            = 0;
                     main_menu.currently_selected_option_choice = 0;
                 } break;
+
                 case SAVE_MENU_PROCESS_ID_LOADED_EXIT: {
                     
                 } break;
+
                 case SAVE_MENU_PROCESS_ID_SAVED_EXIT: {
+
+                } break;
+
+                default: {
+                    
                 } break;
             }
         } break;

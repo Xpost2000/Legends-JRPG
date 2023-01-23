@@ -5,12 +5,14 @@
 #define TILE_UNIT_SIZE                      (32) /* measured with a reference of 640x480 */
 #define REFERENCE_TILE_UNIT_SIZE            (16) /* What most tiles should be */
 #define GAME_COMMAND_CONSOLE_LINE_INPUT_MAX (512)
+#include "common_ui_def.c"
 #include "rich_text_def.c"
 #include "cutscene_def.c"
 #include "game_def.c"
 #include "save_data_def.c"
 #include "game_script_def.c"
 #include "save_menu_ui_def.c"
+#include "options_menu_ui_def.c"
 #include "equipment_ui_def.c"
 local void start_dialogue_ui(void);
 local void close_dialogue_ui(void);
@@ -3282,6 +3284,7 @@ local void  do_ui_passive_speaking_dialogue(struct render_commands* commands, f3
 
 #include "game_demo_alert.c"
 #include "save_menu_ui.c"
+#include "options_menu_ui.c"
 #include "game_main_menu.c"
 
 local void execute_area_scripts(struct game_state* state, struct level_area* area, f32 dt) {
@@ -4326,3 +4329,4 @@ local void game_open_worldmap_at_default(string where) {
 #include "rich_text.c"
 #include "credits_mode.c"
 #include "xp_tables.c"
+#include "common_ui.c"
