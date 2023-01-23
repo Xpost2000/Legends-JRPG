@@ -84,6 +84,7 @@ void common_ui_visual_slider(struct common_ui_layout* layout, struct software_fr
 
     
     f32 old_layout_x = layout->x;
+    bool slider_interaction = false;
     if (flags & COMMON_UI_VISUAL_SLIDER_FLAGS_LOTSOFOPTIONS) {
         s32 string_index = *option_ptr;
         layout->y = position.y;
@@ -93,6 +94,7 @@ void common_ui_visual_slider(struct common_ui_layout* layout, struct software_fr
             if ((*option_ptr) < 0) {
                 *option_ptr = count-1;
             }
+            slider_interaction = true;
         }
         layout->y = position.y;
         layout->x += font_cache_text_width(common_ui_text_normal, string_literal("<<"), scale) * 3;
@@ -106,12 +108,14 @@ void common_ui_visual_slider(struct common_ui_layout* layout, struct software_fr
             if ((*option_ptr) >= count) {
                 *option_ptr = 0;
             }
+            slider_interaction = true;
         }
     } else {
         for (s32 string_index = 0; string_index < count; ++string_index) {
             layout->y = position.y;
             if (common_ui_button(layout, framebuffer, strings[string_index], scale, string_index, option_ptr, COMMON_UI_BUTTON_FLAGS_NONE)) {
                 *option_ptr = string_index;
+                slider_interaction = true;
             }
             layout->x += longest_string_width*1.2;
         }
@@ -119,6 +123,10 @@ void common_ui_visual_slider(struct common_ui_layout* layout, struct software_fr
     }
     layout->x = old_layout_x;
     layout->y = position.y;
+
+    if (slider_interaction && selected_id) {
+        *selected_id = slider_id;
+    }
 
     common_ui_layout_advance(layout, text_width, text_height);
 }
