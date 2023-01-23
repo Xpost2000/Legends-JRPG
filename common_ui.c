@@ -22,6 +22,7 @@ bool common_ui_button(struct common_ui_layout* layout, struct software_framebuff
     get_mouse_location(mouse_location, mouse_location+1);
 
     v2f32 position = v2f32(layout->x, layout->y);
+    common_ui_layout_advance(layout, text_width, text_height*1.2);
 
     f32 alpha = 1;
 
@@ -49,6 +50,5 @@ bool common_ui_button(struct common_ui_layout* layout, struct software_framebuff
 
 
     software_framebuffer_draw_text(framebuffer, font_to_use, scale, v2f32(position.x, position.y), text, color32f32(1,1,1,alpha), BLEND_MODE_ALPHA);
-    common_ui_layout_advance(layout, text_width, text_height*1.1);
     return false;
 }

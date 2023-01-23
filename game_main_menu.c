@@ -169,7 +169,7 @@ local void update_and_render_main_menu(struct game_state* state, struct software
         case MAIN_MENU_OPEN_OPTIONS_BOX: {
             _main_menu_draw_title(framebuffer, FINAL_MAIN_MENU_TITLE_Y, 1.0);
 
-            f32 MAX_PHASE_T = 0.65f;
+            f32 MAX_PHASE_T = 0.45f;
             f32 effective_t = clamp_f32(main_menu.timer/MAX_PHASE_T, 0, 1);
 
             _do_main_menu_options_menu(framebuffer, effective_t, false);
@@ -210,7 +210,6 @@ local void update_and_render_main_menu(struct game_state* state, struct software
 
         case MAIN_MENU_OPTIONS_MENU: {
             /* TODO */
-            unimplemented("New options menu not done");
             s32 options_menu_result = do_options_menu(framebuffer, dt);
 
             switch (options_menu_result) {

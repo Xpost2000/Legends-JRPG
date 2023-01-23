@@ -922,6 +922,17 @@ struct directory_listing directory_listing_list_all_files_in(struct memory_arena
 }
 #endif
 
+string longest_string_in_list(string* strings, s32 count) {
+    s32 length_of_longest = 0;
+    s32 i = 0;
+    for (s32 string_index = 0; string_index < count; ++string_index) {
+        if (strings[string_index].length > length_of_longest) {
+            length_of_longest = strings[string_index].length;
+            i = string_index;
+        }
+    }
+    return strings[i];
+}
 s32 length_of_longest_string(string* strings, s32 count) {
     s32 length_of_longest = 0;
     for (s32 string_index = 0; string_index < count; ++string_index) {
