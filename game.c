@@ -19,6 +19,9 @@ local void close_dialogue_ui(void);
 
 #include "fade_transitions.c"
 
+/* TEMP */
+void common_ui_init(void);
+
 local v2f32 v2f32_snap_to_grid(v2f32 input) {
     v2f32 result = input;
     result.x = floorf(result.x / TILE_UNIT_SIZE);
@@ -2254,6 +2257,7 @@ void game_initialize(void) {
     initialize_input_mapper_with_bindings();
 
     assertion(verify_no_item_id_name_hash_collisions());
+    common_ui_init();
 }
 
 local void game_clear_party_inventory(void) {

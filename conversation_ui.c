@@ -136,7 +136,8 @@ local void update_and_render_conversation_ui(struct game_state* state, struct so
             f32 current_box_width  = quadratic_ease_in_f32(1, BOX_WIDTH,  effective_t);
             f32 current_box_height = quadratic_ease_in_f32(1, BOX_HEIGHT, effective_t);
             v2f32 dialogue_box_extents = nine_patch_estimate_extents(ui_chunky, 1, current_box_width, current_box_height);
-            v2f32 dialogue_box_start_position = v2f32(SCREEN_WIDTH/2 - dialogue_box_extents.x/2, (SCREEN_HEIGHT * 0.9) - dialogue_box_extents.y);
+            /* NOTE: realign */
+            v2f32 dialogue_box_start_position = v2f32(SCREEN_WIDTH/2 - dialogue_box_extents.x/2, (SCREEN_HEIGHT * 0.8) - dialogue_box_extents.y/2);
             draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, dialogue_box_start_position, current_box_width, current_box_height, UI_DEFAULT_COLOR);
 
             dialogue_ui.phase_animation_timer += dt;
