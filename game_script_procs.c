@@ -1,3 +1,22 @@
+union color32f32 lisp_form_parse_color32f32(struct lisp_form* form) {
+    struct lisp_form* r = lisp_list_nth(form, 0);
+    struct lisp_form* g = lisp_list_nth(form, 1);
+    struct lisp_form* b = lisp_list_nth(form, 2);
+    struct lisp_form* a = lisp_list_nth(form, 3);
+
+    f32 color_r;
+    f32 color_g;
+    f32 color_b;
+    f32 color_a;
+
+    if (!(r && lisp_form_get_f32(*r, &color_r))) color_r = 255.0f;
+    if (!(g && lisp_form_get_f32(*g, &color_g))) color_g = 255.0f;
+    if (!(b && lisp_form_get_f32(*b, &color_b))) color_b = 255.0f;
+    if (!(a && lisp_form_get_f32(*a, &color_a))) color_a = 255.0f;
+
+    return color32f32(color_r/255.0f, color_g/255.0f, color_b/255.0f, color_a/255.0f);
+}
+
 #define GAME_LISP_FUNCTION(name) struct lisp_form name ## __script_proc (struct memory_arena* arena, struct game_state* state, struct lisp_form* arguments, s32 argument_count)
 
 GAME_LISP_FUNCTION(FOLLOW_PATH) {
@@ -315,25 +334,12 @@ GAME_LISP_FUNCTION(GAME_SET_ENVIRONMENT_COLORS) {
             game_set_time_color(0);
         }
     } else {
-        struct lisp_form* r = lisp_list_nth(argument, 0);
-        struct lisp_form* g = lisp_list_nth(argument, 1);
-        struct lisp_form* b = lisp_list_nth(argument, 2);
-        struct lisp_form* a = lisp_list_nth(argument, 3);
+        union color32f32 color = lisp_form_parse_color32f32(argument);
 
-        f32 color_r;
-        f32 color_g;
-        f32 color_b;
-        f32 color_a;
-
-        if (!(r && lisp_form_get_f32(*r, &color_r))) color_r = 255.0f;
-        if (!(g && lisp_form_get_f32(*g, &color_g))) color_g = 255.0f;
-        if (!(b && lisp_form_get_f32(*b, &color_b))) color_b = 255.0f;
-        if (!(a && lisp_form_get_f32(*a, &color_a))) color_a = 255.0f;
-
-        global_color_grading_filter.r = color_r;
-        global_color_grading_filter.g = color_g;
-        global_color_grading_filter.b = color_b;
-        global_color_grading_filter.a = color_a;
+        global_color_grading_filter.r = color.r * 255.0f;
+        global_color_grading_filter.g = color.g * 255.0f;
+        global_color_grading_filter.b = color.b * 255.0f;
+        global_color_grading_filter.a = color.a * 255.0f;
     }
 
     return LISP_nil;
@@ -1256,6 +1262,74 @@ GAME_LISP_FUNCTION(STORYBOARD) {
 
 GAME_LISP_FUNCTION(BEGIN_CREDITS) {
     enter_credits();
+    return LISP_nil;
+}
+
+/*
+
+  arg0 - fade type
+  arg1 - color
+  arg2 - delay time
+  arg3 - fade time
+
+  NOTE: does not include crossfade since that's counted as a special effect since it has to do much more stuff,
+  and requires post-processing.
+*/
+GAME_LISP_FUNCTION(TRANSITION_FADE) {
+    Required_Argument_Count(TRANSITION_FADE, 5);
+    struct lisp_form* fade_type_form       = lisp_list_nth(arguments, 0);
+    struct lisp_form* fade_direction_form       = lisp_list_nth(arguments, 1);
+    struct lisp_form* fade_color_form      = lisp_list_nth(arguments, 2);
+    struct lisp_form* fade_delay_time_form = lisp_list_nth(arguments, 3);
+    struct lisp_form* fade_fade_time_form  = lisp_list_nth(arguments, 4);
+
+    union color32f32 color      = lisp_form_parse_color32f32(fade_color_form);
+    f32              delay_time = 0;
+    f32              fade_time  = 0;
+
+    Fatal_Script_Error(lisp_form_get_f32(*fade_delay_time_form, &delay_time) && "Delay time must be a floating point value");
+    Fatal_Script_Error(lisp_form_get_f32(*fade_delay_time_form, &fade_time) && "Fade time must be a floating point value");
+
+    bool fadein = false;
+
+    if (lisp_form_symbol_matching(*fade_direction_form, string_literal("in"))) {
+        fadein = true;
+    } else if (lisp_form_symbol_matching(*fade_direction_form, string_literal("out"))) {
+        fadein = false;
+    }
+
+    if (lisp_form_symbol_matching(*fade_type_form, string_literal("color"))) {
+        if (fadein) {
+            do_color_transition_in(color, delay_time, fade_time);
+        } else {
+            do_color_transition_out(color, delay_time, fade_time);
+        }
+    } else if (lisp_form_symbol_matching(*fade_type_form, string_literal("vertical-slide"))) {
+        if (fadein) {
+            do_vertical_slide_in(color, delay_time, fade_time);
+        } else {
+            do_vertical_slide_out(color, delay_time, fade_time);
+        }
+    } else if (lisp_form_symbol_matching(*fade_type_form, string_literal("horizontal-slide"))) {
+        if (fadein) {
+            do_horizontal_slide_in(color, delay_time, fade_time);
+        } else {
+            do_horizontal_slide_out(color, delay_time, fade_time);
+        }
+    } else if (lisp_form_symbol_matching(*fade_type_form, string_literal("shuteye"))) {
+        if (fadein) {
+            do_shuteye_in(color, delay_time, fade_time);
+        } else {
+            do_shuteye_out(color, delay_time, fade_time);
+        }
+    } else if (lisp_form_symbol_matching(*fade_type_form, string_literal("curtainclose"))) {
+        if (fadein) {
+            do_curtainclose_in(color, delay_time, fade_time);
+        } else {
+            do_curtainclose_out(color, delay_time, fade_time);
+        }
+    }
+
     return LISP_nil;
 }
 

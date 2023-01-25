@@ -7,18 +7,34 @@
  specific format of appearance and that's about it...)
 */
 
-#if 0
+
+/*
+  It's kind of like a VM since it compiles the lisp format into a bytecode,
+  that's executed.
+
+  NOTE: The storyboarder does not know how to fade.
+
+  You're actually supposed to fade separately!
+*/
 enum storyboard_instruction_type {
+    STORYBOARD_INSTRUCTION_LINE,
+    STORYBOARD_INSTRUCTION_SPACER, /* will space by N font heights */
+    STORYBOARD_INSTRUCTION_WAIT,
+    STORYBOARD_INSTRUCTION_WAIT_FOR_CONTINUE,
+
+#if 0
+    STORYBOARD_SET_FONT_ID,
+    STORYBOARD_CENTER_NEXT_LINE,
+#endif
 };
 struct storyboard_instruction {
     
 };
 struct storyboard_line {
-    f32  y_cusor;
-    char text[128];
-    f32  timer;
+    f32    y_cusor;
+    f32    timer;
+    string text;
 };
-#endif
 
 struct storyboard_page {
 };
