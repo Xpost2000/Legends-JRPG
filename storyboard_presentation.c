@@ -21,14 +21,37 @@ enum storyboard_instruction_type {
     STORYBOARD_INSTRUCTION_SPACER, /* will space by N font heights */
     STORYBOARD_INSTRUCTION_WAIT,
     STORYBOARD_INSTRUCTION_WAIT_FOR_CONTINUE,
-
-#if 0
     STORYBOARD_SET_FONT_ID,
+#if 0
     STORYBOARD_CENTER_NEXT_LINE,
 #endif
 };
+
+struct storyboard_instruction_line {
+    string line;
+};
+
+struct storyboard_instruction_set_font_id {
+    s32 font_id;
+};
+
+struct storyboard_instruction_spacer {
+    s32 units;
+};
+
+struct storyboard_instruction_wait {
+    f32 time;
+};
+
+local struct memory_arena storyboard_arena = {};
 struct storyboard_instruction {
-    
+    s32 type;
+    union {
+        struct storyboard_instruction_set_font_id set_font;
+        struct storyboard_instruction_line        line;
+        struct storyboard_instruction_spacer      spacer;
+        struct storyboard_instruction_wait        wait;
+    };
 };
 struct storyboard_line {
     f32    y_cusor;
@@ -37,16 +60,71 @@ struct storyboard_line {
 };
 
 struct storyboard_page {
+    s32                            instruction_count;
+    struct storyboard_instruction* instructions;
+    s32                            instruction_cursor;
 };
+
+/* runtime constructs  */
+struct storyboard_line_object {
+    string text;
+    s32    font_id;
+    f32    x;
+    f32    y;
+
+    s32    shown_characters;
+};
+
+struct storyboard_line_object_list {
+    struct storyboard_line_object* lines;
+    s32                            count;
+    s32                            capacity;
+};
+
+struct storyboard_line_object_list storyboard_line_object_list_reserve(struct memory_arena* arena, s32 capacity) {
+    struct storyboard_line_object_list result = {};
+    result.lines    = memory_arena_push(arena, sizeof(*result.lines) * capacity);
+    result.capacity = capacity;
+    return result;
+}
+
+struct storyboard_line_object* storyboard_line_object_list_alloc(struct storyboard_line_object_list* list) {
+    assertion(list->count < list->capacity && "Too many runtime line objects allocated!");
+    struct storyboard_line_object* result = &list->lines[list->count++];
+    return result;
+}
+
+void storyboard_line_object_list_clear(struct storyboard_line_object_list* list) {
+    list->count = 0;
+}
+
+/* end of runtime constructs */
+
+struct storyboard_page_list {
+    s32                     count;
+    struct storyboard_page* pages;
+};
+
+struct storyboard_page_list storyboard_page_list_reserve(struct memory_arena* arena, s32 capacity) {
+    struct storyboard_page_list result = {};
+    result.pages                       = memory_arena_push(arena, capacity * sizeof(*result.pages));
+    result.count                       = capacity; /* we don't need to really "allocate anything..." */
+    return result;
+}
+
 struct {
     s32 page_count; /* strings are expected to pages. */
-    struct storyboard_page pages[256];
+    struct storyboard_page* pages;
 
     s32 current_page;
     s32 character_index;
     f32 character_timer;
 
     f32 timer;
+    f32 y_cursor;
+
+    /* current display objects */
+    struct storyboard_line_object_list line_objects;
 } storyboard;
 
 void storyboard_next_page(void) {
@@ -69,7 +147,7 @@ void start_storyboard(void) {
 }
 
 void initialize_storyboard(struct memory_arena* arena) {
-    
+    storyboard_arena = memory_arena_push_sub_arena(arena, Kilobyte(16));
 }
 
 void load_storyboard_page(struct lisp_form* form) {
