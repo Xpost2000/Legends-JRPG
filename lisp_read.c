@@ -1,10 +1,8 @@
 /*
-  NOTE: I think I was very slightly confused with the way this worked,
-  and I separated responsibilities too much...
+  NOTE: I really should make something avoid taking lisp_forms as values, since I don't know how
+  the compiler transforms it out, but it's kind of bad form since these structures are pretty massive.
+*/
 
-  Not too big of a deal, it's not super duper confusing, just not what you might
-  expect at first for API usage.
- */
 /*
   A lisp style form reader, and
   a lexer that is useful for reading lisp but can be used to read some

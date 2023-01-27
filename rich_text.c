@@ -17,7 +17,7 @@ s32 fontname_string_to_id(string name) {
     };
 
     for (s32 mapping_index = 0; mapping_index < array_count(string_table_mapping_to_font_id); ++mapping_index) {
-        if (string_equal(name, string_table_mapping_to_font_id[mapping_index].first)) {
+        if (string_equal_case_insensitive(name, string_table_mapping_to_font_id[mapping_index].first)) {
             return string_table_mapping_to_font_id[mapping_index].result;
         }
     }

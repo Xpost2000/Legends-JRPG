@@ -1253,6 +1253,7 @@ GAME_LISP_FUNCTION(TOGGLE_VISIBILITY) {
 }
 
 GAME_LISP_FUNCTION(STORYBOARD) {
+    storyboard_reserve_pages(argument_count);
     for (s32 index = 0; index < argument_count; ++index) {
         load_storyboard_page(arguments + index);
     }

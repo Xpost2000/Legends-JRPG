@@ -380,7 +380,9 @@ local void update_and_render_credits_see_you_next_time(struct software_framebuff
 
 void update_and_render_credits_screen(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
     software_framebuffer_clear_buffer(framebuffer, color32u8(0,0,0,255));
+#ifndef RELEASE
     credits_state.total_elapsed_time += dt;
+#endif
 
     struct font_cache* heading_font  = game_get_font(MENU_FONT_COLOR_GOLD);
     struct font_cache* subtitle_font = game_get_font(MENU_FONT_COLOR_ORANGE);

@@ -66,6 +66,8 @@ enum menu_font_variation {
     MENU_FONT_COUNT,
 };
 
+s32 fontname_string_to_id(string name);
+
 enum entity_game_script_target_types {
     GAME_SCRIPT_TARGET_TRIGGER,
     /* EVENTS
