@@ -859,6 +859,7 @@ struct lisp_list lisp_read_string_into_forms(struct memory_arena* arena, string 
 }
 
 struct lisp_form* lisp_list_nth(struct lisp_form* f, s32 index) {
+    assertion(f->type == LISP_FORM_LIST && "This procedure will only work on list type objects.");
     if (f) {
         if (f->type != LISP_FORM_LIST) {
             return NULL;

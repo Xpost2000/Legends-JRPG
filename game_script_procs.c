@@ -989,8 +989,8 @@ GAME_LISP_FUNCTION(SET_SCRIPTABLE_LAYER_ID) {
 GAME_LISP_FUNCTION(NTH) {
     Required_Argument_Count(NTH, 2);
     s32 index = -1;
-    struct lisp_form* arg0 = lisp_list_nth(arguments, 0);
-    struct lisp_form* arg1 = lisp_list_nth(arguments, 1);
+    struct lisp_form* arg0 = &arguments[0];
+    struct lisp_form* arg1 = &arguments[1];
     Fatal_Script_Error(lisp_form_get_s32(*arg1, &index) && "Needs index argument!");
 
     struct lisp_form* result = lisp_list_nth(arg0, index);
@@ -1278,18 +1278,18 @@ GAME_LISP_FUNCTION(BEGIN_CREDITS) {
 */
 GAME_LISP_FUNCTION(TRANSITION_FADE) {
     Required_Argument_Count(TRANSITION_FADE, 5);
-    struct lisp_form* fade_type_form       = lisp_list_nth(arguments, 0);
-    struct lisp_form* fade_direction_form       = lisp_list_nth(arguments, 1);
-    struct lisp_form* fade_color_form      = lisp_list_nth(arguments, 2);
-    struct lisp_form* fade_delay_time_form = lisp_list_nth(arguments, 3);
-    struct lisp_form* fade_fade_time_form  = lisp_list_nth(arguments, 4);
+    struct lisp_form* fade_type_form       = &arguments[0];
+    struct lisp_form* fade_direction_form  = &arguments[1];
+    struct lisp_form* fade_color_form      = &arguments[2];
+    struct lisp_form* fade_delay_time_form = &arguments[3];
+    struct lisp_form* fade_fade_time_form  = &arguments[4];
 
     union color32f32 color      = lisp_form_parse_color32f32(fade_color_form);
     f32              delay_time = 0;
     f32              fade_time  = 0;
 
     Fatal_Script_Error(lisp_form_get_f32(*fade_delay_time_form, &delay_time) && "Delay time must be a floating point value");
-    Fatal_Script_Error(lisp_form_get_f32(*fade_delay_time_form, &fade_time) && "Fade time must be a floating point value");
+    Fatal_Script_Error(lisp_form_get_f32(*fade_fade_time_form, &fade_time) && "Fade time must be a floating point value");
 
     bool fadein = false;
 

@@ -1,6 +1,7 @@
 /* #define RELEASE */
 /* #define NO_FANCY_FADEIN_INTRO */
 #define EXPERIMENTAL_VFS
+#define NO_POSTPROCESSING
 
 #if 1
 #ifndef RELEASE

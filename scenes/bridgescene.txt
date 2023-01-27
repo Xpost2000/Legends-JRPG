@@ -1,5 +1,12 @@
 (game_disable_input)
 
+(transition_fade
+'color
+'in
+'(0.0 0.0 0.0 128.0)
+0.0
+1.0)
+(wait 1.0)
 (storyboard
  '(page
    (wait 1.5)
@@ -20,6 +27,7 @@
    (wait-for-continue)
    )
  )
+(transition_fade 'color 'out '(0.0 0.0 0.0 128.0) 0.0 1.0)
 
 #(wait 1.5)
 #(entity_speak '(entity player) "The Bridge of Faith")
