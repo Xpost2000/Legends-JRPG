@@ -158,10 +158,12 @@ void storyboard_next_page(void) {
     storyboard.current_line_index      = 0;
 
     storyboard_line_object_list_clear(&storyboard.line_objects);
+    _debugprintf("Next page");
 
     {
         if (storyboard.current_page >= storyboard.pages.count) {
             storyboard_active = false;
+            _debugprintf("Storyboard finished.");
         }
     }
 }
@@ -169,10 +171,10 @@ void start_storyboard(void) {
     storyboard_active          = true;
     storyboard.timer           = 0;
     storyboard.current_page    = 0;
-    storyboard.pages.count      = 0;
     storyboard.character_timer = 0;
     storyboard.character_index = 0;
 
+    _debugprintf("Begin storyboard");
     memory_arena_clear(&storyboard_arena);
 }
 
@@ -252,6 +254,7 @@ s32 game_display_and_update_storyboard(struct software_framebuffer* framebuffer,
 
             switch (current_instruction->type) {
                 case STORYBOARD_INSTRUCTION_LINE: {
+                    _debugprintf("Constructing new line object");
                     struct storyboard_instruction_line* line = &current_instruction->line;
                     struct storyboard_line_object* new_line = storyboard_line_object_list_alloc(&storyboard.line_objects);
 
@@ -266,19 +269,23 @@ s32 game_display_and_update_storyboard(struct software_framebuffer* framebuffer,
                     storyboard.y_cursor += font_base_height;
                 } break;
                 case STORYBOARD_INSTRUCTION_SPACER: {
+                    _debugprintf("Adding spacer");
                     struct storyboard_instruction_spacer* spacer = &current_instruction->spacer;
                     storyboard.y_cursor += spacer->units * font_base_height;
                 } break;
                 case STORYBOARD_INSTRUCTION_WAIT: {
                     struct storyboard_instruction_wait* wait = &current_instruction->wait;
+                    _debugprintf("Set new wait for %3.3f", wait->time);
                     storyboard.wait_timer = wait->time;
                 } break;
                 case STORYBOARD_INSTRUCTION_WAIT_FOR_CONTINUE: {
+                    _debugprintf("Set new wait for continue");
                     storyboard.wait_for_continue = true;
                 } break;
                 case STORYBOARD_INSTRUCTION_SET_FONT_ID: {
                     struct storyboard_instruction_set_font_id* set_font_id = &current_instruction->set_font;
                     storyboard.currently_bound_font_id = set_font_id->font_id;
+                    _debugprintf("Set new font id to %d", storyboard.currently_bound_font_id);
                 } break;
             }
         } else {
@@ -302,10 +309,12 @@ s32 game_display_and_update_storyboard(struct software_framebuffer* framebuffer,
                     if (last_line->shown_characters >= last_line->text.length) {
                         allow_instruction_cursor_advance = true;
                         storyboard.current_line_index += 1;
+                        _debugprintf("current line is finished.");
                     }
                 }
 
                 if (allow_instruction_cursor_advance) {
+                    _debugprintf("Allowing instruction cursor advance");
                     storyboard.instruction_cursor += 1;
                 }
             }
