@@ -158,7 +158,7 @@ void storyboard_next_page(void) {
     storyboard.current_line_index      = 0;
 
     storyboard_line_object_list_clear(&storyboard.line_objects);
-    _debugprintf("Next page");
+    _debugprintf("Next page (%d/%d)", storyboard.current_page, storyboard.pages.count);
 
     {
         if (storyboard.current_page >= storyboard.pages.count) {
@@ -235,6 +235,7 @@ void load_storyboard_page(struct lisp_form* form) {
                 _debugprintf("Found set font_id instruction");
             }
         }
+        _debugprintf("Page with %d instructions loaded", new_page->instruction_count);
     }
 }
 
@@ -242,7 +243,6 @@ void load_storyboard_page(struct lisp_form* form) {
 s32 game_display_and_update_storyboard(struct software_framebuffer* framebuffer, f32 dt) {
     if (storyboard_active) {
         struct storyboard_page* current_page = &storyboard.pages.pages[storyboard.current_page];
-
         s32 instruction_count  = current_page->instruction_count;
 
         struct font_cache* font             = game_get_font(storyboard.currently_bound_font_id);
@@ -289,6 +289,7 @@ s32 game_display_and_update_storyboard(struct software_framebuffer* framebuffer,
                 } break;
             }
         } else {
+            _debugprintf("Finished %d instructions for current page", instruction_count);
             storyboard_next_page();
         }
 
@@ -309,7 +310,9 @@ s32 game_display_and_update_storyboard(struct software_framebuffer* framebuffer,
                     if (last_line->shown_characters >= last_line->text.length) {
                         allow_instruction_cursor_advance = true;
                         storyboard.current_line_index += 1;
-                        _debugprintf("current line is finished.");
+                        _debugprintf("current line (\"%.*s\")is finished. (%d/%d)",
+                                     last_line->text.length,
+                                     last_line->text.data, last_line->shown_characters, last_line->text.length);
                     }
                 }
 
