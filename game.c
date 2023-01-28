@@ -1677,7 +1677,9 @@ void load_level_from_file(struct game_state* state, string filename) {
     game_script_clear_all_awaited_scripts();
     entity_particle_emitter_kill_all(&game_state->permenant_particle_emitters);
     particle_list_kill_all_particles(&global_particle_list);
+#if 1
     cutscene_stop();
+#endif
     level_area_clean_up(&state->loaded_area);
     memory_arena_clear_top(state->arena);
     /* clear scripts to prevent resident memory from doing things */
@@ -2983,6 +2985,7 @@ void load_level_queued_for_transition(void* callback_data) {
 
     /* register entities to the save entry before changing to maintain state persistence. */
     register_all_entities_to_save_record();
+    _debugprintf("Assembled string: %.*s(%d)", assembled_string.length, assembled_string.data, assembled_string.length);
     load_level_from_file_with_setup(game_state, assembled_string);
 
     if (!data->use_default_spawn_location) {
@@ -3911,7 +3914,7 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
         }
     }
 #endif
-    if (is_key_pressed(KEY_F4)) {
+    if (is_key_pressed(KEY_O)) {
         if (submode == GAME_SUBMODE_OVERWORLD) {
             game_open_worldmap_at_default(string_literal("atlas.map"));
         } else {
@@ -4267,6 +4270,7 @@ local void queue_level_load(string where, v2f32 spawn_location, s32 new_facing_d
             cstring_copy(copy.data, data.destination_string_buffer, copy.length);
 
             do_color_transition_in(color32f32(0, 0, 0, 1), 0.0, 0.45);
+            _debugprintf("copied string: %s", data.destination_string_buffer);
             transition_register_on_finish(load_level_queued_for_transition, (u8*)&data, sizeof(data));
             disable_game_input = true;
         }
@@ -4277,7 +4281,7 @@ local void queue_level_load_at_default(string where, s32 new_facing_direction) {
     if (!transition_fading()) {
         if (!transition_faded_in()) {
             struct queued_load_level_data data = (struct queued_load_level_data) {
-                .use_default_spawn_location = false,
+                .use_default_spawn_location = true,
                 .new_facing_direction       = new_facing_direction,
                 .length_of_destination      = copy.length,
             };
@@ -4297,10 +4301,12 @@ local void queue_level_load_at_default(string where, s32 new_facing_direction) {
 /* This also fades, but I don't do an additional fade since it's part of the queued level load */
 local void game_open_overworld(string where, v2f32 spawn_location, s32 new_facing_direction) {
     submode = GAME_SUBMODE_OVERWORLD;
+    _debugprintf("Opening overworld: %.*s", where.length, where.data);
     queue_level_load(where, spawn_location, new_facing_direction);
 }
 local void game_open_overworld_at_default(string where, s32 new_facing_direction) {
     submode = GAME_SUBMODE_OVERWORLD;
+    _debugprintf("Opening overworld: %.*s", where.length, where.data);
     queue_level_load_at_default(where,  new_facing_direction);
 }
 

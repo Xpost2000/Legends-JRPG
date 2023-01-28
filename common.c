@@ -287,6 +287,13 @@ struct tracked_memory_allocation_header {
 
 /* use 0 for destination_size if I don't care. Ideally I should know both though. */
 
+
+/*
+  NOTE: Double check these, I must not be handling remainders properly.
+
+  Something is buggy here because the emscripten build doesn't like these functions
+*/
+
 /* Minorly faster implementations without stosb. */
 static inline void memory_copy64(void* source, void* destination, size_t amount) {
     u64 index = 0, real_index = 0;
@@ -328,6 +335,9 @@ static inline void memory_copy8(void* source, void* destination, size_t amount) 
 }
 
 static inline void memory_copy(void* source, void* destination, size_t amount) {
+#ifdef __EMSCRIPTEN__
+    memcpy(destination, source, amount);
+#else
 #if 1
     if (amount & ~(63)) {
         memory_copy64(source, destination, amount);
@@ -352,6 +362,7 @@ static inline void memory_copy(void* source, void* destination, size_t amount) {
     }
 #else
     memcpy(destination, source, amount);
+#endif
 #endif
 }
 

@@ -1,7 +1,6 @@
 /* #define RELEASE */
 /* #define NO_FANCY_FADEIN_INTRO */
 #define EXPERIMENTAL_VFS
-#define NO_POSTPROCESSING
 
 #if 1
 #ifndef RELEASE
@@ -62,10 +61,11 @@ local u32 SCREEN_WIDTH  = 0;
 local u32 SCREEN_HEIGHT = 0;
 
 local bool SCREEN_IS_FULLSCREEN = false;
+local bool LAST_SCREEN_IS_FULLSCREEN = false;
 
 /* real res */
-local u32 REAL_SCREEN_WIDTH  = 1024;
-local u32 REAL_SCREEN_HEIGHT = 768;
+local u32 REAL_SCREEN_WIDTH  = 640;
+local u32 REAL_SCREEN_HEIGHT = 480;
 /* local u32 REAL_SCREEN_WIDTH  = 640; */
 /* local u32 REAL_SCREEN_HEIGHT = 480; */
 /* local u32 REAL_SCREEN_WIDTH  = 1280; */
@@ -190,6 +190,7 @@ static SDL_Texture*                global_game_texture_surface  = NULL;
 static SDL_GameController*         global_controller_devices[4] = {};
 static SDL_Haptic*                 global_haptic_devices[4]     = {};
 static struct software_framebuffer global_default_framebuffer   = {};
+
 /* an exact duplicate of the existing framebuffer, which is used for cross-fading. This is extremely expensive! */
 static struct software_framebuffer global_copy_framebuffer      = {};
 static struct lightmask_buffer     global_lightmask_buffer      = {};
@@ -338,13 +339,23 @@ local void change_resolution(s32 new_resolution_x, s32 new_resolution_y) {
     SDL_SetWindowSize(global_game_window, new_resolution_x, new_resolution_y);
 }
 
+local void set_fullscreen(bool v) {
+    LAST_SCREEN_IS_FULLSCREEN = SCREEN_IS_FULLSCREEN;
+    SCREEN_IS_FULLSCREEN = v;
+
+    if (LAST_SCREEN_IS_FULLSCREEN != SCREEN_IS_FULLSCREEN) {
+        if (SCREEN_IS_FULLSCREEN) {
+            SDL_SetWindowFullscreen(global_game_window, SDL_WINDOW_FULLSCREEN_DESKTOP);
+        } else {
+            SDL_SetWindowFullscreen(global_game_window, 0);
+        }
+    }
+}
 local void toggle_fullscreen(void) {
     if (SCREEN_IS_FULLSCREEN) {
-        SDL_SetWindowFullscreen(global_game_window, 0);
-        SCREEN_IS_FULLSCREEN = false;
+        set_fullscreen(false);
     } else {
-        SDL_SetWindowFullscreen(global_game_window, SDL_WINDOW_FULLSCREEN_DESKTOP);
-        SCREEN_IS_FULLSCREEN = true;
+        set_fullscreen(true);
     }
 }
 
@@ -376,6 +387,8 @@ local void initialize_framebuffer(void) {
     _debugprintf("framebuffer resolution is: (%d, %d) vs (%d, %d) real resolution", SCREEN_WIDTH, SCREEN_HEIGHT, REAL_SCREEN_WIDTH, REAL_SCREEN_HEIGHT);
     global_default_framebuffer = software_framebuffer_create(framebuffer_resolution.x, framebuffer_resolution.y);
     global_copy_framebuffer    = software_framebuffer_create(framebuffer_resolution.x, framebuffer_resolution.y);
+    /* NOTE: this doesn't actually have to be 640x480 currently. */
+    /* the only requirement is that the lightmask should match the size of the game framebuffer (not the UI!) */
     global_lightmask_buffer    = lightmask_buffer_create(framebuffer_resolution.x, framebuffer_resolution.y);
 
     if (global_game_texture_surface) {
@@ -511,12 +524,12 @@ local void initialize(void) {
     flags |= SDL_WINDOW_RESIZABLE;
 #endif
 
-    global_game_window          = SDL_CreateWindow("Legends RPG",
-                                                   SDL_WINDOWPOS_CENTERED,
-                                                   SDL_WINDOWPOS_CENTERED,
-                                                   REAL_SCREEN_WIDTH,
-                                                   REAL_SCREEN_HEIGHT,
-                                                   flags);
+    global_game_window = SDL_CreateWindow("Legends RPG",
+                                          SDL_WINDOWPOS_CENTERED,
+                                          SDL_WINDOWPOS_CENTERED,
+                                          REAL_SCREEN_WIDTH,
+                                          REAL_SCREEN_HEIGHT,
+                                          flags);
 
 #ifdef __EMSCRIPTEN__
     /* toggle_fullscreen(); */

@@ -151,10 +151,12 @@ s32 do_options_menu(struct software_framebuffer* framebuffer, f32 dt) {
                         layout.x += longest_string_width * 1.1 + 30;
                         f32 option_x = layout.x - longest_string_width*1.1;
 
+#ifndef __EMSCRIPTEN__
                         {
                             Option_Menu_Choice_Label(3);
                             common_ui_visual_slider(&layout, framebuffer, 2, resolution_strings, queried_screen_resolution_count, &options_menu_state.resolution, 3, &options_menu_state.currently_selected_option, COMMON_UI_VISUAL_SLIDER_FLAGS_LOTSOFOPTIONS);
                         }
+#endif
                         {
                             Option_Menu_Choice_Label(4);
                             common_ui_checkbox(&layout, framebuffer, 4, &options_menu_state.currently_selected_option, &options_menu_state.is_fullscreen, 0);
@@ -185,6 +187,7 @@ s32 do_options_menu(struct software_framebuffer* framebuffer, f32 dt) {
                 layout.y += 32;
 
                 if (common_ui_button(&layout, framebuffer, string_literal("Apply"), 2, 7, &options_menu_state.currently_selected_option, 0)) {
+                    set_fullscreen(options_menu_state.is_fullscreen);
                     options_menu_close();
                 }
                 if (common_ui_button(&layout, framebuffer, string_literal("Confirm"), 2, 8, &options_menu_state.currently_selected_option, 0)) {

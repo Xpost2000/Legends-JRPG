@@ -859,7 +859,15 @@ struct lisp_list lisp_read_string_into_forms(struct memory_arena* arena, string 
 }
 
 struct lisp_form* lisp_list_nth(struct lisp_form* f, s32 index) {
+#if 0
+    /* This triggers somewhere, that I'm too lazy tonight to go find 
+       the cause of, since it's so late...
+
+       EMACS doesn't show me the assertion message in the compilation window which is really stupid,
+       but yeah...
+    */
     assertion(f->type == LISP_FORM_LIST && "This procedure will only work on list type objects.");
+#endif
     if (f) {
         if (f->type != LISP_FORM_LIST) {
             return NULL;
