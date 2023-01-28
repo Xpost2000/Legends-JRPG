@@ -622,6 +622,7 @@ local struct entity* game_allocate_new_party_member(void) {
         if (!(current_entity->flags & ENTITY_FLAGS_ACTIVE)) {
             continue;
         }
+
         if (current_entity->flags & ENTITY_FLAGS_HIDDEN) {
             game_state->party_members[game_state->party_member_count++] = iterator.current_id;
             break;
@@ -1761,6 +1762,9 @@ void game_postprocess_blur(struct software_framebuffer* framebuffer, s32 quality
 }
 
 void game_postprocess_blur_ingame(struct software_framebuffer* framebuffer, s32 quality_scale, f32 t, u32 blend_mode) {
+#ifdef __EMSCRIPTEN__
+    return;
+#endif
 #ifdef NO_POSTPROCESSING
     return;
 #endif
@@ -2222,14 +2226,6 @@ void game_initialize(void) {
     initialize_particle_pools(&game_arena, PARTICLE_POOL_MAX_SIZE);
     Report_Memory_Status_Region(&game_arena, "Permenant entity pools");
 
-    {
-        for (s32 party_member_index = 0; party_member_index < MAX_PARTY_MEMBERS; ++party_member_index) {
-            entity_id* id = game_state->party_members + party_member_index;
-            /* *id = entity_list_create_player(&game_state->permenant_entities, v2f32(140, 300)); */
-            *id = entity_list_create_party_member(&game_state->permenant_entities);
-        }
-    }
-
     game_state->camera.rng = &game_state->rng;
 
     {
@@ -2291,6 +2287,15 @@ void game_initialize_game_world(void) {
     entity_clear_all_abilities(game_get_player(game_state));
     entity_particle_emitter_kill_all(&game_state->permenant_particle_emitters);
     particle_list_kill_all_particles(&global_particle_list);
+
+    /* Test party member code */
+    {
+        for (s32 party_member_index = 0; party_member_index < MAX_PARTY_MEMBERS; ++party_member_index) {
+            entity_id* id = game_state->party_members + party_member_index;
+            /* *id = entity_list_create_player(&game_state->permenant_entities, v2f32(140, 300)); */
+            *id = entity_list_create_party_member(&game_state->permenant_entities);
+        }
+    }
 
     {
         game_state->party_member_count = 0;

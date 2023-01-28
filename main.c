@@ -1,4 +1,3 @@
-/* #define RELEASE */
 /* #define NO_FANCY_FADEIN_INTRO */
 #define EXPERIMENTAL_VFS
 
@@ -14,9 +13,9 @@
 
 /*
   NOTE: Software is always the primary target,
+  and I don't know if I'll make a concession on that...
 
-  the hardware render path is really a "hybrid" path. The main game world is hardware accelerated as well
-  as the post processing(since that's the slowest part), however any UI will always be composited on top of the game world.
+  I'll have to see when there's more game content...
 */
 
 #ifdef STRETCHYBUFFER_C
@@ -25,6 +24,7 @@
 #endif
 
 #ifdef __EMSCRIPTEN__
+#define RELEASE
 #include <emscripten.h>
 #else
 #define MULTITHREADED_EXPERIMENTAL

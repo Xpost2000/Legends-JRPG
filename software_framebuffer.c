@@ -286,10 +286,10 @@ void software_framebuffer_draw_image_ex_clipped(struct software_framebuffer* fra
             s32 image_sample_x = (s32)((src.x + src.w) - ((unclamped_end_x - x_cursor) * scale_ratio_w));
             s32 image_sample_y = (s32)((src.y + src.h) - ((unclamped_end_y - y_cursor) * scale_ratio_h));
 
-            if ((flags & SOFTWARE_FRAMEBUFFER_DRAW_IMAGE_FLIP_HORIZONTALLY))
+            if ((flags & DRAW_IMAGE_FLIP_HORIZONTALLY))
                 image_sample_x = (s32)(((unclamped_end_x - x_cursor) * scale_ratio_w) + src.x);
 
-            if ((flags & SOFTWARE_FRAMEBUFFER_DRAW_IMAGE_FLIP_VERTICALLY))
+            if ((flags & DRAW_IMAGE_FLIP_VERTICALLY))
                 image_sample_y = (s32)(((unclamped_end_y - y_cursor) * scale_ratio_h) + src.y);
 
             image_sample_x %= image->width;
@@ -1022,7 +1022,7 @@ void software_framebuffer_kernel_convolution_ex_bounded(struct software_framebuf
     for (s32 pass = 0; pass < passes; pass++) {
         for (s32 y_cursor = clip.y; y_cursor < clip.y+clip.h; ++y_cursor) {
             for (s32 x_cursor = clip.x; x_cursor < clip.w+clip.x; ++x_cursor) {
-                f32 accumulation[3] = {};
+                s32 accumulation[3] = {};
 
                 for (s32 y_cursor_kernel = -kernel_half_height; y_cursor_kernel <= kernel_half_height; ++y_cursor_kernel) {
                     for (s32 x_cursor_kernel = -kernel_half_width; x_cursor_kernel <= kernel_half_width; ++x_cursor_kernel) {
@@ -1039,9 +1039,9 @@ void software_framebuffer_kernel_convolution_ex_bounded(struct software_framebuf
                     }
                 }
 
-                accumulation[0] = clamp_f32(accumulation[0] / divisor, 0, 255.0f);
-                accumulation[1] = clamp_f32(accumulation[1] / divisor, 0, 255.0f);
-                accumulation[2] = clamp_f32(accumulation[2] / divisor, 0, 255.0f);
+                accumulation[0] = clamp_s32(accumulation[0] / divisor, 0, 255);
+                accumulation[1] = clamp_s32(accumulation[1] / divisor, 0, 255);
+                accumulation[2] = clamp_s32(accumulation[2] / divisor, 0, 255);
 
                 /* NOTE does not blend any pixels, other than what's in blend_t, but that's a convenience thing sort of. */
                 framebuffer->pixels[y_cursor * framebuffer_width * 4 + x_cursor * 4 + 0] = framebuffer->pixels[y_cursor * framebuffer_width * 4 + x_cursor * 4 + 0] * (1 - blend_t) + (blend_t * accumulation[0]);

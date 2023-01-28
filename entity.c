@@ -556,13 +556,17 @@ struct entity_list entity_list_create(struct memory_arena* arena, s32 capacity, 
         .store_type       = store_mark,
     };
 
-    for (s32 entity_index = 0; entity_index < capacity; ++entity_index) {
-        struct entity* current_entity = result.entities + entity_index;
+    entity_list_clear(&result);
+    return result;
+}
+
+void entity_list_clear(struct entity_list* entities) {
+    for (s32 entity_index = 0; entity_index < entities->capacity; ++entity_index) {
+        struct entity* current_entity = entities->entities + entity_index;
         current_entity->flags = 0;
     }
 
-    zero_memory(result.generation_count, result.capacity * sizeof(*result.generation_count));
-    return result;
+    zero_memory(entities->generation_count, entities->capacity * sizeof(*entities->generation_count));
 }
 
 struct entity_list entity_list_clone(struct memory_arena* arena, struct entity_list original) {
