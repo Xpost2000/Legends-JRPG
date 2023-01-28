@@ -31,6 +31,7 @@
 #define USE_SIMD_OPTIMIZATIONS
 #endif
 
+#include <GL/glew.h>
 #include <SDL2/SDL.h>
 
 #include "common.c"

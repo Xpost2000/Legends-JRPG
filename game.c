@@ -1,4 +1,9 @@
 /* #define RELEASE */
+/* NOTE:
+   Everything needs to be pushed to Render Commands
+   otherwise changing renderers will be extremely difficult.
+*/
+
 /* Needs lots of clean up. (Man I keep saying this every time I come back here, but it doesn't seem to matter too much.) */
 /* TODO fix coordinate system <3 */
 /* virtual pixels */
@@ -1751,7 +1756,7 @@ void game_postprocess_blur(struct software_framebuffer* framebuffer, s32 quality
 
     struct software_framebuffer blur_buffer = software_framebuffer_create_from_arena(&scratch_arena, framebuffer->width/quality_scale, framebuffer->height/quality_scale);
     software_framebuffer_copy_into(&blur_buffer, framebuffer);
-    software_framebuffer_kernel_convolution_ex(&scratch_arena, &blur_buffer, box_blur, 3, 3, 12, t, 2);
+    software_framebuffer_kernel_convolution_ex(&scratch_arena, &blur_buffer, box_blur, 3, 3, 12, t, 1);
     software_framebuffer_draw_image_ex(framebuffer, (struct image_buffer*)&blur_buffer, rectangle_f32(0,0,framebuffer->width, framebuffer->height), RECTANGLE_F32_NULL, color32f32(1,1,1,1), NO_FLAGS, blend_mode);
 }
 
@@ -3870,9 +3875,6 @@ local void update_and_render_game_overworld(struct software_framebuffer* framebu
         render_particles_list(&global_particle_list, &draw_entities);
         sortable_draw_entities_submit(&commands, &graphics_assets, &draw_entities, dt);
         render_foreground_area(game_state, &commands, &game_state->loaded_area);
-#if 0 
-        DEBUG_render_particle_emitters(&commands, &game_state->permenant_particle_emitters);
-#endif
     }
     software_framebuffer_render_commands(framebuffer, &commands);
 
@@ -3881,7 +3883,9 @@ local void update_and_render_game_overworld(struct software_framebuffer* framebu
         if (cutscene_viewing_separate_area()) {
             area = cutscene_view_area();
         }
+#if 1
         software_framebuffer_run_shader(framebuffer, rectangle_f32(0, 0, framebuffer->width, framebuffer->height), lighting_shader, area);
+#endif
     }
 }
 
@@ -3954,6 +3958,7 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                     } break;
                 }
                 
+
                 {
                     struct render_commands commands = render_commands(&scratch_arena, 1024, game_state->camera);
                     do_ui_passive_speaking_dialogue(&commands, dt);
@@ -3976,13 +3981,6 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
             } break;
         }
     }
-
-#if 0
-    /* camera debug */
-    {
-        software_framebuffer_draw_quad(framebuffer, game_state->camera.travel_bounds, color32u8(0,0,255,100), BLEND_MODE_ALPHA);
-    }
-#endif
 }
 
 struct game_variables game_variables(struct memory_arena* arena) {

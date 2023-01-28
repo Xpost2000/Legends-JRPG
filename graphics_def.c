@@ -27,7 +27,6 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
-/* (I do recognize the intent of the engine is to eventually support paletted rendering but that comes later.) */
 /* the image is expected to be rgba32, and must be converted to as such before rendering. */
 #define Image_Buffer_Base \
     u32 width;            \
@@ -35,7 +34,8 @@
     union {               \
         u8* pixels;       \
         u32* pixels_u32;  \
-    }
+    };                    \
+    GLuint opengl_object
     
 /* NOTE image_buffers and software framebuffers are binary compatible so you can reuse their functions on each other. */
 struct image_buffer {
@@ -78,18 +78,6 @@ bool                    lightmask_buffer_is_lit(struct lightmask_buffer* buffer,
 f32                     lightmask_buffer_lit_percent(struct lightmask_buffer* buffer, s32 x, s32 y);
 void                    lightmask_buffer_finish(struct lightmask_buffer* buffer);
 
-struct software_framebuffer {
-    Image_Buffer_Base;
-
-    shader_fn active_shader;
-    void*     active_shader_context;
-
-    s32 scissor_x;
-    s32 scissor_y;
-    s32 scissor_w;
-    s32 scissor_h;
-};
-
 union color32u8 {
     struct { u8 r, g, b, a; };
     u8  rgba[4];
@@ -101,14 +89,28 @@ union color32f32 {
     struct { f32 r, g, b, a; };
     f32  rgba[4];
 };
+/* NOTE: for optimizing out floating point operations with close enough integer ops... */
+union color32s32 {
+    struct { s32 r, g, b, a; };
+    s32  rgba[4];
+};
 
 #define color32u8(R,G,B,A)  (union color32u8){.r  = R,.g=G,.b=B,.a=A}
 #define color32f32(R,G,B,A) (union color32f32){.r = R,.g=G,.b=B,.a=A}
-
+#define color32s32(R,G,B,A) (union color32s32){.r = R,.g=G,.b=B,.a=A}
+union color32f32 color32s32_to_color32f32(union color32u8 source) {
+    return color32f32(source.r / 255.0f, source.g / 255.0f, source.b / 255.0f, source.a / 255.0f);
+}
 union color32f32 color32u8_to_color32f32(union color32u8 source) {
     return color32f32(source.r / 255.0f, source.g / 255.0f, source.b / 255.0f, source.a / 255.0f);
 }
+union color32s32 color32u8_to_color32s32(union color32u8 source) {
+    return color32s32(source.r, source.g, source.b, source.a);
+}
 
+union color32s32 color32f32_to_color32s32(union color32f32 source) {
+    return color32s32(source.r * 255, source.g * 255, source.b * 255, source.a * 255);
+}
 union color32u8 color32f32_to_color32u8(union color32f32 source) {
     return color32u8(source.r * 255, source.g * 255, source.b * 255, source.a * 255);
 }
@@ -175,25 +177,16 @@ struct graphics_assets {
 
 struct graphics_assets graphics_assets_create(struct memory_arena* arena, u32 font_limit, u32 image_limit);
 void                   graphics_assets_finish(struct graphics_assets* assets);
-
 image_id               graphics_assets_load_image(struct graphics_assets* assets, string path);
 image_id               graphics_assets_get_image_by_filepath(struct graphics_assets* assets, string filepath);
 font_id                graphics_assets_load_bitmap_font(struct graphics_assets* assets, string path, s32 tile_width, s32 tile_height, s32 atlas_rows, s32 atlas_columns);
 struct font_cache*     graphics_assets_get_font_by_id(struct graphics_assets* assets, font_id font);
-
 struct image_buffer*   graphics_assets_get_image_by_id(struct graphics_assets* assets, image_id image);
 
-/* no longer using memory arenas as we are dynamically able to resize this. */
-struct software_framebuffer software_framebuffer_create(u32 width, u32 height);
-/* Used for creating temporaries. */
-struct software_framebuffer software_framebuffer_create_from_arena(struct memory_arena* arena, u32 width, u32 height);
-/* only from non-arenas. Which is okay */
-void                        software_framebuffer_finish(struct software_framebuffer* framebuffer);
-void                        software_framebuffer_copy_into(struct software_framebuffer* target, struct software_framebuffer* source);
 
-enum software_framebuffer_draw_image_ex_flags {
-    SOFTWARE_FRAMEBUFFER_DRAW_IMAGE_FLIP_HORIZONTALLY = BIT(0),
-    SOFTWARE_FRAMEBUFFER_DRAW_IMAGE_FLIP_VERTICALLY   = BIT(1),
+enum draw_image_ex_flags {
+    DRAW_IMAGE_FLIP_HORIZONTALLY = BIT(0),
+    DRAW_IMAGE_FLIP_VERTICALLY   = BIT(1),
 };
 
 enum blit_blend_mode {
@@ -204,41 +197,10 @@ enum blit_blend_mode {
     BLEND_MODE_COUNT,
 };
 
-void software_framebuffer_clear_scissor(struct software_framebuffer* framebuffer);
-void software_framebuffer_set_scissor(struct software_framebuffer* framebuffer, s32 x, s32 y, s32 w, s32 h);
-void software_framebuffer_clear_buffer(struct software_framebuffer* framebuffer, union color32u8 rgba);
-void software_framebuffer_draw_quad(struct software_framebuffer* framebuffer, struct rectangle_f32 destination, union color32u8 rgba, u8 blend_mode);
-void software_framebuffer_draw_image_ex(struct software_framebuffer* framebuffer, struct image_buffer* image, struct rectangle_f32 destination, struct rectangle_f32 src, union color32f32 modulation, u32 flags, u8 blend_mode);
-void software_framebuffer_draw_image_ex_clipped(struct software_framebuffer* framebuffer, struct image_buffer* image, struct rectangle_f32 destination, struct rectangle_f32 src, union color32f32 modulation, u32 flags, u8 blend_mode, struct rectangle_f32 clip_rect, shader_fn shader, void* shader_ctx);
-/* add layout draw_text */
-void software_framebuffer_draw_text(struct software_framebuffer* framebuffer, struct font_cache* font, f32 scale, v2f32 xy, string text, union color32f32 modulation, u8 blend_mode);
-void software_framebuffer_draw_glyph(struct software_framebuffer* framebuffer, struct font_cache* font, f32 scale, v2f32 xy, char glyph, union color32f32 modulation, u8 blend_mode);
-/* TODO make command buffer version */
-void software_framebuffer_draw_text_bounds(struct software_framebuffer* framebuffer, struct font_cache* font, f32 scale, v2f32 xy, f32 bounds_w, string cstring, union color32f32 modulation, u8 blend_mode);
-void software_framebuffer_draw_text_bounds_centered(struct software_framebuffer* framebuffer, struct font_cache* font, f32 scale, struct rectangle_f32 bounds, string text, union color32f32 modulation, u8 blend_mode);
-/* only thin lines */
-void software_framebuffer_draw_line(struct software_framebuffer* framebuffer, v2f32 start, v2f32 end, union color32u8 rgba, u8 blend_mode);
-
-void software_framebuffer_kernel_convolution_ex(struct memory_arena* arena, struct software_framebuffer* framebuffer, f32* kernel, s16 width, s16 height, f32 divisor, f32 blend_t, s32 passes);
-
-void software_framebuffer_run_shader(struct software_framebuffer* framebuffer, struct rectangle_f32 src_rect, shader_fn shader, void* context);
-
-/* NOTE:  */
-void software_framebuffer_use_shader(struct software_framebuffer* framebuffer, shader_fn shader, void* context);
-
-/*
-  This is intended for threading work, and kernel convolution samples from the neighbors which
-  requires the entire unaltered image. I don't have enough stack space to copy the framebuffer every single time
-  on the thread 
-
-  (1.2 mb per thread to hold 640x480!!!)
-  
-  So we'll just pass one singular copy from the above function, to avoid the time to copy multiple slices of the framebuffer which
-  would ruin the effect anyways.
-*/
-void software_framebuffer_kernel_convolution_ex_bounded(struct software_framebuffer before, struct software_framebuffer* framebuffer, f32* kernel, s16 kernel_width, s16 kernel_height, f32 divisor, f32 blend_t, s32 passes, struct rectangle_f32 clip);
-
+#include "software_framebuffer_def.c"
 #include "render_commands_def.c"
+#include "opengl_renderer_def.c"
+
 void software_framebuffer_render_commands(struct software_framebuffer* framebuffer, struct render_commands* commands);
 
 #endif

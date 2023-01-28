@@ -3,7 +3,7 @@
 
 CC=gcc
 CFLAGS=-Werror -Wno-unused -Wno-unused-but-set-variable -Wall -std=c99
-CLIBS=-Dmain=SDL_main -lmingw32 -L./dependencies/x86-64/lib/ -L./dependencies/x86-64/bin/ -I./dependencies/ -I./dependencies/x86-64/include/ -lSDL2main -lSDL2 -lSDL2_mixer -msse4
+CLIBS=-Dmain=SDL_main -lmingw32 -L./dependencies/x86-64/lib/ -L./dependencies/x86-64/bin/ -I./dependencies/ -I./dependencies/x86-64/include/ -lOpenGL32 -lglew32 -lSDL2main -lSDL2 -lSDL2_mixer -msse4
 ITCHPROJECT=xpost2000/untitled-project
 
 SOURCE_FILE_MODULES= main.c
