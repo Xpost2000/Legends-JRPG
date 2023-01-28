@@ -152,7 +152,7 @@ void common_ui_visual_slider(struct common_ui_layout* layout, struct software_fr
 
 /* kind of like a button but not quite. */
 void common_ui_checkbox(struct common_ui_layout* layout, struct software_framebuffer* framebuffer, s32 checkbox_id, s32* selected_id, bool* option_ptr, u32 flags) {
-    const f32 SQUARE_SIZE = 16;
+    const f32 SQUARE_SIZE = TILE_UNIT_SIZE/2;
     s32 mouse_location[2];
     get_mouse_location(mouse_location, mouse_location+1);
 
@@ -161,6 +161,7 @@ void common_ui_checkbox(struct common_ui_layout* layout, struct software_framebu
 
     assertion(option_ptr && "checkbox needs boolean pointer to do stuff");
     software_framebuffer_draw_quad(framebuffer, rectangle_f32(position.x, position.y, SQUARE_SIZE, SQUARE_SIZE), color32u8_WHITE, BLEND_MODE_ALPHA);
+    /* TODO fix visual */
     software_framebuffer_draw_quad(framebuffer, rectangle_f32(position.x+2.5, position.y+2.5, SQUARE_SIZE-5, SQUARE_SIZE-5), color32u8_BLACK, BLEND_MODE_ALPHA);
 
     if (selected_id && *selected_id == checkbox_id) {
@@ -187,7 +188,7 @@ void common_ui_checkbox(struct common_ui_layout* layout, struct software_framebu
 void common_ui_f32_slider(struct common_ui_layout* layout, struct software_framebuffer* framebuffer, f32 width, s32* selected_id, s32 slider_id, f32* ptr, f32 min_bound, f32 max_bound, f32 step) {
     assertion(step == 0 && "Currently I'm not handling stepped float sliders...");
 
-    const f32 HEIGHT = 20;
+    const f32 HEIGHT = TILE_UNIT_SIZE/2;
 
     v2f32 position = v2f32(layout->x, layout->y);
     software_framebuffer_draw_quad(framebuffer, rectangle_f32(position.x, position.y, width, HEIGHT), color32u8(255, 255, 255, 255), BLEND_MODE_ALPHA);
@@ -231,7 +232,8 @@ void common_ui_f32_slider(struct common_ui_layout* layout, struct software_frame
         }
     }
 
-    software_framebuffer_draw_quad(framebuffer, rectangle_f32(position.x+6, position.y+6, (width-12) * percent, HEIGHT-12), color32u8(0, 255, 0, 255), BLEND_MODE_ALPHA);
+    /* TODO fix visual */
+    software_framebuffer_draw_quad(framebuffer, rectangle_f32(position.x+2, position.y+2, (width-4) * percent, HEIGHT-4), color32u8(0, 255, 0, 255), BLEND_MODE_ALPHA);
 
     (*ptr) = clamp_f32(*ptr, min_bound, max_bound);
     common_ui_layout_advance(layout, width, HEIGHT*1.2);

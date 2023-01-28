@@ -10,20 +10,24 @@
 (storyboard
  '(page
    (wait 1.5)
-   (line "Long ago, gods descended upon the world.")
+   (line "Long ago, gods descended upon")
+   (line "the world.")
    (spacer)
    (wait 0.3)
-   (line "The first people were the elves")
+   (line "The first people were")
+   (line "the elves.")
    (wait-for-continue)
    )
  '(page
    (wait 0.3)
-   (line "Then, came the humans, who waged war upon the elves.")
+   (line "Then, came the humans")
+   (line "who waged war on the elves.")
    (wait-for-continue)
    )
  '(page
    (wait 0.3)
-   (line "Okay. story's done. I'm too lazy for this.")
+   (line "Okay. story's done.")
+   (line "I'm too lazy for this.")
    (wait-for-continue)
    )
  )

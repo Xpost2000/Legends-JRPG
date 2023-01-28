@@ -1,3 +1,8 @@
+#ifdef EXPERIMENTAL_320
+#define OPTIONS_TEXT_SCALE (1)
+#else
+#define OPTIONS_TEXT_SCALE (2)
+#endif
 enum options_menu_phases {
     OPTIONS_MENU_PHASE_CLOSE,
     OPTIONS_MENU_PHASE_OPEN,
@@ -85,8 +90,13 @@ s32 do_options_menu(struct software_framebuffer* framebuffer, f32 dt) {
 
     switch (options_menu_state.phase) {
         case OPTIONS_MENU_PHASE_OPEN: {
+#ifdef EXPERIMENTAL_320
+            const s32          OPTIONS_BOX_WIDTH  = 35/2;
+            const s32          OPTIONS_BOX_HEIGHT = 25/2;
+#else
             const s32          OPTIONS_BOX_WIDTH  = 35;
             const s32          OPTIONS_BOX_HEIGHT = 25;
+#endif
 
             v2f32 options_box_extents        = nine_patch_estimate_extents(ui_chunky, 1, OPTIONS_BOX_WIDTH, OPTIONS_BOX_HEIGHT);
             v2f32 options_box_start_position = v2f32((SCREEN_WIDTH/2 - options_box_extents.x/2), (SCREEN_HEIGHT/2) - options_box_extents.y/2);
@@ -112,33 +122,33 @@ s32 do_options_menu(struct software_framebuffer* framebuffer, f32 dt) {
                 if (options_menu_state.currently_selected_option == id) { \
                     f = game_get_font(MENU_FONT_COLOR_GOLD);            \
                 }                                                       \
-                software_framebuffer_draw_text(framebuffer, f, 2, v2f32(option_x, layout.y), options_menu_options[id], color32f32(1,1,1,1), BLEND_MODE_ALPHA); \
+                software_framebuffer_draw_text(framebuffer, f, OPTIONS_TEXT_SCALE, v2f32(option_x, layout.y), options_menu_options[id], color32f32(1,1,1,1), BLEND_MODE_ALPHA); \
             } while(0);
 
             {
-                struct common_ui_layout layout = common_ui_vertical_layout(options_box_start_position.x + 15, options_box_start_position.y + 15);
+                struct common_ui_layout layout = common_ui_vertical_layout(options_box_start_position.x + 15, options_box_start_position.y + 15/2);
 
                 string longest_option       = longest_string_in_list(options_menu_options, array_count(options_menu_options));
-                f32    longest_string_width = font_cache_text_width(font1, longest_option, 2);
+                f32    longest_string_width = font_cache_text_width(font1, longest_option, OPTIONS_TEXT_SCALE);
                 {
                     f32 layout_old_x = layout.x;
                     {
-                        software_framebuffer_draw_text(framebuffer, font2, 2, v2f32(layout.x, layout.y), options_menu_categories[0], color32f32(1,1,1,1), BLEND_MODE_ALPHA);
-                        layout.y += font_base_height * 1.1 + 15;
-                        layout.x += longest_string_width * 1.1 + 30;
+                        software_framebuffer_draw_text(framebuffer, font2, OPTIONS_TEXT_SCALE, v2f32(layout.x, layout.y), options_menu_categories[0], color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+                        layout.y += font_base_height + 15/2;
+                        layout.x += longest_string_width * 1.1 + 30/2;
                         f32 option_x = layout.x - longest_string_width*1.1;
 
                         {
                             Option_Menu_Choice_Label(0);
-                            common_ui_visual_slider(&layout, framebuffer, 2, difficulty_setting_strings, array_count(difficulty_setting_strings), &options_menu_state.difficulty_slider, 0, &options_menu_state.currently_selected_option, 0);
+                            common_ui_visual_slider(&layout, framebuffer, OPTIONS_TEXT_SCALE, difficulty_setting_strings, array_count(difficulty_setting_strings), &options_menu_state.difficulty_slider, 0, &options_menu_state.currently_selected_option, 0);
                         }
                         {
                             Option_Menu_Choice_Label(1);
-                            common_ui_visual_slider(&layout, framebuffer, 2, message_setting_strings, array_count(message_setting_strings), &options_menu_state.message_slider, 1, &options_menu_state.currently_selected_option, 0);
+                            common_ui_visual_slider(&layout, framebuffer, OPTIONS_TEXT_SCALE, message_setting_strings, array_count(message_setting_strings), &options_menu_state.message_slider, 1, &options_menu_state.currently_selected_option, 0);
                         }
                         {
                             Option_Menu_Choice_Label(2);
-                            common_ui_visual_slider(&layout, framebuffer, 2, ui_theme_setting_strings, array_count(ui_theme_setting_strings), &options_menu_state.ui_theme_slider, 2, &options_menu_state.currently_selected_option, 0);
+                            common_ui_visual_slider(&layout, framebuffer, OPTIONS_TEXT_SCALE, ui_theme_setting_strings, array_count(ui_theme_setting_strings), &options_menu_state.ui_theme_slider, 2, &options_menu_state.currently_selected_option, 0);
                         }
                     }
                     layout.x = layout_old_x;
@@ -146,15 +156,15 @@ s32 do_options_menu(struct software_framebuffer* framebuffer, f32 dt) {
                 {
                     f32 layout_old_x = layout.x;
                     {
-                        software_framebuffer_draw_text(framebuffer, font2, 2, v2f32(layout.x, layout.y), options_menu_categories[1], color32f32(1,1,1,1), BLEND_MODE_ALPHA);
-                        layout.y += font_base_height * 1.1 + 15;
-                        layout.x += longest_string_width * 1.1 + 30;
+                        software_framebuffer_draw_text(framebuffer, font2, OPTIONS_TEXT_SCALE, v2f32(layout.x, layout.y), options_menu_categories[1], color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+                        layout.y += font_base_height + 15/2;
+                        layout.x += longest_string_width * 1.1 + 30/2;
                         f32 option_x = layout.x - longest_string_width*1.1;
 
 #ifndef __EMSCRIPTEN__
                         {
                             Option_Menu_Choice_Label(3);
-                            common_ui_visual_slider(&layout, framebuffer, 2, resolution_strings, queried_screen_resolution_count, &options_menu_state.resolution, 3, &options_menu_state.currently_selected_option, COMMON_UI_VISUAL_SLIDER_FLAGS_LOTSOFOPTIONS);
+                            common_ui_visual_slider(&layout, framebuffer, OPTIONS_TEXT_SCALE, resolution_strings, queried_screen_resolution_count, &options_menu_state.resolution, 3, &options_menu_state.currently_selected_option, COMMON_UI_VISUAL_SLIDER_FLAGS_LOTSOFOPTIONS);
                         }
 #endif
                         {
@@ -167,33 +177,33 @@ s32 do_options_menu(struct software_framebuffer* framebuffer, f32 dt) {
                 {
                     f32 layout_old_x = layout.x;
                     {
-                        software_framebuffer_draw_text(framebuffer, font2, 2, v2f32(layout.x, layout.y), options_menu_categories[2], color32f32(1,1,1,1), BLEND_MODE_ALPHA);
-                        layout.y += font_base_height * 1.1 + 15;
-                        layout.x += longest_string_width * 1.1 + 30;
+                        software_framebuffer_draw_text(framebuffer, font2, OPTIONS_TEXT_SCALE, v2f32(layout.x, layout.y), options_menu_categories[2], color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+                        layout.y += font_base_height + 15/2;
+                        layout.x += longest_string_width * 1.1 + 30/2;
                         f32 option_x = layout.x - longest_string_width*1.1;
 
                         {
                             Option_Menu_Choice_Label(5);
-                            common_ui_f32_slider(&layout, framebuffer, 32*4, &options_menu_state.currently_selected_option, 5, &options_menu_state.music_volume, 0, 1, 0);
+                            common_ui_f32_slider(&layout, framebuffer, TILE_UNIT_SIZE*4, &options_menu_state.currently_selected_option, 5, &options_menu_state.music_volume, 0, 1, 0);
                         }
                         {
                             Option_Menu_Choice_Label(6);
-                            common_ui_f32_slider(&layout, framebuffer, 32*4, &options_menu_state.currently_selected_option, 6, &options_menu_state.sound_volume, 0, 1, 0);
+                            common_ui_f32_slider(&layout, framebuffer, TILE_UNIT_SIZE*4, &options_menu_state.currently_selected_option, 6, &options_menu_state.sound_volume, 0, 1, 0);
                         }
                     }
                     layout.x = layout_old_x;
                 }
 
-                layout.y += 32;
+                layout.y += TILE_UNIT_SIZE;
 
-                if (common_ui_button(&layout, framebuffer, string_literal("Apply"), 2, 7, &options_menu_state.currently_selected_option, 0)) {
+                if (common_ui_button(&layout, framebuffer, string_literal("Apply"), OPTIONS_TEXT_SCALE, 7, &options_menu_state.currently_selected_option, 0)) {
                     set_fullscreen(options_menu_state.is_fullscreen);
                     options_menu_close();
                 }
-                if (common_ui_button(&layout, framebuffer, string_literal("Confirm"), 2, 8, &options_menu_state.currently_selected_option, 0)) {
+                if (common_ui_button(&layout, framebuffer, string_literal("Confirm"), OPTIONS_TEXT_SCALE, 8, &options_menu_state.currently_selected_option, 0)) {
                     options_menu_close();
                 }
-                if (common_ui_button(&layout, framebuffer, string_literal("Cancel"), 2, 9, &options_menu_state.currently_selected_option, 0)) {
+                if (common_ui_button(&layout, framebuffer, string_literal("Cancel"), OPTIONS_TEXT_SCALE, 9, &options_menu_state.currently_selected_option, 0)) {
                     options_menu_close();
                 }
             }

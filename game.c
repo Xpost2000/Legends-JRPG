@@ -7,7 +7,7 @@
 /* Needs lots of clean up. (Man I keep saying this every time I come back here, but it doesn't seem to matter too much.) */
 /* TODO fix coordinate system <3 */
 /* virtual pixels */
-#define TILE_UNIT_SIZE                      (32) /* measured with a reference of 640x480 */
+#define TILE_UNIT_SIZE                      (16) /* measured with a reference of 640x480 */
 #define REFERENCE_TILE_UNIT_SIZE            (16) /* What most tiles should be */
 #define GAME_COMMAND_CONSOLE_LINE_INPUT_MAX (512)
 #include "common_ui_def.c"
@@ -2414,12 +2414,20 @@ bool game_display_and_update_messages(struct software_framebuffer* framebuffer, 
         struct font_cache* font = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_YELLOW]);
         string message_str      = string_from_cstring(current_message->message_storage);
 
-        f32                  message_text_height       = font_cache_calculate_height_of(font, message_str, framebuffer->width * 0.5, 2);
+        #ifdef EXPERIMENTAL_320
+        f32 scale = 1;
+        f32 box_scale = 1;
+        #else
+        f32 scale = 2;
+        f32 box_scale = 2;
+        #endif
+
+        f32                  message_text_height       = font_cache_calculate_height_of(font, message_str, framebuffer->width * 0.5, scale);
         struct rectangle_f32 message_region            = rectangle_f32_centered(rectangle_f32(0, 0, framebuffer->width, framebuffer->height), framebuffer->width * 0.5, message_text_height*1.15);
-        v2f32                estimated_nine_patch_size = nine_patch_estimate_fitting_extents(ui_chunky, 2, message_region.w, message_region.h);
+        v2f32                estimated_nine_patch_size = nine_patch_estimate_fitting_extents(ui_chunky, box_scale, message_region.w, message_region.h);
 
         {
-            draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 2, v2f32(message_region.x, message_region.y), (s32)estimated_nine_patch_size.x, (s32)estimated_nine_patch_size.y, UI_DEFAULT_COLOR);
+            draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, box_scale, v2f32(message_region.x, message_region.y), (s32)estimated_nine_patch_size.x, (s32)estimated_nine_patch_size.y, UI_DEFAULT_COLOR);
             #if 1
             game_ui_render_rich_text_wrapped(framebuffer, message_str, v2f32(message_region.x+10, message_region.y+10), framebuffer->width * 0.5);
             #else
@@ -2468,18 +2476,18 @@ void game_display_and_update_message_notifications(struct render_commands* comma
                 struct font_cache* painting_font               = game_get_font(MENU_FONT_COLOR_STEEL);
                 if (notifier->alternative_color) painting_font = game_get_font(notifier->message_color);
                     string tmp2 = memory_arena_push_string(&scratch_arena, notifier->text);
-                render_commands_push_text(commands, painting_font, 4, draw_position, tmp2, color32f32_WHITE, BLEND_MODE_ALPHA);
+                render_commands_push_text(commands, painting_font, 2, draw_position, tmp2, color32f32_WHITE, BLEND_MODE_ALPHA);
             } break;
             case NOTIFIER_MESSAGE_DAMAGE: {
                 struct font_cache* painting_font               = game_get_font(MENU_FONT_COLOR_STEEL);
                 if (notifier->alternative_color) painting_font = game_get_font(MENU_FONT_COLOR_ORANGE);
 
                 if (notifier->amount == 0) {
-                    render_commands_push_text(commands, painting_font, 4, draw_position, string_literal("NO DMG!"), color32f32_WHITE, BLEND_MODE_ALPHA);
+                    render_commands_push_text(commands, painting_font, 2, draw_position, string_literal("NO DMG!"), color32f32_WHITE, BLEND_MODE_ALPHA);
                 } else {
                     string tmp = format_temp_s("%d!", notifier->amount);
                     string tmp2 = memory_arena_push_string(&scratch_arena, tmp);
-                    render_commands_push_text(commands, painting_font, 4, draw_position, tmp2, color32f32_WHITE, BLEND_MODE_ALPHA);
+                    render_commands_push_text(commands, painting_font, 2, draw_position, tmp2, color32f32_WHITE, BLEND_MODE_ALPHA);
                 }
             } break;
             case NOTIFIER_MESSAGE_HEALING: {
@@ -2487,11 +2495,11 @@ void game_display_and_update_message_notifications(struct render_commands* comma
                 if (notifier->alternative_color) painting_font = game_get_font(MENU_FONT_COLOR_LIME);
 
                 if (notifier->amount == 0) {
-                    render_commands_push_text(commands, painting_font, 4, draw_position, string_literal("RESIST?!"), color32f32_WHITE, BLEND_MODE_ALPHA);
+                    render_commands_push_text(commands, painting_font, 2, draw_position, string_literal("RESIST?!"), color32f32_WHITE, BLEND_MODE_ALPHA);
                 } else {
                     string tmp = format_temp_s("%d!", notifier->amount);
                     string tmp2 = memory_arena_push_string(&scratch_arena, tmp);
-                    render_commands_push_text(commands, painting_font, 4, draw_position, tmp2, color32f32_WHITE, BLEND_MODE_ALPHA);
+                    render_commands_push_text(commands, painting_font, 2, draw_position, tmp2, color32f32_WHITE, BLEND_MODE_ALPHA);
                 }
             } break;
                 bad_case;
@@ -3288,9 +3296,9 @@ local void  do_ui_passive_speaking_dialogue(struct render_commands* commands, f3
         struct font_cache* font = game_get_font(current_dialogue->game_font_id);
 
         struct entity* speaker = game_dereference_entity(game_state, current_dialogue->speaker_entity);
-        f32 text_width         = font_cache_text_width(font, display_text, 2);
-        f32 text_height         = font_cache_text_height(font)*2;
-        render_commands_push_text(commands, font, 2, v2f32_sub(speaker->position, v2f32(text_width/2, text_height+speaker->scale.y*2.3)), display_text, color32f32_WHITE, BLEND_MODE_ALPHA);
+        f32 text_width         = font_cache_text_width(font, display_text, 1);
+        f32 text_height         = font_cache_text_height(font);
+        render_commands_push_text(commands, font, 1, v2f32_sub(speaker->position, v2f32(text_width/2, text_height+speaker->scale.y*2.3)), display_text, color32f32_WHITE, BLEND_MODE_ALPHA);
     }
 
 }
@@ -3656,6 +3664,12 @@ local void update_and_render_game_worldmap(struct software_framebuffer* framebuf
             }
         }
 
+#ifdef EXPERIMENTAL_320
+        scale/=2;
+        focus/=2;
+        horizon/=2;
+#endif
+
         /* cam params end */
 
         f32 cosine = cosf(degree_to_radians(game_state->world_map_explore_state.view_angle));
@@ -3956,7 +3970,7 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                 switch (submode) {
                     case GAME_SUBMODE_OVERWORLD: {
                         update_and_render_game_overworld(framebuffer, dt);
-                        game_postprocess_blur_ingame(framebuffer, 2, 0.62, BLEND_MODE_ALPHA);
+                        game_postprocess_blur_ingame(framebuffer, 1, 0.62, BLEND_MODE_ALPHA);
                     } break;
                     case GAME_SUBMODE_WORLDMAP: {
                         update_and_render_game_worldmap(framebuffer, dt);

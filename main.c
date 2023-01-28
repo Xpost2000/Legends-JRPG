@@ -1,5 +1,6 @@
 /* #define NO_FANCY_FADEIN_INTRO */
 #define EXPERIMENTAL_VFS
+#define EXPERIMENTAL_320
 
 #if 1
 #ifndef RELEASE
@@ -363,7 +364,11 @@ local void toggle_fullscreen(void) {
 #include "game.c"
 
 /* scale based off of vertical height */
+#ifdef EXPERIMENTAL_320
+const u32 ENGINE_BASE_VERTICAL_RESOLUTION = 240;
+#else
 const u32 ENGINE_BASE_VERTICAL_RESOLUTION = 480;
+#endif
 
 local v2f32 get_scaled_screen_resolution(v2f32 base_resolution) {
     f32 scale_factor = base_resolution.y / ENGINE_BASE_VERTICAL_RESOLUTION;

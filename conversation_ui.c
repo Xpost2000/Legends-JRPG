@@ -159,7 +159,7 @@ local void update_and_render_conversation_ui(struct game_state* state, struct so
                 draw_ui_breathing_text(framebuffer, v2f32(dialogue_box_start_position.x + TILE_UNIT_SIZE, dialogue_box_start_position.y + TILE_UNIT_SIZE/2), font2, 2, string_from_cstring_length_counted(dialogue_ui.dialogue_speaker_buffer, dialogue_ui.dialogue_speaker_buffer_count), 0, color32f32(1,1,1,1));
 
                 f32 start_x_cursor        = dialogue_box_start_position.x + 30;
-                f32 start_y_cursor        = dialogue_box_start_position.y + 50;
+                f32 start_y_cursor        = dialogue_box_start_position.y + 30;
                 f32 x_cursor              = start_x_cursor;
                 f32 y_cursor              = start_y_cursor;
                 f32 tallest_glyph_on_line = 0;
@@ -249,7 +249,7 @@ local void update_and_render_conversation_ui(struct game_state* state, struct so
 
 
             if (current_conversation_node->choice_count == 0) {
-                draw_ui_breathing_text(framebuffer, v2f32(dialogue_box_start_position.x + 30, dialogue_box_start_position.y + dialogue_box_extents.y - 10), font2, 2, string_literal("(proceed)"), 0451, color32f32(1,1,1,1));
+                draw_ui_breathing_text(framebuffer, v2f32(dialogue_box_start_position.x + 30, dialogue_box_start_position.y + dialogue_box_extents.y - 10), font2, 1, string_literal("(proceed)"), 0451, color32f32(1,1,1,1));
 
                 if (is_action_pressed(INPUT_ACTION_CONFIRMATION)) {
                     if (conversation_ui_advance_character(true)) {
@@ -266,7 +266,11 @@ local void update_and_render_conversation_ui(struct game_state* state, struct so
                     }
                 }
             } else {
+#ifdef EXPERIMENTAL_320
                 draw_ui_breathing_text(framebuffer, v2f32(dialogue_box_start_position.x + 30, dialogue_box_start_position.y + dialogue_box_extents.y - 10), font2, 2, string_literal("(proceed)"), 0451, color32f32(1,1,1,1));
+#else
+                draw_ui_breathing_text(framebuffer, v2f32(dialogue_box_start_position.x + 30, dialogue_box_start_position.y + dialogue_box_extents.y - 10), font2, 1, string_literal("(proceed)"), 0451, color32f32(1,1,1,1));
+#endif
 
                 if (state->viewing_dialogue_choices) {
                     if (is_action_pressed(INPUT_ACTION_CANCEL)) {
@@ -296,6 +300,7 @@ local void update_and_render_conversation_ui(struct game_state* state, struct so
                             }
                         }
 
+                        /* TODO check this in 320 mode... Don't have any choices currently */
                         u32 BOX_HEIGHT = current_conversation_node->choice_count * 2+1;
                         v2f32 dialogue_box_extents = nine_patch_estimate_extents(ui_chunky, 1, BOX_WIDTH, BOX_HEIGHT);
                         v2f32 dialogue_box_start_position = v2f32(SCREEN_WIDTH/2 - dialogue_box_extents.x/2, (SCREEN_HEIGHT * 0.5) - dialogue_box_extents.y);
