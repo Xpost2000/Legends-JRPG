@@ -692,13 +692,15 @@ enum projectile_entity_type {
   - Grenades
 */
 struct projectile_entity {
-    entity_id owner;
+    struct entity* owner; /* should be id but okay... */
 
     s32 visual_type; /* for drawing/behavior reasons probably */
     u32 flags;
 
     v2f32 acceleration;
     v2f32 velocity;
+
+    /* shares the same units as the "big" entity */
     v2f32 position;
     v2f32 scale;
 

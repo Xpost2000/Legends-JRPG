@@ -2506,103 +2506,137 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
         case ENTITY_ACTION_ATTACK: {
             struct entity* attacked_entity = game_dereference_entity(state, target_entity->ai.attack_target_id);
 
-            switch (target_entity->ai.attack_animation_phase) {
-                case ENTITY_ATTACK_ANIMATION_PHASE_MOVE_TO_TARGET: {
-                    v2f32     position_delta       = v2f32_sub(attacked_entity->position, target_entity->position);
-                    v2f32     direction            = v2f32_direction(attacked_entity->position, target_entity->position);
-                    /* TODO: THIS SHOULD VARY */
-                    const f32 TARGET_MOVE_VELOCITY = TILE_UNIT_SIZE*3.5;
+            /* TODO: we shouldn't have no animation... We should have attack animations for each party member but who knows? */
+            item_id          weapon_equip_slot_item = entity->equip_slots[ENTITY_EQUIP_SLOT_INDEX_WEAPON1];
+            struct item_def* item_base       = item_database_find_by_id(weapon_equip_slot_item);
 
-                    if (v2f32_magnitude(position_delta) < TILE_UNIT_SIZE * 0.85) {
-                        target_entity->ai.attack_animation_phase = ENTITY_ATTACK_ANIMATION_PHASE_REEL_BACK;
-                        target_entity->ai.attack_animation_timer = 0;
-                        target_entity->ai.attack_animation_interpolation_start_position = target_entity->position;
-                        target_entity->ai.attack_animation_interpolation_end_position = v2f32_add(target_entity->position, v2f32_scale(direction, TILE_UNIT_SIZE/0.8));
-                    } else {
-                        target_entity->position.x += -TARGET_MOVE_VELOCITY*dt * direction.x;
-                        target_entity->position.y += -TARGET_MOVE_VELOCITY*dt * direction.y;
-                    }
-                } break;
-                case ENTITY_ATTACK_ANIMATION_PHASE_REEL_BACK: {
-                    f32 MAX_T       = 0.457;
-                    f32 effective_t = target_entity->ai.attack_animation_timer/MAX_T;
+            /* not going to check if it's a weapon, all the other stuff it went through should guarantee it's a weapon... */
 
-                    if (effective_t > 1) effective_t = 1;
+            /* NOTE: if there's a projectile from a weapon
 
-                    if (target_entity->ai.attack_animation_timer >= MAX_T) {
-                        target_entity->ai.attack_animation_timer = 0;
-                        target_entity->ai.attack_animation_phase = ENTITY_ATTACK_ANIMATION_PHASE_HIT;
+               we should track the sole projectile until it *dies*
+             */
+            if (item_base->flags & WEAPON_FLAG_PROJECTILE) {
+                v2f32     position_delta       = v2f32_sub(attacked_entity->position, target_entity->position);
+                v2f32     direction            = v2f32_direction(attacked_entity->position, target_entity->position);
+                const f32 PROJECTILE_VELOCITY  = TILE_UNIT_SIZE*4; /* adjustable... */
+                /* maybe play a sound depending on what it is or something... */
+                s32 damage = entity_get_physical_damage(target_entity);
 
-                        v2f32 direction = v2f32_direction(attacked_entity->position, target_entity->position);
+                {
+                    struct projectile_entity* new_projectile = projectile_entity_list_allocate_projectile(&game_state->projectiles);
+                    new_projectile->owner = entity;
+                    new_projectile->visual_type = 0;
+                    new_projectile->acceleration = v2f32(0,0);
+                    new_projectile->velocity     = v2f32_scale(direction, PROJECTILE_VELOCITY);
+                    new_projectile->position     = entity->position;
+                    new_projectile->scale        = v2f32(TILE_UNIT_SIZE, TILE_UNIT_SIZE);
+                    new_projectile->lifetime     = -1; /* lives until it hits something*/
+                    new_projectile->explosion_radius = 0;
+                    new_projectile->explosion_damage = 0;
+                }
 
-                        target_entity->ai.attack_animation_interpolation_start_position = target_entity->position;
-                        target_entity->ai.attack_animation_interpolation_end_position = v2f32_sub(target_entity->position, v2f32_scale(direction, TILE_UNIT_SIZE/0.6));
-                    } else {
+                
+
+                target_entity->ai.current_action = 0;
+            } else {
+                switch (target_entity->ai.attack_animation_phase) {
+                    case ENTITY_ATTACK_ANIMATION_PHASE_MOVE_TO_TARGET: {
+                        v2f32     position_delta       = v2f32_sub(attacked_entity->position, target_entity->position);
+                        v2f32     direction            = v2f32_direction(attacked_entity->position, target_entity->position);
+                        const f32 TARGET_MOVE_VELOCITY = TILE_UNIT_SIZE*3.5;
+
+                        if (v2f32_magnitude(position_delta) < TILE_UNIT_SIZE * 0.85) {
+                            target_entity->ai.attack_animation_phase = ENTITY_ATTACK_ANIMATION_PHASE_REEL_BACK;
+                            target_entity->ai.attack_animation_timer = 0;
+                            target_entity->ai.attack_animation_interpolation_start_position = target_entity->position;
+                            target_entity->ai.attack_animation_interpolation_end_position = v2f32_add(target_entity->position, v2f32_scale(direction, TILE_UNIT_SIZE/0.8));
+                        } else {
+                            target_entity->position.x += -TARGET_MOVE_VELOCITY*dt * direction.x;
+                            target_entity->position.y += -TARGET_MOVE_VELOCITY*dt * direction.y;
+                        }
+                    } break;
+                    case ENTITY_ATTACK_ANIMATION_PHASE_REEL_BACK: {
+                        f32 MAX_T       = 0.457;
+                        f32 effective_t = target_entity->ai.attack_animation_timer/MAX_T;
+
+                        if (effective_t > 1) effective_t = 1;
+
+                        if (target_entity->ai.attack_animation_timer >= MAX_T) {
+                            target_entity->ai.attack_animation_timer = 0;
+                            target_entity->ai.attack_animation_phase = ENTITY_ATTACK_ANIMATION_PHASE_HIT;
+
+                            v2f32 direction = v2f32_direction(attacked_entity->position, target_entity->position);
+
+                            target_entity->ai.attack_animation_interpolation_start_position = target_entity->position;
+                            target_entity->ai.attack_animation_interpolation_end_position = v2f32_sub(target_entity->position, v2f32_scale(direction, TILE_UNIT_SIZE/0.6));
+                        } else {
+                            target_entity->position.x = lerp_f32(target_entity->ai.attack_animation_interpolation_start_position.x, target_entity->ai.attack_animation_interpolation_end_position.x, effective_t);
+                            target_entity->position.y = lerp_f32(target_entity->ai.attack_animation_interpolation_start_position.y, target_entity->ai.attack_animation_interpolation_end_position.y, effective_t);
+                        }
+
+                        target_entity->ai.attack_animation_timer += dt;
+                    } break;
+                    case ENTITY_ATTACK_ANIMATION_PHASE_HIT: {
+                        f32 MAX_T       = 0.0735;
+                        f32 effective_t = target_entity->ai.attack_animation_timer/MAX_T;
+
+                        if (effective_t > 1) effective_t = 1;
+
                         target_entity->position.x = lerp_f32(target_entity->ai.attack_animation_interpolation_start_position.x, target_entity->ai.attack_animation_interpolation_end_position.x, effective_t);
                         target_entity->position.y = lerp_f32(target_entity->ai.attack_animation_interpolation_start_position.y, target_entity->ai.attack_animation_interpolation_end_position.y, effective_t);
-                    }
 
-                    target_entity->ai.attack_animation_timer += dt;
-                } break;
-                case ENTITY_ATTACK_ANIMATION_PHASE_HIT: {
-                    f32 MAX_T       = 0.0735;
-                    f32 effective_t = target_entity->ai.attack_animation_timer/MAX_T;
-
-                    if (effective_t > 1) effective_t = 1;
-
-                    target_entity->position.x = lerp_f32(target_entity->ai.attack_animation_interpolation_start_position.x, target_entity->ai.attack_animation_interpolation_end_position.x, effective_t);
-                    target_entity->position.y = lerp_f32(target_entity->ai.attack_animation_interpolation_start_position.y, target_entity->ai.attack_animation_interpolation_end_position.y, effective_t);
-
-                    if (target_entity->ai.attack_animation_timer >= MAX_T) {
-                        target_entity->ai.attack_animation_timer = 0;
-                        target_entity->ai.attack_animation_phase = ENTITY_ATTACK_ANIMATION_PHASE_RECOVER_FROM_HIT;
-
-                        {
-                            s32 damage = entity_get_physical_damage(target_entity);
-                            entity_do_physical_hurt(attacked_entity, damage);
+                        if (target_entity->ai.attack_animation_timer >= MAX_T) {
+                            target_entity->ai.attack_animation_timer = 0;
+                            target_entity->ai.attack_animation_phase = ENTITY_ATTACK_ANIMATION_PHASE_RECOVER_FROM_HIT;
 
                             {
-                                if (attacked_entity->health.value <= 0) {
-                                    if (target_entity->flags & ENTITY_FLAGS_PLAYER_CONTROLLED) {
-                                        /* maybe not a good idea right now, but okay. */
-                                        battle_notify_killed_entity(target_entity->ai.attack_target_id);
-                                    }
-                                } else {
-                                    /* TODO more involved invariants for counter attacking */
-                                    struct entity* targeted_entity = game_dereference_entity(game_state, target_entity->ai.attack_target_id);
+                                s32 damage = entity_get_physical_damage(target_entity);
+                                entity_do_physical_hurt(attacked_entity, damage);
 
-                                    if (targeted_entity->ai.used_counter_attacks < entity_find_effective_stat_value(targeted_entity, STAT_COUNTER)) {
-                                        add_counter_attack_entry(target_entity->ai.attack_target_id, game_find_id_for_entity(target_entity));
-                                        targeted_entity->ai.used_counter_attacks += 1;
+                                {
+                                    if (attacked_entity->health.value <= 0) {
+                                        if (target_entity->flags & ENTITY_FLAGS_PLAYER_CONTROLLED) {
+                                            /* maybe not a good idea right now, but okay. */
+                                            battle_notify_killed_entity(target_entity->ai.attack_target_id);
+                                        }
+                                    } else {
+                                        /* TODO more involved invariants for counter attacking */
+                                        struct entity* targeted_entity = game_dereference_entity(game_state, target_entity->ai.attack_target_id);
+
+                                        if (targeted_entity->ai.used_counter_attacks < entity_find_effective_stat_value(targeted_entity, STAT_COUNTER)) {
+                                            add_counter_attack_entry(target_entity->ai.attack_target_id, game_find_id_for_entity(target_entity));
+                                            targeted_entity->ai.used_counter_attacks += 1;
+                                        }
                                     }
                                 }
                             }
+
+                            target_entity->ai.attack_animation_interpolation_start_position = target_entity->position;
+                            target_entity->ai.attack_animation_interpolation_end_position   = target_entity->ai.attack_animation_preattack_position;
                         }
 
-                        target_entity->ai.attack_animation_interpolation_start_position = target_entity->position;
-                        target_entity->ai.attack_animation_interpolation_end_position   = target_entity->ai.attack_animation_preattack_position;
-                    }
+                        target_entity->ai.attack_animation_timer += dt;
+                    } break;
+                    case ENTITY_ATTACK_ANIMATION_PHASE_RECOVER_FROM_HIT: {
+                        f32 MAX_T       = 0.3843;
+                        f32 effective_t = (target_entity->ai.attack_animation_timer-0.089)/MAX_T;
 
-                    target_entity->ai.attack_animation_timer += dt;
-                } break;
-                case ENTITY_ATTACK_ANIMATION_PHASE_RECOVER_FROM_HIT: {
-                    f32 MAX_T       = 0.3843;
-                    f32 effective_t = (target_entity->ai.attack_animation_timer-0.089)/MAX_T;
+                        if (effective_t > 1) effective_t = 1;
+                        if (effective_t < 0) effective_t = 0;
 
-                    if (effective_t > 1) effective_t = 1;
-                    if (effective_t < 0) effective_t = 0;
+                        if (target_entity->ai.attack_animation_timer >= MAX_T) {
+                            target_entity->position = grid_snapped_v2f32(target_entity->ai.attack_animation_preattack_position);
+                            target_entity->ai.current_action = 0;
+                            /* TODO snap to grid valid position to make sure no bugs happen */
+                        } else {
+                            target_entity->position.x = lerp_f32(target_entity->ai.attack_animation_interpolation_start_position.x, target_entity->ai.attack_animation_interpolation_end_position.x, effective_t);
+                            target_entity->position.y = lerp_f32(target_entity->ai.attack_animation_interpolation_start_position.y, target_entity->ai.attack_animation_interpolation_end_position.y, effective_t);
+                        }
 
-                    if (target_entity->ai.attack_animation_timer >= MAX_T) {
-                        target_entity->position = grid_snapped_v2f32(target_entity->ai.attack_animation_preattack_position);
-                        target_entity->ai.current_action = 0;
-                        /* TODO snap to grid valid position to make sure no bugs happen */
-                    } else {
-                        target_entity->position.x = lerp_f32(target_entity->ai.attack_animation_interpolation_start_position.x, target_entity->ai.attack_animation_interpolation_end_position.x, effective_t);
-                        target_entity->position.y = lerp_f32(target_entity->ai.attack_animation_interpolation_start_position.y, target_entity->ai.attack_animation_interpolation_end_position.y, effective_t);
-                    }
-
-                    target_entity->ai.attack_animation_timer += dt;
-                } break;
+                        target_entity->ai.attack_animation_timer += dt;
+                    } break;
+                }
             }
         } break;
 

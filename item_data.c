@@ -151,6 +151,8 @@ static void initialize_items_database(void) {
                         s32 id = entity_database_find_id_by_name(&game_state->entity_database, base_id_name);
                         current_item_definition->restricted_to_base_ids[current_item_definition->base_id_restriction_count++] = id;
                     }
+                } else if (lisp_form_symbol_matching(*parameter_name, string_literal("projectile-weapon"))) {
+                    current_item_definition->flags |= WEAPON_FLAG_PROJECTILE;
                 } else {
                     _debugprintf("Unknown top level form name: %.*s", parameter_name->string.length, parameter_name->string.data);
                     

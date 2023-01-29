@@ -1102,6 +1102,8 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                         global_battle_ui_state.max_remembered_path_points_count = 0;
                         level_area_clear_movement_visibility_map(&state->loaded_area);
                         /* register camera lerp */
+
+#if 0
                         /* NOTE: the camera is in a weird intermediary position
                            during this action, however when waiting for the path to finish,
                            there is no issue. Right now we're doing instant teleport. Either way I should wait for the camera to finish...
@@ -1110,6 +1112,7 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                             struct camera* camera = &state->camera;
                             camera_set_point_to_interpolate(camera, v2f32(global_battle_ui_state.movement_end_x * TILE_UNIT_SIZE, global_battle_ui_state.movement_end_y * TILE_UNIT_SIZE));
                         }
+#endif
                     }
                 } else {
                     play_sound(ui_blip_bad);
@@ -1396,6 +1399,20 @@ local void do_after_action_report_screen(struct game_state* state, struct softwa
 
 local void update_game_camera_combat(struct game_state* state, f32 dt) {
     const f32 CAMERA_VELOCITY = 260;
+
+    struct game_state_combat_state* combat_state            = &game_state->combat_state;
+    struct entity*                  active_combatant_entity = game_dereference_entity(game_state, combat_state->participants[combat_state->active_combatant]);
+    switch (global_battle_ui_state.submode) {
+        case BATTLE_UI_SUBMODE_LOOKING: {
+        } break;
+        default: {
+            if (active_combatant_entity->ai.current_action != ENTITY_ACTION_ABILITY) {
+                battle_ui_stalk_entity_with_camera(active_combatant);
+            } else {
+                battle_ui_stop_stalk_entity_with_camera();
+            }
+        } break;
+    } 
 
     if (global_battle_ui_state.stalk_entity_with_camera) {
         struct entity* to_stalk = global_battle_ui_state.entity_to_stalk;
