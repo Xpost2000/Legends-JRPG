@@ -441,7 +441,9 @@ local void do_shopping_menu(struct software_framebuffer* framebuffer, f32 x, boo
                     item_base                                    = item_database_find_by_id(current_inventory_item->item);
 
                     if (item_base->type == ITEM_TYPE_CONSUMABLE_ITEM) {
-                        painting_text = usable_font;
+                        if (!(item_base->flags & ITEM_COMBAT_ONLY)) {
+                            painting_text = usable_font;
+                        }
                     }
                 }
             }

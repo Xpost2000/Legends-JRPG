@@ -48,6 +48,11 @@ void user_use_inventory_item_at_index(s32 item_index) {
         return;
     }
 
+    /* can only be used in through the combat menu. */
+    if (item_base->flags & ITEM_COMBAT_ONLY) {
+        return;
+    }
+
     if (specific_inventory_ui_state.queued_item_use_index == -1) {
         specific_inventory_ui_state.queued_item_use_index = item_index;
         _debugprintf("item index: %d", item_index);

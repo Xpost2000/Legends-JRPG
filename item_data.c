@@ -159,3 +159,19 @@ static void initialize_items_database(void) {
         }
     }
 }
+
+bool item_is_usable_by(struct item_def* item, struct entity* entity) {
+    if (item->base_id_restriction_count > 0) {
+        s32 entity_base_id = entity->base_id_index;
+
+        for (s32 restriction_id_index = 0; restriction_id_index < item->base_id_restriction_count; ++restriction_id_index) {
+            if (item->restricted_to_base_ids[restriction_id_index] == entity_base_id) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    return true;
+}

@@ -53,6 +53,9 @@ local void open_equipment_screen(entity_id target_id) {
 
 local void equipment_screen_build_new_filtered_item_list(s32 filter_mask) {
     equipment_screen_state.inventory_filtered_size  = 0;
+    struct entity* entity = game_dereference_entity(game_state, equipment_screen_state.focus_entity);
+
+    bool item_is_usable_by(struct item_def* item, struct entity* entity);
     for (s32 index = 0; index < game_state->inventory.item_count; ++index) {
         struct item_instance* instance = game_state->inventory.items + index;
         item_id item_handle = instance->item;
@@ -62,7 +65,8 @@ local void equipment_screen_build_new_filtered_item_list(s32 filter_mask) {
 
         if (item->type == ITEM_TYPE_EQUIPMENT || item->type == ITEM_TYPE_WEAPON) {
             _debugprintf("okay, this (%.*s) passed the basic filter", item->name.length, item->name.data);
-            if (item->equipment_slot_flags == filter_mask) {
+
+            if (item->equipment_slot_flags == filter_mask && item_is_usable_by(item, entity)) {
                 _debugprintf("new item %.*s", item->name.length, item->name.data);
                 equipment_screen_state.inventory_item_slice[equipment_screen_state.inventory_filtered_size++] = index;
             }

@@ -990,6 +990,22 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
             if (selection_confirm) {
                 /* MOVE TO USAGE PHASE */
                 global_battle_ui_state.submode = BATTLE_UI_SUBMODE_NONE;
+                /*
+                  WORKINGON:
+                  We can't just use this nice method, since we have to handle certain types of items in a special
+                  way.
+
+                  All items will now have to pick a usable target area.
+                  That's determined by item target.
+
+                  ITEM_TARGET_SINGLE_ENEMY, 
+                  ITEM_TARGET_SINGLE_ALLY, 
+                  ITEM_TARGET_SINGLE_ALL, 
+                  ITEM_TARGET_TEAMMATES, (will work on all teammates no matter what)
+
+                  projectiles should have just do the same thing as the movement selector, and just open up
+                  an amount of stuff I can throw towards.
+                */
                 entity_combat_submit_item_use_action(user, item_use->selectable_items[item_use->selection], true);
             }
         } break;
