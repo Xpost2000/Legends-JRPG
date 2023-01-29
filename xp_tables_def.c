@@ -15,7 +15,11 @@ struct xp_table_entry {
     s32 xp;
 };
 
+#define MAX_ABILITIES_TO_LEARN (16)
 struct stat_growth_table_entry {
+    /* additional format data */
+    s32 abilities_count;
+    s32 abilities_to_learn[16];
     s32 health;
     s32 magic;
     Entity_Stat_Block_Base(s32);

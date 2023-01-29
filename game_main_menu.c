@@ -126,7 +126,11 @@ local s32 _do_main_menu_options_menu(struct software_framebuffer* framebuffer, f
             flags |= COMMON_UI_BUTTON_FLAGS_DISABLED;
         }
         
+#ifdef EXPERIMENTAL_320
         bool button_result = common_ui_button(&layout, framebuffer, main_menu_options[option_index], 1, option_index, &main_menu.currently_selected_option_choice, flags);
+#else
+        bool button_result = common_ui_button(&layout, framebuffer, main_menu_options[option_index], 2, option_index, &main_menu.currently_selected_option_choice, flags);
+#endif
 
         if (button_result) {
             return option_index;

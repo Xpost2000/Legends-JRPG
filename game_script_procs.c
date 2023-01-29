@@ -1109,7 +1109,7 @@ GAME_LISP_FUNCTION(ENTITY_FIND_FIRST_ITEM) {
 GAME_LISP_FUNCTION(ENTITY_EQUIP_ITEM) {
     Required_Argument_Count(ENTITY_EQUIP_ITEM, 3);
     struct game_script_typed_ptr ptr = game_script_object_handle_decode(arguments[0]);
-    Fatal_Script_Error(ptr.type == GAME_SCRIPT_TARGET_ENTITY && "Whoops! Don't know how to make non-entities follow paths!");
+    Fatal_Script_Error(ptr.type == GAME_SCRIPT_TARGET_ENTITY && "Whoops don't know how to make non_entities grab items.");
     struct entity* target_entity = game_dereference_entity(state, ptr.entity_id);
     assertion(target_entity && "no entity?");
     struct lisp_form equip_slot_symbol = arguments[1];

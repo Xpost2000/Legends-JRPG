@@ -668,6 +668,61 @@ struct used_battle_action_stack {
 
 #define ENTITY_TALK_INTERACTIVE_RADIUS ((f32)1.9565 * TILE_UNIT_SIZE)
 
+/* NOTE: projectiles are currently unused */
+/* but these structs are here for now to be used later. */
+enum projectile_entity_flags {
+    PROJECTILE_ENTITY_FLAGS_NONE             = 0,
+    PROJECTILE_ENTITY_FLAGS_ACTIVE           = BIT(1),
+    PROJECTILE_ENTITY_FLAGS_COLLIDES_ON_TILE = BIT(2),
+};
+
+enum projectile_entity_type {
+    /* mostly for visual */
+    PROJECTILE_TYPE_SIMPLE, /* a square for testing reasons. */
+    PROJECTILE_TYPE_ARROW,
+    PROJECTILE_TYPE_BOLT,
+    PROJECTILE_TYPE_GRENADE,
+};
+
+/*
+  Projectiles include:
+  - Arrows
+  - Bolts
+  - Fireballs
+  - Grenades
+*/
+struct projectile_entity {
+    entity_id owner;
+
+    s32 visual_type; /* for drawing/behavior reasons probably */
+    u32 flags;
+
+    v2f32 acceleration;
+    v2f32 velocity;
+    v2f32 position;
+    v2f32 scale;
+
+    /* projectile params */
+    f32 lifetime;
+
+    /* explosion params */
+    f32 explosion_radius;
+    s32 explosion_damage;
+
+    /* other visual parameters like particle systems */
+};
+
+struct projectile_entity_list {
+    s32                       capacity;
+    struct projectile_entity* projectiles;
+};
+
+struct projectile_entity_list projectile_entity_list_reserved(struct memory_arena* arena, s32 capacity);
+void                          projectile_entity_list_clear(struct projectile_entity_list* list);
+struct projectile_entity*     projectile_entity_list_allocate_projectile(struct projectile_entity_list* list);
+void update_projectile_entities(struct game_state* state, struct projectile_entity_list* projectiles, f32 dt, struct entity_iterator it, struct level_area* area);
+/* TODO draw */
+
 struct entity {
     string name;
     /* This is unique per entity! */

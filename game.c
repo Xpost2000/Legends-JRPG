@@ -7,7 +7,11 @@
 /* Needs lots of clean up. (Man I keep saying this every time I come back here, but it doesn't seem to matter too much.) */
 /* TODO fix coordinate system <3 */
 /* virtual pixels */
+#ifdef EXPERIMENTAL_320
 #define TILE_UNIT_SIZE                      (16) /* measured with a reference of 640x480 */
+#else
+#define TILE_UNIT_SIZE                      (32) /* measured with a reference of 640x480 */
+#endif
 #define REFERENCE_TILE_UNIT_SIZE            (16) /* What most tiles should be */
 #define GAME_COMMAND_CONSOLE_LINE_INPUT_MAX (512)
 #include "common_ui_def.c"
@@ -2765,8 +2769,8 @@ local void recalculate_camera_shifting_bounds(struct software_framebuffer* frame
     {
         game_state->camera.travel_bounds.x = framebuffer->width  * 0.10;
         game_state->camera.travel_bounds.y = framebuffer->height * 0.10;
-        game_state->camera.travel_bounds.w = framebuffer->width  * 0.80;
-        game_state->camera.travel_bounds.h = framebuffer->height * 0.80;
+        game_state->camera.travel_bounds.w = framebuffer->width  * 0.70;
+        game_state->camera.travel_bounds.h = framebuffer->height * 0.65;
     }
 }
 
@@ -2808,7 +2812,10 @@ local void update_game_camera_exploration_mode(struct game_state* state, f32 dt)
             if (!cutscene_viewing_separate_area()) {
                 /* kind of like a project on everythign */
                 v2f32                projected_rectangle_position = camera_project(camera, v2f32(camera->travel_bounds.x, camera->travel_bounds.y), SCREEN_WIDTH, SCREEN_HEIGHT);
-                struct rectangle_f32 projected_rectangle          = rectangle_f32(projected_rectangle_position.x, projected_rectangle_position.y, camera->travel_bounds.w / camera->zoom, camera->travel_bounds.h / camera->zoom);
+                struct rectangle_f32 projected_rectangle          = rectangle_f32(projected_rectangle_position.x,
+                                                                                  projected_rectangle_position.y,
+                                                                                  camera->travel_bounds.w / camera->zoom,
+                                                                                  camera->travel_bounds.h / camera->zoom);
                 struct rectangle_f32 player_rectangle             = entity_rectangle_collision_bounds(player);
                 f32                  new_w                        = projected_rectangle.w * 0.6;
                 f32                  new_h                        = projected_rectangle.h * 0.6;
@@ -3970,7 +3977,11 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                 switch (submode) {
                     case GAME_SUBMODE_OVERWORLD: {
                         update_and_render_game_overworld(framebuffer, dt);
+#ifdef EXPERIMENTAL_320
                         game_postprocess_blur_ingame(framebuffer, 1, 0.62, BLEND_MODE_ALPHA);
+#else
+                        game_postprocess_blur_ingame(framebuffer, 2, 0.62, BLEND_MODE_ALPHA);
+#endif
                     } break;
                     case GAME_SUBMODE_WORLDMAP: {
                         update_and_render_game_worldmap(framebuffer, dt);
