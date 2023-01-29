@@ -34,10 +34,6 @@ struct item_instance {
    an obese struct. All items are probably just hard coded in-game,
    which is okay in this case.
 */
-enum item_flags {
-    ITEM_NO_FLAGS = 0,
-};
-
 /* these are broad/general types. */
 /* The game itself will sort by more specific criteria. */
 enum item_type {
@@ -54,12 +50,12 @@ enum item_type {
 };
 /* editor strings */
 static string item_type_strings[] = {
-    string_literal("(all.)"),
-    string_literal("(misc.)"),
-    string_literal("(consum.)"),
-    string_literal("(weap.)"),
-    string_literal("(equip.)"),
-    string_literal("(count)"),
+    [ITEM_SORT_FILTER_ALL] = string_literal("(all.)"),
+    [ITEM_TYPE_MISC] = string_literal("(misc.)"),
+    [ITEM_TYPE_CONSUMABLE_ITEM] = string_literal("(consum.)"),
+    [ITEM_TYPE_WEAPON] = string_literal("(weap.)"),
+    [ITEM_TYPE_EQUIPMENT] = string_literal("(equip.)"),
+    [ITEM_TYPE_COUNT] = string_literal("(count)"),
 };
 
 /* 
@@ -74,6 +70,15 @@ enum equipment_slot {
     EQUIPMENT_SLOT_FLAG_WEAPON  = (5), /* accessory equips (x2) */
 };
 
+enum item_flags {
+    ITEM_NO_FLAGS = 0,
+    ITEM_COMBAT_ONLY = BIT(1),
+};
+enum weapon_flags {
+    WEAPON_FLAG_NO_FLAGS   = 0,
+    WEAPON_FLAG_PROJECTILE = BIT(1), /* projectile is based off stats. */
+};
+
 local s32 global_item_icon_frame_counter = 0;
 struct item_def {
     string id_name;
@@ -82,6 +87,8 @@ struct item_def {
 
     s32 type;
     s32 health_restoration_value;
+
+    u32 flags;
 
     /* override the default type icon */
     /* animation time is going to be the same for all items */
@@ -97,27 +104,28 @@ struct item_def {
         Entity_Stat_Block_Base(s32);
     } stats;
 
-    /* armor stat calculations DR */
-    s32 defensive_value;
-
+    /* ability usage ideas */
     s32  ability_class_group_id;
     s32  ability_count;
     s32* abilities;
 
-    /* TODO: not flags anymore */
     u8 equipment_slot_flags;
 
     struct entity_stat_block_modifiers modifiers;
 
-    s32 flags;
     s32 max_stack_value; /* -1 == infinite... */
     s32 gold_value;
+
+    s32 base_id_restriction_count;
+    s32 restricted_to_base_ids[16];
 
     /* 
        I could make a mini DSL to apply some script effects...
        Would allow for items to be described in files... But idk yet.
        
        Have to expose lots of things to a lisp DSL I guess...
+
+       NOTE: Probably just consider using data only.
     */
     /* ironically a script usage file might be "cheaper?" */
     string script_file_name;

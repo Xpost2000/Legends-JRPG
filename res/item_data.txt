@@ -26,9 +26,12 @@
 ("item_bomb"
 "Powder Bomb"
 "(45 DMG) A powder bomb."
-(type 'projectile)
-(explodes-for 45)
-(explosive-radius 4)
+(type 'consumable)
+(combat-only)
+(projectile-explosive)
+(damage 45)
+(radius 3)
+
 (value 250)
 (max-stack 5))
 
@@ -130,3 +133,18 @@
         (intelligence  -10)
 )
 (max-stack 1))
+
+("item_weapon_toy_boy"
+"Toy Bow"
+"OH, you mean the other type of bow!"
+(type 'weapon)
+(equip-slot 'weapon)
+(projectile-weapon)
+(value 15)
+(stat-block
+        (strength 5)
+        (speed 20)
+        (agility 25)
+)
+(max-stack 1)
+)

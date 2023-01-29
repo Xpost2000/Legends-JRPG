@@ -137,15 +137,23 @@ static void initialize_items_database(void) {
                 } else if (lisp_form_symbol_matching(*parameter_name, string_literal("ability-class-group"))) {
                     struct lisp_form* value = lisp_list_nth(&parameter_arguments, 0);
                     assertion(lisp_form_get_s32(*value, &current_item_definition->ability_class_group_id) && "ability-class-group should be an integer?");
-                }
-                /* CONSUMABLE ITEM FIELDS */
-                {
-                    if (lisp_form_symbol_matching(*parameter_name, string_literal("restores-health"))) {
-                        lisp_form_get_s32(parameter_arguments.list.forms[0], &current_item_definition->health_restoration_value);
-                    } else if (lisp_form_symbol_matching(*parameter_name, string_literal("damages-health"))) {
-                        lisp_form_get_s32(parameter_arguments.list.forms[0], &current_item_definition->health_restoration_value);
-                        current_item_definition->health_restoration_value *= -1;
+                } else if (lisp_form_symbol_matching(*parameter_name, string_literal("combat-only"))) {
+                    current_item_definition->flags |= ITEM_COMBAT_ONLY;
+                } else if (lisp_form_symbol_matching(*parameter_name, string_literal("restores-health"))) { /* CONSUMABLE ITEM FIELDS */
+                    lisp_form_get_s32(parameter_arguments.list.forms[0], &current_item_definition->health_restoration_value);
+                } else if (lisp_form_symbol_matching(*parameter_name, string_literal("damages-health"))) {
+                    lisp_form_get_s32(parameter_arguments.list.forms[0], &current_item_definition->health_restoration_value);
+                    current_item_definition->health_restoration_value *= -1;
+                } else if (lisp_form_symbol_matching(*parameter_name, string_literal("restrict-for"))) { /* ITEM RESTRICTOR PARAMS */
+                    for (s32 base_id_name_index = 0; base_id_name_index < parameter_arguments.list.count; ++base_id_name_index) {
+                        string base_id_name = {};
+                        lisp_form_get_string(parameter_arguments.list.forms[base_id_name_index], &base_id_name);
+                        s32 id = entity_database_find_id_by_name(&game_state->entity_database, base_id_name);
+                        current_item_definition->restricted_to_base_ids[current_item_definition->base_id_restriction_count++] = id;
                     }
+                } else {
+                    _debugprintf("Unknown top level form name: %.*s", parameter_name->string.length, parameter_name->string.data);
+                    
                 }
             }
         }
