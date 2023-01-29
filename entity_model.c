@@ -1,18 +1,70 @@
-struct entity_model_database entity_model_database_create(struct memory_arena* arena, s32 count) {
-    struct entity_model_database result = {};
-    result.capacity = count;
-    result.models = memory_arena_push(arena, sizeof(*result.models) * count);
-    return result;
+void initialize_entity_model_database(struct memory_arena* arena) {
+    struct file_buffer model_schema_file = read_entire_file(memory_arena_allocator(&game_arena), string_literal(GAME_DEFAULT_ENTITY_MODEL_DEF_FILE));
+    struct lisp_list model_schema_list = lisp_read_string_into_forms(&game_arena, file_buffer_as_string(&model_schema_file));
+
+    global_entity_models.capacity = model_schema_list.count;
+    global_entity_models.arena    = arena;
+    global_entity_models.models   = memory_arena_push(arena, sizeof(*global_entity_models.models) * global_entity_models.capacity);
+
+    for (s32 form_index = 0; form_index < model_schema_list.count; ++form_index) {
+        s32 new_model = entity_model_database_alloc_model();
+
+        struct lisp_form* current_model_form = model_schema_list.forms + form_index;
+        {
+            for (s32 form_index = 0; form_index < current_model_form->list.count; ++form_index) {
+                struct lisp_form* subform        = lisp_list_nth(current_model_form, form_index);
+                struct lisp_form* subform_header = lisp_list_nth(subform, 0);
+
+                if (lisp_form_symbol_matching(*subform_header, string_literal("animation"))) {
+                    struct lisp_form* name_form           = lisp_list_nth(subform, 1);
+                    struct lisp_form* frames_form         = lisp_list_nth(subform, 2);
+                    struct lisp_form* time_per_frame_form = lisp_list_nth(subform, 3);
+
+                    string name = {};
+                    s32 frames = 0;
+                    f32 time_to_next = 0;
+
+                    lisp_form_get_string(*name_form, &name);
+                    lisp_form_get_s32(*frames_form, &frames);
+                    lisp_form_get_f32(*time_per_frame_form, &time_to_next);
+
+                    entity_model_add_animation(
+                        new_model,
+                        name,
+                        frames,
+                        time_to_next
+                    );
+                } else if (lisp_form_symbol_matching(*subform_header, string_literal("name"))) {
+                    struct lisp_form* name_form = lisp_list_nth(subform, 1);
+                    string name = {};
+                    lisp_form_get_string(*name_form, &name);
+                    entity_model_database_set_model_name(new_model, name);
+                }
+            }
+        }
+    }
 }
 
-s32 entity_model_database_add_model(struct memory_arena* arena, string name) {
+s32 entity_model_database_alloc_model(void) {
+    struct entity_model* result = &global_entity_models.models[global_entity_models.count++];
+    result->animation_count     = 0;
+    result->width_units         = 1;
+    return (s32)(result - global_entity_models.models);
+}
+
+s32 entity_model_database_add_model(string name) {
     struct entity_model* result = &global_entity_models.models[global_entity_models.count++];
 
-    result->name            = name;
+    result->name            = string_clone(global_entity_models.arena, name);
     result->animation_count = 0;
     result->width_units     = 1;
 
     return (s32)(result - global_entity_models.models);
+}
+
+void entity_model_database_set_model_name(s32 entity_id, string name) {
+    struct entity_model* model = global_entity_models.models + entity_id;
+    model->name = string_clone(global_entity_models.arena, name);
 }
 
 s32 entity_model_add_animation(s32 entity_model_id, string name, s32 frames, f32 time_to_next) {
@@ -21,7 +73,7 @@ s32 entity_model_add_animation(s32 entity_model_id, string name, s32 frames, f32
 
     assertion(model->animation_count <= ENTITY_ANIMATION_MAX && "Too many animations for this engine!");
 
-    anim->name                  = name;
+    anim->name                  = string_clone(global_entity_models.arena, name);
     anim->time_until_next_frame = time_to_next;
     anim->frame_count           = frames;
 

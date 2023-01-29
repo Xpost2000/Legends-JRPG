@@ -16,8 +16,14 @@ struct entity_animation {
     image_id sprites[ENTITY_ANIMATION_MAX_FRAMES];
 };
 
-#define ENTITY_ANIMATION_MAX (16)
+#define ENTITY_ANIMATION_MAX (32)
 struct entity_model {
+    /* NOTE:
+       with more effort I can specify decorators, but they are per whole model,
+
+       I don't want to spend time making more tools to support more complicated data formats though,
+       so this is probably how it'll stay...
+    */
     string                  name;
     s32                     animation_count;
     /*
@@ -34,6 +40,7 @@ struct entity_model {
 };
 
 struct entity_model_database {
+    struct memory_arena* arena;
     s32 capacity;
     s32 count;
     struct entity_model* models;
@@ -41,13 +48,15 @@ struct entity_model_database {
 
 static struct entity_model_database global_entity_models = {};
 
-struct entity_model_database entity_model_database_create(struct memory_arena* arena, s32 count);
+void initialize_entity_model_database(struct memory_arena* arena);
 
-s32 entity_model_database_add_model(struct memory_arena* arena, string name);
+s32 entity_model_database_alloc_model(void);
+s32 entity_model_database_add_model(string name);
 
 /* animation frames are loaded based on the name ./res/img/(model_name)/(animation_name)_(frame_index) */
 
 /* these apis are very inconsistent.... Oh well... */
+void entity_model_database_set_model_name(s32 entity_id, string name);
 s32  entity_model_add_animation(s32 entity_model_id, string name, s32 frames, f32 time_to_next);
 void entity_model_set_width(s32 entity_model_id, f32 width_units);
 f32  entity_model_get_width_units(s32 entity_model_id);
