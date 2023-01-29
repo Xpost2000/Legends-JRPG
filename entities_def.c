@@ -668,7 +668,6 @@ struct used_battle_action_stack {
 
 #define ENTITY_TALK_INTERACTIVE_RADIUS ((f32)1.9565 * TILE_UNIT_SIZE)
 
-/* NOTE: projectiles are currently unused */
 /* but these structs are here for now to be used later. */
 enum projectile_entity_flags {
     PROJECTILE_ENTITY_FLAGS_NONE             = 0,
@@ -984,6 +983,7 @@ enum sortable_draw_entity_type {
     /* This is what's really going to hurt because particles are lots! */
     SORTABLE_DRAW_ENTITY_PARTICLE,
     SORTABLE_DRAW_ENTITY_SAVEPOINT,
+    SORTABLE_DRAW_ENTITY_PROJECTILE,
 };
 
 struct sortable_draw_entity {
@@ -1004,6 +1004,7 @@ local void sortable_entity_draw_entity(struct render_commands* commands, struct 
 local void sortable_entity_draw_chest(struct render_commands* commands, struct graphics_assets* assets, struct entity_chest* chest, f32 dt);
 local void sortable_entity_draw_savepoint(struct render_commands* commands, struct graphics_assets* assets, struct entity_savepoint* savepoint, f32 dt);
 local void sortable_entity_draw_particle(struct render_commands* commands, struct graphics_assets* assets, struct entity_particle* particle, f32 dt);
+local void sortable_entity_draw_projectile(struct render_commands* commands, struct graphics_assets* assets, struct projectile_entity* projectile, f32 dt);
 
 struct sortable_draw_entities sortable_draw_entities(struct memory_arena* arena, s32 capacity);
 void sortable_draw_entities_push_entity(struct sortable_draw_entities* entities, f32 y_sort_key, entity_id id);
@@ -1011,6 +1012,7 @@ void sortable_draw_entities_push(struct sortable_draw_entities* entities, u8 typ
 void sortable_draw_entities_push_chest(struct sortable_draw_entities* entities, f32 y_sort_key, void* ptr);
 void sortable_draw_entities_push_particle(struct sortable_draw_entities* entities, f32 y_sort_key, void* ptr);
 void sortable_draw_entities_push_savepoint(struct sortable_draw_entities* entities, f32 y_sort_key, void* ptr);
+void sortable_draw_entities_push_projectile(struct sortable_draw_entities* entities, f32 y_sort_key, void* ptr);
 /* should not take dt, but just need something to work and there's animation timing code */
 void sortable_draw_entities_submit(struct render_commands* commands, struct graphics_assets* graphics_assets, struct sortable_draw_entities* entities, f32 dt);
 void sortable_draw_entities_sort_keys(struct sortable_draw_entities* entities);

@@ -2226,6 +2226,7 @@ void game_initialize(void) {
       Game Base Files    (Use if there is no existing save record on that level...)
     */
     game_state->permenant_entities          = entity_list_create(&game_arena, GAME_MAX_PERMENANT_ENTITIES, ENTITY_LIST_STORAGE_TYPE_PERMENANT_STORE);
+    game_state->projectiles                 = projectile_entity_list_reserved(&game_arena, GAME_MAX_PROJECTILES);
     game_state->permenant_particle_emitters = entity_particle_emitter_list(&game_arena, GAME_MAX_PERMENANT_PARTICLE_EMITTERS);
     initialize_particle_pools(&game_arena, PARTICLE_POOL_MAX_SIZE);
     Report_Memory_Status_Region(&game_arena, "Permenant entity pools");

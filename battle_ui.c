@@ -729,12 +729,13 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                 global_battle_ui_state.selecting_ability_target = false;
                 cancel_ability_selections();
             } else {
-            battle_menu_default_cleanup:
                 global_battle_ui_state.submode                             = BATTLE_UI_SUBMODE_NONE;
 
-                if (global_battle_ui_state.remembered_original_camera_position) {
-                    global_battle_ui_state.remembered_original_camera_position = false;
-                    state->camera.xy                                           = global_battle_ui_state.prelooking_mode_camera_position;
+                if (global_battle_ui_state.submode == BATTLE_UI_SUBMODE_LOOKING) {
+                    if (global_battle_ui_state.remembered_original_camera_position) {
+                        global_battle_ui_state.remembered_original_camera_position = false;
+                        state->camera.xy                                           = global_battle_ui_state.prelooking_mode_camera_position;
+                    }
                 }
 
                 global_battle_ui_state.max_remembered_path_points_count = 0;
@@ -914,17 +915,14 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                 }
             }
 
-            /* NOTE: this is sometimes broken... */
             entity_id enemy_id = target_display_list_indices[global_battle_ui_state.selection];
-
             if (!entity_id_equal(enemy_id, global_battle_ui_state.currently_selected_entity_id)) {
                 global_battle_ui_state.currently_selected_entity_id = enemy_id;
 
                 {
                     struct camera* camera = &state->camera;
                     struct entity* target_entity = game_dereference_entity(state, enemy_id);
-
-                    camera_set_point_to_interpolate(camera, target_entity->position);
+                    battle_ui_stalk_entity_with_camera(target_entity);
                 }
             }
 
@@ -1403,11 +1401,12 @@ local void update_game_camera_combat(struct game_state* state, f32 dt) {
     struct game_state_combat_state* combat_state            = &game_state->combat_state;
     struct entity*                  active_combatant_entity = game_dereference_entity(game_state, combat_state->participants[combat_state->active_combatant]);
     switch (global_battle_ui_state.submode) {
+        case BATTLE_UI_SUBMODE_ATTACKING:
         case BATTLE_UI_SUBMODE_LOOKING: {
         } break;
         default: {
             if (active_combatant_entity->ai.current_action != ENTITY_ACTION_ABILITY) {
-                battle_ui_stalk_entity_with_camera(active_combatant);
+                battle_ui_stalk_entity_with_camera(active_combatant_entity);
             } else {
                 battle_ui_stop_stalk_entity_with_camera();
             }

@@ -28,6 +28,7 @@
 
 #include "game_config_defines.c"
 #define GAME_MAX_PERMENANT_ENTITIES (64)
+#define GAME_MAX_PROJECTILES        (64)
 
 /* TODO */
 /*
@@ -730,6 +731,7 @@ struct game_state {
     /* player and their companions, or familiars or something like that. */
     struct entity_list                  permenant_entities;
     struct entity_particle_emitter_list permenant_particle_emitters;
+    struct projectile_entity_list       projectiles;
 
     s32                                 party_member_count;
     s32                                 leader_index;

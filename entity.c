@@ -1147,6 +1147,9 @@ void update_entities(struct game_state* state, f32 dt, struct entity_iterator it
             entity_particle_emitter_start_emitting(&game_state->permenant_particle_emitters, it->particle_emitter_id);
         }
     }
+    {
+        update_projectile_entities(game_state, &game_state->projectiles, dt, it, area);
+    }
 }
 
 local void entity_think_basic_zombie_combat_actions(struct entity* entity, struct game_state* state);
@@ -1210,6 +1213,10 @@ void sortable_draw_entities_push_particle(struct sortable_draw_entities* entitie
 }
 void sortable_draw_entities_push_savepoint(struct sortable_draw_entities* entities, f32 y_sort_key, void* ptr) {
     sortable_draw_entities_push(entities, SORTABLE_DRAW_ENTITY_SAVEPOINT, y_sort_key, ptr);
+}
+
+void sortable_draw_entities_push_projectile(struct sortable_draw_entities* entities, f32 y_sort_key, void* ptr) {
+    sortable_draw_entities_push(entities, SORTABLE_DRAW_ENTITY_PROJECTILE, y_sort_key, ptr);
 }
 
 void sortable_draw_entities_sort_keys(struct sortable_draw_entities* entities) {
@@ -1508,6 +1515,10 @@ local void sortable_entity_draw_particle(struct render_commands* commands, struc
     }
 }
 
+local void sortable_entity_draw_projectile(struct render_commands* commands, struct graphics_assets* assets, struct projectile_entity* projectile, f32 dt) {
+    unimplemented("projectile drawing not done");
+}
+
 local void sortable_entity_draw_savepoint(struct render_commands* commands, struct graphics_assets* assets, struct entity_savepoint* savepoint, f32 dt) {
     /*
       Savepoints are mainly powered by their particle systems.
@@ -1539,6 +1550,10 @@ void sortable_draw_entities_submit(struct render_commands* commands, struct grap
             case SORTABLE_DRAW_ENTITY_SAVEPOINT: {
                 struct entity_savepoint* it = current_draw_entity->pointer;
                 sortable_entity_draw_savepoint(commands, graphics_assets, it, dt);
+            } break;
+            case SORTABLE_DRAW_ENTITY_PROJECTILE: {
+                struct projectile_entity* it = current_draw_entity->pointer;
+                sortable_entity_draw_projectile(commands, graphics_assets, it, dt);
             } break;
                 bad_case;
         }
@@ -1573,6 +1588,16 @@ void render_entities_from_area_and_iterator(struct sortable_draw_entities* draw_
                 continue;
             }
             sortable_draw_entities_push_savepoint(draw_entities, it->position.y*TILE_UNIT_SIZE, it);
+        }
+    }
+
+    {
+        Array_For_Each(it, struct projectile_entity, game_state->projectiles.projectiles, game_state->projectiles.capacity) {
+            if (!(it->flags & PROJECTILE_ENTITY_FLAGS_ACTIVE)) {
+                continue;
+            }
+            /* these should always have high draw priority */
+            sortable_draw_entities_push_projectile(draw_entities, it->position.y*TILE_UNIT_SIZE*2, it);
         }
     }
 }
@@ -4554,6 +4579,52 @@ struct collidable_object collidable_object_iterator_advance(struct collidable_ob
     }
 
     return result;
+}
+
+struct projectile_entity_list projectile_entity_list_reserved(struct memory_arena* arena, s32 capacity) {
+    struct projectile_entity_list result = {};
+    result.projectiles = memory_arena_push(arena, capacity * sizeof(*result.projectiles));
+    result.capacity    = capacity;
+
+    projectile_entity_list_clear(&result);
+    return result;
+}
+
+void projectile_entity_list_clear(struct projectile_entity_list* list) {
+    for (s32 projectile_index = 0; projectile_index < list->capacity; ++projectile_index) {
+        struct projectile_entity* projectile = list->projectiles + projectile_index;
+        projectile->flags = 0;
+    }
+}
+
+struct projectile_entity* projectile_entity_list_allocate_projectile(struct projectile_entity_list* list) {
+    for (s32 projectile_index = 0; projectile_index < list->capacity; ++projectile_index) {
+        struct projectile_entity* projectile = list->projectiles + projectile_index;
+        if (!(projectile->flags & PROJECTILE_ENTITY_FLAGS_ACTIVE)) {
+            projectile->flags |= PROJECTILE_ENTITY_FLAGS_ACTIVE;
+            return projectile;
+        }
+    }
+
+    return NULL;
+}
+
+void update_projectile_entities(struct game_state* state, struct projectile_entity_list* projectiles, f32 dt, struct entity_iterator it, struct level_area* area) {
+    for (s32 projectile_index = 0; projectile_index < projectiles->capacity; ++projectile_index) {
+        struct projectile_entity* projectile = projectiles->projectiles + projectile_index;
+
+        if (!(projectile->flags & PROJECTILE_ENTITY_FLAGS_ACTIVE)) {
+            continue;
+        }
+
+        projectile->velocity.x += projectile->acceleration.x * dt;
+        projectile->velocity.y += projectile->acceleration.y * dt;
+
+        projectile->position.x += projectile->velocity.x * dt;
+        projectile->position.y += projectile->velocity.y * dt;
+
+        /* TODO: check collisions against all things */
+    }
 }
 
 #include "entity_ability.c"
