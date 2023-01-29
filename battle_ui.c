@@ -66,6 +66,12 @@ struct battle_ui_action_message {
     f32    timer;
 };
 
+enum battle_ui_stalk_type {
+    STALK_TYPE_NONE,
+    STALK_TYPE_ENTITY,
+    STALK_TYPE_PROJECTILE,
+};
+
 struct battle_ui_state {
     f32 timer;
     u32 phase;
@@ -82,8 +88,11 @@ struct battle_ui_state {
 
     /* for ability's focus camera */
     /* or when watching enemy entities do stuff */
-    bool stalk_entity_with_camera;
-    struct entity* entity_to_stalk; /* pointer is stable */
+    s32  stalk_type;
+    union {
+        struct entity* entity_to_stalk; /* pointer is stable */
+        struct projectile_entity* projectile_to_stalk;
+    };
 
     s32 movement_start_x;
     s32 movement_start_y;
@@ -182,19 +191,26 @@ local void setup_item_use_menu(void) {
     _debugprintf("Maximum usable items: %d", item_use->selectable_item_count);
 }
 
-void battle_ui_stalk_entity_with_camera(struct entity* to_stalk) {
-    global_battle_ui_state.stalk_entity_with_camera = true; 
-    global_battle_ui_state.entity_to_stalk          = to_stalk;
-
+local void battle_ui_stalk_remember_old_camera_location(void) {
     if (!global_battle_ui_state.remembered_original_camera_position) {
         global_battle_ui_state.remembered_original_camera_position = true;
         global_battle_ui_state.prelooking_mode_camera_position     = game_state->camera.xy;
     } 
 }
+void battle_ui_stalk_projectile_with_camera(struct projectile_entity* to_stalk) {
+    global_battle_ui_state.stalk_type          = STALK_TYPE_PROJECTILE;
+    global_battle_ui_state.projectile_to_stalk = to_stalk;
+    battle_ui_stalk_remember_old_camera_location();
+}
+void battle_ui_stalk_entity_with_camera(struct entity* to_stalk) {
+    global_battle_ui_state.stalk_type          = STALK_TYPE_ENTITY;
+    global_battle_ui_state.entity_to_stalk     = to_stalk;
+    battle_ui_stalk_remember_old_camera_location();
+}
 void battle_ui_stop_stalk_entity_with_camera(void) {
-    if (global_battle_ui_state.stalk_entity_with_camera) {
-        global_battle_ui_state.stalk_entity_with_camera = false;
-        global_battle_ui_state.entity_to_stalk          = NULL;
+    if (global_battle_ui_state.stalk_type) {
+        global_battle_ui_state.stalk_type      = STALK_TYPE_NONE;
+        global_battle_ui_state.entity_to_stalk = NULL;
         camera_set_point_to_interpolate(&game_state->camera, global_battle_ui_state.prelooking_mode_camera_position);
     }
 }
@@ -647,7 +663,9 @@ local void battle_ui_determine_disabled_actions(entity_id id, bool* disabled_act
 
     /* disable selecting attack if we don't have anyone within attack range, also cache it. */
     {
-        f32 attack_radius = DEFAULT_ENTITY_ATTACK_RADIUS;
+        f32 attack_radius = entity_find_effective_attack_radius(entity);
+
+        /* targetting type needs to vary based on the weapon NOTE: */
         struct entity_query_list nearby_potential_targets = find_entities_within_radius(&scratch_arena, game_state, entity->position, attack_radius * TILE_UNIT_SIZE, true);
         global_battle_ui_state.targetable_entity_count = 0;
         for (s32 index = 0; index < nearby_potential_targets.count; ++index) {
@@ -1413,13 +1431,23 @@ local void update_game_camera_combat(struct game_state* state, f32 dt) {
         } break;
     } 
 
-    if (global_battle_ui_state.stalk_entity_with_camera) {
-        struct entity* to_stalk = global_battle_ui_state.entity_to_stalk;
+    if (global_battle_ui_state.stalk_type) {
+        v2f32 stalk_position = v2f32(0,0);
+        if (global_battle_ui_state.stalk_type == STALK_TYPE_ENTITY) {
+            stalk_position = global_battle_ui_state.entity_to_stalk->position;
+        } else if (global_battle_ui_state.stalk_type == STALK_TYPE_PROJECTILE) {
+            stalk_position = global_battle_ui_state.projectile_to_stalk->position;
+
+            if (!(global_battle_ui_state.projectile_to_stalk->flags & PROJECTILE_ENTITY_FLAGS_ACTIVE)) {
+                battle_ui_stop_stalk_entity_with_camera();
+                return;
+            }
+        }
         /* camera_set_point_to_interpolate(&game_state->camera, to_stalk->position); */
 
         {
-            v2f32 direction_to_entity = v2f32_direction(game_state->camera.xy, to_stalk->position);
-            f32   distance            = v2f32_distance(game_state->camera.xy, to_stalk->position);
+            v2f32 direction_to_entity = v2f32_direction(game_state->camera.xy, stalk_position);
+            f32   distance            = v2f32_distance(game_state->camera.xy, stalk_position);
 
             /* f32 effective_velocity = CAMERA_VELOCITY / (1 - (distance*distance)); */
             f32 effective_velocity = distance*distance;
@@ -1429,8 +1457,8 @@ local void update_game_camera_combat(struct game_state* state, f32 dt) {
             }
 
             if (distance < 5) {
-                game_state->camera.xy.x = to_stalk->position.x;
-                game_state->camera.xy.y = to_stalk->position.y;
+                game_state->camera.xy.x = stalk_position.x;
+                game_state->camera.xy.y = stalk_position.y;
             } else {
                 game_state->camera.xy.x += effective_velocity * direction_to_entity.x * dt;
                 game_state->camera.xy.y += effective_velocity * direction_to_entity.y * dt;

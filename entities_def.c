@@ -670,9 +670,10 @@ struct used_battle_action_stack {
 
 /* but these structs are here for now to be used later. */
 enum projectile_entity_flags {
-    PROJECTILE_ENTITY_FLAGS_NONE             = 0,
-    PROJECTILE_ENTITY_FLAGS_ACTIVE           = BIT(1),
-    PROJECTILE_ENTITY_FLAGS_COLLIDES_ON_TILE = BIT(2),
+    PROJECTILE_ENTITY_FLAGS_NONE                  = 0,
+    PROJECTILE_ENTITY_FLAGS_ACTIVE                = BIT(1),
+    PROJECTILE_ENTITY_FLAGS_COLLIDES_ON_TILE      = BIT(2),
+    PROJECTILE_ENTITY_FLAGS_FINISH_TURN_WHEN_DEAD = BIT(3),
 };
 
 enum projectile_entity_type {
@@ -699,6 +700,8 @@ struct projectile_entity {
     v2f32 acceleration;
     v2f32 velocity;
 
+    s32 damage;
+
     /* shares the same units as the "big" entity */
     v2f32 position;
     v2f32 scale;
@@ -708,7 +711,6 @@ struct projectile_entity {
 
     /* explosion params */
     f32 explosion_radius;
-    s32 explosion_damage;
 
     /* other visual parameters like particle systems */
 };
@@ -931,6 +933,7 @@ void entity_play_animation_with_direction(struct entity* entity, string name);
 void entity_look_at(struct entity* entity, v2f32 position);
 
 s32 entity_find_effective_stat_value(struct entity* entity, s32 stat_index);
+s32 entity_find_effective_attack_radius(struct entity* entity);
 struct entity_stat_block entity_find_effective_stat_block(struct entity* entity);
 
 /* these don't do error checking, they assume the item index is within bounds */

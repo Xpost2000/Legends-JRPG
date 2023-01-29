@@ -140,14 +140,6 @@ void update_combat(struct game_state* state, f32 dt) {
 
         if (global_battle_ui_state.phase == BATTLE_UI_IDLE) {
             if (combatant->waiting_on_turn) {
-#if 0
-                if (global_battle_ui_state.submode != BATTLE_UI_SUBMODE_LOOKING &&
-                    global_battle_ui_state.submode != BATTLE_UI_SUBMODE_ATTACKING) {
-                    battle_ui_stalk_entity_with_camera(combatant);
-                } else {
-                    battle_ui_stop_stalk_entity_with_camera();
-                }
-#endif
                 entity_think_combat_actions(combatant, state, dt);
             } else {
                 if (!combatant->ai.current_action) {

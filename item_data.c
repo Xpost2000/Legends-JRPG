@@ -61,6 +61,7 @@ static void initialize_items_database(void) {
         {
             current_item_definition->modifiers.health       = 1;
             current_item_definition->modifiers.spell_points = 1;
+            current_item_definition->attack_range           = DEFAULT_ENTITY_ATTACK_RADIUS;
             for (s32 stat_index = 0; stat_index < STAT_COUNT; ++stat_index) {
                 current_item_definition->modifiers.values[stat_index] = 1;
             }
@@ -153,6 +154,8 @@ static void initialize_items_database(void) {
                     }
                 } else if (lisp_form_symbol_matching(*parameter_name, string_literal("projectile-weapon"))) {
                     current_item_definition->flags |= WEAPON_FLAG_PROJECTILE;
+                } else if (lisp_form_symbol_matching(*parameter_name, string_literal("range"))) {
+                    lisp_form_get_s32(parameter_arguments.list.forms[0], &current_item_definition->attack_range);
                 } else {
                     _debugprintf("Unknown top level form name: %.*s", parameter_name->string.length, parameter_name->string.data);
                     

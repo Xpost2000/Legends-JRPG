@@ -32,6 +32,7 @@ local void entity_advance_ability_sequence(struct entity* entity);
 #include "handle_hardcoded_animation_sequence_action.c"
 
 bool entity_bad_ref(struct entity* e);
+/* NOTE, damage is not tracked right now. */
 void entity_do_healing(struct entity* entity, s32 healing);
 void entity_do_physical_hurt(struct entity* entity, s32 damage);
 void entity_do_absolute_hurt(struct entity* entity, s32 damage);
@@ -464,6 +465,7 @@ void entity_savepoint_initialize(struct entity_savepoint* savepoint) {
 }
 
 void battle_ui_stalk_entity_with_camera(struct entity*);
+void battle_ui_stalk_projectile_with_camera(struct projectile_entity*);
 void battle_ui_stop_stalk_entity_with_camera(void);
 void _debug_print_id(entity_id id) {
     _debugprintf("ent id[g:%d]: %d, %d", id.generation, id.store_type, id.index);
@@ -1516,7 +1518,14 @@ local void sortable_entity_draw_particle(struct render_commands* commands, struc
 }
 
 local void sortable_entity_draw_projectile(struct render_commands* commands, struct graphics_assets* assets, struct projectile_entity* projectile, f32 dt) {
-    unimplemented("projectile drawing not done");
+    render_commands_push_quad(commands,
+                              rectangle_f32(projectile->position.x,
+                                            projectile->position.y,
+                                            projectile->scale.x,
+                                            projectile->scale.y),
+                              color32u8(255, 0, 0, 255),
+                              BLEND_MODE_ALPHA);
+    render_commands_set_shader(commands, game_foreground_things_shader, NULL);
 }
 
 local void sortable_entity_draw_savepoint(struct render_commands* commands, struct graphics_assets* assets, struct entity_savepoint* savepoint, f32 dt) {
@@ -2540,11 +2549,12 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
             /* NOTE: if there's a projectile from a weapon
 
                we should track the sole projectile until it *dies*
+               NOTE: weapons need to have a range param.
              */
-            if (item_base->flags & WEAPON_FLAG_PROJECTILE) {
+            if (item_base && item_base->flags & WEAPON_FLAG_PROJECTILE) {
                 v2f32     position_delta       = v2f32_sub(attacked_entity->position, target_entity->position);
                 v2f32     direction            = v2f32_direction(attacked_entity->position, target_entity->position);
-                const f32 PROJECTILE_VELOCITY  = TILE_UNIT_SIZE*4; /* adjustable... */
+                const f32 PROJECTILE_VELOCITY  = -TILE_UNIT_SIZE*7; /* adjustable... */
                 /* maybe play a sound depending on what it is or something... */
                 s32 damage = entity_get_physical_damage(target_entity);
 
@@ -2556,14 +2566,12 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
                     new_projectile->velocity     = v2f32_scale(direction, PROJECTILE_VELOCITY);
                     new_projectile->position     = entity->position;
                     new_projectile->scale        = v2f32(TILE_UNIT_SIZE, TILE_UNIT_SIZE);
+                    new_projectile->flags       |= PROJECTILE_ENTITY_FLAGS_FINISH_TURN_WHEN_DEAD;
                     new_projectile->lifetime     = -1; /* lives until it hits something*/
                     new_projectile->explosion_radius = 0;
-                    new_projectile->explosion_damage = 0;
+                    new_projectile->damage = damage;
+                    battle_ui_stalk_projectile_with_camera(new_projectile);
                 }
-
-                
-
-                target_entity->ai.current_action = 0;
             } else {
                 switch (target_entity->ai.attack_animation_phase) {
                     case ENTITY_ATTACK_ANIMATION_PHASE_MOVE_TO_TARGET: {
@@ -3850,10 +3858,20 @@ void entity_particle_emitter_list_copy(struct entity_particle_emitter_list* sour
 
   This thing doesn't know how to use abilities at all, and is basically just zombie horde attacking
 */
+s32 entity_find_effective_attack_radius(struct entity* entity) {
+    item_id          weapon_equip_slot_item = entity->equip_slots[ENTITY_EQUIP_SLOT_INDEX_WEAPON1];
+    struct item_def* item_base       = item_database_find_by_id(weapon_equip_slot_item);
+
+    if (item_base) {
+        return item_base->attack_range;
+    }
+
+    return DEFAULT_ENTITY_ATTACK_RADIUS;
+}
 
 /* copy of battle_ui.c relevant targetting code, need more usage examples before factoring out. */
 local void entity_think_basic_zombie_combat_actions(struct entity* entity, struct game_state* state) {
-    f32 attack_radius = DEFAULT_ENTITY_ATTACK_RADIUS;
+    f32 attack_radius = entity_find_effective_attack_radius(entity);
     struct entity_query_list nearby_potential_targets = find_entities_within_radius(&scratch_arena, state, entity->position, attack_radius*2*TILE_UNIT_SIZE, false);
     /* struct entity_query_list nearby_potential_targets = find_entities_within_radius(&scratch_arena, state, entity->position, attack_radius*2*TILE_UNIT_SIZE, true); */
 
@@ -4624,6 +4642,39 @@ void update_projectile_entities(struct game_state* state, struct projectile_enti
         projectile->position.y += projectile->velocity.y * dt;
 
         /* TODO: check collisions against all things */
+
+        struct rectangle_f32 projectile_rectangle = rectangle_f32(
+            projectile->position.x,
+            projectile->position.y,
+            projectile->scale.x,
+            projectile->scale.y
+        );
+        for (struct entity* current_entity = entity_iterator_begin(&it); !entity_iterator_finished(&it); current_entity = entity_iterator_advance(&it)) {
+            if (current_entity == projectile->owner) {
+                continue;
+            }
+
+            if (!(current_entity->flags & ENTITY_FLAGS_ACTIVE)) {
+                continue;
+            }
+
+            if (current_entity->flags & ENTITY_FLAGS_HIDDEN) {
+                continue;
+            }
+
+            if (rectangle_f32_intersect(projectile_rectangle, entity_rectangle_collision_bounds(current_entity))) {
+                s32 damage = projectile->damage;
+                entity_do_physical_hurt(current_entity, damage);
+                projectile->flags &= ~(PROJECTILE_ENTITY_FLAGS_ACTIVE);
+                break;
+            }
+        }
+
+        if ((projectile->owner) &&
+            (projectile->flags & PROJECTILE_ENTITY_FLAGS_FINISH_TURN_WHEN_DEAD) &&
+            !(projectile->flags & PROJECTILE_ENTITY_FLAGS_ACTIVE)) {
+            projectile->owner->ai.current_action = 0;
+        }
     }
 }
 

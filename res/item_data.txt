@@ -141,6 +141,7 @@
 (equip-slot 'weapon)
 (projectile-weapon)
 (value 15)
+(range 7)
 (stat-block
         (strength 5)
         (speed 20)

@@ -104,6 +104,8 @@ struct item_def {
         Entity_Stat_Block_Base(s32);
     } stats;
 
+    s32 attack_range;
+
     /* ability usage ideas */
     s32  ability_class_group_id;
     s32  ability_count;

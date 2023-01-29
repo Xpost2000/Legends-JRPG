@@ -1,6 +1,12 @@
 #ifndef ENTITY_STAT_BLOCK_DEF_C
 #define ENTITY_STAT_BLOCK_DEF_C
 
+/*
+  NOTE:
+  Range is not a stat that changes ever.
+  It's only affected by the equipped weapon.
+*/
+
 enum stat_id {
     STAT_VIGOR,
     STAT_STRENGTH,
