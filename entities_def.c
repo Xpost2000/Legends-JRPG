@@ -506,6 +506,12 @@ struct entity_ai_data {
     v2f32 attack_animation_interpolation_end_position;
     v2f32 attack_animation_preattack_position;
 
+    /*
+      Data for projectile firing since I don't have events on animations for
+      this engine
+    */
+    bool fired_projectile;
+
     s32   hurt_animation_shakes;
     f32   hurt_animation_timer;
     s32   hurt_animation_phase;

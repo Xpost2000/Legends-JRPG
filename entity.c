@@ -1965,6 +1965,7 @@ void entity_combat_submit_attack_action(struct entity* entity, entity_id target_
     entity->ai.attack_target_id                    = target_id;
     entity->waiting_on_turn                        = 0;
     entity->ai.attack_animation_timer              = 0;
+    entity->ai.fired_projectile                    = false;
     entity->ai.attack_animation_phase              = ENTITY_ATTACK_ANIMATION_PHASE_MOVE_TO_TARGET;
     entity->ai.attack_animation_preattack_position = grid_snapped_v2f32(entity->position);
     {
@@ -2558,7 +2559,7 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
                 /* maybe play a sound depending on what it is or something... */
                 s32 damage = entity_get_physical_damage(target_entity);
 
-                {
+                if (!entity->ai.fired_projectile) {
                     struct projectile_entity* new_projectile = projectile_entity_list_allocate_projectile(&game_state->projectiles);
                     new_projectile->owner = entity;
                     new_projectile->visual_type = 0;
@@ -2570,6 +2571,7 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
                     new_projectile->lifetime     = -1; /* lives until it hits something*/
                     new_projectile->explosion_radius = 0;
                     new_projectile->damage = damage;
+                    entity->ai.fired_projectile = true;
                     battle_ui_stalk_projectile_with_camera(new_projectile);
                 }
             } else {
