@@ -637,22 +637,49 @@ local struct entity* game_allocate_new_party_member(void) {
     struct entity* party_member = game_dereference_entity(game_state, new_id);
     return party_member;
 }
-void game_add_party_member_from_existing(struct entity* entity, bool remove_from_world) {
-    unimplemented("copy from the world, but selectively!");
+/*
+  NOTE:
+  Always removes from the world, since party members in this game engine are assumed to be
+  unique characters.
+*/
+
+local void show_entities_with_base_id_index(s32 index) {
+    struct entity_iterator iterator = game_entity_iterator(game_state);
+    for (struct entity* current_entity = entity_iterator_begin(&iterator); !entity_iterator_finished(&iterator); current_entity = entity_iterator_advance(&iterator)) {
+        if (current_entity->base_id_index == index) {
+            current_entity->flags &= ~(ENTITY_FLAGS_HIDDEN);
+        }
+    }
+}
+local void hide_entities_with_base_id_index(s32 index) {
+    struct entity_iterator iterator = game_entity_iterator(game_state);
+    for (struct entity* current_entity = entity_iterator_begin(&iterator); !entity_iterator_finished(&iterator); current_entity = entity_iterator_advance(&iterator)) {
+        if (current_entity->base_id_index == index) {
+            current_entity->flags |= (ENTITY_FLAGS_HIDDEN);
+        }
+    }
+}
+/* TODO: ADD NOTIFICATION MESSAGES FOR JOIN/REMOVE */
+void game_add_party_member_from_existing(struct entity* entity) {
+    /* TODO later */
 }
 void game_add_party_member(string basename) {
     struct entity* new_guy = game_allocate_new_party_member();
     struct entity_base_data* base_data = entity_database_find_by_name(&game_state->entity_database, basename);
     entity_base_data_unpack(&game_state->entity_database, base_data, new_guy);
+    hide_entities_with_base_id_index(new_guy->base_id_index);
     new_guy->flags &= ~(ENTITY_FLAGS_HIDDEN);
     _debugprintf("ability count %d", new_guy->ability_count);
 }
 void game_remove_party_member(s32 index) {
     struct entity* to_remove  = game_dereference_entity(game_state, game_state->party_members[index]);
+    /* restore their status in the current world map if they were supposed to be on it. */
+    show_entities_with_base_id_index(to_remove->base_id_index);
     to_remove->flags         |= ENTITY_FLAGS_HIDDEN;
     for (s32 other_index = index; other_index < game_state->party_member_count; ++other_index) {
         game_state->party_members[other_index] = game_state->party_members[other_index+1];
     }
+
     game_state->party_member_count--;
 }
 void game_set_party_leader(s32 index) {
