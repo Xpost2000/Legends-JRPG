@@ -3799,37 +3799,6 @@ struct used_battle_action battle_action_item_usage(struct entity* entity, s32 it
     return result;
 }
 
-/* should have static level up table somewhere... probably here? */
-/* knows? */
-
-local s32 get_xp_level_cutoff(s32 current_level) {
-    return 300;
-}
-
-/*
-  Should change stats based off of a table?
-
-  Abilities by level/attribute are technically all predetermined, and
-  would just unlock on their own (preallocating *everything*)
-
-  TODO: UI notification
-*/
-void entity_do_level_up(struct entity* entity) {
-    entity->stat_block.level += 1;
-}
-
-/* TODO: don't have leveling up curves decided yet. Will do later, like next week????? */
-void entity_award_experience(struct entity* entity, s32 xp_amount) {
-    entity->stat_block.experience += xp_amount;
-
-    s32 level_cutoff = get_xp_level_cutoff(entity->stat_block.level);
-    while (entity->stat_block.experience >= level_cutoff) {
-        entity_do_level_up(entity);
-        entity->stat_block.experience -= level_cutoff;
-        level_cutoff = get_xp_level_cutoff(entity->stat_block.level);
-    }
-}
-
 struct entity_particle_emitter_list entity_particle_emitter_list(struct memory_arena* arena, s32 capacity) {
     struct entity_particle_emitter_list result = {
         .emitters   = memory_arena_push(arena, capacity * sizeof(*result.emitters)),
@@ -4678,6 +4647,84 @@ void update_projectile_entities(struct game_state* state, struct projectile_enti
             projectile->owner->ai.current_action = 0;
         }
     }
+}
+
+/*
+  NOTE/TODO:
+
+  The simplest method I can think of to allow for the UI level up, is to store
+  the stats of each character and then just animating that...
+
+  I might avoid that for now, and just show a leveled up notification, and that's
+  not difficult since I just have to store the level and check levels after XP
+  awards.
+
+  Basically separate state between UI and gamestate.
+
+  I want to just quickly show like some small character cards and something like
+
+  +===============================+
+  |IMG NAME  SMALL_STAT_SUMMARY   |
+  | XP_BAR                        |
+  +===============================+
+
+  The SMALL_STAT_SUMMARY is the same thing that is seen in the LOOK_MODE of the Battle UI. Which I understand
+  isn't the most intuitive but I don't want it to be so focused. I just want it to be obvious a level up happened.
+
+  If someone wants to see more specifically they can check the different stats.
+*/
+
+
+/* NOTE: all entities are assumed to be sourced off of a datafile. */
+
+void entity_do_level_up(struct entity* entity) {
+    struct xp_table*          global_xp_table   = game_experience_table();
+    struct entity_database*   entity_database   = &game_state->entity_database;
+    s32                       base_id           = entity->base_id_index;
+    string                    entity_base_name  = entity_database->entity_key_strings[base_id];
+    struct stat_growth_table* progression_table = find_progression_table_for(entity_base_name);
+
+    assertion(progression_table && "There is no progression table for this entity! Don't know what to do!");
+    for( ;; ) {
+        if (entity->stat_block.level < (global_xp_table->count)) {
+            struct xp_table_entry next_experience_point = global_xp_table->levels[entity->stat_block.level+1];
+            struct stat_growth_table_entry next_growth_points = progression_table->growths[entity->stat_block.level+1];
+
+            if (entity->stat_block.experience >= next_experience_point.xp) {
+                entity->stat_block.level++;
+
+                {
+                    for (s32 stat_index = 0; stat_index < STAT_COUNT; ++stat_index) {
+                        entity->stat_block.values[stat_index] += next_growth_points.values[stat_index];
+                    }
+
+                    /* NOTE: refine. Makes best sense when I have a sense of other things first... */
+                    s32 magic_growth  = next_growth_points.health + entity_find_effective_stat_value(entity, STAT_VIGOR);
+                    s32 health_growth = next_growth_points.magic  + entity_find_effective_stat_value(entity, STAT_INTELLIGENCE);
+
+                    entity->health.max += health_growth;
+                    entity->magic.max += magic_growth;
+
+                    entity->health.value = entity->health.max;
+                    entity->magic.value = entity->magic.max;
+
+                    for (s32 learned_ability_index = 0; learned_ability_index < next_growth_points.abilities_count; ++learned_ability_index) {
+                        entity_add_ability_by_id(entity, next_growth_points.abilities_to_learn[learned_ability_index]);
+                    }
+                }
+            } else {
+                break;
+            }
+        } else {
+            /* max level */ 
+            break;
+        }
+    }
+}
+
+void entity_award_experience(struct entity* entity, s32 xp_amount) {
+    entity->stat_block.experience += xp_amount;
+    entity_do_level_up(entity);
 }
 
 #include "entity_ability.c"

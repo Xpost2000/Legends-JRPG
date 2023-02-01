@@ -46,6 +46,7 @@ local string entity_stat_name_strings[] = {
     [STAT_LUCK]         = string_literal("Luck"),
     [STAT_COUNTER]      = string_literal("Counter"),
 };
+/* need better damage formulas */
 local string entity_stat_description_strings[] = {
     [STAT_VIGOR]        = string_literal("One's robustness. Determines HP gain on level up."),
     [STAT_STRENGTH]     = string_literal("One's physical power. Determines physical attack."),
