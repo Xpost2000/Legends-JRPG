@@ -3904,7 +3904,7 @@ local void entity_think_basic_zombie_combat_actions(struct entity* entity, struc
 
         for (s32 neighbor_offset_index = 0; neighbor_offset_index < array_count(neighbor_offsets); ++neighbor_offset_index) {
             v2f32 offset = neighbor_offsets[neighbor_offset_index];
-            if (level_area_navigation_map_tile_type_at(&game_state->loaded_area, target_entity_position_next_best.x+offset.x, target_entity_position_next_best.y+offset.y) == 0 &&
+            if (level_area_navigation_obstacle_type_at(&game_state->loaded_area, target_entity_position_next_best.x+offset.x, target_entity_position_next_best.y+offset.y) == 0 &&
                 !game_any_entity_at_tile_point(v2f32(target_entity_position_next_best.x+offset.x, target_entity_position_next_best.y+offset.y))) {
                 target_entity_position_next_best.x += offset.x;
                 target_entity_position_next_best.y += offset.y;

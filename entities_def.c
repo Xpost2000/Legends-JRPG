@@ -93,6 +93,9 @@ bool                   entity_iterator_finished(struct entity_iterator* iterator
 s32                    entity_iterator_count_all_entities(struct entity_iterator* entities);
 struct entity*         entity_iterator_advance(struct entity_iterator* iterator);
 
+/*remove later?*/
+struct entity_iterator game_entity_iterator(struct game_state*);
+/*remove later?*/
 
 struct entity_list entity_list_create(struct memory_arena* arena, s32 capacity, u8 storage_mark);
 struct entity_list entity_list_clone(struct memory_arena* arena, struct entity_list original);

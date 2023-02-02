@@ -1006,21 +1006,18 @@ bool level_area_navigation_map_is_point_in_bounds(struct level_area_navigation_m
     return false;
 }
 
-/*
-  Shopping will be a bit more management. I could just save a checkpoint pointer for the usage, and restore
-  from there.
-
-  Since technically it's a form of stack allocation. Eh.
-*/
 local void shopping_ui_begin(void); /* UI will end itself. */
 local void game_stop_shopping(void) {
     game_state->shopping = false;
-    /* TODO: unload shop contents */
+    memory_arena_set_cursor(game_state->arena, game_state->shopping_memory_marker);
 }
 local void game_begin_shopping(string storename) {
     if (!game_state->shopping) {
         game_state->shopping = true;
-        game_state->active_shop = load_shop_definition(game_state->arena, storename);
+        memory_arena_set_allocation_region_top(game_state->arena); {
+            game_state->shopping_memory_marker = memory_arena_get_cursor(game_state->arena);
+            game_state->active_shop = load_shop_definition(game_state->arena, storename);
+        } memory_arena_set_allocation_region_bottom(game_state->arena);
         shopping_ui_begin();
     }
 }
@@ -1030,8 +1027,17 @@ struct entity* game_any_entity_at_tile_point_except(v2f32 xy, struct entity** fi
 
 /* This is just going to start as a breadth first search */
 /* NOTE: add a version with obstacle parameters, since the AI doesn't obey those rules! */
-/* NOTE: this can fail if BFS doesn't find a finished path...  */
-s32 level_area_navigation_map_tile_type_at(struct level_area* area, s32 x, s32 y) {
+/*
+  NOTE/TODO:
+
+  Should also query dynamic map objects for their potential to be an obstacle.
+
+  IE: scriptable layers which can be disabled, or when they're implemented sprite objects, since those
+  things can be multi-unit.
+
+  Currently the navigation_map stuff only works on checking static map tiles.
+*/
+s32 level_area_navigation_obstacle_type_at(struct level_area* area, s32 x, s32 y) {
     struct level_area_navigation_map* navigation_map = &area->navigation_data;
 
     if (level_area_navigation_map_is_point_in_bounds(navigation_map, v2f32(x, y))) {
@@ -1040,6 +1046,7 @@ s32 level_area_navigation_map_tile_type_at(struct level_area* area, s32 x, s32 y
         s32                               total_elements          = (map_width * map_height);
         struct level_area_navigation_map_tile* tile = &navigation_map->tiles[((s32)y - navigation_map->min_y) * map_width + ((s32)x - navigation_map->min_x)];
         return tile->type;
+    } else {
     }
 
     return 0;
@@ -1094,7 +1101,7 @@ struct navigation_path navigation_path_find(struct memory_arena* arena, struct l
                         new_point->x = x1;
                         new_point->y = y1;
 
-                        s32 tile_type = level_area_navigation_map_tile_type_at(area, new_point->x, new_point->y);
+                        s32 tile_type = level_area_navigation_obstacle_type_at(area, new_point->x, new_point->y);
                         {
                             if (game_state->combat_state.active_combat) {
                                 struct level_area_battle_zone_bounding_box* current_battle_zone = level_area_find_current_battle_zone(area, new_point->x, new_point->y);
@@ -1185,7 +1192,7 @@ struct navigation_path navigation_path_find(struct memory_arena* arena, struct l
 
                         /* _debugprintf("neighbor <%d, %d> (origin as: <%d, %d>) (%d, %d offset) proposed", (s32)proposed_point.x, (s32)proposed_point.y, (s32)current_point.x, (s32)current_point.y, x_cursor, y_cursor); */
                         if (level_area_navigation_map_is_point_in_bounds(navigation_map, proposed_point)) {
-                            s32 tile_type = level_area_navigation_map_tile_type_at(area, proposed_point.x, proposed_point.y);
+                            s32 tile_type = level_area_navigation_obstacle_type_at(area, proposed_point.x, proposed_point.y);
 
                             if (tile_type == 0 && !game_any_entity_at_tile_point(proposed_point)) {
                                 {
