@@ -1,5 +1,6 @@
-/* TODO: better UI state handling, since we don't consume events properly. */
-/* need separate binding for removing items */
+/* TODO:
+   This UI needs a lot of reworking to work in 320x240
+ */
 #define EQUIPMENT_SCREEN_SPIN_TIMER_LENGTH (0.2)
 #include "equipment_ui_def.c"
 
@@ -131,7 +132,11 @@ local void do_entity_stat_information_panel(struct software_framebuffer* framebu
     struct font_cache* value_better_font = game_get_font(MENU_FONT_COLOR_LIME);
     struct font_cache* value_worse_font  = game_get_font(MENU_FONT_COLOR_BLOODRED);
 
+#ifdef EXPERIMENTAL_320
+    f32 font_scale = 1;
+#else
     f32 font_scale = 2;
+#endif
     f32 font_height = font_cache_text_height(label_name_font) * font_scale;
 
     draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, v2f32(x,y), 6*2, 6*4, UI_DEFAULT_COLOR);
@@ -219,7 +224,11 @@ local f32 Equipment_Panel_draw_entries_for_items(string* labels, f32 largest_lab
     struct font_cache* value_font        = game_get_font(MENU_FONT_COLOR_STEEL);
     struct font_cache* select_value_font = game_get_font(MENU_FONT_COLOR_ORANGE);
 
+#ifdef EXPERIMENTAL_320
+    f32 font_scale = 1;
+#else
     f32 font_scale = 2;
+#endif
     f32 font_height = font_cache_text_height(label_name_font) * font_scale;
 
     for (s32 index = start_index; index < end_index; ++index) {
@@ -275,7 +284,11 @@ local void do_entity_equipment_panel(struct software_framebuffer* framebuffer, f
     struct font_cache* value_font        = game_get_font(MENU_FONT_COLOR_STEEL);
     struct font_cache* select_value_font = game_get_font(MENU_FONT_COLOR_ORANGE);
 
+#ifdef EXPERIMENTAL_320
+    f32 font_scale = 1;
+#else
     f32 font_scale = 2;
+#endif
     f32 font_height = font_cache_text_height(label_name_font) * font_scale;
 
     draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, v2f32(x,y), 5*2, 6*2+2, UI_DEFAULT_COLOR);
@@ -373,7 +386,11 @@ local void do_entity_select_equipment_panel(struct software_framebuffer* framebu
 
     struct font_cache* value_font        = game_get_font(MENU_FONT_COLOR_STEEL);
     struct font_cache* select_value_font = game_get_font(MENU_FONT_COLOR_ORANGE);
+#ifdef EXPERIMENTAL_320
+    f32 font_scale  = 1;
+#else
     f32 font_scale  = 2;
+#endif
     f32 font_height = font_cache_text_height(value_font) * font_scale;
 
     f32 y_cursor = y + 15;
@@ -476,7 +493,11 @@ s32 do_equipment_menu(struct software_framebuffer* framebuffer, f32 dt) {
         } break;
 
         case EQUIPMENT_SCREEN_PHASE_IDLE: {
+#ifdef EXPERIMENTAL_320
+            x_character_spinner = 50;
+#else
             x_character_spinner = 100;
+#endif
             x_ui_widget         = framebuffer->width;
             allow_input         = true;
         } break;
@@ -496,7 +517,11 @@ s32 do_equipment_menu(struct software_framebuffer* framebuffer, f32 dt) {
     }
 
     equipment_screen_state.animation_timer += dt;
+#ifdef EXPERIMENTAL_320
+    do_spinning_preview_of_character(x_character_spinner, 240/2, framebuffer, target_entity);
+#else
     do_spinning_preview_of_character(x_character_spinner, 240, framebuffer, target_entity);
+#endif
 
     do_entity_stat_information_panel(framebuffer, x_ui_widget - TILE_UNIT_SIZE*13, 30, target_entity);
     do_entity_select_equipment_panel(framebuffer, x_ui_widget - TILE_UNIT_SIZE*6, framebuffer->height-TILE_UNIT_SIZE*6.5, target_entity, allow_input);
