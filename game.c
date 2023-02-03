@@ -3600,6 +3600,7 @@ local void update_and_render_game_worldmap(struct software_framebuffer* framebuf
     }
 
     /* reproject into a plane */
+    /* Clean this up. */
     {
         f32 scale=0,focus=0,horizon=0;
         struct image_buffer* img = (struct image_buffer*)&mode7_buffer;
