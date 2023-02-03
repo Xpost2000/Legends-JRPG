@@ -4018,9 +4018,9 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                     do_weather(framebuffer, game_state, dt);
                     game_do_special_effects(framebuffer, dt);
 
+                    software_framebuffer_render_commands(framebuffer, &commands);
                     update_and_render_game_menu_ui(game_state, framebuffer, dt);
                     update_and_render_game_console(game_state, framebuffer, dt);
-                    software_framebuffer_render_commands(framebuffer, &commands);
                 }
 
             } break;

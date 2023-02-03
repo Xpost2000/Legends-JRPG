@@ -373,7 +373,7 @@ local void draw_turn_panel(struct game_state* state, struct software_framebuffer
             color.b >>= 1;
         }
 
-        const s32 square_size = 32;
+        const s32 square_size = 16;
         software_framebuffer_draw_quad(framebuffer, rectangle_f32(x, y + (index - combat_state->active_combatant) * square_size * 1.3, square_size, square_size), color, BLEND_MODE_ALPHA);
         software_framebuffer_draw_image_ex(framebuffer,
                                            graphics_assets_get_image_by_id(&graphics_assets, sprite_to_use),
@@ -778,7 +778,7 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                 ui_color.a = 0.5;
             }
 
-            draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, v2f32(x, y), 8, 18, ui_color);
+            draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, v2f32(x, y), 4, 9, ui_color);
 
             bool disabled_actions[array_count(battle_menu_main_options)] = {};
             battle_ui_determine_disabled_actions(combat_state->participants[combat_state->active_combatant], disabled_actions);
@@ -821,7 +821,7 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                     button_flags |= COMMON_UI_BUTTON_FLAGS_DISABLED;
                 }
 
-                if (common_ui_button(&layout, framebuffer, battle_menu_main_options[index], 2, index, &global_battle_ui_state.selection, button_flags)) {
+                if (common_ui_button(&layout, framebuffer, battle_menu_main_options[index], 1, index, &global_battle_ui_state.selection, button_flags)) {
                     switch (index) {
                         /* NOTE: No ability is expected to really reach outside of your view... Hence the need for a separate view command */
                         case BATTLE_LOOK: {
@@ -1566,8 +1566,8 @@ local void draw_battle_tooltips(struct game_state* state, struct software_frameb
     }
 
     if (tip.length) {
-        draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, v2f32(15, bottom_y - (16*4)), 36, 2, ui_color);
-        draw_ui_breathing_text(framebuffer, v2f32(30, bottom_y - (16*4) + 15), normal_font, 2, tip, 0, modulation_color);
+        draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, v2f32(15, bottom_y - (16*2)), 18, 1, ui_color);
+        draw_ui_breathing_text(framebuffer, v2f32(30, bottom_y - (16*2) + 15), normal_font, 1, tip, 0, modulation_color);
     }
 
     if (!player_turn) return;
@@ -1626,7 +1626,19 @@ local void update_and_render_battle_ui(struct game_state* state, struct software
     struct game_state_combat_state* combat_state = &state->combat_state;
 
     /* pixels */
-    const f32 BATTLE_SELECTIONS_WIDTH = 16 * 2 * 5;
+#ifdef EXPERIMENTAL_320
+    const f32 BATTLE_SELECTIONS_WIDTH = 16 * 6;
+#else
+    const f32 BATTLE_SELECTIONS_WIDTH = 16 * 5 * 2;
+#endif
+
+#ifdef EXPERIMENTAL_320
+    f32 turn_panel_y       = 50;
+    f32 battle_selection_panel_y = 50;
+#else
+    f32 turn_panel_y       = 100;
+    f32 battle_selection_panel_y = 100;
+#endif
 
     switch (global_battle_ui_state.phase) {
         case BATTLE_UI_FADE_IN_DARK_END_TURN:
@@ -1685,11 +1697,11 @@ local void update_and_render_battle_ui(struct game_state* state, struct software
 
             {
                 f32 x_cursor = lerp_f32(-80, 0, t);
-                draw_turn_panel(state, framebuffer, 10 + x_cursor, 100);
+                draw_turn_panel(state, framebuffer, 10 + x_cursor, turn_panel_y);
             }
             {
                 f32 x_cursor = lerp_f32(framebuffer->width + BATTLE_SELECTIONS_WIDTH, framebuffer->width - BATTLE_SELECTIONS_WIDTH + 15, t);
-                do_battle_selection_menu(state, framebuffer, x_cursor, 100, false, dt);
+                do_battle_selection_menu(state, framebuffer, x_cursor, battle_selection_panel_y, false, dt);
             }
 
             if (global_battle_ui_state.timer >= max_t) {
@@ -1703,8 +1715,8 @@ local void update_and_render_battle_ui(struct game_state* state, struct software
         case BATTLE_UI_IDLE: {
             bool is_player_turn = is_player_combat_turn(state);
 
-            draw_turn_panel(state, framebuffer, 10, 100);
-            do_battle_selection_menu(state, framebuffer, framebuffer->width - BATTLE_SELECTIONS_WIDTH + 15, 100, is_player_turn, dt);
+            draw_turn_panel(state, framebuffer, 10, turn_panel_y);
+            do_battle_selection_menu(state, framebuffer, framebuffer->width - BATTLE_SELECTIONS_WIDTH + 15, battle_selection_panel_y, is_player_turn, dt);
             draw_battle_tooltips(state, framebuffer, dt, framebuffer->height, is_player_turn);
 
             {
@@ -1714,12 +1726,12 @@ local void update_and_render_battle_ui(struct game_state* state, struct software
                     union color32f32 modulation_color = color32f32_WHITE;
                     union color32f32 ui_color         = UI_BATTLE_COLOR;
 
-                    v2f32 ui_box_size     = nine_patch_estimate_extents(ui_chunky, 1, 18, 1);
-                    v2f32 ui_box_position = v2f32(framebuffer->width/2 - ui_box_size.x/2, 40);
+                    v2f32 ui_box_size     = nine_patch_estimate_extents(ui_chunky, 1, 9, 1);
+                    v2f32 ui_box_position = v2f32(framebuffer->width/2 - ui_box_size.x/2, 10);
                     {
-                        draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, ui_box_position, 18, 1, ui_color);
-                        f32 text_width = font_cache_text_width(normal_font, message->message, 2);
-                        draw_ui_breathing_text(framebuffer, v2f32(ui_box_position.x + (ui_box_size.x/2)-text_width/2, ui_box_position.y+10), normal_font, 2, message->message, 0, modulation_color);
+                        draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, ui_box_position, 9, 1, ui_color);
+                        f32 text_width = font_cache_text_width(normal_font, message->message, 1);
+                        draw_ui_breathing_text(framebuffer, v2f32(ui_box_position.x + (ui_box_size.x/2)-text_width/2, ui_box_position.y+10), normal_font, 1, message->message, 0, modulation_color);
                     }
                     message->timer -= dt;
                 }
@@ -1757,9 +1769,9 @@ local void update_and_render_battle_ui(struct game_state* state, struct software
             if (t <= 0.0) t = 0.0;
             if (t >= 1.0) t = 1.0;
 
-            draw_turn_panel(state, framebuffer, lerp_f32(10, -300, t), 100);
+            draw_turn_panel(state, framebuffer, lerp_f32(10, -300, t), turn_panel_y);
 
-            do_battle_selection_menu(state, framebuffer, lerp_f32(framebuffer->width - BATTLE_SELECTIONS_WIDTH + 15, framebuffer->width + 300, t), 100, false, dt);
+            do_battle_selection_menu(state, framebuffer, lerp_f32(framebuffer->width - BATTLE_SELECTIONS_WIDTH + 15, framebuffer->width + 300, t), battle_selection_panel_y, false, dt);
             draw_battle_tooltips(state, framebuffer, dt, lerp_f32(framebuffer->height, framebuffer->height + 300, t), false);
 
             global_battle_ui_state.timer += dt;
