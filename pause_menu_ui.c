@@ -125,7 +125,7 @@ local void do_party_member_edits_or_selections(struct game_state* state, struct 
 #endif
     v2f32 estimated_dimensions = nine_patch_estimate_extents(ui_chunky, ui_scale_factor, CARD_WIDTH, CARD_HEIGHT);
     /* NEED TO HANDLE SCROLLING LATER :) */
-    f32 y_cursor = 100;
+    f32 y_cursor = 50;
 
     f32 cards_x = SCREEN_WIDTH - estimated_dimensions.x * 1.1 + x;
     if (menu_state->allow_party_lineup_editing) {

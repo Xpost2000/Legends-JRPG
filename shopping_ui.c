@@ -356,7 +356,11 @@ local void do_shopping_menu(struct software_framebuffer* framebuffer, f32 x, boo
 
         /* Okay this UI could take advantage of having icons but that's a bit later. This'll pass in the act 1 demo I suppose. */
         for (s32 filter_index = 0; filter_index < PAGE_COUNT; ++filter_index) {
+#ifndef EXPERIMENTAL_320
+            f32 page_tab_selector_offset_y = 32;
+#else
             f32 page_tab_selector_offset_y = 20;
+#endif
 
             struct font_cache* painting_text = normal_font;
             if (filter_index == shopping_ui.current_shopping_page_filter) {

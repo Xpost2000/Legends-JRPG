@@ -641,7 +641,7 @@ local void handle_editor_tool_mode_input(struct software_framebuffer* framebuffe
 /* NOTE: phase this out and replace it with the simple menu the world editor has */
 local void update_and_render_pause_editor_menu_ui(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
     /* needs a bit of cleanup */
-    f32 font_scale = 3;
+    f32 font_scale = 1;
     /* While the real pause menu is going to be replaced with something else later obviously */
     /* I want a nice looking menu to show off, and also the main menu is likely taking this design */
     struct ui_pause_menu* menu_state = &state->ui_pause;
@@ -652,7 +652,7 @@ local void update_and_render_pause_editor_menu_ui(struct game_state* state, stru
     }
 
     f32 offscreen_x = -240;
-    f32 final_x     = 40;
+    f32 final_x     = 20;
 
     u32 blur_samples = 4;
     f32 max_blur = 1.0;
@@ -853,7 +853,7 @@ local void update_and_render_pause_editor_menu_ui(struct game_state* state, stru
     for (unsigned index = 0; index < array_count(item_positions); ++index) {
         v2f32 draw_position = item_positions[index];
         draw_position.x += lerp_f32(0, 20, menu_state->shift_t[index]);
-        draw_position.y += 220;
+        draw_position.y += 110;
         /* custom string drawing routine */
         struct font_cache* font = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_STEEL]);
         if (index == menu_state->selection) {
@@ -1123,13 +1123,13 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
                 if (editor_state->tab_menu_open & TAB_MENU_SHIFT_BIT) {
                     f32 draw_cursor_y = 30;
                     for (s32 index = 0; index < array_count(editor_tool_mode_strings)-1; ++index) {
-                        if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 3, v2f32(100, draw_cursor_y), editor_tool_mode_strings[index])) {
+                        if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 1, v2f32(100, draw_cursor_y), editor_tool_mode_strings[index])) {
                             editor_state->tab_menu_open = 0;
                             editor_state->tool_mode     = index;
                             editor_state->last_selected = 0;
                             break;
                         }
-                        draw_cursor_y += 12 * 1.5 * 3;
+                        draw_cursor_y += 12 * 1.5 * 1;
                     }
                 } else if (editor_state->tab_menu_open & TAB_MENU_CTRL_BIT) { /* TAB MENU CONTEXT  */
                     if (!editor_state->last_selected) {
@@ -1150,18 +1150,18 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
 
                                         char tmp_string[1024] = {};
                                         snprintf(tmp_string, 1024, "Transition Area: \"%s\" <%f, %f> (SET?)", trigger->target_level, trigger->spawn_location.x, trigger->spawn_location.y);
-                                        if(EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(16, draw_cursor_y), string_from_cstring(tmp_string))) {
+                                        if(EDITOR_imgui_button(framebuffer, font, highlighted_font, 1, v2f32(16, draw_cursor_y), string_from_cstring(tmp_string))) {
                                             editor_state->screen_state = EDITOR_SCREEN_FILE_SELECTION_FOR_TRANSITION;
                                         }
-                                        draw_cursor_y += 12 * 1.2 * 2;
+                                        draw_cursor_y += 12 * 1.2 * 1;
 
-                                        if(EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(16, draw_cursor_y), format_temp_s("target type: %.*s", trigger_level_transition_type_strings[trigger->type].length, trigger_level_transition_type_strings[trigger->type].data))) {
+                                        if(EDITOR_imgui_button(framebuffer, font, highlighted_font, 1, v2f32(16, draw_cursor_y), format_temp_s("target type: %.*s", trigger_level_transition_type_strings[trigger->type].length, trigger_level_transition_type_strings[trigger->type].data))) {
                                             trigger->type += 1;
                                             if (trigger->type > TRIGGER_LEVEL_TRANSITION_TYPE_COUNT) trigger->type = 0;
                                         }
 
-                                        draw_cursor_y += 12 * 1.2 * 2;
-                                        if(EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(16, draw_cursor_y), string_concatenate(&scratch_arena, string_literal("Facing Direction: "), facing_direction_strings[trigger->new_facing_direction]))) {
+                                        draw_cursor_y += 12 * 1.2 * 1;
+                                        if(EDITOR_imgui_button(framebuffer, font, highlighted_font, 1, v2f32(16, draw_cursor_y), string_concatenate(&scratch_arena, string_literal("Facing Direction: "), facing_direction_strings[trigger->new_facing_direction]))) {
                                             trigger->new_facing_direction += 1;
                                             if (trigger->new_facing_direction > 4) trigger->new_facing_direction = 0;
                                         }
@@ -1172,7 +1172,7 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
                                         s32 trigger_id          = trigger - editor_state->editing_area.triggers.triggers;
 
                                         string activation_type_string = activation_type_strings[trigger->activation_method];
-                                        if(EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(16, draw_cursor_y),
+                                        if(EDITOR_imgui_button(framebuffer, font, highlighted_font, 1, v2f32(16, draw_cursor_y),
                                                                string_from_cstring(format_temp("Activation Type: %.*s", activation_type_string.length, activation_type_string.data)))) {
                                             trigger->activation_method += 1;
                                             if (trigger->activation_method >= ACTIVATION_TYPE_COUNT) {
@@ -1199,7 +1199,7 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
                                                 editor_state->actor_property_menu.picking_entity_base ^= 1;
                                                 editor_state->actor_property_menu.item_list_scroll_y   = 0;
                                             }
-                                            draw_cursor_y += 16 * 2 * 1.5 + TILE_UNIT_SIZE*2.3;
+                                            draw_cursor_y += 16 * 1 * 1.5 + TILE_UNIT_SIZE*2.3;
                                         }
 
                                         if (editor_state->actor_property_menu.picking_entity_base) {
@@ -1229,7 +1229,7 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
                                                     }
                                                 }
 
-                                                s32 ENTRIES_PER_ROW = (500 / largest_name_width);
+                                                s32 ENTRIES_PER_ROW = (250 / largest_name_width);
                                                 s32 row_count     = (tile_table_data_count / ENTRIES_PER_ROW)+1;
 
                                                 for (s32 row_index = 0; row_index < row_count; ++row_index) {
@@ -1260,14 +1260,14 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
                                                         draw_cursor_x += largest_name_width * 1.1;
                                                     }
 
-                                                    draw_cursor_y += TILE_UNIT_SIZE*2 * 1.2 * 2;
+                                                    draw_cursor_y += TILE_UNIT_SIZE*2 * 1.2 * 1;
                                                 }
                                             }
                                         } else {
                                             string facing_direction_string = facing_direction_strings[entity->facing_direction];
                                             {
                                                 string s = string_clone(&scratch_arena, string_from_cstring(format_temp("facing direction: %.*s", facing_direction_string.length, facing_direction_string.data)));
-                                                s32 result = EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(10, draw_cursor_y), s);
+                                                s32 result = EDITOR_imgui_button(framebuffer, font, highlighted_font, 1, v2f32(10, draw_cursor_y), s);
 
                                                 if (result == 1) {
                                                     entity->facing_direction += 1;
@@ -1279,45 +1279,44 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
                                                         entity->facing_direction -= 1;
                                                     }
                                                 }
-                                                draw_cursor_y += 16 * 2 * 1.5;
+                                                draw_cursor_y += 16 * 1 * 1.5;
                                             }
                                             {
-                                                EDITOR_imgui_text_edit_cstring(framebuffer, font, highlighted_font, 2, v2f32(10, draw_cursor_y), string_literal("scriptname"), entity->script_name, array_count(entity->script_name));
-                                                draw_cursor_y += 16 * 2 * 1.5;
+                                                EDITOR_imgui_text_edit_cstring(framebuffer, font, highlighted_font, 1, v2f32(10, draw_cursor_y), string_literal("scriptname"), entity->script_name, array_count(entity->script_name));
+                                                draw_cursor_y += 16 * 1 * 1.5;
                                             }
                                             {
                                                 /* this can actually just be a dropdown/modal selection since it's **known** which talk files are in the game, still going to be copied as a string but would be easier than guessing... */
-                                                EDITOR_imgui_text_edit_cstring(framebuffer, font, highlighted_font, 2, v2f32(10, draw_cursor_y), string_literal("dialogue file"), entity->dialogue_file, array_count(entity->dialogue_file));
-                                                draw_cursor_y += 16 * 2 * 1.5;
+                                                EDITOR_imgui_text_edit_cstring(framebuffer, font, highlighted_font, 1, v2f32(10, draw_cursor_y), string_literal("dialogue file"), entity->dialogue_file, array_count(entity->dialogue_file));
+                                                draw_cursor_y += 16 * 1 * 1.5;
                                             }
 
                                             {
                                                 string s = string_clone(&scratch_arena, string_from_cstring(format_temp("hidden: %s", cstr_yesno[(entity->flags & ENTITY_FLAGS_HIDDEN) > 0])));
-                                                if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(10, draw_cursor_y), s)) {
+                                                if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 1, v2f32(10, draw_cursor_y), s)) {
                                                     entity->flags ^= ENTITY_FLAGS_HIDDEN;
                                                 }
-                                                draw_cursor_y += 16 * 2 * 1.5;
+                                                draw_cursor_y += 16 * 1 * 1.5;
                                             }
                                             {
-                                    
-                                                draw_cursor_y += 16 * 2 * 1.5;
+                                                draw_cursor_y += 16 * 1 * 1.5;
                                             }
                                         }
 
                                     } break;
                                     case ENTITY_PLACEMENT_TYPE_position_marker: {
                                         struct position_marker* marker = editor_state->last_selected;
-                                        f32 draw_cursor_y = 70;
+                                        f32 draw_cursor_y = 35;
                                         const f32 text_scale = 1;
 
                                         {
-                                            EDITOR_imgui_text_edit_cstring(framebuffer, font, highlighted_font, 2, v2f32(10, draw_cursor_y), string_literal("name"), marker->name, array_count(marker->name));
+                                            EDITOR_imgui_text_edit_cstring(framebuffer, font, highlighted_font, 1, v2f32(10, draw_cursor_y), string_literal("name"), marker->name, array_count(marker->name));
                                         }
                                     } break;
                                     case ENTITY_PLACEMENT_TYPE_chest: {
                                         f32 draw_cursor_y = 70;
                                         struct entity_chest* chest = editor_state->last_selected;
-                                        software_framebuffer_draw_text(framebuffer, font, 2, v2f32(10, 10), string_literal("Chest Items"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+                                        software_framebuffer_draw_text(framebuffer, font, 1, v2f32(10, 10), string_literal("Chest Items"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
 
                                         {
                                             /* sort bar */
@@ -1326,12 +1325,12 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
                                             for (unsigned index = 0; index < array_count(item_type_strings); ++index) {
                                                 string text = item_type_strings[index];
 
-                                                if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(draw_cursor_x, 35), text)) {
+                                                if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 1, v2f32(draw_cursor_x, 35), text)) {
                                                     /* should be mask */
                                                     editor_state->chest_property_menu.item_sort_filter = index;
                                                 }
 
-                                                draw_cursor_x += font_cache_text_width(font, text, 2) * 1.15;
+                                                draw_cursor_x += font_cache_text_width(font, text, 1) * 1.15;
                                             }
                                         }
 
@@ -1360,25 +1359,26 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
                                                     char tmp[255] = {};
                                                     snprintf(tmp, 255, "(%.*s) %.*s", item_base->id_name.length, item_base->id_name.data, item_base->name.length, item_base->name.data);
 
-                                                    if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 1.3, v2f32(16, draw_cursor_y + editor_state->chest_property_menu.item_list_scroll_y), string_from_cstring(tmp))) {
+                                                    if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 1, v2f32(16, draw_cursor_y + editor_state->chest_property_menu.item_list_scroll_y), string_from_cstring(tmp))) {
                                                         entity_inventory_add((struct entity_inventory*)&chest->inventory, 16, item_get_id(item_base));
                                                         editor_state->chest_property_menu.adding_item = false;
                                                         break;
                                                     }
 
-                                                    draw_cursor_y += 12 * 1.2 * 1.3;
+                                                    draw_cursor_y += 12 * 1.3;
                                                 }
                                             }
                                         } else {
+                                            /* TODO: check this... */
                                             if (chest->inventory.item_count > 0) {
                                                 char tmp[255] = {};
                                                 for (s32 index = 0; index < chest->inventory.item_count; ++index) {
                                                     struct item_instance* item      = chest->inventory.items + index;
                                                     struct item_def*      item_base = item_database_find_by_id(item->item);
                                                     snprintf(tmp, 255, "(%.*s) %.*s - %d/%d", item_base->id_name.length, item_base->id_name.data, item_base->name.length, item_base->name.data, item->count, item_base->max_stack_value);
-                                                    draw_cursor_y += 12 * 1.2 * 1.5;
+                                                    draw_cursor_y += 12 * 1.5;
 
-                                                    s32 button_response = (EDITOR_imgui_button(framebuffer, font, highlighted_font, 1.5, v2f32(16, draw_cursor_y), string_from_cstring(tmp)));
+                                                    s32 button_response = (EDITOR_imgui_button(framebuffer, font, highlighted_font, 1.1, v2f32(16, draw_cursor_y), string_from_cstring(tmp)));
                                                     if(button_response == 1) {
                                                         /* ?clone? Not exactly expected behavior I'd say lol. */
                                                         entity_inventory_add((struct entity_inventory*)&chest->inventory, 16, item->item);
@@ -1391,10 +1391,10 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
                                                     }
                                                 }
                                             } else {
-                                                software_framebuffer_draw_text(framebuffer, font, 2, v2f32(10, draw_cursor_y), string_literal("(no items)"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+                                                software_framebuffer_draw_text(framebuffer, font, 1, v2f32(10, draw_cursor_y), string_literal("(no items)"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
                                             }
 
-                                            if(EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(150, 10), string_literal("(add item)"))) {
+                                            if(EDITOR_imgui_button(framebuffer, font, highlighted_font, 1, v2f32(150, 10), string_literal("(add item)"))) {
                                                 /* pop up should just replace the menu */
                                                 /* for now just add a test item */
                                                 /* entity_inventory_add(&chest->inventory, 16, item_id_make(string_literal("item_sardine_fish_5"))); */
@@ -1403,7 +1403,7 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
                                             }
                                             {
                                                 string s = string_clone(&scratch_arena, string_from_cstring(format_temp("hidden: %s", cstr_yesno[(chest->flags & ENTITY_FLAGS_HIDDEN) > 0])));
-                                                if(EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(270, 10), s)) {
+                                                if(EDITOR_imgui_button(framebuffer, font, highlighted_font, 1, v2f32(270, 10), s)) {
                                                     /* pop up should just replace the menu */
                                                     /* for now just add a test item */
                                                     /* entity_inventory_add(&chest->inventory, 16, item_id_make(string_literal("item_sardine_fish_5"))); */
@@ -1413,36 +1413,36 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
                                         }
                                     } break;
                                     case ENTITY_PLACEMENT_TYPE_light: {
-                                        f32 draw_cursor_y = 70;
+                                        f32 draw_cursor_y = 35;
                                         struct light_def* current_light = editor_state->last_selected;
 
-                                        EDITOR_imgui_text_edit_f32(framebuffer, font, highlighted_font, 2, v2f32(15, draw_cursor_y), string_literal("Light Power: "), &current_light->power);
-                                        draw_cursor_y += 16 * 2.5;
-                                        EDITOR_imgui_text_edit_u8(framebuffer, font, highlighted_font, 2, v2f32(15, draw_cursor_y), string_literal("Light R: "), &current_light->color.r);
-                                        draw_cursor_y += 16 * 2.5;
-                                        EDITOR_imgui_text_edit_u8(framebuffer, font, highlighted_font, 2, v2f32(15, draw_cursor_y), string_literal("Light G: "), &current_light->color.g);
-                                        draw_cursor_y += 16 * 2.5;
-                                        EDITOR_imgui_text_edit_u8(framebuffer, font, highlighted_font, 2, v2f32(15, draw_cursor_y), string_literal("Light B: "), &current_light->color.b);
-                                        draw_cursor_y += 16 * 2.5;
-                                        EDITOR_imgui_text_edit_u8(framebuffer, font, highlighted_font, 2, v2f32(15, draw_cursor_y), string_literal("Light A: "), &current_light->color.a);
-                                        draw_cursor_y += 16 * 2.5;
+                                        EDITOR_imgui_text_edit_f32(framebuffer, font, highlighted_font, 1, v2f32(15, draw_cursor_y), string_literal("Light Power: "), &current_light->power);
+                                        draw_cursor_y += 16 * 1.5;
+                                        EDITOR_imgui_text_edit_u8(framebuffer, font, highlighted_font, 1, v2f32(15, draw_cursor_y), string_literal("Light R: "), &current_light->color.r);
+                                        draw_cursor_y += 16 * 1.5;
+                                        EDITOR_imgui_text_edit_u8(framebuffer, font, highlighted_font, 1, v2f32(15, draw_cursor_y), string_literal("Light G: "), &current_light->color.g);
+                                        draw_cursor_y += 16 * 1.5;
+                                        EDITOR_imgui_text_edit_u8(framebuffer, font, highlighted_font, 1, v2f32(15, draw_cursor_y), string_literal("Light B: "), &current_light->color.b);
+                                        draw_cursor_y += 16 * 1.5;
+                                        EDITOR_imgui_text_edit_u8(framebuffer, font, highlighted_font, 1, v2f32(15, draw_cursor_y), string_literal("Light A: "), &current_light->color.a);
+                                        draw_cursor_y += 16 * 1.5;
                                         {
                                             string s = string_clone(&scratch_arena, string_from_cstring(format_temp("hidden: %s", cstr_yesno[(current_light->flags & ENTITY_FLAGS_HIDDEN) > 0])));
-                                            if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(10, draw_cursor_y), s)) {
+                                            if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 1, v2f32(10, draw_cursor_y), s)) {
                                                 current_light->flags ^= ENTITY_FLAGS_HIDDEN;
                                             }
-                                            draw_cursor_y += 16 * 2.5;
+                                            draw_cursor_y += 16 * 1.5;
                                         }
                                     } break;
                                     case ENTITY_PLACEMENT_TYPE_savepoint: {
-                                        f32 draw_cursor_y = 70;
+                                        f32 draw_cursor_y = 35;
                                         struct entity_savepoint* current_savepoint = editor_state->last_selected;
                                         {
                                             string s = string_clone(&scratch_arena, string_from_cstring(format_temp("hidden: %s", cstr_yesno[(current_savepoint->flags & ENTITY_FLAGS_HIDDEN) > 0])));
-                                            if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(10, draw_cursor_y), s)) {
+                                            if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 1, v2f32(10, draw_cursor_y), s)) {
                                                 current_savepoint->flags ^= ENTITY_FLAGS_HIDDEN;
                                             }
-                                            draw_cursor_y += 16 * 2.5;
+                                            draw_cursor_y += 16 * 1.5;
                                         }
                                     } break;
                                     default: {
@@ -1456,50 +1456,50 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
                     switch (editor_state->tool_mode) {
                         /* I would show images, but this is easier for now */
                         case EDITOR_TOOL_LEVEL_SETTINGS: {
-                            f32 draw_cursor_y = 70;
+                            f32 draw_cursor_y = 35;
                             const f32 text_scale = 1;
 
                             struct level_area_entity* entity = editor_state->last_selected;
 
                             /* this is mostly script affecting so yeah. */
                             if (editor_state->level_settings.changing_preview_environment_color) {
-                                if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(10, draw_cursor_y), string_literal("DAY (0)"))) {
+                                if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 1, v2f32(10, draw_cursor_y), string_literal("DAY (0)"))) {
                                     game_set_time_color(0);
                                     editor_state->level_settings.changing_preview_environment_color = false;
                                 }
-                                draw_cursor_y += 16 * 2 * 1.5 + TILE_UNIT_SIZE*2.3;
-                                if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(10, draw_cursor_y), string_literal("DAWN (1)"))) {
+                                draw_cursor_y += 16 * 1 * 1.5 + TILE_UNIT_SIZE*2.3;
+                                if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 1, v2f32(10, draw_cursor_y), string_literal("DAWN (1)"))) {
                                     game_set_time_color(1);
                                     editor_state->level_settings.changing_preview_environment_color = false;
                                 }
-                                draw_cursor_y += 16 * 2 * 1.5 + TILE_UNIT_SIZE*2.3;
-                                if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(10, draw_cursor_y), string_literal("NIGHT (2)"))) {
+                                draw_cursor_y += 16 * 1 * 1.5 + TILE_UNIT_SIZE*2.3;
+                                if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 1, v2f32(10, draw_cursor_y), string_literal("NIGHT (2)"))) {
                                     game_set_time_color(2);
                                     editor_state->level_settings.changing_preview_environment_color = false;
                                 }
-                                draw_cursor_y += 16 * 2 * 1.5 + TILE_UNIT_SIZE*2.3;
-                                if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(10, draw_cursor_y), string_literal("MIDNIGHT (3)"))) {
+                                draw_cursor_y += 16 * 1 * 1.5 + TILE_UNIT_SIZE*2.3;
+                                if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 1, v2f32(10, draw_cursor_y), string_literal("MIDNIGHT (3)"))) {
                                     game_set_time_color(3);
                                     editor_state->level_settings.changing_preview_environment_color = false;
                                 }
-                                draw_cursor_y += 16 * 2 * 1.5 + TILE_UNIT_SIZE*2.3;
+                                draw_cursor_y += 16 * 1 * 1.5 + TILE_UNIT_SIZE*2.3;
                             } else {
                                 {
-                                    EDITOR_imgui_text_edit_cstring(framebuffer, font, highlighted_font, 2, v2f32(10, draw_cursor_y), string_literal("(can scriptoverride)areaname:"), editor_state->level_settings.area_name, array_count(editor_state->level_settings.area_name));
-                                    draw_cursor_y += 16 * 2 * 1.5 + TILE_UNIT_SIZE*2.3;
+                                    EDITOR_imgui_text_edit_cstring(framebuffer, font, highlighted_font, 1, v2f32(10, draw_cursor_y), string_literal("(can scriptoverride)areaname:"), editor_state->level_settings.area_name, array_count(editor_state->level_settings.area_name));
+                                    draw_cursor_y += 16 * 1 * 1.5 + TILE_UNIT_SIZE*2.3;
                                 }
                                 {
                                     string s = string_clone(&scratch_arena, string_from_cstring(format_temp("(preview only, nosave) environment color", entity->base_name)));
-                                    if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(10, draw_cursor_y), s)) {
+                                    if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 1, v2f32(10, draw_cursor_y), s)) {
                                         editor_state->level_settings.changing_preview_environment_color = true;
                                     }
-                                    draw_cursor_y += 16 * 2 * 1.5 + TILE_UNIT_SIZE*2.3;
+                                    draw_cursor_y += 16 * 1 * 1.5 + TILE_UNIT_SIZE*2.3;
                                 }
                                 {
                                     string s = string_clone(&scratch_arena, string_from_cstring(format_temp("open temporary/SCRIPT.txt to edit current level script.")));
-                                    if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(10, draw_cursor_y), s)) {
+                                    if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 1, v2f32(10, draw_cursor_y), s)) {
                                     }
-                                    draw_cursor_y += 16 * 2 * 1.5 + TILE_UNIT_SIZE*2.3;
+                                    draw_cursor_y += 16 * 1 * 1.5 + TILE_UNIT_SIZE*2.3;
                                 }
                             }
                         } break;
@@ -1534,7 +1534,7 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
                                 }
                             }
 
-                            s32 TILES_PER_ROW = (500 / largest_name_width);
+                            s32 TILES_PER_ROW = (250 / largest_name_width);
                             s32 row_count     = (tile_table_data_count / TILES_PER_ROW)+1;
 
                             for (s32 row_index = 0; row_index < row_count; ++row_index) {
@@ -1560,29 +1560,29 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
                                     draw_cursor_x += largest_name_width * 1.1;
                                 }
 
-                                draw_cursor_y += 24 * 1.2 * 2;
+                                draw_cursor_y += 24 * 1.2 * 1;
                             }
                         } break;
                         case EDITOR_TOOL_ENTITY_PLACEMENT: {
                             f32 draw_cursor_y = 30;
                             for (s32 index = 0; index < array_count(entity_placement_type_strings)-1; ++index) {
-                                if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(16, draw_cursor_y), entity_placement_type_strings[index])) {
+                                if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 1, v2f32(16, draw_cursor_y), entity_placement_type_strings[index])) {
                                     editor_state->tab_menu_open          = 0;
                                     editor_state->entity_placement_type = index;
                                     break;
                                 }
-                                draw_cursor_y += 12 * 1.2 * 2;
+                                draw_cursor_y += 12 * 1.2 * 1;
                             }
                         } break;
                         case EDITOR_TOOL_TRIGGER_PLACEMENT: {
                             f32 draw_cursor_y = 30;
                             for (s32 index = 0; index < array_count(trigger_placement_type_strings)-1; ++index) {
-                                if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(16, draw_cursor_y), trigger_placement_type_strings[index])) {
+                                if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 1, v2f32(16, draw_cursor_y), trigger_placement_type_strings[index])) {
                                     editor_state->tab_menu_open          = 0;
                                     editor_state->trigger_placement_type = index;
                                     break;
                                 }
-                                draw_cursor_y += 12 * 1.2 * 2;
+                                draw_cursor_y += 12 * 1.2 * 1;
                             }
                         } break;
                         default: {
@@ -1611,13 +1611,13 @@ local void update_and_render_editor_game_menu_ui(struct game_state* state, struc
 
             v2f32 draw_position = v2f32(10, 10);
             if (listing.count <= 2) {
-                software_framebuffer_draw_text(framebuffer, font, 2, draw_position, string_literal("(no areas)"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+                software_framebuffer_draw_text(framebuffer, font, 1, draw_position, string_literal("(no areas)"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
             } else {
                 /* skip . and ../ */
                 for (s32 index = 2; index < listing.count; ++index) {
                     struct directory_file* current_file = listing.files + index;
-                    draw_position.y += 2 * 12 * 1;
-                    if(EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, draw_position, string_from_cstring(current_file->name))) {
+                    draw_position.y += 1 * 12 * 1;
+                    if(EDITOR_imgui_button(framebuffer, font, highlighted_font, 1, draw_position, string_from_cstring(current_file->name))) {
                         editor_state->transition_placement.camera_before_trying_transition_placement = editor_state->camera;
                         editor_state->camera.xy = v2f32(0,0);
                         if (transition->type == TRIGGER_LEVEL_TRANSITION_TYPE_TO_LEVEL_AREA) {

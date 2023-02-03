@@ -204,7 +204,7 @@ local s32 _do_save_menu_core(struct software_framebuffer* framebuffer, f32 y_off
         
         draw_ui_breathing_text(framebuffer, v2f32(x_cursor + 15, y_cursor + 15 + adjusted_scroll_offset), title_font, text_scale, format_temp_s("%s (%02d)", current_slot->name, save_slot_index), save_slot_index*22, color32f32(1, 1, 1, alpha));
 
-#ifdef EXPERIMENTAL_320_offset
+#ifdef EXPERIMENTAL_320
         bool EXPERIMENTAL_320_offset = false;
 #else
         bool EXPERIMENTAL_320_offset = true;

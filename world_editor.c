@@ -550,13 +550,13 @@ void update_and_render_world_editor_game_menu_ui(struct game_state* state, struc
                 if (world_editor_state->tab_menu_open & TAB_MENU_SHIFT_BIT) {
                     f32 draw_cursor_y = 30;
                     for (s32 index = 0; index < array_count(world_editor_tool_mode_strings)-1; ++index) {
-                        if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 3, v2f32(100, draw_cursor_y), world_editor_tool_mode_strings[index])) {
+                        if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 1, v2f32(100, draw_cursor_y), world_editor_tool_mode_strings[index])) {
                             world_editor_state->tab_menu_open = 0;
                             world_editor_state->tool_mode     = index;
                             world_editor_state->last_selected = 0;
                             break;
                         }
-                        draw_cursor_y += 12 * 1.5 * 3;
+                        draw_cursor_y += 12 * 1.5 * 1;
                     }
                 } else if (world_editor_state->tab_menu_open & TAB_MENU_CTRL_BIT) {
                     if (!world_editor_state->last_selected) {
@@ -576,7 +576,7 @@ void update_and_render_world_editor_game_menu_ui(struct game_state* state, struc
                                         const f32 text_scale = 1;
 
                                         {
-                                            EDITOR_imgui_text_edit_cstring(framebuffer, font, highlighted_font, 2, v2f32(10, draw_cursor_y), string_literal("name"), marker->name, array_count(marker->name));
+                                            EDITOR_imgui_text_edit_cstring(framebuffer, font, highlighted_font, 1, v2f32(10, draw_cursor_y), string_literal("name"), marker->name, array_count(marker->name));
                                         }
                                     } break;
                                     case WORLD_ENTITY_PLACEMENT_TYPE_trigger: { /* there are only generic triggers thankfully. */
@@ -585,7 +585,7 @@ void update_and_render_world_editor_game_menu_ui(struct game_state* state, struc
 
                                         f32 draw_cursor_y = 30;
                                         string activation_type_string = activation_type_strings[trigger->activation_method];
-                                        if(EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(16, draw_cursor_y),
+                                        if(EDITOR_imgui_button(framebuffer, font, highlighted_font, 1, v2f32(16, draw_cursor_y),
                                                                string_from_cstring(format_temp("Activation Type: %.*s", activation_type_string.length, activation_type_string.data)))) {
                                             trigger->activation_method += 1;
                                             if (trigger->activation_method >= ACTIVATION_TYPE_COUNT) {
@@ -598,14 +598,14 @@ void update_and_render_world_editor_game_menu_ui(struct game_state* state, struc
 
                                         f32 draw_cursor_y = 30;
                                         {
-                                            EDITOR_imgui_text_edit_cstring(framebuffer, font, highlighted_font, 2, v2f32(10, draw_cursor_y), string_literal("preview name"), trigger->preview_name, array_count(trigger->preview_name));
-                                            draw_cursor_y += 2 * 16 * 1.5;
+                                            EDITOR_imgui_text_edit_cstring(framebuffer, font, highlighted_font, 1, v2f32(10, draw_cursor_y), string_literal("preview name"), trigger->preview_name, array_count(trigger->preview_name));
+                                            draw_cursor_y += 1 * 16 * 1.5;
                                         }
-                                        draw_cursor_y += 2 * 16 * 1.5;
+                                        draw_cursor_y += 1 * 16 * 1.5;
                                         {
                                             string facing_direction_string = facing_direction_strings[trigger->entrance.facing_direction];
                                             string s = string_clone(&scratch_arena, string_from_cstring(format_temp("facing direction: %.*s", facing_direction_string.length, facing_direction_string.data)));
-                                            s32 result = EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(10, draw_cursor_y), s);
+                                            s32 result = EDITOR_imgui_button(framebuffer, font, highlighted_font, 1, v2f32(10, draw_cursor_y), s);
 
                                             if (result == 1) {
                                                 trigger->entrance.facing_direction += 1;
@@ -618,8 +618,8 @@ void update_and_render_world_editor_game_menu_ui(struct game_state* state, struc
                                                 }
                                             }
                                         }
-                                        draw_cursor_y += 2 * 16 * 1.5;
-                                        if(EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(16, draw_cursor_y), format_temp_s("visit location<%3.3f,%3.3f> : %s", trigger->entrance.where.x, trigger->entrance.where.y, trigger->entrance.area_name))) {
+                                        draw_cursor_y += 1 * 16 * 1.5;
+                                        if(EDITOR_imgui_button(framebuffer, font, highlighted_font, 1, v2f32(16, draw_cursor_y), format_temp_s("visit location<%3.3f,%3.3f> : %s", trigger->entrance.where.x, trigger->entrance.where.y, trigger->entrance.area_name))) {
                                             world_editor_state->screen_state = WORLD_EDITOR_SCREEN_FILE_SELECTION_FOR_SETTING_LOCATION_ENTRANCE;
                                             world_editor_state->setting_entrance_location.camera_before_trying_to_set_location_entrance = world_editor_state->camera;
                                             editor_state->camera.xy = v2f32(0,0);
@@ -669,7 +669,7 @@ void update_and_render_world_editor_game_menu_ui(struct game_state* state, struc
                                 }
                             }
 
-                            s32 TILES_PER_ROW = (500 / largest_name_width);
+                            s32 TILES_PER_ROW = (250 / largest_name_width);
                             s32 row_count     = (world_tile_table_data_count / TILES_PER_ROW)+1;
 
                             for (s32 row_index = 0; row_index < row_count; ++row_index) {
@@ -695,18 +695,18 @@ void update_and_render_world_editor_game_menu_ui(struct game_state* state, struc
                                     draw_cursor_x += largest_name_width * 1.1;
                                 }
 
-                                draw_cursor_y += 24 * 1.2 * 2;
+                                draw_cursor_y += 24 * 1.2 * 1;
                             }
                         } break;
                         case WORLD_EDITOR_TOOL_ENTITY_PLACEMENT: {
                             f32 draw_cursor_y = 30;
                             for (s32 index = 0; index < array_count(world_entity_placement_type_strings)-1; ++index) {
-                                if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(16, draw_cursor_y), world_entity_placement_type_strings[index])) {
+                                if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 1, v2f32(16, draw_cursor_y), world_entity_placement_type_strings[index])) {
                                     world_editor_state->tab_menu_open          = 0;
                                     world_editor_state->entity_placement_type = index;
                                     break;
                                 }
-                                draw_cursor_y += 12 * 1.2 * 2;
+                                draw_cursor_y += 12 * 1.2 * 1;
                             }
                         } break;
                         default: {
@@ -726,13 +726,13 @@ void update_and_render_world_editor_game_menu_ui(struct game_state* state, struc
 
             v2f32 draw_position = v2f32(10, 10);
             if (listing.count <= 2) {
-                software_framebuffer_draw_text(framebuffer, font, 2, draw_position, string_literal("(no areas)"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+                software_framebuffer_draw_text(framebuffer, font, 1, draw_position, string_literal("(no areas)"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
             } else {
                 /* skip . and ../ */
                 for (s32 index = 2; index < listing.count; ++index) {
                     struct directory_file* current_file = listing.files + index;
-                    draw_position.y += 2 * 12 * 1;
-                    if(EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, draw_position, string_from_cstring(current_file->name))) {
+                    draw_position.y += 1 * 12 * 1;
+                    if(EDITOR_imgui_button(framebuffer, font, highlighted_font, 1, draw_position, string_from_cstring(current_file->name))) {
                         world_editor_state->screen_state = WORLD_EDITOR_SCREEN_SETTING_LOCATION_ENTRANCE;
                         copy_string_into_cstring(string_from_cstring(current_file->name), world_editor_state->loaded_area_name, array_count(world_editor_state->loaded_area_name));
 
@@ -786,22 +786,22 @@ void update_and_render_pause_world_editor_menu_ui(struct game_state* state, stru
     switch (world_editor_state->pause_menu.screen) {
         case 0: {
             {
-                if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 3, v2f32(100, y_cursor), string_literal("SAVE"))) {
+                if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(100, y_cursor), string_literal("SAVE"))) {
                     world_editor_state->pause_menu.screen = 1;
                 }
-                y_cursor += 16 * 1.2*3;
-                if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 3, v2f32(100, y_cursor), string_literal("LOAD"))) {
+                y_cursor += 16 * 1.2*2;
+                if (EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(100, y_cursor), string_literal("LOAD"))) {
                     world_editor_state->pause_menu.screen = 2;
                 }
-                y_cursor += 16 * 1.2*3;
+                y_cursor += 16 * 1.2*2;
             }
         } break;
         case 1: {
-            EDITOR_imgui_text_edit_cstring(framebuffer, font, highlighted_font, 2, v2f32(100, y_cursor), string_literal("savename"), world_editor_state->current_save_name, array_count(world_editor_state->current_save_name));
-            y_cursor += 2 * 12 * 1;
+            EDITOR_imgui_text_edit_cstring(framebuffer, font, highlighted_font, 1, v2f32(100, y_cursor), string_literal("savename"), world_editor_state->current_save_name, array_count(world_editor_state->current_save_name));
+            y_cursor += 1 * 12 * 1;
 
             if((is_key_pressed(KEY_RETURN) && !is_editing_text()) ||
-               EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(100, y_cursor), string_literal("CONFIRM"))) {
+               EDITOR_imgui_button(framebuffer, font, highlighted_font, 1, v2f32(100, y_cursor), string_literal("CONFIRM"))) {
                 world_editor_state->pause_menu.screen = 0;
                 string to_save_as = string_concatenate(&scratch_arena, string_literal(GAME_DEFAULT_WORLDMAPS_PATH), string_from_cstring(world_editor_state->current_save_name));
                 OS_create_directory(string_literal("worldmaps/"));
@@ -820,13 +820,13 @@ void update_and_render_pause_world_editor_menu_ui(struct game_state* state, stru
         case 2: {
             struct directory_listing listing = directory_listing_list_all_files_in(&scratch_arena, string_literal(GAME_DEFAULT_WORLDMAPS_PATH));
             if (listing.count <= 2) {
-                software_framebuffer_draw_text(framebuffer, font, 2, v2f32(100, y_cursor), string_literal("(no maps)"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
+                software_framebuffer_draw_text(framebuffer, font, 1, v2f32(100, y_cursor), string_literal("(no maps)"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
             } else {
                 /* skip . and ../ */
                 for (s32 index = 2; index < listing.count; ++index) {
                     struct directory_file* current_file = listing.files + index;
-                    y_cursor += 2 * 12 * 1;
-                    if(EDITOR_imgui_button(framebuffer, font, highlighted_font, 2, v2f32(100, y_cursor), string_from_cstring(current_file->name))) {
+                    y_cursor += 1 * 12 * 1;
+                    if(EDITOR_imgui_button(framebuffer, font, highlighted_font, 1, v2f32(100, y_cursor), string_from_cstring(current_file->name))) {
                         world_editor_clear_all_allocations();
 
                         struct binary_serializer serializer = open_read_file_serializer(string_concatenate(&scratch_arena, string_literal(GAME_DEFAULT_WORLDMAPS_PATH), string_from_cstring(current_file->name)));

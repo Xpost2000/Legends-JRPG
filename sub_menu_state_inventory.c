@@ -192,6 +192,7 @@ local void do_inventory_use_item_popup(struct software_framebuffer* framebuffer,
             }
         }
 
+        /* TODO: not affected yet */
         for (s32 party_member_index = 0; party_member_index < party_member_count; ++party_member_index) {
             f32 offset = 0;
             if (party_member_index == specific_inventory_ui_state.queued_party_member_use_index) {
