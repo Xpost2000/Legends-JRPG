@@ -663,6 +663,7 @@ local void hide_entities_with_base_id_index(s32 index) {
 void game_add_party_member_from_existing(struct entity* entity) {
     /* TODO later */
 }
+/* NOTE: add script function for this */
 void game_add_party_member(string basename) {
     struct entity* new_guy = game_allocate_new_party_member();
     struct entity_base_data* base_data = entity_database_find_by_name(&game_state->entity_database, basename);

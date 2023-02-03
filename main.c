@@ -1,6 +1,6 @@
 /* #define NO_FANCY_FADEIN_INTRO */
 #define EXPERIMENTAL_VFS
-/* #define EXPERIMENTAL_320 */
+#define EXPERIMENTAL_320
 
 #if 1
 #ifndef RELEASE
