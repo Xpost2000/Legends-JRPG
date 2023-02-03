@@ -356,7 +356,7 @@ local void do_shopping_menu(struct software_framebuffer* framebuffer, f32 x, boo
 
         /* Okay this UI could take advantage of having icons but that's a bit later. This'll pass in the act 1 demo I suppose. */
         for (s32 filter_index = 0; filter_index < PAGE_COUNT; ++filter_index) {
-            f32 page_tab_selector_offset_y = 16*2;
+            f32 page_tab_selector_offset_y = 20;
 
             struct font_cache* painting_text = normal_font;
             if (filter_index == shopping_ui.current_shopping_page_filter) {
@@ -364,9 +364,9 @@ local void do_shopping_menu(struct software_framebuffer* framebuffer, f32 x, boo
                 painting_text               = highlighted_font;
             }
 
-            draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, v2f32(x_cursor, y_cursor-page_tab_selector_offset_y), largest_text_width/64+3, 3, ui_color);
+            draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, v2f32(x_cursor, y_cursor-page_tab_selector_offset_y), largest_text_width/128+3, 1, ui_color);
             software_framebuffer_draw_text(framebuffer, painting_text, text_scale, v2f32(x_cursor+8, y_cursor-page_tab_selector_offset_y + 9), shopping_page_filter_strings[filter_index], modulation_color, BLEND_MODE_ALPHA);
-            x_cursor += largest_text_width;
+            x_cursor += largest_text_width*1.3;
         }
     }
 
@@ -434,7 +434,7 @@ local void do_shopping_menu(struct software_framebuffer* framebuffer, f32 x, boo
         s32 lower_limit;
         s32 upper_limit;
 #ifdef EXPERIMENTAL_320
-        set_scrollable_ui_bounds(shopping_ui.shopping_item_index, &lower_limit, &upper_limit, shopping_ui.shop_filtered_array_count, 4*2, 8*2);
+        set_scrollable_ui_bounds(shopping_ui.shopping_item_index, &lower_limit, &upper_limit, shopping_ui.shop_filtered_array_count, 4*2, 8);
 #else
         set_scrollable_ui_bounds(shopping_ui.shopping_item_index, &lower_limit, &upper_limit, shopping_ui.shop_filtered_array_count, 4, 8);
 #endif

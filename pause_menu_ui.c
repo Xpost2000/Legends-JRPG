@@ -36,7 +36,6 @@ local void pause_menu_transition_to(u32 submenu) {
 }
 
 local void update_and_render_sub_menu_states(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
-    f32 font_scale = 3;
     struct ui_pause_menu* menu_state = &state->ui_pause;
 
     assertion(menu_state->sub_menu_state != UI_PAUSE_MENU_SUB_MENU_STATE_NONE && "This should be impossible.");
@@ -58,21 +57,34 @@ v2f32 party_member_card_dimensions_units(void) {
     return v2f32(16, 5);
 }
 v2f32 party_member_card_dimensions_pixels(void) {
-    f32                   font_scale      = 2;
     f32                   ui_scale_factor = 1;
+#ifdef EXPERIMENTAL_320
+    s32 CARD_WIDTH = 8;
+    s32 CARD_HEIGHT = 3;
+#else
     s32 CARD_WIDTH = 16;
     s32 CARD_HEIGHT = 5;
+#endif
     v2f32 estimated_dimensions = nine_patch_estimate_extents(ui_chunky, ui_scale_factor, CARD_WIDTH, CARD_HEIGHT);
     return estimated_dimensions;
 }
 
 void draw_party_member_card(struct software_framebuffer* framebuffer, f32 x, f32 y, s32 member) {
     struct game_state* state           = game_state;
-    s32                CARD_WIDTH      = 16;
-    s32                CARD_HEIGHT     = 5;
+#ifdef EXPERIMENTAL_320
+    s32 CARD_WIDTH = 8;
+    s32 CARD_HEIGHT = 3;
+#else
+    s32 CARD_WIDTH = 16;
+    s32 CARD_HEIGHT = 5;
+#endif
     struct font_cache* font            = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_STEEL]);
     struct font_cache* font1           = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_GOLD]);
+#ifdef EXPERIMENTAL_320
+    f32                font_scale      = 1;
+#else
     f32                font_scale      = 2;
+#endif
     f32                ui_scale_factor = 1;
 
     draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, ui_scale_factor, v2f32(x, y), CARD_WIDTH, CARD_HEIGHT, UI_DEFAULT_COLOR);
@@ -84,16 +96,16 @@ void draw_party_member_card(struct software_framebuffer* framebuffer, f32 x, f32
         image_id sprite_to_use = anim->sprites[0];
         const s32 square_size = TILE_UNIT_SIZE;
 
-        software_framebuffer_draw_quad(framebuffer, rectangle_f32(x + TILE_UNIT_SIZE, y + TILE_UNIT_SIZE*0.9, square_size, square_size+8), color32u8(0, 0, 0, 255), BLEND_MODE_ALPHA);
+        software_framebuffer_draw_quad(framebuffer, rectangle_f32(x + TILE_UNIT_SIZE, y + TILE_UNIT_SIZE*0.9, square_size, square_size+4), color32u8(0, 0, 0, 255), BLEND_MODE_ALPHA);
         software_framebuffer_draw_image_ex(framebuffer,
                                            graphics_assets_get_image_by_id(&graphics_assets, sprite_to_use),
-                                           rectangle_f32(x + TILE_UNIT_SIZE, y + TILE_UNIT_SIZE*0.9, square_size, square_size+8),
+                                           rectangle_f32(x + TILE_UNIT_SIZE, y + TILE_UNIT_SIZE*0.9, square_size, square_size+4),
                                            rectangle_f32(0, 0, 16, 20), /* This should be a little more generic but whatever for now */
                                            color32f32(1,1,1,1), NO_FLAGS, BLEND_MODE_ALPHA);
-        draw_ui_breathing_text(framebuffer, v2f32(x + 2.2*TILE_UNIT_SIZE, y+TILE_UNIT_SIZE*0.35), font1, font_scale, entity->name, 341, color32f32_WHITE);
-        draw_ui_breathing_text(framebuffer, v2f32(x + 2.2*TILE_UNIT_SIZE, y+TILE_UNIT_SIZE*0.70 + 22), font, 1, format_temp_s("LEVEL: %d", entity->stat_block.level), 341, color32f32_WHITE);
-        draw_ui_breathing_text(framebuffer, v2f32(x + 2.2*TILE_UNIT_SIZE, y+TILE_UNIT_SIZE*0.70 + 22 + 16*1), font, 1, format_temp_s("HEALTH: %d/%d", entity->health.value, entity->health.max), 341, color32f32_WHITE);
-        draw_ui_breathing_text(framebuffer, v2f32(x + 2.2*TILE_UNIT_SIZE, y+TILE_UNIT_SIZE*0.70 + 22 + 16*2), font, 1, format_temp_s("XP: %d", entity->stat_block.experience), 341, color32f32_WHITE);
+        draw_ui_breathing_text(framebuffer, v2f32(x + 2.2*TILE_UNIT_SIZE, y+TILE_UNIT_SIZE*0.33), font1, font_scale, entity->name, 341, color32f32_WHITE);
+        draw_ui_breathing_text(framebuffer, v2f32(x + 2.2*TILE_UNIT_SIZE, y+TILE_UNIT_SIZE*0.65 + 22/2), font, 1, format_temp_s("LEVEL: %d", entity->stat_block.level), 341, color32f32_WHITE);
+        draw_ui_breathing_text(framebuffer, v2f32(x + 2.2*TILE_UNIT_SIZE, y+TILE_UNIT_SIZE*0.65 + 22/2 + 16*1), font, 1, format_temp_s("HEALTH: %d/%d", entity->health.value, entity->health.max), 341, color32f32_WHITE);
+        draw_ui_breathing_text(framebuffer, v2f32(x + 2.2*TILE_UNIT_SIZE, y+TILE_UNIT_SIZE*0.65 + 22/2 + 16*2), font, 1, format_temp_s("XP: %d", entity->stat_block.experience), 341, color32f32_WHITE);
     }
 }
 
@@ -104,17 +116,22 @@ local void do_party_member_edits_or_selections(struct game_state* state, struct 
     f32                   font_scale      = 2;
     f32                   ui_scale_factor = 1;
 
+#ifdef EXPERIMENTAL_320
+    s32 CARD_WIDTH = 8;
+    s32 CARD_HEIGHT = 3;
+#else
     s32 CARD_WIDTH = 16;
     s32 CARD_HEIGHT = 5;
+#endif
     v2f32 estimated_dimensions = nine_patch_estimate_extents(ui_chunky, ui_scale_factor, CARD_WIDTH, CARD_HEIGHT);
     /* NEED TO HANDLE SCROLLING LATER :) */
     f32 y_cursor = 100;
 
     f32 cards_x = SCREEN_WIDTH - estimated_dimensions.x * 1.1 + x;
     if (menu_state->allow_party_lineup_editing) {
-        draw_ui_breathing_text(framebuffer, v2f32(cards_x-x + 2.2*TILE_UNIT_SIZE, 10), font1, font_scale, string_literal("EDITING LINEUP"), 341, color32f32_WHITE);
+        draw_ui_breathing_text(framebuffer, v2f32(0, 10), font1, font_scale, string_literal("EDITING LINEUP"), 341, color32f32_WHITE);
     } else if (menu_state->need_to_select_party_member) {
-        draw_ui_breathing_text(framebuffer, v2f32(cards_x-x + 2.2*TILE_UNIT_SIZE, 10), font1, font_scale, string_literal("SELECT MEMBER"), 341, color32f32_WHITE);
+        draw_ui_breathing_text(framebuffer, v2f32(0, 10), font1, font_scale, string_literal("SELECT MEMBER"), 341, color32f32_WHITE);
     }
 
     for (s32 index = 0; index < state->party_member_count; ++index) {
@@ -126,7 +143,7 @@ local void do_party_member_edits_or_selections(struct game_state* state, struct 
             }
         }
         draw_party_member_card(framebuffer, cards_x + offset, y_cursor, index);
-        y_cursor += estimated_dimensions.y * 1.23;
+        y_cursor += estimated_dimensions.y * 1.5;
     }
 
     if (!allow_input) {
@@ -209,7 +226,11 @@ local void do_party_member_edits_or_selections(struct game_state* state, struct 
 
 local void update_and_render_pause_game_menu_ui(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
     /* needs a bit of cleanup */
+#ifdef EXPERIMENTAL_320
+    f32 font_scale = 1;
+#else
     f32 font_scale = 3;
+#endif
     struct ui_pause_menu* menu_state = &state->ui_pause;
     v2f32 item_positions[array_count(ui_pause_menu_strings)] = {};
 
@@ -222,11 +243,19 @@ local void update_and_render_pause_game_menu_ui(struct game_state* state, struct
     }
 
     for (unsigned index = 0; index < array_count(item_positions); ++index) {
+#ifdef EXPERIMENTAL_320
+        item_positions[index].y = 18 * (index+0.75);
+#else
         item_positions[index].y = 36 * (index+0.75);
+#endif
     }
 
     f32 offscreen_x = -240;
+#ifdef EXPERIMENTAL_320
+    f32 final_x     = 20;
+#else
     f32 final_x     = 40;
+#endif
 
     u32 blur_samples = 2;
     f32 max_blur = 1.0;
@@ -403,7 +432,11 @@ local void update_and_render_pause_game_menu_ui(struct game_state* state, struct
         for (unsigned index = 0; index < array_count(item_positions); ++index) {
             v2f32 draw_position = item_positions[index];
             draw_position.x += lerp_f32(0, 20, menu_state->shift_t[index]);
+#ifdef EXPERIMENTAL_320
+            draw_position.y += 220/2;
+#else
             draw_position.y += 220;
+#endif
             /* custom string drawing routine */
             struct font_cache* font = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_STEEL]);
             if (index == menu_state->selection) {
