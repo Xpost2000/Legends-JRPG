@@ -2685,7 +2685,7 @@ local void update_and_render_ingame_game_menu_ui(struct game_state* state, struc
         switch (state->interactable_state.interactable_type) {
             case INTERACTABLE_TYPE_CHEST: {
                 struct entity_chest* chest = state->interactable_state.context;
-                software_framebuffer_draw_text_bounds_centered(framebuffer, font, 2, rectangle_f32(0, 400, framebuffer->width, framebuffer->height - 400),
+                software_framebuffer_draw_text_bounds_centered(framebuffer, font, 2, rectangle_f32(0, 400/2, framebuffer->width, framebuffer->height - 400/2),
                                                                string_literal("open chest"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
 
                 if (is_action_pressed(INPUT_ACTION_CONFIRMATION)) {
@@ -2696,7 +2696,7 @@ local void update_and_render_ingame_game_menu_ui(struct game_state* state, struc
             case INTERACTABLE_TYPE_ENTITY_CONVERSATION: {
                 struct entity* to_speak = state->interactable_state.context;
 
-                software_framebuffer_draw_text_bounds_centered(framebuffer, font, 2, rectangle_f32(0, 400, framebuffer->width, framebuffer->height - 400),
+                software_framebuffer_draw_text_bounds_centered(framebuffer, font, 2, rectangle_f32(0, 400/2, framebuffer->width, framebuffer->height - 400/2),
                                                                string_literal("speak"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
 
                 assertion(entity_has_dialogue(to_speak) && "I'm not sure how this was possible...");
@@ -2710,7 +2710,7 @@ local void update_and_render_ingame_game_menu_ui(struct game_state* state, struc
 
             case INTERACTABLE_TYPE_ENTITY_SAVEPOINT: {
                 struct entity_savepoint* savepoint = state->interactable_state.context;
-                software_framebuffer_draw_text_bounds_centered(framebuffer, font, 2, rectangle_f32(0, 400, framebuffer->width, framebuffer->height - 400),
+                software_framebuffer_draw_text_bounds_centered(framebuffer, font, 2, rectangle_f32(0, 400/2, framebuffer->width, framebuffer->height - 400/2),
                                                                string_literal("save"), color32f32(1,1,1,1), BLEND_MODE_ALPHA);
                 if (is_action_pressed(INPUT_ACTION_CONFIRMATION)) {
                     game_open_save_menu();
