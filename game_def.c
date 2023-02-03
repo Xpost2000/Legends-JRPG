@@ -159,7 +159,7 @@ static string ui_state_strings[] = {
 #define COLOR_GRADING_DARKEST color32u8(42,42,110,255)
 
 /* local union color32u8 global_color_grading_filter = COLOR_GRADING_DAY; */
-local union color32u8 global_color_grading_filter = COLOR_GRADING_DARKEST;
+local union color32u8 global_color_grading_filter = COLOR_GRADING_DAY;
 
 local string color_grade_preset_strings[] = {
     [0] = string_literal("Day"),

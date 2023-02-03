@@ -648,7 +648,7 @@ local void update_and_render_pause_editor_menu_ui(struct game_state* state, stru
     v2f32 item_positions[array_count(ui_pause_editor_menu_strings)] = {};
 
     for (unsigned index = 0; index < array_count(item_positions); ++index) {
-        item_positions[index].y = 36 * (index+0.75);
+        item_positions[index].y = 18 * (index+0.75);
     }
 
     f32 offscreen_x = -240;
