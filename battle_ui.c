@@ -893,12 +893,18 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                 target_display_list_indices[target_list_count++] = current_id;
             }
 
+#ifdef EXPERIMENTAL_320
+            s32 BOX_WIDTH  = 4;
+            /* should be dynamically sized but okay. */
+            s32 BOX_HEIGHT = 6;
+#else
             s32 BOX_WIDTH  = 8;
             /* should be dynamically sized but okay. */
             s32 BOX_HEIGHT = 12;
+#endif
 
             v2f32 ui_box_size     = nine_patch_estimate_extents(ui_chunky, 1, BOX_WIDTH, BOX_HEIGHT);
-            v2f32 ui_box_position = v2f32(framebuffer->width*0.9-ui_box_size.x, 50);
+            v2f32 ui_box_position = v2f32(framebuffer->width*0.9-ui_box_size.x, 25);
             draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, ui_box_position, BOX_WIDTH, BOX_HEIGHT, UI_BATTLE_COLOR);
 
             for (s32 index = 0; index < target_list_count; ++index) {
@@ -907,7 +913,7 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                 string entity_name = target_entity->name;
                 v2f32 draw_point = ui_box_position;
                 draw_point.x    += 8;
-                draw_point.y    += 15 + index * 16 * 1.3;
+                draw_point.y    += 15 + index * 16 * 1.1;
 
                 struct font_cache* painted_font = normal_font;
 
@@ -916,7 +922,7 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                     target_entity->under_selection = true;
                 }
 
-                draw_ui_breathing_text(framebuffer, draw_point, painted_font, 2, entity_name, 0, color32f32_WHITE);
+                draw_ui_breathing_text(framebuffer, draw_point, painted_font, 1, entity_name, 0, color32f32_WHITE);
             }
 
             if (selection_up) {
@@ -957,11 +963,11 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
 
             s32 BOX_WIDTH  = nine_patch_estimate_fitting_extents_width(ui_chunky, 1,
                                                                        font_cache_text_width(game_get_font(MENU_FONT_COLOR_GOLD), string_literal("(x 999) "), 2)
-                                                                       + item_database_longest_string_name(game_get_font(MENU_FONT_COLOR_GOLD), 2));
-            s32 BOX_HEIGHT = roundf(5 * 1.6);
+                                                                       + item_database_longest_string_name(game_get_font(MENU_FONT_COLOR_GOLD), 1));
+            s32 BOX_HEIGHT = roundf(5 * 1.6)/2;
 
             v2f32 ui_box_size     = nine_patch_estimate_extents(ui_chunky, 1, BOX_WIDTH, BOX_HEIGHT);
-            v2f32 ui_box_position = v2f32(framebuffer->width*0.94-ui_box_size.x, 20);
+            v2f32 ui_box_position = v2f32(framebuffer->width*0.94-ui_box_size.x, 10);
             draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, ui_box_position, BOX_WIDTH, BOX_HEIGHT, UI_BATTLE_COLOR);
 
             if (selection_up) {
@@ -982,8 +988,8 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
             s32 top_index   ;
             set_scrollable_ui_bounds(item_use->selection, &bottom_index, &top_index, item_use->selectable_item_count, 3, 5);
 
-            f32 x_cursor = ui_box_position.x + 15;
-            f32 y_cursor = ui_box_position.y + 15;
+            f32 x_cursor = ui_box_position.x + 8;
+            f32 y_cursor = ui_box_position.y + 8;
 
             struct font_cache*       painting_font = normal_font;
             struct entity_inventory* inventory     = (struct entity_inventory*)(&game_state->inventory);
@@ -999,8 +1005,8 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                 }
 
                 string tmp = format_temp_s("(x %d) %.*s", current_item_instance->count, item_base->name.length, item_base->name.data);
-                draw_ui_breathing_text(framebuffer, v2f32(x_cursor, y_cursor), painting_font, 2, tmp, display_item_index, color32f32_WHITE);
-                y_cursor += 16*1.2;
+                draw_ui_breathing_text(framebuffer, v2f32(x_cursor, y_cursor), painting_font, 1, tmp, display_item_index, color32f32_WHITE);
+                y_cursor += 16;
             }
 
             if (selection_confirm) {
@@ -1014,9 +1020,12 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                   All items will now have to pick a usable target area.
                   That's determined by item target.
 
+                  (will use attack radiuses, the same as most projectile types (which means walls are not protecting right now since I don't have
+                  ray casting!))
+
                   ITEM_TARGET_SINGLE_ENEMY, 
                   ITEM_TARGET_SINGLE_ALLY, 
-                  ITEM_TARGET_SINGLE_ALL, 
+                  ITEM_TARGET_SINGLE_ALL,
                   ITEM_TARGET_TEAMMATES, (will work on all teammates no matter what)
 
                   projectiles should have just do the same thing as the movement selector, and just open up
@@ -1139,12 +1148,12 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
 
         case BATTLE_UI_SUBMODE_USING_ABILITY: {
             struct entity* user = active_combatant_entity;
-            s32 BOX_WIDTH  = 8;
-            s32 BOX_HEIGHT = 1 + 2 * user->ability_count;
+            s32 BOX_WIDTH  = 4;
+            s32 BOX_HEIGHT = 1 + user->ability_count;
 
             if (!global_battle_ui_state.selecting_ability_target) {
                 v2f32 ui_box_size     = nine_patch_estimate_extents(ui_chunky, 1, BOX_WIDTH, BOX_HEIGHT);
-                v2f32 ui_box_position = v2f32(framebuffer->width*0.9-ui_box_size.x, 50);
+                v2f32 ui_box_position = v2f32(framebuffer->width*0.9-ui_box_size.x, 20);
                 draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, ui_box_position, BOX_WIDTH, BOX_HEIGHT, UI_BATTLE_COLOR);
 
                 if (selection_up) {
@@ -1193,14 +1202,14 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                     }
 
                     draw_ui_breathing_text(framebuffer, v2f32(ui_box_position.x + 10, y_cursor), painting_font,
-                                           2, ability->name, ability_index, color32f32_WHITE);
+                                           1, ability->name, ability_index, color32f32_WHITE);
 
-                    y_cursor += 32;
+                    y_cursor += 16;
                 }
-                y_cursor = (ui_box_position.y + ui_box_size.y) + 20;
+                y_cursor = (ui_box_position.y + ui_box_size.y) + 14;
                 {
                     /* NOTE: don't ask how any of the UI was calculated. It was all funged and happened to look good within a few tries. */
-                    s32 BOX_SQUARE_SIZE = 8+1;
+                    s32 BOX_SQUARE_SIZE = 4;
                     v2f32 ui_box_size = nine_patch_estimate_extents(ui_chunky, 1, BOX_SQUARE_SIZE, BOX_SQUARE_SIZE);
                     v2f32 ui_box_position = v2f32(framebuffer->width * 0.9 - ui_box_size.x, y_cursor);
                     draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, ui_box_position, BOX_SQUARE_SIZE+1, BOX_SQUARE_SIZE+1, UI_BATTLE_COLOR);
