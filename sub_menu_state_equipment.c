@@ -100,8 +100,8 @@ local void draw_equipment_tooltips(struct software_framebuffer* framebuffer, f32
     }
 
     if (tip.length) {
-        draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, v2f32(15, bottom_y - (16*3.15)), 36, 2, ui_color);
-        draw_ui_breathing_text(framebuffer, v2f32(30, bottom_y - (16*3.15) + 15), normal_font, 2, tip, 0, modulation_color);
+        draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, v2f32(0, bottom_y - (32)), 19, 1, ui_color);
+        draw_ui_breathing_text(framebuffer, v2f32(10, bottom_y - (16*2) + 10), normal_font, 1, tip, 0, modulation_color);
     }
 }
 
@@ -139,7 +139,7 @@ local void do_entity_stat_information_panel(struct software_framebuffer* framebu
 #endif
     f32 font_height = font_cache_text_height(label_name_font) * font_scale;
 
-    draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, v2f32(x,y), 6*2, 6*4, UI_DEFAULT_COLOR);
+    draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, v2f32(x,y), 7, 6*2, UI_DEFAULT_COLOR);
     {
         for (s32 index = 0; index < array_count(info_labels); ++index) {
             f32 current_width = font_cache_text_width(label_name_font, info_labels[index], font_scale);
@@ -291,7 +291,7 @@ local void do_entity_equipment_panel(struct software_framebuffer* framebuffer, f
 #endif
     f32 font_height = font_cache_text_height(label_name_font) * font_scale;
 
-    draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, v2f32(x,y), 5*2, 6*2+2, UI_DEFAULT_COLOR);
+    draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, v2f32(x,y), 5, 7, UI_DEFAULT_COLOR);
     {
         for (s32 index = 0; index < array_count(info_labels); ++index) {
             f32 current_width = font_cache_text_width(label_name_font, info_labels[index], font_scale);
@@ -376,7 +376,7 @@ local void do_entity_select_equipment_panel(struct software_framebuffer* framebu
         mod_color.a = 0.5;
     }
 
-    draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, v2f32(x,y), 5*2, 5*2, ui_color);
+    draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, v2f32(x,y), 5, 4, ui_color);
 
     s32 lower_limit;
     s32 upper_limit;
@@ -405,7 +405,7 @@ local void do_entity_select_equipment_panel(struct software_framebuffer* framebu
             if (index == equipment_screen_state.inventory_slot_selection) {
                 painting_font = select_value_font;
             }
-            software_framebuffer_draw_text(framebuffer, painting_font, font_scale, v2f32(x+15, y_cursor), string_from_cstring(format_temp("%.*s (x%d)", item->name.length, item->name.data, instance->count)), mod_color, BLEND_MODE_ALPHA);
+            software_framebuffer_draw_text(framebuffer, painting_font, font_scale, v2f32(x+10, y_cursor), string_from_cstring(format_temp("%.*s (x%d)", item->name.length, item->name.data, instance->count)), mod_color, BLEND_MODE_ALPHA);
             y_cursor += font_height;
         }
     }
@@ -479,12 +479,18 @@ s32 do_equipment_menu(struct software_framebuffer* framebuffer, f32 dt) {
 
     bool allow_input = false;
 
+#ifdef EXPERIMENTAL_320
+    f32 final_widget_x = 50;
+#else
+    f32 final_widget_x = 100;
+#endif
+
     switch (equipment_screen_state.phase) {
         case EQUIPMENT_SCREEN_PHASE_SLIDE_IN: {
             const f32 MAX_T = 1.0;
             f32 effective_t = clamp_f32(equipment_screen_state.animation_timer / MAX_T, 0, 1);
 
-            x_character_spinner = lerp_f32(-100, 100, effective_t);
+            x_character_spinner = lerp_f32(-final_widget_x, final_widget_x, effective_t);
             x_ui_widget         = lerp_f32(framebuffer->width*2, framebuffer->width, effective_t);
 
             if (equipment_screen_state.animation_timer >= MAX_T) {
@@ -493,11 +499,7 @@ s32 do_equipment_menu(struct software_framebuffer* framebuffer, f32 dt) {
         } break;
 
         case EQUIPMENT_SCREEN_PHASE_IDLE: {
-#ifdef EXPERIMENTAL_320
-            x_character_spinner = 50;
-#else
-            x_character_spinner = 100;
-#endif
+            x_character_spinner = final_widget_x;
             x_ui_widget         = framebuffer->width;
             allow_input         = true;
         } break;
@@ -506,7 +508,7 @@ s32 do_equipment_menu(struct software_framebuffer* framebuffer, f32 dt) {
             const f32 MAX_T = 1.0;
             f32 effective_t = clamp_f32(equipment_screen_state.animation_timer / MAX_T, 0, 1);
 
-            x_character_spinner = lerp_f32(-100, 100, 1-effective_t);
+            x_character_spinner = lerp_f32(-final_widget_x, final_widget_x, 1-effective_t);
             x_ui_widget         = lerp_f32(framebuffer->width*2, framebuffer->width, 1-effective_t);
 
             /* NOTE need to generic menu */
@@ -523,9 +525,9 @@ s32 do_equipment_menu(struct software_framebuffer* framebuffer, f32 dt) {
     do_spinning_preview_of_character(x_character_spinner, 240, framebuffer, target_entity);
 #endif
 
-    do_entity_stat_information_panel(framebuffer, x_ui_widget - TILE_UNIT_SIZE*13, 30, target_entity);
-    do_entity_select_equipment_panel(framebuffer, x_ui_widget - TILE_UNIT_SIZE*6, framebuffer->height-TILE_UNIT_SIZE*6.5, target_entity, allow_input);
-    do_entity_equipment_panel(framebuffer, x_ui_widget - TILE_UNIT_SIZE*6, 30, target_entity, allow_input);
+    do_entity_stat_information_panel(framebuffer, x_ui_widget - TILE_UNIT_SIZE*14, 0, target_entity);
+    do_entity_select_equipment_panel(framebuffer, x_ui_widget - TILE_UNIT_SIZE*6, 126, target_entity, allow_input);
+    do_entity_equipment_panel(framebuffer, x_ui_widget - TILE_UNIT_SIZE*6, 0, target_entity, allow_input);
     draw_equipment_tooltips(framebuffer, framebuffer->height);
 
     equipment_update_character_spinner(dt);
