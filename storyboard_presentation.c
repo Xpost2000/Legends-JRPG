@@ -269,6 +269,7 @@ s32 game_display_and_update_storyboard(struct software_framebuffer* framebuffer,
                             new_line->shown_characters = 0;
                         }
 
+                        storyboard.character_type_timer = 0;
                         storyboard.y_cursor += font_base_height;
                         storyboard.wait_on_line = new_line; 
                     } break;
