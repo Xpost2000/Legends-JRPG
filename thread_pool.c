@@ -55,6 +55,11 @@ void thread_pool_add_job(job_queue_function job, void* data) {
 
 void thread_pool_synchronize_tasks() {
     bool done = false;
+    /* NOTE:
+       fix this, I'm pretty sure this is the cause of those mysterious,
+       on exit crashes, since I suspect sometimes the thread jobs never get
+       the chance to synchronize since the game stops running and will stop syncing.
+    */
     while (!done && global_game_running) {
         done = true;
 

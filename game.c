@@ -1008,17 +1008,19 @@ bool level_area_navigation_map_is_point_in_bounds(struct level_area_navigation_m
 }
 
 local void shopping_ui_begin(void); /* UI will end itself. */
+
 local void game_stop_shopping(void) {
     game_state->shopping = false;
-    memory_arena_set_cursor(game_state->arena, game_state->shopping_memory_marker);
+    memory_arena_clear_top(&game_state->shopping_arena);
+    memory_arena_clear_bottom(&game_state->shopping_arena);
 }
+
 local void game_begin_shopping(string storename) {
     if (!game_state->shopping) {
         game_state->shopping = true;
-        memory_arena_set_allocation_region_top(game_state->arena); {
-            game_state->shopping_memory_marker = memory_arena_get_cursor(game_state->arena);
-            game_state->active_shop = load_shop_definition(game_state->arena, storename);
-        } memory_arena_set_allocation_region_bottom(game_state->arena);
+        {
+            game_state->active_shop = load_shop_definition(&game_state->shopping_arena, storename);
+        }
         shopping_ui_begin();
     }
 }
@@ -2200,6 +2202,7 @@ void game_initialize(void) {
     game_state                      = memory_arena_push(&game_arena, sizeof(*game_state));
     game_state->variables           = game_variables(&game_arena);
     game_state->conversation_arena  = memory_arena_push_sub_arena(&game_arena, Kilobyte(64));
+    game_state->shopping_arena      = memory_arena_push_sub_arena(&game_arena, Kilobyte(64));
     Report_Memory_Status_Region(&game_arena, "Conversation Arena & Game Variables Initialization");
 
     initialize_storyboard(&game_arena);
@@ -3958,11 +3961,15 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
     }
 #endif
     if (is_key_pressed(KEY_O)) {
+#if 0
         if (submode == GAME_SUBMODE_OVERWORLD) {
             game_open_worldmap_at_default(string_literal("atlas.map"));
         } else {
             game_open_overworld_at_default(string_literal("bforest1.area"), DIRECTION_RETAINED);
         }
+#else
+        game_begin_shopping(string_literal("basic"));
+#endif
     }
 
 #ifdef USE_EDITOR

@@ -1,3 +1,14 @@
+/*
+  NOTE:
+
+  Engine has some weird locks that cause it to crash on exit sometimes,
+  now honestly this isn't a *big* deal since it never crashes during game-time.
+
+  So I might not handle that for a while.
+
+  It is definitely a thread sync issue on exit though.
+*/
+
 /* #define NO_FANCY_FADEIN_INTRO */
 #define EXPERIMENTAL_VFS
 #define EXPERIMENTAL_320

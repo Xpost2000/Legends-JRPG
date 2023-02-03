@@ -724,7 +724,7 @@ struct game_state {
     struct ui_save_menu ui_save;
 
     bool                 shopping;
-    s64                  shopping_memory_marker; /* for restoring later. */
+    struct memory_arena  shopping_arena;
     struct shop_instance active_shop;
 
     struct entity_database entity_database;
