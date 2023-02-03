@@ -292,7 +292,7 @@ local void do_gold_counter(struct software_framebuffer* framebuffer, f32 dt) {
 local v2f32 estimate_shopping_menu_dimensions(void) {
     /* should put this constant elsewhere */
 #ifdef EXPERIMENTAL_320
-    const s32 BOX_WIDTH  = 18;
+    const s32 BOX_WIDTH  = 17;
     const s32 BOX_HEIGHT = 10;
 #else
     const s32 BOX_WIDTH  = 35;
@@ -371,7 +371,7 @@ local void do_shopping_menu(struct software_framebuffer* framebuffer, f32 x, boo
     }
 
 #ifdef EXPERIMENTAL_320
-    s32 BOX_WIDTH  = 18;
+    s32 BOX_WIDTH  = 17;
     s32 BOX_HEIGHT = 10;
 #else
     s32 BOX_WIDTH  = 35;
@@ -409,6 +409,7 @@ local void do_shopping_menu(struct software_framebuffer* framebuffer, f32 x, boo
         }
 
         if (selection_switch_tab_reverse) {
+            shopping_ui.shopping_item_index = 0;
             shopping_ui.current_shopping_page_filter -= 1;
 
             if (shopping_ui.current_shopping_page_filter < 0) {
@@ -417,6 +418,7 @@ local void do_shopping_menu(struct software_framebuffer* framebuffer, f32 x, boo
 
             shopping_ui_populate_filtered_page(shop_mode);
         } else if (selection_switch_tab) {
+            shopping_ui.shopping_item_index = 0;
             shopping_ui.current_shopping_page_filter += 1;
 
             if (shopping_ui.current_shopping_page_filter >= PAGE_COUNT) {
@@ -685,7 +687,7 @@ local void game_display_and_update_shop_ui(struct software_framebuffer* framebuf
 
             do_shopping_menu(framebuffer, lerp_f32(-FINAL_SHOPPING_MENU_X - shopping_menu_dimensions.x, FINAL_SHOPPING_MENU_X, t), false, shopping_ui.shopping_mode);
 #ifdef EXPERIMENTAL_320
-            software_framebuffer_draw_text(framebuffer, normal_font, 2, v2f32(10, 10), shopping_mode_type_strings[shopping_ui.shopping_mode], color32f32(1,1,1,t2), BLEND_MODE_ALPHA);
+            software_framebuffer_draw_text(framebuffer, normal_font, 1, v2f32(10, 10), shopping_mode_type_strings[shopping_ui.shopping_mode], color32f32(1,1,1,t2), BLEND_MODE_ALPHA);
 #else
             software_framebuffer_draw_text(framebuffer, normal_font, 4, v2f32(10, 10), shopping_mode_type_strings[shopping_ui.shopping_mode], color32f32(1,1,1,t2), BLEND_MODE_ALPHA);
 #endif
@@ -698,7 +700,7 @@ local void game_display_and_update_shop_ui(struct software_framebuffer* framebuf
             do_gold_counter(framebuffer, dt);
             do_shopping_menu(framebuffer, FINAL_SHOPPING_MENU_X, true, shopping_ui.shopping_mode);
 #ifdef EXPERIMENTAL_320
-            software_framebuffer_draw_text(framebuffer, normal_font, 2, v2f32(10, 10), shopping_mode_type_strings[shopping_ui.shopping_mode], color32f32_WHITE, BLEND_MODE_ALPHA);
+            software_framebuffer_draw_text(framebuffer, normal_font, 1, v2f32(10, 10), shopping_mode_type_strings[shopping_ui.shopping_mode], color32f32_WHITE, BLEND_MODE_ALPHA);
 #else
             software_framebuffer_draw_text(framebuffer, normal_font, 4, v2f32(10, 10), shopping_mode_type_strings[shopping_ui.shopping_mode], color32f32_WHITE, BLEND_MODE_ALPHA);
 #endif
@@ -722,7 +724,7 @@ local void game_display_and_update_shop_ui(struct software_framebuffer* framebuf
 
             do_shopping_menu(framebuffer, lerp_f32(-FINAL_SHOPPING_MENU_X - shopping_menu_dimensions.x, FINAL_SHOPPING_MENU_X, (1.0 - t)), false, shopping_ui.shopping_mode);
 #ifdef EXPERIMENTAL_320
-            software_framebuffer_draw_text(framebuffer, normal_font, 2, v2f32(10, 10), shopping_mode_type_strings[shopping_ui.shopping_mode], color32f32(1,1,1,(1.0 - t2)), BLEND_MODE_ALPHA);
+            software_framebuffer_draw_text(framebuffer, normal_font, 1, v2f32(10, 10), shopping_mode_type_strings[shopping_ui.shopping_mode], color32f32(1,1,1,(1.0 - t2)), BLEND_MODE_ALPHA);
 #else
             software_framebuffer_draw_text(framebuffer, normal_font, 4, v2f32(10, 10), shopping_mode_type_strings[shopping_ui.shopping_mode], color32f32(1,1,1,(1.0 - t2)), BLEND_MODE_ALPHA);
 #endif
