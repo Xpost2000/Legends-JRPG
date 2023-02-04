@@ -250,9 +250,18 @@ void entity_ability_compile_animation_sequence(struct memory_arena* arena, struc
                         struct sequence_action_explosion* explosion = &action_data->explosion;
 
                         decode_sequence_action_target_entity(lisp_list_nth(&action_form_rest_arguments, 0), &explosion->where_to_explode);
-                        lisp_form_get_s32(*lisp_list_nth(&action_form_rest_arguments, 1), &explosion->explosion_effect_id);
-                        lisp_form_get_f32(*lisp_list_nth(&action_form_rest_arguments, 2), &explosion->explosion_radius);
-                        lisp_form_get_s32(*lisp_list_nth(&action_form_rest_arguments, 3), &explosion->explosion_damage);
+                        if (action_form_rest_arguments.list.count == 4) {
+                            lisp_form_get_s32(*lisp_list_nth(&action_form_rest_arguments, 1), &explosion->explosion_effect_id);
+                            lisp_form_get_f32(*lisp_list_nth(&action_form_rest_arguments, 2), &explosion->explosion_radius);
+                            lisp_form_get_s32(*lisp_list_nth(&action_form_rest_arguments, 3), &explosion->explosion_damage);
+                        } else if (action_form_rest_arguments.list.count == 5) {
+                            lisp_form_get_s32(*lisp_list_nth(&action_form_rest_arguments, 1), &explosion->explosion_effect_id);
+                            lisp_form_get_f32(*lisp_list_nth(&action_form_rest_arguments, 2), &explosion->explosion_radius);
+                            if (lisp_form_symbol_matching(*lisp_list_nth(&action_form_rest_arguments, 3), string_literal("formula"))) {
+                                explosion->use_formula = true;
+                                lisp_form_get_f32(*lisp_list_nth(&action_form_rest_arguments, 4), &explosion->damage_scale);
+                            }
+                        }
                         /* should be okay, but this needs some more work */
                     } else if (lisp_form_symbol_matching(*action_form_header, string_literal("start-special-effects"))) {
                         action_data->type = SEQUENCE_ACTION_START_SPECIAL_FX;

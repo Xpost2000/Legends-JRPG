@@ -2558,6 +2558,11 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
                         s32 explosion_damage                        = explosion->explosion_damage;
                         s32 explosion_effect_id                     = explosion->explosion_effect_id;
 
+                        if (explosion->use_formula) {
+                            s32 physical_damage = entity_get_physical_damage(target_entity) * explosion->damage_scale;
+                            explosion_damage    = physical_damage;
+                        }
+
                         game_produce_damaging_explosion(v2f32_scale(start_explosion_at->position, 1.0/TILE_UNIT_SIZE), explosion_radius, explosion_effect_id, explosion_damage, 0, 0);
                         entity_advance_ability_sequence(target_entity);
                     } break;

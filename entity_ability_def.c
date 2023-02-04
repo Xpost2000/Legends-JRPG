@@ -142,10 +142,13 @@ struct sequence_action_explosion {
 
     f32 explosion_radius;
     /*
-      NOTE:
-      I want this to be scalable by a formula later, or have some way to
-      adjust this, since it's something that might happen a lot.
+      TODO/NOTE:
+      This is not parsed yet *officially, but there
+      is a path that allows this to be used
     */
+    bool use_formula;
+    f32  damage_scale;
+
     s32 explosion_damage;
     s32 explosion_effect_id;
 };
