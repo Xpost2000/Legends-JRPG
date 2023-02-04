@@ -2665,25 +2665,32 @@ local void game_setup_death_ui(void) {
     }
 }
 
-local void update_and_render_ingame_game_menu_ui(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
-
+local bool update_and_render_ingame_menus(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
     /* I seem to have a pretty inconsistent UI priority state thing. */
     if (state->shopping) {
         game_display_and_update_shop_ui(framebuffer, dt);
-        return;
+        return true;
     }
 
     if (game_display_and_update_storyboard(framebuffer, dt))
-        return;
+        return true;
 
     if (update_and_render_region_zone_change(state, framebuffer, dt))
-        return;
+        return true;
 
     if (game_display_and_update_messages(framebuffer, dt))
-        return;
+        return true;
 
     if (state->is_conversation_active) {
         update_and_render_conversation_ui(state, framebuffer, dt);
+        return true;
+    }
+
+    return false;
+}
+
+local void update_and_render_ingame_game_menu_ui(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
+    if (update_and_render_ingame_menus(state, framebuffer, dt)) {
         return;
     }
 
@@ -3510,6 +3517,21 @@ local void update_and_render_game_worldmap(struct software_framebuffer* framebuf
         bool action_cancel = is_action_pressed(INPUT_ACTION_CANCEL);
         bool action_confirm = is_action_pressed(INPUT_ACTION_CONFIRMATION);
 
+        bool no_input = false;
+        if (game_state->shopping) {
+            no_input = true;
+        }
+        if (game_state->is_conversation_active) {
+            no_input = true;
+        }
+        if (global_popup_state.message_count > 0) {
+            no_input = true;
+        }
+
+        if (no_input) {
+            move_right = move_left = move_back = move_forward = action_cancel = action_confirm = false;
+        }
+
         if (game_state->world_map_explore_state.prompt_for_entering) {
             if (action_confirm) {
                 game_state->world_map_explore_state.prompt_for_entering      = false;
@@ -3538,7 +3560,7 @@ local void update_and_render_game_worldmap(struct software_framebuffer* framebuf
             }
 
             /* this is a little cumbersome since collidant objects are not easily iterable right now. Will need to fix this at some point. Or make it more generic */
-            {
+            if (game_state->world_map_explore_state.cutscene_mode) {
                 struct rectangle_f32 world_rectangle = rectangle_f32(game_state->world_map_explore_state.player_position.x, game_state->world_map_explore_state.player_position.y, TILE_UNIT_SIZE, TILE_UNIT_SIZE);
                 struct game_variable* boat_var = lookup_game_variable(string_literal("story_has_boat"), true);
                 bool                  has_boat = boat_var->value;
@@ -3645,7 +3667,7 @@ local void update_and_render_game_worldmap(struct software_framebuffer* framebuf
         software_framebuffer_render_commands(&mode7_buffer, &commands);
 
 #if 1
-        {
+        if (!game_state->world_map_explore_state.cutscene_mode) {
             render_commands_push_quad(&commands,
                                       rectangle_f32(game_state->world_map_explore_state.player_position.x,
                                                     game_state->world_map_explore_state.player_position.y,
@@ -3901,7 +3923,30 @@ local void update_and_render_game_worldmap(struct software_framebuffer* framebuf
                 }
             }
         }
+
+    } else {
+        struct world_map_exploration_state* explore_state = &game_state->world_map_explore_state;
+
+        /* NOTE this can break, so becareful. Should be more strict on time */
+        if (explore_state->steer_time == -1 || explore_state->steer_time > 0) {
+            v2f32 desired_velocity = v2f32(0,0);
+            v2f32 view_direction = v2f32_direction_from_degree(game_state->world_map_explore_state.view_angle-90); /* x cos, y sin */
+
+            explore_state->view_angle += explore_state->steer_angular_velocity * dt;
+            
+            desired_velocity.x = explore_state->steer_velocity * view_direction.x;
+            desired_velocity.y = explore_state->steer_velocity * view_direction.y;
+
+            if (explore_state->steer_time != -1) {
+                explore_state->steer_time -= dt;
+            }
+
+            game_state->world_map_explore_state.player_position.x += desired_velocity.x * dt;
+            game_state->world_map_explore_state.player_position.y += desired_velocity.y * dt;
+        }
     }
+
+    update_and_render_ingame_menus(game_state, framebuffer, dt);
     game_script_execute_awaiting_scripts(&scratch_arena, game_state, dt);
     game_script_run_all_timers(dt);
 }

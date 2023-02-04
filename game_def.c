@@ -751,7 +751,7 @@ struct world_map_exploration_state {
     bool cutscene_mode; /* turn off player drawing and UI drawing */
     struct camera precutscene_camera;
 
-    /* NOTE: < 0 == infinite */
+    /* NOTE: == -1 == infinite */
     f32 steer_time;
     f32 steer_velocity; /* in TILE_UNIT_SIZE */
     f32 steer_angular_velocity;

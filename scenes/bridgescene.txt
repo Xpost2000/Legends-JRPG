@@ -48,8 +48,7 @@
 '(0.0 0.0 0.0 128.0)
 0.0
 1.0)
-(parallel
-(cutscene_world_map_steer 0 50 'forever)
+(cutscene_world_map_steer 0 50 3)
 (storyboard
  '(page
    (wait 1.5)

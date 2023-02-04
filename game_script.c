@@ -1066,6 +1066,14 @@ bool game_script_waiting_on_form(struct game_script_script_instance* script_stat
                 return true;
             }
         }
+
+        if (lisp_form_symbol_matching(*first, string_literal("cutscene_world_map_steer"))) {
+            if (game_state->world_map_explore_state.steer_time == -1) {
+                return true;
+            } else if (game_state->world_map_explore_state.steer_time > 0) {
+                return false; 
+            }
+        }
     }
 
     return true;
