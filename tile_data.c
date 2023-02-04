@@ -109,9 +109,11 @@ local void load_tile_data_into_table(string filebuffer_string, s32 table_id) {
                             struct lisp_form* f = lisp_list_nth(&form_arguments, flag_index);
 
                             if (lisp_form_symbol_matching(*f, string_literal("solid"))) {
+                                _debugprintf("solid tile");
                                 flags |= TILE_DATA_FLAGS_SOLID;
                             }
                             if (lisp_form_symbol_matching(*f, string_literal("boat-only"))) {
+                                _debugprintf("boat only tile");
                                 flags |= TILE_DATA_FLAGS_BOAT_ONLY;
                             }
                         }

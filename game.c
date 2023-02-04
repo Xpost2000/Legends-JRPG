@@ -3474,6 +3474,7 @@ local void game_world_map_set_transportation_mode(s32 mode) {
             game_state->world_map_explore_state.animating   = true;
             game_state->world_map_explore_state.animation_t = 0;
             game_state->world_map_explore_state.transportation_mode = mode;
+            _debugprintf("Hi, I'm supposed to animate now");
         }
     }
 }
@@ -3536,6 +3537,7 @@ local void update_and_render_game_worldmap(struct software_framebuffer* framebuf
                 bool has_boat = true;
                 {
                     bool stop_horizontal_movement = false;
+                    bool touched_boat_only_tile   = false;
                     {
                         world_rectangle.x += dt * desired_velocity.x;
 
@@ -3545,12 +3547,20 @@ local void update_and_render_game_worldmap(struct software_framebuffer* framebuf
                              !collidable_object_iterator_done(&collidables) && !stop_horizontal_movement;
                              object = collidable_object_iterator_advance(&collidables)) {
                             bool should_collide = true;
-                            if (object.tile_flags & TILE_DATA_FLAGS_BOAT_ONLY) {
+
+                            if (rectangle_f32_intersect(world_rectangle, object.rectangle)) {
+                                if (object.tile_flags & TILE_DATA_FLAGS_BOAT_ONLY) {
+                                    touched_boat_only_tile = true;
+                                } else {
+                                }
+                            }
+
+                            if (touched_boat_only_tile) {
                                 if (has_boat) {
                                     game_world_map_set_transportation_mode(WORLD_MAP_TRANSPORTATION_MODE_BOAT);
                                     should_collide = false;
                                 } else {
-                                    
+                                    should_collide = true;
                                 }
                             } else {
                                 game_world_map_set_transportation_mode(WORLD_MAP_TRANSPORTATION_MODE_FOOT);
@@ -3565,6 +3575,7 @@ local void update_and_render_game_worldmap(struct software_framebuffer* framebuf
                 }
                 {
                     bool stop_vertical_movement = false;
+                    bool touched_boat_only_tile   = false;
                     {
                         world_rectangle.y += dt * desired_velocity.y;
 
@@ -3574,12 +3585,20 @@ local void update_and_render_game_worldmap(struct software_framebuffer* framebuf
                              !collidable_object_iterator_done(&collidables) && !stop_vertical_movement;
                              object = collidable_object_iterator_advance(&collidables)) {
                             bool should_collide = true;
-                            if (object.tile_flags & TILE_DATA_FLAGS_BOAT_ONLY) {
+
+                            if (rectangle_f32_intersect(world_rectangle, object.rectangle)) {
+                                if (object.tile_flags & TILE_DATA_FLAGS_BOAT_ONLY) {
+                                    touched_boat_only_tile = true;
+                                } else {
+                                }
+                            }
+
+                            if (touched_boat_only_tile) {
                                 if (has_boat) {
                                     game_world_map_set_transportation_mode(WORLD_MAP_TRANSPORTATION_MODE_BOAT);
                                     should_collide = false;
                                 } else {
-                                    
+                                    should_collide = true;
                                 }
                             } else {
                                 game_world_map_set_transportation_mode(WORLD_MAP_TRANSPORTATION_MODE_FOOT);
@@ -3692,6 +3711,7 @@ local void update_and_render_game_worldmap(struct software_framebuffer* framebuf
             if (game_state->world_map_explore_state.animation_t >= 1) {
                 game_state->world_map_explore_state.animating   = false;
                 game_state->world_map_explore_state.animation_t = 0;
+                _debugprintf("Done animating world transition thing");
             }
         } else {
             if (game_state->world_map_explore_state.transportation_mode == WORLD_MAP_TRANSPORTATION_MODE_FOOT) {

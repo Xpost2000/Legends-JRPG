@@ -4433,7 +4433,7 @@ struct collidable_object collidable_object_iterator_advance(struct collidable_ob
                     struct tile_data_definition* tile_data    = world_tile_table_data + current_tile->id;
                     _collidable_object_iterator_set_status(iterator);
 
-                    if (tile_data->flags & TILE_DATA_FLAGS_SOLID) {
+                    if (tile_data->flags & TILE_DATA_FLAGS_SOLID || tile_data->flags & TILE_DATA_FLAGS_BOAT_ONLY) {
                         result.rectangle  = tile_rectangle(current_tile);
                         result.tile_flags = tile_data->flags;
                         return result;
@@ -4447,7 +4447,7 @@ struct collidable_object collidable_object_iterator_advance(struct collidable_ob
                     struct tile_data_definition* tile_data    = world_tile_table_data + current_tile->id;
                     _collidable_object_iterator_set_status(iterator);
 
-                    if (tile_data->flags & TILE_DATA_FLAGS_SOLID) {
+                    if (tile_data->flags & TILE_DATA_FLAGS_SOLID || tile_data->flags & TILE_DATA_FLAGS_BOAT_ONLY) {
                         result.rectangle  = tile_rectangle(current_tile);
                         result.tile_flags = tile_data->flags;
                         return result;
@@ -4474,7 +4474,7 @@ struct collidable_object collidable_object_iterator_advance(struct collidable_ob
                         struct tile*                 current_tile = &current_scriptable_tile_layer->tiles[iterator->world_map.tile_layer_scriptable_tile_index++];
                         struct tile_data_definition* tile_data    = world_tile_table_data + current_tile->id;
 
-                        if (tile_data->flags & TILE_DATA_FLAGS_SOLID) {
+                        if (tile_data->flags & TILE_DATA_FLAGS_SOLID || tile_data->flags & TILE_DATA_FLAGS_BOAT_ONLY) {
                             result.rectangle    = tile_rectangle(current_tile);
                             result.rectangle.x += TILE_UNIT_SIZE * current_scriptable_layer_properties->offset_x;
                             result.rectangle.y += TILE_UNIT_SIZE * current_scriptable_layer_properties->offset_y;
