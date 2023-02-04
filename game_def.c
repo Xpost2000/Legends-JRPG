@@ -721,6 +721,10 @@ local struct world_map_view_settings world_map_view_on_boat = (struct world_map_
     .dh = TILE_UNIT_SIZE,
     .brightness_mod = 0.95,
 };
+
+/*
+  TODO: world map needs to wrap
+*/
 struct world_map_exploration_state {
     v2f32 player_position;
     f32   view_angle;
@@ -738,6 +742,19 @@ struct world_map_exploration_state {
     bool animating;
     f32 animation_t;
     struct world_map_view_settings current_view_settings;
+
+    /*
+      cutscene steering information:
+
+      TODO: allow cutscene steering, this is just to test the system works.
+     */
+    bool cutscene_mode; /* turn off player drawing and UI drawing */
+    struct camera precutscene_camera;
+
+    /* NOTE: < 0 == infinite */
+    f32 steer_time;
+    f32 steer_velocity; /* in TILE_UNIT_SIZE */
+    f32 steer_angular_velocity;
 };
 
 struct game_state {

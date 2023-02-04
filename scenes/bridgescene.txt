@@ -41,6 +41,29 @@
 
 
 # NOT DONE YET
+(cutscene_load_worldmap "atlas.map")
+(transition_fade
+'color
+'in
+'(0.0 0.0 0.0 128.0)
+0.0
+1.0)
+(parallel
+(cutscene_world_map_steer 0 50 'forever)
+(storyboard
+ '(page
+   (wait 1.5)
+   (line "Once I was a man.")
+   (spacer)
+   (wait 0.3)
+   (line "Now, I am a God.")
+   (wait-for-continue)
+   )
+   )
+   (transition_fade 'color 'out '(0.0 0.0 0.0 128.0) 0.0 1.0)
+(cutscene_unload_worldmap)
+
+(wait 2)
 (cutscene_load_area "childb1.area")
 (game_set_environment_colors 'day)
 (camera_putat_force '(128 0))

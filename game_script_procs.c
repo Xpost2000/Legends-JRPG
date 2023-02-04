@@ -425,6 +425,27 @@ GAME_LISP_FUNCTION(CUTSCENE_LOAD_AREA) {
     return LISP_nil;
 }
 
+GAME_LISP_FUNCTION(CUTSCENE_LOAD_WORLDMAP) {
+    Required_Argument_Count(CUTSCENE_LOAD_WORLDMAP, 1);
+
+    string cutscene_area_path = {};
+    lisp_form_get_string(arguments[0], &cutscene_area_path);
+    game_state->world_map_explore_state.precutscene_camera = game_state->camera;
+    game_open_worldmap_at_default(cutscene_area_path);
+    game_state->world_map_explore_state.cutscene_mode = true;
+
+    special_effect_start_crossfade_scene(1, 1.4);
+    return LISP_nil;
+}
+/* Remember to use this */
+GAME_LISP_FUNCTION(CUTSCENE_UNLOAD_WORLDMAP) {
+    game_state->world_map_explore_state.cutscene_mode = false;
+    special_effect_start_crossfade_scene(1, 1.4);
+    submode = GAME_SUBMODE_OVERWORLD;
+    game_state->camera = game_state->world_map_explore_state.precutscene_camera;
+    return LISP_nil;
+}
+
 GAME_LISP_FUNCTION(CUTSCENE_UNLOAD_AREA) {
     cutscene_unload_area();
     return LISP_nil;
@@ -1392,6 +1413,33 @@ GAME_LISP_FUNCTION(PARTY_KICK) {
         }
     }
 
+    return LISP_nil;
+}
+
+/* angular velocity, velocity(in tile units), time */
+GAME_LISP_FUNCTION(CUTSCENE_WORLD_MAP_STEER) {
+    Required_Argument_Count(CUTSCENE_WORLD_MAP_STEER, 3);
+
+    struct lisp_form arg0 = arguments[0];
+    struct lisp_form arg1 = arguments[1];
+    struct lisp_form arg2 = arguments[2];
+
+    /* not error checked */
+    lisp_form_get_f32(arg0, &game_state->world_map_explore_state.steer_angular_velocity);
+    lisp_form_get_f32(arg1, &game_state->world_map_explore_state.steer_velocity);
+    if (!lisp_form_get_f32(arg2, &game_state->world_map_explore_state.steer_time)) {
+        if (lisp_form_symbol_matching(arg2, string_literal("forever"))) {
+            game_state->world_map_explore_state.steer_time = -1;
+        }
+    }
+
+    return LISP_nil;
+}
+
+GAME_LISP_FUNCTION(CUTSCENE_WORLD_MAP_STOP_STEER) {
+    game_state->world_map_explore_state.steer_time             = 0;
+    game_state->world_map_explore_state.steer_velocity         = 0;
+    game_state->world_map_explore_state.steer_angular_velocity = 0;
     return LISP_nil;
 }
 

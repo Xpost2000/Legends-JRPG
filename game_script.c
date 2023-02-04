@@ -26,7 +26,20 @@
   I don't have that.
   
   I'll just manually write waiting code for stuff I need then, it's not that big of a deal, though it dampers things somewhat...
- */
+*/
+
+/*
+  TODO:
+
+  - Fix the wait implementation for progn
+  - Add parallel and get it to work
+    - when executing a parallel
+       just execute all forms at once (does nothing different in standard mode. Since everything is done instantly.)
+       in game mode, parallel forms don't wait on anything.
+       However the parallel form must wait for all it's forms to be complete.
+       IE: (add a completed_forms field, and note if completed_forms == form_count)
+       or something.
+*/
 
 /* this is a pool, so that when we have multiple running scripts, we can have multiple waiting scripts. */
 /* nevermind that fact that only one script runs at a time... */
@@ -94,6 +107,13 @@ struct game_script_execution_state {
            all current actions for entities.
         */
         entity_id entity_id;
+
+        /*
+          Used for progn and parallel.
+
+          Considered OKAY when the execution_stack_depth is less than their index+1.
+         */
+        s32 stackframe_index;
     } awaiters;
 
     struct lisp_form body;
@@ -996,6 +1016,7 @@ bool game_script_waiting_on_form(struct game_script_script_instance* script_stat
             struct lisp_form evaluated = game_script_evaluate_cond_and_return_used_branch(&scratch_arena, game_state, form_to_wait_on);
             return game_script_waiting_on_form(script_state, &evaluated);
         } else if (lisp_form_symbol_matching(*first, string_literal("progn"))) {
+            /* NOTE: I think this is wrong... */
             return game_script_waiting_on_form(script_state, lisp_list_nth(form_to_wait_on, -1));
         } else if (lisp_form_symbol_matching(*first, string_literal("wait"))) {
             if (current_stackframe->awaiters.timer_id != -1) {
@@ -1130,6 +1151,8 @@ void game_script_execute_awaiting_scripts(struct memory_arena* arena, struct gam
                             struct lisp_form used_branch = game_script_evaluate_cond_and_return_used_branch(&scratch_arena, game_state, current_form);
                             game_script_instance_push_stackframe(script_instance, used_branch);
                         } else if (lisp_form_symbol_matching(*first, string_literal("progn"))) {
+                            game_script_instance_push_stackframe(script_instance, lisp_list_sliced(*current_form, 1, -1));
+                        } else if (lisp_form_symbol_matching(*first, string_literal("parallel"))) {
                             game_script_instance_push_stackframe(script_instance, lisp_list_sliced(*current_form, 1, -1));
                         } else {
                             /* wait is not evaluated. It's  */
