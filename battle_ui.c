@@ -1390,14 +1390,11 @@ local void do_after_action_report_screen(struct game_state* state, struct softwa
     draw_ui_breathing_text(framebuffer, v2f32(ui_box_position.x+15, y_cursor), header_font, 3, string_literal("XP Gained"), 0, modulation_color);
     y_cursor += text_height*1.6;
 
+    /* TODO: combine this else where, but this is going to be rewritten anyways */
+    s32 total_xp_count = total_xp_gained_from_enemies();
     {
-        s32 total_xp_count = total_xp_gained_from_enemies();
         string temp_string = format_temp_s("%d", total_xp_count);
         /* award amongst party members if we had more than one */
-        {
-            struct entity* user = game_get_player(state);
-            entity_award_experience(user, total_xp_count);
-        }
         software_framebuffer_draw_text(framebuffer, normal_font, 2, v2f32(ui_box_position.x+15, y_cursor), temp_string, modulation_color, BLEND_MODE_ALPHA);
     }
 
@@ -1875,6 +1872,18 @@ local void end_combat_ui(void) {
         populate_post_battle_loot_table();
 
         /* end battle events. */
+        /* I want to animate this */
+        s32 total_xp_count = total_xp_gained_from_enemies();
+        for (s32 party_member_index = 0; party_member_index < game_state->party_member_count; ++party_member_index) {
+            struct entity* user = game_get_party_member(party_member_index);
+            if (user->flags & ENTITY_FLAGS_ALIVE) {
+                entity_award_experience(user, total_xp_count);
+            } else {
+                /* dead party members get 75% XP. */
+                entity_award_experience(user, total_xp_count * 0.75);
+            }
+        }
+        
         /* not going to be very fancy about it. Revive all "dead party members". */
         {
             for (s32 party_member_index = 0; party_member_index < game_state->party_member_count; ++party_member_index) {
