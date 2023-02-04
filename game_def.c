@@ -669,6 +669,58 @@ struct world_map_list {
 struct world_map* world_map_list_find_existing(struct world_map_list* list, u32 hashid);
 struct world_map* world_map_list_push(struct world_map_list* list);
 
+enum world_map_transportation_mode {
+    WORLD_MAP_TRANSPORTATION_MODE_FOOT,
+    WORLD_MAP_TRANSPORTATION_MODE_BOAT,
+};
+struct world_map_view_settings {
+    f32 scale;
+    f32 focus;
+    f32 horizon;
+    f32 brightness_mod;
+
+    f32 dx;
+    f32 dy;
+    f32 dw;
+    f32 dh;
+};
+local struct world_map_view_settings world_map_view_settings_interpolate(struct world_map_view_settings a, struct world_map_view_settings b, f32 t) {
+    struct world_map_view_settings result = (struct world_map_view_settings) {
+        .scale          = lerp_f32(a.scale, b.scale, t),
+        .focus          = lerp_f32(a.focus, b.focus, t),
+        .horizon        = lerp_f32(a.horizon, b.horizon, t),
+        .brightness_mod = lerp_f32(a.brightness_mod, b.brightness_mod, t),
+
+        /* interpolating this is usually not a good idea, so I'd rather just jet it over. */
+        .dx = b.dx,
+        .dy = b.dy,
+        .dw = b.dw,
+        .dw = b.dh,
+    };
+    return result;
+}
+local struct world_map_view_settings world_map_view_on_foot = (struct world_map_view_settings) {
+    .scale   = 200,
+    .focus   = 700*2.5,
+    .horizon = -660,
+
+    .dx = 262 + TILE_UNIT_SIZE,
+    .dy = 272,
+    .dw = TILE_UNIT_SIZE*2,
+    .dh = TILE_UNIT_SIZE*2,
+    .brightness_mod = 0.8,
+};
+local struct world_map_view_settings world_map_view_on_boat = (struct world_map_view_settings) {
+    .scale   = 500,
+    .focus   = 400*3,
+    .horizon = -1000,
+
+    .dx = 283 + TILE_UNIT_SIZE/2,
+    .dy = 343 - TILE_UNIT_SIZE/2,
+    .dw = TILE_UNIT_SIZE,
+    .dh = TILE_UNIT_SIZE,
+    .brightness_mod = 0.95,
+};
 struct world_map_exploration_state {
     v2f32 player_position;
     f32   view_angle;
@@ -682,6 +734,10 @@ struct world_map_exploration_state {
     /*
       TODO: boat information?
      */
+    s32 transportation_mode;
+    bool animating;
+    f32 animation_t;
+    struct world_map_view_settings current_view_settings;
 };
 
 struct game_state {

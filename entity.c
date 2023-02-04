@@ -4434,7 +4434,8 @@ struct collidable_object collidable_object_iterator_advance(struct collidable_ob
                     _collidable_object_iterator_set_status(iterator);
 
                     if (tile_data->flags & TILE_DATA_FLAGS_SOLID) {
-                        result.rectangle = tile_rectangle(current_tile);
+                        result.rectangle  = tile_rectangle(current_tile);
+                        result.tile_flags = tile_data->flags;
                         return result;
                     } else {
                         continue;
@@ -4447,7 +4448,8 @@ struct collidable_object collidable_object_iterator_advance(struct collidable_ob
                     _collidable_object_iterator_set_status(iterator);
 
                     if (tile_data->flags & TILE_DATA_FLAGS_SOLID) {
-                        result.rectangle = tile_rectangle(current_tile);
+                        result.rectangle  = tile_rectangle(current_tile);
+                        result.tile_flags = tile_data->flags;
                         return result;
                     } else {
                         continue;
@@ -4476,6 +4478,7 @@ struct collidable_object collidable_object_iterator_advance(struct collidable_ob
                             result.rectangle    = tile_rectangle(current_tile);
                             result.rectangle.x += TILE_UNIT_SIZE * current_scriptable_layer_properties->offset_x;
                             result.rectangle.y += TILE_UNIT_SIZE * current_scriptable_layer_properties->offset_y;
+                            result.tile_flags = tile_data->flags;
                             return result;
                         } else {
                             continue;
@@ -4496,6 +4499,7 @@ struct collidable_object collidable_object_iterator_advance(struct collidable_ob
 
                     if (tile_data->flags & TILE_DATA_FLAGS_SOLID) {
                         result.rectangle = tile_rectangle(current_tile);
+                        result.tile_flags = tile_data->flags;
                         return result;
                     } else {
                         continue;
@@ -4509,6 +4513,7 @@ struct collidable_object collidable_object_iterator_advance(struct collidable_ob
 
                     if (tile_data->flags & TILE_DATA_FLAGS_SOLID) {
                         result.rectangle = tile_rectangle(current_tile);
+                        result.tile_flags = tile_data->flags;
                         return result;
                     } else {
                         continue;
@@ -4537,6 +4542,7 @@ struct collidable_object collidable_object_iterator_advance(struct collidable_ob
                             result.rectangle    = tile_rectangle(current_tile);
                             result.rectangle.x += TILE_UNIT_SIZE * current_scriptable_layer_properties->offset_x;
                             result.rectangle.y += TILE_UNIT_SIZE * current_scriptable_layer_properties->offset_y;
+                            result.tile_flags = tile_data->flags;
                             return result;
                         } else {
                             continue;

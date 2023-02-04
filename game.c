@@ -3468,6 +3468,16 @@ void update_and_render_game_console(struct game_state* state, struct software_fr
 #endif
 }
 
+local void game_world_map_set_transportation_mode(s32 mode) {
+    if (game_state->world_map_explore_state.transportation_mode != mode) {
+        if (!game_state->world_map_explore_state.animating) {
+            game_state->world_map_explore_state.animating   = true;
+            game_state->world_map_explore_state.animation_t = 0;
+            game_state->world_map_explore_state.transportation_mode = mode;
+        }
+    }
+}
+
 local void update_and_render_game_worldmap(struct software_framebuffer* framebuffer, f32 dt) {
     update_game_camera(game_state, dt);
 
@@ -3523,6 +3533,7 @@ local void update_and_render_game_worldmap(struct software_framebuffer* framebuf
             /* this is a little cumbersome since collidant objects are not easily iterable right now. Will need to fix this at some point. Or make it more generic */
             {
                 struct rectangle_f32 world_rectangle = rectangle_f32(game_state->world_map_explore_state.player_position.x, game_state->world_map_explore_state.player_position.y, TILE_UNIT_SIZE, TILE_UNIT_SIZE);
+                bool has_boat = true;
                 {
                     bool stop_horizontal_movement = false;
                     {
@@ -3533,7 +3544,22 @@ local void update_and_render_game_worldmap(struct software_framebuffer* framebuf
                         for (struct collidable_object object = collidable_object_iterator_begin(&collidables);
                              !collidable_object_iterator_done(&collidables) && !stop_horizontal_movement;
                              object = collidable_object_iterator_advance(&collidables)) {
-                            world_rectangle = push_out_horizontal_edges(world_rectangle, object.rectangle, &stop_horizontal_movement);
+                            bool should_collide = true;
+                            if (object.tile_flags & TILE_DATA_FLAGS_BOAT_ONLY) {
+                                if (has_boat) {
+                                    game_world_map_set_transportation_mode(WORLD_MAP_TRANSPORTATION_MODE_BOAT);
+                                    should_collide = false;
+                                } else {
+                                    
+                                }
+                            } else {
+                                game_world_map_set_transportation_mode(WORLD_MAP_TRANSPORTATION_MODE_FOOT);
+                                should_collide = true;
+                            }
+
+                            if (should_collide) {
+                                world_rectangle = push_out_horizontal_edges(world_rectangle, object.rectangle, &stop_horizontal_movement);
+                            }
                         }
                     }
                 }
@@ -3547,7 +3573,22 @@ local void update_and_render_game_worldmap(struct software_framebuffer* framebuf
                         for (struct collidable_object object = collidable_object_iterator_begin(&collidables);
                              !collidable_object_iterator_done(&collidables) && !stop_vertical_movement;
                              object = collidable_object_iterator_advance(&collidables)) {
-                            world_rectangle = push_out_vertical_edges(world_rectangle, object.rectangle, &stop_vertical_movement);
+                            bool should_collide = true;
+                            if (object.tile_flags & TILE_DATA_FLAGS_BOAT_ONLY) {
+                                if (has_boat) {
+                                    game_world_map_set_transportation_mode(WORLD_MAP_TRANSPORTATION_MODE_BOAT);
+                                    should_collide = false;
+                                } else {
+                                    
+                                }
+                            } else {
+                                game_world_map_set_transportation_mode(WORLD_MAP_TRANSPORTATION_MODE_FOOT);
+                                should_collide = true;
+                            }
+
+                            if (should_collide) {
+                                world_rectangle = push_out_vertical_edges(world_rectangle, object.rectangle, &stop_vertical_movement);
+                            }
                         }
                     }
                 }
@@ -3614,7 +3655,6 @@ local void update_and_render_game_worldmap(struct software_framebuffer* framebuf
     /* reproject into a plane */
     /* Clean this up. */
     {
-        f32 scale=0,focus=0,horizon=0;
         struct image_buffer* img = (struct image_buffer*)&mode7_buffer;
 
         s32 fw = framebuffer->width;
@@ -3631,79 +3671,51 @@ local void update_and_render_game_worldmap(struct software_framebuffer* framebuf
         static s32 anim_done = 0;
         static f32 t   = 0;
 
-        static f32 dx = 0;
-        static f32 dy = 0;
-        static f32 dw = 0;
-        static f32 dh = 0;
-
-        if (is_key_pressed(KEY_F7)) {
-            do_anim = 1;   
-            anim_done = 0;
-            rrr ^= 1;
-            t = 0;
-        }
-
-        /* TODO: Experimental animations for the map */
-        if (do_anim) {
-            if (!anim_done) {
-                if (rrr) {
-                    scale = lerp_f32(500, 200, t);;
-                    focus = lerp_f32(400*3, 700*2.5, t);;
-                    horizon = lerp_f32(-1000, -660, t);;
-
-                    dx = lerp_f32(262 + TILE_UNIT_SIZE, 283 + TILE_UNIT_SIZE/2, 1-t);
-                    dy = lerp_f32(272, 343 - TILE_UNIT_SIZE/2, 1-t);
-                    dw = lerp_f32(TILE_UNIT_SIZE*2, TILE_UNIT_SIZE, 1-t);
-                    dw = lerp_f32(TILE_UNIT_SIZE*2, TILE_UNIT_SIZE, 1-t);
-                } else {
-                    scale = lerp_f32(200, 500, t);;
-                    focus = lerp_f32(700*2.5, 400*3, t);;
-                    horizon = lerp_f32(-660, -1000, t);;
-
-                    dx = lerp_f32(262 + TILE_UNIT_SIZE, 283 + TILE_UNIT_SIZE/2, t);
-                    dy = lerp_f32(272, 343 - TILE_UNIT_SIZE/2, t);
-                    dw = lerp_f32(TILE_UNIT_SIZE*2, TILE_UNIT_SIZE, t);
-                    dw = lerp_f32(TILE_UNIT_SIZE*2, TILE_UNIT_SIZE, t);
-                }
-
-                t += dt;
-
-                if (t >= 1.0) {
-                    anim_done = 1;
-                    do_anim = 0;
-                    t = 0;
-                }
+        if (game_state->world_map_explore_state.animating) {
+            if (game_state->world_map_explore_state.transportation_mode == WORLD_MAP_TRANSPORTATION_MODE_FOOT) {
+                game_state->world_map_explore_state.current_view_settings =
+                    world_map_view_settings_interpolate(
+                        world_map_view_on_boat,
+                        world_map_view_on_foot,
+                        game_state->world_map_explore_state.animation_t
+                    );
             } else {
-                anim_done = 0;
-                do_anim = 0;
-                t = 0;
+                game_state->world_map_explore_state.current_view_settings =
+                    world_map_view_settings_interpolate(
+                        world_map_view_on_foot,
+                        world_map_view_on_boat,
+                        game_state->world_map_explore_state.animation_t
+                    );
+            }
+
+            game_state->world_map_explore_state.animation_t += dt;
+            if (game_state->world_map_explore_state.animation_t >= 1) {
+                game_state->world_map_explore_state.animating   = false;
+                game_state->world_map_explore_state.animation_t = 0;
             }
         } else {
-            if (rrr) {
-                /* SETTING A: Default */
-                scale     = 200;
-                focus     = 700*2.5;
-                horizon   = -660;
-
-                dx = 262 + TILE_UNIT_SIZE;
-                dy = 272;
-                dw = TILE_UNIT_SIZE*2;
-                dh = TILE_UNIT_SIZE*2;
+            if (game_state->world_map_explore_state.transportation_mode == WORLD_MAP_TRANSPORTATION_MODE_FOOT) {
+                game_state->world_map_explore_state.current_view_settings = world_map_view_on_foot;
             } else {
-                scale     = 500;
-                focus     = 400*3;
-                horizon   = -1000;
-                dx = 283 + TILE_UNIT_SIZE/2;
-                dy = 343 - TILE_UNIT_SIZE/2;
-                dw = TILE_UNIT_SIZE;
-                dh = TILE_UNIT_SIZE;
+                game_state->world_map_explore_state.current_view_settings = world_map_view_on_boat;
             }
         }
+
+        f32 scale               = game_state->world_map_explore_state.current_view_settings.scale;
+        f32 focus               = game_state->world_map_explore_state.current_view_settings.focus;
+        f32 horizon             = game_state->world_map_explore_state.current_view_settings.horizon;
+        f32 dx                  = game_state->world_map_explore_state.current_view_settings.dx;
+        f32 dy                  = game_state->world_map_explore_state.current_view_settings.dy;
+        f32 dw                  = game_state->world_map_explore_state.current_view_settings.dw;
+        f32 dh                  = game_state->world_map_explore_state.current_view_settings.dh;
+        f32 brightness_modifier = game_state->world_map_explore_state.current_view_settings.brightness_mod;
 
 #ifdef EXPERIMENTAL_320
         scale/=2;
         focus/=2;
         horizon/=2;
+        dx /= 2;
+        dy /= 2;
 #endif
 
         /* cam params end */
@@ -3767,7 +3779,7 @@ local void update_and_render_game_worldmap(struct software_framebuffer* framebuf
                 paint_x = fw - paint_x;
 
                 f32 perspective_z_norm = perspective_z / max_depth*0.25;
-                f32 brightness = clamp_f32(((perspective_z_norm*perspective_z_norm)), 0.0, 1);
+                f32 brightness = clamp_f32(((perspective_z_norm*perspective_z_norm)), 0.0, 1) * brightness_modifier;
 
                 if (sample_x >= iw ||
                     sample_x < 0 ||
@@ -3839,7 +3851,7 @@ local void update_and_render_game_worldmap(struct software_framebuffer* framebuf
                 { .name = string_literal("W"), 270 },
             };
 
-            const f32 DISPLAY_ELEMENT_RADIUS = 40;
+            const f32 DISPLAY_ELEMENT_RADIUS = 20;
 
             /* draw a compass UI thing or something... */
             {
@@ -3861,7 +3873,7 @@ local void update_and_render_game_worldmap(struct software_framebuffer* framebuf
                         font = game_get_font(MENU_FONT_COLOR_BLOODRED);
                     }
 
-                    software_framebuffer_draw_text(framebuffer, font, 4, v2f32(widget_x+x_cursor, widget_y+y_cursor), compass_display_elements[element_index].name, color32f32_WHITE, BLEND_MODE_ALPHA);
+                    software_framebuffer_draw_text(framebuffer, font, 2, v2f32(widget_x+x_cursor, widget_y+y_cursor), compass_display_elements[element_index].name, color32f32_WHITE, BLEND_MODE_ALPHA);
                 }
             }
         }

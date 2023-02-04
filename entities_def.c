@@ -1053,6 +1053,7 @@ enum collidable_object_iterator_type {
 /* I may or may not need more fields, but I don't think I need more than the rectangle usually. */
 struct collidable_object { 
     struct rectangle_f32 rectangle;
+    s32    tile_flags;
 };
 struct collidable_object_iterator_world_map {
     s32 tile_layer_object_index;
