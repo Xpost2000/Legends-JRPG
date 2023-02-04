@@ -3471,9 +3471,9 @@ void update_and_render_game_console(struct game_state* state, struct software_fr
 local void game_world_map_set_transportation_mode(s32 mode) {
     if (game_state->world_map_explore_state.transportation_mode != mode) {
         if (!game_state->world_map_explore_state.animating) {
+            game_state->world_map_explore_state.transportation_mode = mode;
             game_state->world_map_explore_state.animating   = true;
             game_state->world_map_explore_state.animation_t = 0;
-            game_state->world_map_explore_state.transportation_mode = mode;
             _debugprintf("Hi, I'm supposed to animate now");
         }
     }
@@ -3494,7 +3494,12 @@ local void update_and_render_game_worldmap(struct software_framebuffer* framebuf
 
     /* NOTE: worldmap player controls  (3D mode controls)*/
     {
-        const f32 WORLD_VELOCITY = TILE_UNIT_SIZE*4.0;
+        f32 WORLD_VELOCITY = TILE_UNIT_SIZE*4.0;
+
+        if (game_state->world_map_explore_state.transportation_mode == WORLD_MAP_TRANSPORTATION_MODE_BOAT) {
+            WORLD_VELOCITY *= 2;
+        }
+
         const f32 TURN_VELOCITY  = 90;
         bool allow_explore_player_entity_movement(struct game_state* state);
 
@@ -3517,6 +3522,7 @@ local void update_and_render_game_worldmap(struct software_framebuffer* framebuf
             }
         } else if (allow_explore_player_entity_movement(game_state)) {
             v2f32 desired_velocity = v2f32(0,0);
+            
             if (move_forward) {
                 desired_velocity.x = WORLD_VELOCITY * view_direction.x;
                 desired_velocity.y = WORLD_VELOCITY * view_direction.y;
@@ -3537,45 +3543,25 @@ local void update_and_render_game_worldmap(struct software_framebuffer* framebuf
                 bool has_boat = true;
                 {
                     bool stop_horizontal_movement = false;
-                    bool touched_boat_only_tile   = false;
                     {
                         world_rectangle.x += dt * desired_velocity.x;
-
                         struct collidable_object_iterator collidables = world_map_collidables_iterator(world_map);
 
                         for (struct collidable_object object = collidable_object_iterator_begin(&collidables);
                              !collidable_object_iterator_done(&collidables) && !stop_horizontal_movement;
                              object = collidable_object_iterator_advance(&collidables)) {
-                            bool should_collide = true;
-
                             if (rectangle_f32_intersect(world_rectangle, object.rectangle)) {
-                                if (object.tile_flags & TILE_DATA_FLAGS_BOAT_ONLY) {
-                                    touched_boat_only_tile = true;
-                                } else {
+                                if (object.tile_flags & TILE_DATA_FLAGS_BOAT_ONLY && has_boat) {
+                                    continue;
                                 }
                             }
 
-                            if (touched_boat_only_tile) {
-                                if (has_boat) {
-                                    game_world_map_set_transportation_mode(WORLD_MAP_TRANSPORTATION_MODE_BOAT);
-                                    should_collide = false;
-                                } else {
-                                    should_collide = true;
-                                }
-                            } else {
-                                game_world_map_set_transportation_mode(WORLD_MAP_TRANSPORTATION_MODE_FOOT);
-                                should_collide = true;
-                            }
-
-                            if (should_collide) {
-                                world_rectangle = push_out_horizontal_edges(world_rectangle, object.rectangle, &stop_horizontal_movement);
-                            }
+                            world_rectangle = push_out_horizontal_edges(world_rectangle, object.rectangle, &stop_horizontal_movement);
                         }
                     }
                 }
                 {
                     bool stop_vertical_movement = false;
-                    bool touched_boat_only_tile   = false;
                     {
                         world_rectangle.y += dt * desired_velocity.y;
 
@@ -3584,30 +3570,36 @@ local void update_and_render_game_worldmap(struct software_framebuffer* framebuf
                         for (struct collidable_object object = collidable_object_iterator_begin(&collidables);
                              !collidable_object_iterator_done(&collidables) && !stop_vertical_movement;
                              object = collidable_object_iterator_advance(&collidables)) {
-                            bool should_collide = true;
-
                             if (rectangle_f32_intersect(world_rectangle, object.rectangle)) {
-                                if (object.tile_flags & TILE_DATA_FLAGS_BOAT_ONLY) {
-                                    touched_boat_only_tile = true;
-                                } else {
+                                if (object.tile_flags & TILE_DATA_FLAGS_BOAT_ONLY && has_boat) {
+                                    continue;
                                 }
                             }
 
-                            if (touched_boat_only_tile) {
-                                if (has_boat) {
-                                    game_world_map_set_transportation_mode(WORLD_MAP_TRANSPORTATION_MODE_BOAT);
-                                    should_collide = false;
-                                } else {
-                                    should_collide = true;
-                                }
-                            } else {
-                                game_world_map_set_transportation_mode(WORLD_MAP_TRANSPORTATION_MODE_FOOT);
-                                should_collide = true;
-                            }
+                            world_rectangle = push_out_vertical_edges(world_rectangle, object.rectangle, &stop_vertical_movement);
+                        }
+                    }
+                }
+                {
+                    {
+                        struct collidable_object_iterator collidables = world_map_collidables_iterator(world_map);
 
-                            if (should_collide) {
-                                world_rectangle = push_out_vertical_edges(world_rectangle, object.rectangle, &stop_vertical_movement);
+                        bool on_any_boat_tile = false;
+                        for (struct collidable_object object = collidable_object_iterator_begin(&collidables);
+                             !collidable_object_iterator_done(&collidables);
+                             object = collidable_object_iterator_advance(&collidables)) {
+                            if (rectangle_f32_intersect(world_rectangle, object.rectangle)) {
+                                if (object.tile_flags & TILE_DATA_FLAGS_BOAT_ONLY && has_boat) {
+                                    on_any_boat_tile = true;
+                                    break;
+                                }
                             }
+                        }
+
+                        if (on_any_boat_tile) {
+                            game_world_map_set_transportation_mode(WORLD_MAP_TRANSPORTATION_MODE_BOAT);
+                        } else {
+                            game_world_map_set_transportation_mode(WORLD_MAP_TRANSPORTATION_MODE_FOOT);
                         }
                     }
                 }
@@ -3683,12 +3675,6 @@ local void update_and_render_game_worldmap(struct software_framebuffer* framebuf
         s32 ih = img->height;
 
         f32 max_depth = fh/2;
-
-        /* need to play with these... */
-        static s32 rrr = 0;
-        static s32 do_anim = 0;
-        static s32 anim_done = 0;
-        static f32 t   = 0;
 
         if (game_state->world_map_explore_state.animating) {
             if (game_state->world_map_explore_state.transportation_mode == WORLD_MAP_TRANSPORTATION_MODE_FOOT) {
