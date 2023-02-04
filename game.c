@@ -659,20 +659,29 @@ local void hide_entities_with_base_id_index(s32 index) {
         }
     }
 }
-/* TODO: ADD NOTIFICATION MESSAGES FOR JOIN/REMOVE */
-void game_add_party_member_from_existing(struct entity* entity) {
-    /* TODO later */
+void game_add_party_member_from_existing(struct entity* entity, bool message) {
+    assertion(entity->base_id_index != -1 && "That doesn't make any sense?");
+    struct entity_base_data* base_data = game_state->entity_database.entities + entity->base_id_index;
+    struct entity*           new_guy   = game_allocate_new_party_member();
+    entity_base_data_unpack(&game_state->entity_database, base_data, new_guy);
+    hide_entities_with_base_id_index(new_guy->base_id_index);
+    new_guy->flags &= ~(ENTITY_FLAGS_HIDDEN);
+
+    if (message)
+        game_message_queue(format_temp_s("%.*s has joined the party!", new_guy->name.length, new_guy->name.data));
 }
 /* NOTE: add script function for this */
-void game_add_party_member(string basename) {
+void game_add_party_member(string basename, bool message) {
     struct entity* new_guy = game_allocate_new_party_member();
     struct entity_base_data* base_data = entity_database_find_by_name(&game_state->entity_database, basename);
     entity_base_data_unpack(&game_state->entity_database, base_data, new_guy);
     hide_entities_with_base_id_index(new_guy->base_id_index);
     new_guy->flags &= ~(ENTITY_FLAGS_HIDDEN);
-    _debugprintf("ability count %d", new_guy->ability_count);
+
+    if (message)
+        game_message_queue(format_temp_s("%.*s has joined the party!", new_guy->name.length, new_guy->name.data));
 }
-void game_remove_party_member(s32 index) {
+void game_remove_party_member(s32 index, bool message) {
     struct entity* to_remove  = game_dereference_entity(game_state, game_state->party_members[index]);
     /* restore their status in the current world map if they were supposed to be on it. */
     show_entities_with_base_id_index(to_remove->base_id_index);
@@ -682,6 +691,9 @@ void game_remove_party_member(s32 index) {
     }
 
     game_state->party_member_count--;
+
+    if (message)
+        game_message_queue(format_temp_s("%.*s has left.", to_remove->name.length, to_remove->name.data));
 }
 void game_set_party_leader(s32 index) {
     struct entity* last_leader = game_dereference_entity(game_state, game_state->party_members[game_state->leader_index]);
@@ -2320,8 +2332,8 @@ void game_initialize_game_world(void) {
     {
         game_state->party_member_count = 0;
 
-        game_add_party_member(string_literal("player"));
-        game_add_party_member(string_literal("brother"));
+        game_add_party_member(string_literal("player"), false);
+        game_add_party_member(string_literal("brother"), false);
         game_state->leader_index       = 0;
 
         for (s32 party_member_index = 0; party_member_index < game_state->party_member_count; ++party_member_index) {
@@ -3962,10 +3974,11 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
     }
 #endif
     if (is_key_pressed(KEY_O)) {
-#if 0
+#if 1
         if (submode == GAME_SUBMODE_OVERWORLD) {
             game_open_worldmap_at_default(string_literal("atlas.map"));
         } else {
+            submode = GAME_SUBMODE_OVERWORLD;
             game_open_overworld_at_default(string_literal("bforest1.area"), DIRECTION_RETAINED);
         }
 #else

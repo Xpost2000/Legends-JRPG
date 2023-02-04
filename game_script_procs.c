@@ -1334,6 +1334,67 @@ GAME_LISP_FUNCTION(TRANSITION_FADE) {
     return LISP_nil;
 }
 
+/*
+  takes a basename
+ */
+GAME_LISP_FUNCTION(PARTY_ADD) {
+    Required_Argument_Count(PARTY_ADD, 1);
+
+    bool show_message = true;
+    if (argument_count > 1)
+        lisp_form_get_boolean(arguments[1], &show_message);
+    
+    if (arguments[0].type == LISP_FORM_STRING) {
+        string baseid_string = {};
+        lisp_form_get_string(arguments[0], &baseid_string);
+        game_add_party_member(baseid_string, show_message);
+    }
+
+    return LISP_nil;
+}
+GAME_LISP_FUNCTION(PARTY_ADD_EXISTING) {
+    Required_Argument_Count(PARTY_ADD_EXISTING, 1);
+
+    bool show_message = true;
+    if (argument_count > 1)
+        lisp_form_get_boolean(arguments[1], &show_message);
+
+    struct game_script_typed_ptr ptr = game_script_object_handle_decode(arguments[0]);
+    Fatal_Script_Error(ptr.type == GAME_SCRIPT_TARGET_ENTITY && "Cannot add non-entity party member!");
+    struct entity* target_entity = game_dereference_entity(state, ptr.entity_id);
+    assertion(target_entity && "no entity?");
+
+    game_add_party_member_from_existing(target_entity, show_message);
+
+    return LISP_nil;
+}
+/*
+  takes a basename for the entity to kick
+*/
+GAME_LISP_FUNCTION(PARTY_KICK) {
+    Required_Argument_Count(PARTY_KICK, 1);
+
+    bool show_message = true;
+    if (argument_count > 1)
+        lisp_form_get_boolean(arguments[1], &show_message);
+
+    string basename = {};
+    Fatal_Script_Error(lisp_form_get_string(arguments[0], &basename) && "Bad basename argument for party_kick");
+    s32 base_data_index =
+        entity_database_find_by_name(&game_state->entity_database, basename) -
+        game_state->entity_database.entities;
+
+    for (s32 index = 0; index < game_state->party_member_count; ++index) {
+        struct entity* party_member_entity = game_get_party_member(index);
+        if (party_member_entity->base_id_index == base_data_index) {
+            game_remove_party_member(index, show_message);
+            break;
+        }
+    }
+
+    return LISP_nil;
+}
+
 #undef GAME_LISP_FUNCTION
 
 #define STRINGIFY(x) #x
