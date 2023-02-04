@@ -25,15 +25,6 @@ enum battle_ui_animation_phase {
 
     BATTLE_UI_FADE_OUT_DETAILS_AFTER_BATTLE_COMPLETION,
     BATTLE_UI_FADE_OUT_DETAILS_AFTER_TURN_COMPLETION,
-    /* 
-       I would add more animation phases but I don't have infinite time or patience right now,
-       I've mostly done nothing but UI code, and while some of it is kind of cool, it's also a bit
-       soul retching sometimes.
-       
-       I need to do some crappy script writing to have a nice time I guess.
-       
-       TODO add remaining animated phases.
-    */
     BATTLE_UI_AFTER_ACTION_REPORT_IDLE,
     /* BATTLE_UI_AFTER_ACTION_BYE, */
 };
@@ -326,7 +317,6 @@ local void start_combat_ui(void) {
     battle_clear_loot_results();
 }
 
-/* TODO does not account for per entity objects! */
 local bool is_player_combat_turn(struct game_state* state) {
     struct game_state_combat_state* combat_state            = &state->combat_state;
     struct entity*                  active_combatant_entity = game_dereference_entity(state, combat_state->participants[combat_state->active_combatant]);
@@ -734,7 +724,6 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
     bool selection_left    = is_action_down_with_repeat(INPUT_ACTION_MOVE_LEFT);
     bool selection_right   = is_action_down_with_repeat(INPUT_ACTION_MOVE_RIGHT);
 
-    /* TODO: weirdo */
     if (!allow_input || game_command_console_enabled) {
         selection_down = selection_up = selection_left = selection_right =  selection_confirm = selection_cancel = false;
     }
@@ -870,8 +859,6 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
 
             /* This is a simple menu for now, I may want to expand on this a little but for now this is it. */
             /* Attacking will just instantly apply some damage, we don't care about animating right now. That can be like next week. */
-            
-            /* TODO make attacking highlight the target obviously! Or focus on the target would work too. */
         case BATTLE_UI_SUBMODE_ATTACKING: {
             f32 attack_radius = DEFAULT_ENTITY_ATTACK_RADIUS;
             /* I mean, there's no battle this large... Ever */
@@ -1430,6 +1417,7 @@ local void update_game_camera_combat(struct game_state* state, f32 dt) {
     switch (global_battle_ui_state.submode) {
         case BATTLE_UI_SUBMODE_ATTACKING:
         case BATTLE_UI_SUBMODE_LOOKING: {
+            global_battle_ui_state.stalk_type = STALK_TYPE_NONE;
         } break;
         default: {
             if (active_combatant_entity->ai.current_action != ENTITY_ACTION_ABILITY) {

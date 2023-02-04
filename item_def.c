@@ -73,6 +73,7 @@ enum equipment_slot {
 enum item_flags {
     ITEM_NO_FLAGS = 0,
     ITEM_COMBAT_ONLY = BIT(1),
+    ITEM_NO_SELL = BIT(2),
 };
 enum weapon_flags {
     WEAPON_FLAG_NO_FLAGS   = 0,
@@ -104,6 +105,10 @@ struct item_def {
         Entity_Stat_Block_Base(s32);
     } stats;
 
+    /*
+      if set on non-projectile weapons,
+      it will set the attack target class
+    */
     s32 attack_range;
 
     /* ability usage ideas */

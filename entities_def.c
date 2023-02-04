@@ -3,7 +3,7 @@
 
   Not lights apparently. Those don't count for some reason!
 */
-#define DEFAULT_VELOCITY (TILE_UNIT_SIZE * 5)
+#define DEFAULT_VELOCITY (TILE_UNIT_SIZE * 4)
 #define DEFAULT_ENTITY_ATTACK_RADIUS (3)
 
 #ifndef ENTITY_DEF_C
@@ -13,6 +13,8 @@
 
 #include "entity_stat_block_def.c"
 #define MAX_ENTITY_LIST_COUNT (8)
+
+#define WEAPON_CLASS_TARGET_RADIUS (3)
 
 /* This needs to be augmented more... Oh well. Not my issue. */
 /* We only really have one of each list type, so I could store the list

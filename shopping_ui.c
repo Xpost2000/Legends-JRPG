@@ -199,6 +199,8 @@ local void shopping_ui_populate_filtered_page(s32 shop_mode) {
             if (item_id_equal(item_get_id(item_definition), item_id_make(string_literal("item_gold")))) {
                 _debugprintf("I found gold!");
                 allow_item = false;
+            } else if (item_definition->flags & ITEM_NO_SELL) {
+                allow_item = false;
             }
 
             if (shopping_ui.current_shopping_page_filter != PAGE_ALL) {

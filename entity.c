@@ -31,6 +31,23 @@ local void entity_advance_ability_sequence(struct entity* entity);
 #include "handle_specialfx_sequence_action.c"
 #include "handle_hardcoded_animation_sequence_action.c"
 
+
+/*
+  A = My Attack
+  B = Their Defense
+  C = My Level
+  C2 = Their Level
+*/
+const f32 atkdmgformula1(f32 A, f32 C) {
+    return (A*(1+(C/100) + (C/2)));
+}
+const f32 reductionformula1(f32 B, f32 C2) {
+    return (1 - ((B+150)/(2000-(C2/2))));
+}
+const f32 dmgformula1(f32 A, f32 B, f32 C, f32 C2) { /* full formula code if I need it */
+    return (atkdmgformula1(A, C) * reductionformula1(B, C2));
+}
+
 bool entity_bad_ref(struct entity* e);
 /* NOTE, damage is not tracked right now. */
 void entity_do_healing(struct entity* entity, s32 healing);
@@ -44,9 +61,7 @@ entity_id game_find_id_for_entity(struct entity* entity);
 
 local s32 entity_get_physical_damage_raw(struct entity* entity) {
     s32 strength = entity_find_effective_stat_value(entity, STAT_STRENGTH);
-    s32 agility  = entity_find_effective_stat_value(entity, STAT_AGILITY);
-
-    s32 result = ceilf(strength * 0.45 + agility * 0.37);
+    s32 result = ceilf(atkdmgformula1(strength, entity->stat_block.level));
 
     if (result < 0) {
         result = 0;
@@ -57,7 +72,7 @@ local s32 entity_get_physical_damage_raw(struct entity* entity) {
 local s32 entity_get_physical_damage(struct entity* entity) {
     /* TODO special effects for critical */
     s32 raw               = entity_get_physical_damage_raw(entity);
-    f32 random_percentage = random_ranged_float(&game_state->rng, 0.4, 0.6);
+    f32 random_percentage = random_ranged_float(&game_state->rng, 0.0, 0.33);
     s32 raw2              = entity_get_physical_damage_raw(entity)*random_percentage;
 
     s32 variance_random = random_ranged_integer(&game_state->rng, -raw2, raw2);
@@ -2040,20 +2055,22 @@ local void entity_on_hurt_finish(struct entity* entity, s32 damage) {
 }
 
 void entity_do_physical_hurt(struct entity* entity, s32 damage) {
-    /* maybe do a funny animation */
-    s32 constitution = entity_find_effective_stat_value(entity, STAT_CONSTITUTION);
-    s32 vigor        = entity_find_effective_stat_value(entity, STAT_VIGOR);
-    s32 damage_reduction = constitution * 0.33 + vigor * 0.25;
+    s32 constitution     = entity_find_effective_stat_value(entity, STAT_CONSTITUTION);
+    s32 damage_reduction = reductionformula1(constitution, entity->stat_block.level);
+
+    if (damage_reduction <= 0) {
+        damage_reduction = 0.99;
+    }
 
     if (entity_is_in_defense_stance(entity)) {
-        damage *= 0.865;
+        damage *= 0.888;
     }
 
     if (entity_has_any_status_effect_of_type(entity, ENTITY_STATUS_EFFECT_TYPE_IGNITE)) {
         damage *= 1.25;
     }
 
-    damage -= damage_reduction;
+    damage *= damage_reduction;
 
     if (damage < 0) {
         damage = 0;

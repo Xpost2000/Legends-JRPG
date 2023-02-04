@@ -156,6 +156,8 @@ static void initialize_items_database(void) {
                     current_item_definition->flags |= WEAPON_FLAG_PROJECTILE;
                 } else if (lisp_form_symbol_matching(*parameter_name, string_literal("range"))) {
                     lisp_form_get_s32(parameter_arguments.list.forms[0], &current_item_definition->attack_range);
+                } else if (lisp_form_symbol_matching(*parameter_name, string_literal("no-sell"))) {
+                    current_item_definition->flags |= ITEM_NO_SELL;
                 } else {
                     _debugprintf("Unknown top level form name: %.*s", parameter_name->string.length, parameter_name->string.data);
                     
