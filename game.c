@@ -3540,7 +3540,8 @@ local void update_and_render_game_worldmap(struct software_framebuffer* framebuf
             /* this is a little cumbersome since collidant objects are not easily iterable right now. Will need to fix this at some point. Or make it more generic */
             {
                 struct rectangle_f32 world_rectangle = rectangle_f32(game_state->world_map_explore_state.player_position.x, game_state->world_map_explore_state.player_position.y, TILE_UNIT_SIZE, TILE_UNIT_SIZE);
-                bool has_boat = true;
+                struct game_variable* boat_var = lookup_game_variable(string_literal("story_has_boat"), true);
+                bool                  has_boat = boat_var->value;
                 {
                     bool stop_horizontal_movement = false;
                     {
