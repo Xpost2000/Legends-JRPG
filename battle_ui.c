@@ -217,8 +217,11 @@ void battle_clear_all_killed_entities(void) {
 }
 
 void battle_notify_killed_entity(entity_id killed) {
-    assertion(global_battle_ui_state.killed_entity_count < MAX_KILLED_ENTITY_TRACKER);
-    global_battle_ui_state.killed_entities[global_battle_ui_state.killed_entity_count++] = killed;
+    struct entity* dereferenced = game_dereference_entity(game_state, killed);
+    if (!(dereferenced->flags & ENTITY_FLAGS_ALIVE)) {
+        assertion(global_battle_ui_state.killed_entity_count < MAX_KILLED_ENTITY_TRACKER);
+        global_battle_ui_state.killed_entities[global_battle_ui_state.killed_entity_count++] = killed;
+    }
 }
 
 /* calculate modifiers maybe in the future? */

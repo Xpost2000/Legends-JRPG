@@ -52,7 +52,9 @@ bool entity_bad_ref(struct entity* e);
 /* NOTE, damage is not tracked right now. */
 void entity_do_healing(struct entity* entity, s32 healing);
 void entity_do_physical_hurt(struct entity* entity, s32 damage);
+void entity_do_physical_hurt_non_fatal(struct entity* entity, s32 damage);
 void entity_do_absolute_hurt(struct entity* entity, s32 damage);
+void entity_do_absolute_hurt_non_fatal(struct entity* entity, s32 damage);
 /* some status effects may have non-local effects so those are handled elsewhere. */
 void entity_update_all_status_effects(struct entity* entity, f32 dt);
 
@@ -67,6 +69,7 @@ local s32 entity_get_physical_damage_raw(struct entity* entity) {
         result = 0;
     }
 
+    _debugprintf("Raw physical damage: %d", result);
     return result;
 }
 local s32 entity_get_physical_damage(struct entity* entity) {
@@ -2040,9 +2043,15 @@ void entity_do_healing(struct entity* entity, s32 healing) {
     notify_healing(v2f32_sub(entity->position, v2f32(0, TILE_UNIT_SIZE)), healing);
 }
 
-local void entity_on_hurt_finish(struct entity* entity, s32 damage) {
+local void entity_on_hurt_finish(struct entity* entity, s32 damage, bool fatal) {
     if (entity->flags & ENTITY_FLAGS_ALIVE) {
         entity->health.value -= damage;
+
+        if (!fatal) {
+            if (entity->health.value <= 0) {
+                entity->health.value = 1;
+            }
+        }
 
         entity->ai.hurt_animation_timer              = 0;
         entity->ai.hurt_animation_shakes             = 0;
@@ -2054,9 +2063,11 @@ local void entity_on_hurt_finish(struct entity* entity, s32 damage) {
     }
 }
 
-void entity_do_physical_hurt(struct entity* entity, s32 damage) {
+void _entity_do_physical_hurt(struct entity* entity, s32 damage, bool fatal) {
     s32 constitution     = entity_find_effective_stat_value(entity, STAT_CONSTITUTION);
-    s32 damage_reduction = reductionformula1(constitution, entity->stat_block.level);
+    f32 damage_reduction = reductionformula1(constitution, entity->stat_block.level);
+
+    _debugprintf("Raw damage percentage reduction: %3.3f", damage_reduction);
 
     if (damage_reduction <= 0) {
         damage_reduction = 0.99;
@@ -2076,11 +2087,21 @@ void entity_do_physical_hurt(struct entity* entity, s32 damage) {
         damage = 0;
     }
 
-    entity_on_hurt_finish(entity, damage);
+    entity_on_hurt_finish(entity, damage, fatal);
+}
+
+void entity_do_physical_hurt(struct entity* entity, s32 damage) {
+    _entity_do_physical_hurt(entity, damage, true);
+}
+void entity_do_physical_hurt_non_fatal(struct entity* entity, s32 damage) {
+    _entity_do_physical_hurt(entity, damage, false);
 }
 
 void entity_do_absolute_hurt(struct entity* entity, s32 damage) {
-    entity_on_hurt_finish(entity, damage);
+    entity_on_hurt_finish(entity, damage, true);
+}
+void entity_do_absolute_hurt_non_fatal(struct entity* entity, s32 damage) {
+    entity_on_hurt_finish(entity, damage, false);
 }
 
 /* NOTE: does not really do turns. */
@@ -2488,12 +2509,17 @@ local void entity_update_and_perform_actions(struct game_state* state, struct en
                             }
                         }
 
+                        s32 damage = entity_get_physical_damage(target_entity)  * hurt_sequence->damage_scale;
                         for (s32 entity_to_hurt_index = 0; entity_to_hurt_index < entities_to_hurt; ++entity_to_hurt_index) {
                             entity_id      entity_to_hurt_id = attacking_entity_ids[entity_to_hurt_index];
                             struct entity* entity_to_hurt    = game_dereference_entity(game_state, entity_to_hurt_id);
 
                             /* TODO: REPLACE */
-                            entity_do_physical_hurt(entity_to_hurt, 2500);
+                            if (hurt_sequence->hurt_target_flags & HURT_TARGET_FLAG_DO_NOT_KILL) {
+                                entity_do_physical_hurt_non_fatal(entity_to_hurt, damage);
+                            } else {
+                                entity_do_physical_hurt(entity_to_hurt, damage);
+                            }
                             battle_notify_killed_entity(entity_to_hurt_id);
                         }
                         entity_advance_ability_sequence(target_entity);

@@ -229,16 +229,18 @@ void entity_ability_compile_animation_sequence(struct memory_arena* arena, struc
                         }
                     } else if (lisp_form_symbol_matching(*action_form_header, string_literal("hurt"))) {
                         action_data->type = SEQUENCE_ACTION_HURT;
-                        
+                        action_data->hurt.damage_scale = 1;
                         for (s32 argument_index = 0; argument_index < action_form_rest_arguments.list.count; ++argument_index) {
                             struct lisp_form* focus_target = lisp_list_nth(&action_form_rest_arguments, argument_index);
 
                             if (lisp_form_symbol_matching(*focus_target, string_literal("all-selected"))) {
                                 action_data->hurt.hurt_target_flags |= HURT_TARGET_FLAG_ALL_SELECTED;
-                                break;
                             } else if (lisp_form_symbol_matching(*focus_target, string_literal("all-enemies"))) {
                                 action_data->hurt.hurt_target_flags |= HURT_TARGET_FLAG_EVERY_ENEMY;
-                                break;
+                            } else if (lisp_form_symbol_matching(*focus_target, string_literal("no-kill"))) {
+                                action_data->hurt.hurt_target_flags |= HURT_TARGET_FLAG_DO_NOT_KILL;
+                            } else if (focus_target->type == LISP_FORM_NUMBER) { /* assume that any number is for producing a damage scale since that's the only modifier I want */
+                                lisp_form_get_f32(*focus_target, &action_data->hurt.damage_scale);
                             } else {
                                 decode_sequence_action_target_entity(focus_target, &action_data->hurt.targets[action_data->hurt.target_count++]);
                             }

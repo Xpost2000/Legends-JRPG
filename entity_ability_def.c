@@ -151,11 +151,15 @@ struct sequence_action_explosion {
 };
 
 /* HURT should be given some scaling modifiers */
-/* for now it just does 9999 dmg */
 enum hurt_target_flags {
     HURT_TARGET_FLAG_NONE         = 0,
     HURT_TARGET_FLAG_ALL_SELECTED = BIT(0),
     HURT_TARGET_FLAG_EVERY_ENEMY  = BIT(1),
+    /*
+      This move will leave targets to 1HP if
+      it does damage.
+    */
+    HURT_TARGET_FLAG_DO_NOT_KILL  = BIT(2),
 };
 struct sequence_action_hurt {
     /* if these flags are toggled, they override targets with special behavior */
@@ -164,6 +168,9 @@ struct sequence_action_hurt {
     s32 target_count;
     /* you use this only if you want to do something more cinematic */
     struct sequence_action_target_entity targets[ENTITY_ABILITY_MAX_SELECTABLE_ENTITIES];
+
+    /* 1.0 default */
+    f32 damage_scale;
 };
 
 /*
