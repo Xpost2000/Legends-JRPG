@@ -1,0 +1,30 @@
+# entity models file
+# all the animations are implicitly found by path
+# I'm planning to control animation manually during cutscenes
+# if it's needed so I'm not going to rely on timing for those.
+# timing is used for automatic game animations though.
+
+# IE: abilities and cutscenes are never going to use the fixed animation
+# timings here. (unless they're part of a pre-established command)
+
+(
+(name "guy")
+# TODO: allow mirroring
+(animation "idle_down" 1 0)
+(animation "idle_up" 1 0)
+(animation "idle_left" 1 0)
+(animation "idle_right" 1 0)
+
+(animation "walk_up" 3 0.13)
+(animation "walk_down" 3 0.13)
+(animation "walk_right" 3 0.13)
+(animation "walk_left" 3 0.13)
+
+(animation "kneel_down" 2 0.4)
+(animation "dead" 1 0)
+
+# use for party card
+(animation "profileshot" 1 0)
+# use for restriction map
+(animation "itemicon" 1 0)
+)
