@@ -33,6 +33,9 @@ local void close_dialogue_ui(void);
 /* TEMP */
 void common_ui_init(void);
 
+local void _transition_callback_finish_rest(void*);
+local void _unlock_game_input(void*);
+
 local v2f32 v2f32_snap_to_grid(v2f32 input) {
     v2f32 result = input;
     result.x = floorf(result.x / TILE_UNIT_SIZE);
@@ -103,6 +106,7 @@ local bool         disable_game_input = false;
 image_id drop_shadow           = {};
 image_id ui_battle_defend_icon = {};
 sound_id ui_blip               = {};
+sound_id game_restoration_sound= {};
 sound_id hit_sounds[3]         = {};
 sound_id ui_blip_bad           = {};
 
@@ -314,6 +318,8 @@ local sound_id get_current_sound_theme(void) {
 const u32 FADEIN_TIME  = 2000;
 const u32 FADEOUT_TIME = 2000;
 
+
+/* NOTE: 3/17/23 Rework this. It's kind of busted */
 local void fadein_track(void) {
     game_state->music_fadein_timer = FADEIN_TIME/1000.0f;
     game_state->started_fading_in = false;
@@ -611,6 +617,24 @@ bool game_total_party_knockout(void) {
         }
     }
     return true;
+}
+void game_total_party_restoration(void) {
+    for (s32 party_member_index = 0; party_member_index < game_state->party_member_count; ++party_member_index) {
+        struct entity* party_member = game_dereference_entity(game_state, game_state->party_members[party_member_index]);
+        party_member->health.value = party_member->health.max;
+        party_member->magic.value = party_member->magic.max;
+    }
+}
+
+void game_party_rest(void) {
+    disable_game_input = true;
+    do_color_transition_in(color32f32(0, 0, 0, 1), 0.1, 0.65);
+    /* NOTE: placeholder sound effect */
+    /* play rest sound */
+    {
+        game_total_party_restoration();
+    }
+    transition_register_on_finish(_transition_callback_finish_rest, NULL, 0);
 }
 /*
   Party Members don't know how to handle dismissing unless I store where entities used to exist, which is possible to do by updating the save record,
@@ -1795,6 +1819,13 @@ local void _transition_callback_game_over(void*) {
     game_over_ui_setup();
 }
 
+local void _transition_callback_finish_rest(void*) {
+    do_color_transition_out(color32f32(0, 0, 0, 1), 0.2, 0.75);
+    play_sound(game_restoration_sound);
+    transition_register_on_finish(_unlock_game_input, NULL, 0);
+    game_message_queue(string_literal("Party fully rested."));
+}
+
 local bool global_game_initiated_death_ui = false;
 
 void game_postprocess_blur(struct software_framebuffer* framebuffer, s32 quality_scale, f32 t, u32 blend_mode) {
@@ -2251,6 +2282,7 @@ void game_initialize(void) {
 
     ui_blip     = load_sound(string_literal(GAME_DEFAULT_RESOURCE_PATH "snds/ui_select.wav"), false);
     ui_blip_bad = load_sound(string_literal(GAME_DEFAULT_RESOURCE_PATH "snds/ui_bad.wav"), false);
+    game_restoration_sound = load_sound(string_literal(GAME_DEFAULT_RESOURCE_PATH "snds/restoration.wav"), false);
     hit_sounds[0] = load_sound(string_literal(GAME_DEFAULT_RESOURCE_PATH "snds/hit1.wav"), false);
     hit_sounds[1] = load_sound(string_literal(GAME_DEFAULT_RESOURCE_PATH "snds/hit2.wav"), false);
     hit_sounds[2] = load_sound(string_literal(GAME_DEFAULT_RESOURCE_PATH "snds/hitcrit.wav"), false);
@@ -3988,6 +4020,8 @@ local void update_and_render_game_overworld(struct software_framebuffer* framebu
     commands.should_clear_buffer = true;
     commands.clear_buffer_color  = color32u8(100, 128, 148, 255);
 
+    /* TODO: This should be done using a world stack, so I don't have to duplicate this for an oddly specific scenario... */
+    /* this is kind of a breaking change so let's make sure I can get an introductory act working as intended. */
     if (cutscene_viewing_separate_area()) {
         /* might need to rethink this a little... */
         /* TODO: NO PARTICLES HERE */
@@ -4275,8 +4309,8 @@ struct entity* game_any_entity_at_tile_point(v2f32 xy) {
 
 local void update_and_render_save_game_menu_ui(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
     struct ui_save_menu* ui_state = &state->ui_save;
-    u32 blur_samples = 2;
-    f32 max_blur = 1.0;
+    u32 blur_samples  = 2;
+    f32 max_blur      = 1.0;
     f32 max_grayscale = 0.8;
 
     switch (ui_state->phase) {

@@ -1443,6 +1443,11 @@ GAME_LISP_FUNCTION(CUTSCENE_WORLD_MAP_STOP_STEER) {
     return LISP_nil;
 }
 
+GAME_LISP_FUNCTION(PARTY_REST) {
+    game_party_rest();
+    return LISP_nil;
+}
+
 #undef GAME_LISP_FUNCTION
 
 #define STRINGIFY(x) #x

@@ -21,8 +21,16 @@
 (constitution 120)
 )
 
-(
-(health 9999)
+((health 9999))
 )
 
+(GROWTH-TABLE "brother"
+
+() # first level doesn't need anything
+
+(
+)
+
+(
+)
 )

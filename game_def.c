@@ -863,10 +863,14 @@ struct game_state {
     f32  constant_camera_trauma_value;
 };
 
+
+/* NOTE: 3/17/23, I really need to look at this again at some point...*/
 bool game_can_load_save(s32 save_slot_id);
 void game_write_save_slot(s32 save_slot_id);
 void game_load_from_save_slot(s32 save_slot_id);
 void dialogue_ui_set_target_node(s32 id);
+
+void game_party_rest(void);
 
 #include "save_data_def.c"
 void handle_entity_level_trigger_interactions(struct game_state* state, struct entity* entity, struct trigger_level_transition_list* trigger_level_transitions, f32 dt);
