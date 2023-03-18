@@ -4,10 +4,11 @@
 # GAME NOTE: I think there might've been a bug in the shops or something?
 # might need to double check this stuff later.
 
-(game_load_area "bforest1.area" 'retained)
 #(game_load_area "test123.area" 'retained)
 #(game_load_area "g.area" 'retained)
 
+
+# TODO think of better starting items
 (entity_add_item '(entity player) "item_gold" 450)
 (entity_add_item '(entity player) "item_armor_loincloth")
 (entity_add_item '(entity player) "item_armor_bandage_wraps")
@@ -23,6 +24,9 @@
 (entity_add_item '(entity player) "item_trout_fish_5")
 (entity_add_item '(entity player) "item_sardine_fish_5")
 (entity_add_item '(entity player) "item_weapon_club")
+
+(game_load_area "ioder.area" 'retained)
+(start_cutscene "introduction")
 
 # Tutorials
 # Are meant to be customized UIs that are developed.

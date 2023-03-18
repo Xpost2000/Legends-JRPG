@@ -10,15 +10,13 @@
 # (ACTIONS) is meant to basically be a lisp form to be evaluated
 # (START) => (GOTO 0) If we don't find one of these somewhere, always start at the first node
 
-"Frimor" : "The stars are certainly blessed tonight..." => (NEXT)
-"Frimor" : "Aren't they? Calamir." =>
-(CHOICES
-    ("Perhaps."           (NEXT))
-    ("Same as any other." (GOTO 4)))
-
-"Frimor" : "There's something special tonight isn't there?"               => (NEXT 1)
-"Frimor" : "Heh, maybe it is. I don't spend as much time as you do here." => (NEXT)
-
-"Frimor" : "How have your days been anyways?"                     => (NEXT)
-"Frimor" : "Actually... Nevermind, I didn't mean to disturb you." => (NEXT)
-"Frimor" : "I'll be going"                                        => (BYE)
+"Griggs" : "Do you...[(delay_timer 1.0)] ever get tired of looking at the stars?"
+"Byron" : "It's calming..."
+"Byron" : "You just don't understand the appeal of sitting down and smelling the roses."
+"Griggs" : "Who the hell would smell roses?"
+"Byron" : "...[(delay_timer 1.5)]Yeah, nevermind."
+"Griggs" : "Don't know where you get off being so poety, and stuff."
+"Griggs" : "Anyway, you ready to ditch this spot?"
+"Byron" : "Uh, [(delay_timer 0.4)] not quite yet. [(delay_timer 0.6)] I owe the village elder a favor."
+"Byron" : "I'll get you later."
+"Griggs" : "Alright, I'll wait at the inn."

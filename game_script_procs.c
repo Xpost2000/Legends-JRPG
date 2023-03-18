@@ -459,6 +459,22 @@ GAME_LISP_FUNCTION(CAMERA_PUTAT_FORCE) {
 
     return LISP_nil;
 }
+GAME_LISP_FUNCTION(CAMERA_FOCUS) {
+    if (argument_count == 0) {
+        game_focus_camera_to_entity(game_get_player(game_state));
+    } else {
+        /* This is cheating by leveraging another script function but whatever. */
+        GAME_LISP_FUNCTION(GET_POSITION);
+        struct lisp_form position_as_list = GET_POSITION__script_proc(arena, state, arguments, argument_count);
+        v2f32 focus_point = {};
+        assertion(lisp_form_get_f32(position_as_list.list.forms[0], &focus_point.x) && "camera x fail?");
+        assertion(lisp_form_get_f32(position_as_list.list.forms[1], &focus_point.y) && "camera y fail?");
+        focus_point.x *= TILE_UNIT_SIZE;
+        focus_point.y *= TILE_UNIT_SIZE;
+        camera_set_point_to_interpolate(&game_state->camera, focus_point);
+    }
+    return LISP_nil;
+}
 
 /*
   ARG0: AreaName
@@ -1190,7 +1206,7 @@ GAME_LISP_FUNCTION(HIDE) {
             /* ? */
         } break;
         case GAME_SCRIPT_TARGET_ENTITY: {
-            struct entity* entity = ptr.ptr;
+            struct entity* entity = game_dereference_entity(state, ptr.entity_id);
             entity->flags |= ENTITY_FLAGS_HIDDEN;
         } break;
         case GAME_SCRIPT_TARGET_SAVEPOINT: {
@@ -1222,7 +1238,7 @@ GAME_LISP_FUNCTION(SHOW) {
             /* ? */
         } break;
         case GAME_SCRIPT_TARGET_ENTITY: {
-            struct entity* entity = ptr.ptr;
+            struct entity* entity = game_dereference_entity(state, ptr.entity_id);
             entity->flags &= ~(ENTITY_FLAGS_HIDDEN);
         } break;
         case GAME_SCRIPT_TARGET_SAVEPOINT: {
@@ -1254,7 +1270,7 @@ GAME_LISP_FUNCTION(TOGGLE_VISIBILITY) {
             /* ? */
         } break;
         case GAME_SCRIPT_TARGET_ENTITY: {
-            struct entity* entity = ptr.ptr;
+            struct entity* entity = game_dereference_entity(state, ptr.entity_id);
             entity->flags ^= (ENTITY_FLAGS_HIDDEN);
         } break;
         case GAME_SCRIPT_TARGET_SAVEPOINT: {

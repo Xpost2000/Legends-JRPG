@@ -20,6 +20,7 @@
 */
 
 #define STORYBOARD_CHARACTER_TYPE_TIMER (0.065)
+/* #define STORYBOARD_CHARACTER_TYPE_TIMER (0.0) */
 #define DEFAULT_STORYBOARD_FONT_ID      (MENU_FONT_COLOR_STEEL)
 
 enum storyboard_instruction_type {
@@ -77,6 +78,7 @@ struct storyboard_line_object {
     s32    font_id;
     f32    x;
     f32    y;
+    f32 character_type_timer; /* each line *doesn't* need it's own timer, but it's been a while since I've looked at this, and this is the easiest solution right now. */
 
     s32    shown_characters;
 };
@@ -134,7 +136,6 @@ struct {
     f32  y_cursor;
     s32  currently_bound_font_id;
     f32  wait_timer;
-    f32  character_type_timer;
     bool wait_for_continue;
     s32  instruction_cursor;
     struct storyboard_line_object* wait_on_line;
@@ -150,7 +151,6 @@ void storyboard_next_page(void) {
     storyboard.currently_bound_font_id = DEFAULT_STORYBOARD_FONT_ID;
     storyboard.y_cursor                = 0;
     storyboard.wait_timer              = 0;
-    storyboard.character_type_timer    = 0;
     storyboard.instruction_cursor      = 0;
     storyboard.wait_on_line            = NULL;
 
@@ -338,13 +338,13 @@ s32 game_display_and_update_storyboard(struct software_framebuffer* framebuffer,
                 struct font_cache*             line_font      = game_get_font(line->font_id);
                 string                         visible_string = string_slice(line->text, 0, line->shown_characters);
 
-                if (storyboard.character_type_timer <= 0) {
+                if (line->character_type_timer <= 0) {
                     if (line->shown_characters < line->text.length) {
                         line->shown_characters += 1;
                     }
-                    storyboard.character_type_timer  = STORYBOARD_CHARACTER_TYPE_TIMER;
+                    line->character_type_timer  = STORYBOARD_CHARACTER_TYPE_TIMER;
                 } else {
-                    storyboard.character_type_timer -= dt;
+                    line->character_type_timer -= dt;
                 }
 
                 software_framebuffer_draw_text_bounds(

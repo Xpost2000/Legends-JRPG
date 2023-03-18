@@ -929,8 +929,8 @@ struct game_script_typed_ptr game_script_object_handle_decode(struct lisp_form o
                             result.entity_id = entity_list_get_id(&game_state->loaded_area.entities, real_id);
                         }
                     } else if (lisp_form_get_string(*id_form, &script_name_string)) {
-#if 0
-                        _debugprintf("Looking up string name?");
+#if 1
+                        _debugprintf("Looking up string name? %.*s", script_name_string.length, script_name_string.data);
 #endif
 
                         if (cutscene_viewing_separate_area()) {

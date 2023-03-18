@@ -82,4 +82,4 @@
 (wait 2)
 (follow_path '(entity player) (repeat 'down 10))
 (game_enable_input)
-end_cutscene)
+(end_cutscene)

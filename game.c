@@ -2834,9 +2834,9 @@ void update_and_render_game_menu_ui(struct game_state* state, struct software_fr
 
 local void recalculate_camera_shifting_bounds(struct software_framebuffer* framebuffer) {
     {
-        game_state->camera.travel_bounds.x = framebuffer->width  * 0.10;
+        game_state->camera.travel_bounds.x = framebuffer->width  * 0.20;
         game_state->camera.travel_bounds.y = framebuffer->height * 0.10;
-        game_state->camera.travel_bounds.w = framebuffer->width  * 0.70;
+        game_state->camera.travel_bounds.w = framebuffer->width  * 0.50;
         game_state->camera.travel_bounds.h = framebuffer->height * 0.65;
     }
 }
