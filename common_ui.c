@@ -1,7 +1,5 @@
 /*
   TODO:
-
-  - need to fix button behavior (cause I don't record the mouse being pressed on a specific button.)
 */
 void common_ui_init(void) {
     common_ui_text_normal      = game_get_font(MENU_FONT_COLOR_WHITE);
@@ -40,7 +38,7 @@ bool common_ui_button(struct common_ui_layout* layout, struct software_framebuff
         if (rectangle_f32_intersect(rectangle_f32(position.x, position.y, text_width, text_height), rectangle_f32(mouse_location[0], mouse_location[1], 3, 3))) {
             font_to_use = common_ui_text_highlighted;
             bool left, middle, right;
-            get_mouse_buttons(&left, &middle, &right);
+            get_mouse_buttons_pressed(&left, &middle, &right);
 
             if (left) {
                 result = true;
@@ -102,23 +100,23 @@ void common_ui_visual_slider(struct common_ui_layout* layout, struct software_fr
         layout->y = position.y;
         /* TODO: need some more state to fix button stuff  */
         if (common_ui_button(layout, framebuffer, string_literal("<<"), scale, 0, 0, COMMON_UI_BUTTON_FLAGS_NONE)) {
-            (*option_ptr)--;
-            if ((*option_ptr) < 0) {
-                *option_ptr = count-1;
+            (*option_ptr)++;
+            if ((*option_ptr) >= count) {
+                *option_ptr = 0;
             }
             slider_interaction = true;
         }
         layout->y = position.y;
         layout->x += font_cache_text_width(common_ui_text_normal, string_literal("<<"), scale) * 3;
         if (common_ui_button(layout, framebuffer, strings[string_index], scale, string_index, 0, COMMON_UI_BUTTON_FLAGS_NONE)) {
-            /*?*/ 
+            /*? does nothing. No drop down */ 
         }
         layout->y = position.y;
         layout->x += longest_string_width * 1.2;
         if (common_ui_button(layout, framebuffer, string_literal(">>"), scale, 0, 0, COMMON_UI_BUTTON_FLAGS_NONE)) {
-            (*option_ptr)++;
-            if ((*option_ptr) >= count) {
-                *option_ptr = 0;
+            (*option_ptr)--;
+            if ((*option_ptr) < 0) {
+                *option_ptr = count-1;
             }
             slider_interaction = true;
         }
@@ -135,17 +133,6 @@ void common_ui_visual_slider(struct common_ui_layout* layout, struct software_fr
     }
     layout->x = old_layout_x;
     layout->y = position.y;
-
-    /*
-      NOTE: this doesn't work because of the way I assign widget ids and reuse them constantly.
-
-      I'll circumvent it by making a helper button procedure to handle the "selected" state.
-     */
-#if 0
-    if (slider_interaction && selected_id) {
-        *selected_id = slider_id;
-    }
-#endif
 
     common_ui_layout_advance(layout, text_width, text_height);
 }
@@ -174,7 +161,7 @@ void common_ui_checkbox(struct common_ui_layout* layout, struct software_framebu
         software_framebuffer_draw_quad(framebuffer, rectangle_f32(position.x+3, position.y+3, SQUARE_SIZE-6, SQUARE_SIZE-6), color32u8(255, 0, 0, 255), BLEND_MODE_ALPHA);
 
         bool left, middle, right;
-        get_mouse_buttons(&left, &middle, &right);
+        get_mouse_buttons_pressed(&left, &middle, &right);
         if (left) {
             (*option_ptr) ^= true;
         }

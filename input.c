@@ -54,6 +54,11 @@ void get_mouse_buttons(bool* left, bool* middle, bool* right) {
     safe_assignment(middle) = global_input.current_state.mouse_buttons[MOUSE_BUTTON_MIDDLE];
     safe_assignment(right)  = global_input.current_state.mouse_buttons[MOUSE_BUTTON_RIGHT];
 }
+void get_mouse_buttons_pressed(bool* left, bool* middle, bool* right) {
+    safe_assignment(left)   = pressed_mouse_left();
+    safe_assignment(middle) = pressed_mouse_middle();
+    safe_assignment(right)  = pressed_mouse_right();
+}
 
 bool is_key_down_with_repeat(s32 keyid) {
     assertion(keyid < KEY_COUNT && "invalid key id?");
@@ -287,6 +292,45 @@ bool mouse_middle(void) {
 
 bool mouse_right(void) {
     return global_input.current_state.mouse_buttons[MOUSE_BUTTON_RIGHT];
+}
+
+bool pressed_mouse_left(void) {
+    bool last = global_input.last_state.mouse_buttons[MOUSE_BUTTON_LEFT];
+    bool current = global_input.current_state.mouse_buttons[MOUSE_BUTTON_LEFT];
+
+    if (last == current) {
+        return false;
+    } else if (current && !last) {
+        return true;
+    }
+
+    return false;
+}
+
+bool pressed_mouse_middle(void) {
+    bool last = global_input.last_state.mouse_buttons[MOUSE_BUTTON_MIDDLE];
+    bool current = global_input.current_state.mouse_buttons[MOUSE_BUTTON_MIDDLE];
+
+    if (last == current) {
+        return false;
+    } else if (current && !last) {
+        return true;
+    }
+
+    return false;
+}
+
+bool pressed_mouse_right(void) {
+    bool last = global_input.last_state.mouse_buttons[MOUSE_BUTTON_RIGHT];
+    bool current = global_input.current_state.mouse_buttons[MOUSE_BUTTON_RIGHT];
+
+    if (last == current) {
+        return false;
+    } else if (current && !last) {
+        return true;
+    }
+
+    return false;
 }
 
 #include "input_mapper.c"
