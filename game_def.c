@@ -47,6 +47,7 @@
 #define UI_BATTLE_COLOR UI_DEFAULT_COLOR
 
 #include "special_effects_def.c"
+#include "game_options_def.c"
 
 /* using GNSH fonts, which are public domain, but credits to open game art, this font looks cool */
 enum menu_font_variation {

@@ -8,40 +8,9 @@ enum options_menu_phases {
     OPTIONS_MENU_PHASE_OPEN,
 };
 
-local string difficulty_setting_strings[] = {
-    string_literal("SIMPLE"),
-    string_literal("NORMAL"),
-    string_literal("TACTICIAN"),
-};
-
-local string message_setting_strings[] = {
-    string_literal("SLOW"),
-    string_literal("NORMAL"),
-    string_literal("FAST"),
-    string_literal("INSTANT"),
-};
-
-local string ui_theme_setting_strings[] = {
-    string_literal("AZURE"),
-    string_literal("DEMON"),
-    string_literal("ROYAL"),
-};
-
 struct options_menu_state {
     s32 phase;
     s32 currently_selected_option;
-
-    s32  difficulty_slider;
-    s32  message_slider;
-    s32  ui_theme_slider;
-
-    s32  resolution;
-    bool is_fullscreen;
-
-    /* 0 to 1.0 */
-    f32  music_volume;
-    /* 0 to 1.0 */
-    f32  sound_volume;
 };
 
 struct options_menu_state options_menu_state;
@@ -52,8 +21,10 @@ void options_menu_open(void) {
 
     /* find screen resolution that matches current setting */
     {
-        options_menu_state.resolution = queried_resolution_find_index_of(REAL_SCREEN_WIDTH, REAL_SCREEN_HEIGHT);
-        if (options_menu_state.resolution == -1) options_menu_state.resolution = 0;
+        global_game_options.resolution_index = queried_resolution_find_index_of(REAL_SCREEN_WIDTH, REAL_SCREEN_HEIGHT);
+        if (global_game_options.resolution_index == -1) global_game_options.resolution_index = 0;
+
+
     }
 }
 
@@ -140,15 +111,15 @@ s32 do_options_menu(struct software_framebuffer* framebuffer, f32 dt) {
 
                         {
                             Option_Menu_Choice_Label(0);
-                            common_ui_visual_slider(&layout, framebuffer, OPTIONS_TEXT_SCALE, difficulty_setting_strings, array_count(difficulty_setting_strings), &options_menu_state.difficulty_slider, 0, &options_menu_state.currently_selected_option, 0);
+                            common_ui_visual_slider(&layout, framebuffer, OPTIONS_TEXT_SCALE, difficulty_setting_strings, array_count(difficulty_setting_strings), &global_game_options.difficulty, 0, &options_menu_state.currently_selected_option, 0);
                         }
                         {
                             Option_Menu_Choice_Label(1);
-                            common_ui_visual_slider(&layout, framebuffer, OPTIONS_TEXT_SCALE, message_setting_strings, array_count(message_setting_strings), &options_menu_state.message_slider, 1, &options_menu_state.currently_selected_option, 0);
+                            common_ui_visual_slider(&layout, framebuffer, OPTIONS_TEXT_SCALE, message_setting_strings, array_count(message_setting_strings), &global_game_options.messagespeed, 1, &options_menu_state.currently_selected_option, 0);
                         }
                         {
                             Option_Menu_Choice_Label(2);
-                            common_ui_visual_slider(&layout, framebuffer, OPTIONS_TEXT_SCALE, ui_theme_setting_strings, array_count(ui_theme_setting_strings), &options_menu_state.ui_theme_slider, 2, &options_menu_state.currently_selected_option, 0);
+                            common_ui_visual_slider(&layout, framebuffer, OPTIONS_TEXT_SCALE, ui_theme_setting_strings, array_count(ui_theme_setting_strings), &global_game_options.ui_theme, 2, &options_menu_state.currently_selected_option, 0);
                         }
                     }
                     layout.x = layout_old_x;
@@ -164,12 +135,12 @@ s32 do_options_menu(struct software_framebuffer* framebuffer, f32 dt) {
 #ifndef __EMSCRIPTEN__
                         {
                             Option_Menu_Choice_Label(3);
-                            common_ui_visual_slider(&layout, framebuffer, OPTIONS_TEXT_SCALE, resolution_strings, queried_screen_resolution_count, &options_menu_state.resolution, 3, &options_menu_state.currently_selected_option, COMMON_UI_VISUAL_SLIDER_FLAGS_LOTSOFOPTIONS);
+                            common_ui_visual_slider(&layout, framebuffer, OPTIONS_TEXT_SCALE, resolution_strings, queried_screen_resolution_count, &global_game_options.resolution_index, 3, &options_menu_state.currently_selected_option, COMMON_UI_VISUAL_SLIDER_FLAGS_LOTSOFOPTIONS);
                         }
 #endif
                         {
                             Option_Menu_Choice_Label(4);
-                            common_ui_checkbox(&layout, framebuffer, 4, &options_menu_state.currently_selected_option, &options_menu_state.is_fullscreen, 0);
+                            common_ui_checkbox(&layout, framebuffer, 4, &options_menu_state.currently_selected_option, &global_game_options.fullscreen, 0);
                         }
                     }
                     layout.x = layout_old_x;
@@ -184,11 +155,11 @@ s32 do_options_menu(struct software_framebuffer* framebuffer, f32 dt) {
 
                         {
                             Option_Menu_Choice_Label(5);
-                            common_ui_f32_slider(&layout, framebuffer, TILE_UNIT_SIZE*4, &options_menu_state.currently_selected_option, 5, &options_menu_state.music_volume, 0, 1, 0);
+                            common_ui_f32_slider(&layout, framebuffer, TILE_UNIT_SIZE*4, &options_menu_state.currently_selected_option, 5, &global_game_options.music_volume, 0, 1, 0);
                         }
                         {
                             Option_Menu_Choice_Label(6);
-                            common_ui_f32_slider(&layout, framebuffer, TILE_UNIT_SIZE*4, &options_menu_state.currently_selected_option, 6, &options_menu_state.sound_volume, 0, 1, 0);
+                            common_ui_f32_slider(&layout, framebuffer, TILE_UNIT_SIZE*4, &options_menu_state.currently_selected_option, 6, &global_game_options.sound_volume, 0, 1, 0);
                         }
                     }
                     layout.x = layout_old_x;
@@ -197,10 +168,12 @@ s32 do_options_menu(struct software_framebuffer* framebuffer, f32 dt) {
                 layout.y += TILE_UNIT_SIZE;
 
                 if (common_ui_button(&layout, framebuffer, string_literal("Apply"), OPTIONS_TEXT_SCALE, 7, &options_menu_state.currently_selected_option, 0)) {
-                    set_fullscreen(options_menu_state.is_fullscreen);
-                    options_menu_close();
+                    game_options_write_to_file(string_literal("game_settings.txt"));
+                    game_apply_options();
                 }
                 if (common_ui_button(&layout, framebuffer, string_literal("Confirm"), OPTIONS_TEXT_SCALE, 8, &options_menu_state.currently_selected_option, 0)) {
+                    game_apply_options();
+                    game_options_write_to_file(string_literal("game_settings.txt"));
                     options_menu_close();
                 }
                 if (common_ui_button(&layout, framebuffer, string_literal("Cancel"), OPTIONS_TEXT_SCALE, 9, &options_menu_state.currently_selected_option, 0)) {

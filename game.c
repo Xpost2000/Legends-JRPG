@@ -4506,3 +4506,4 @@ local void game_open_worldmap_at_default(string where) {
 #include "credits_mode.c"
 #include "xp_tables.c"
 #include "common_ui.c"
+#include "game_options.c"
