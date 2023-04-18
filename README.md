@@ -77,6 +77,8 @@ forever.)
 These requirements should be quick to setup, or basically on any Linux system by default as I intended this project to be minimal in terms of
 setup. This is so that I could quickly move to another machine and get straight to work without having to wait for setup time.
 
+**Assets are currently not here! They are private for now, and I may link it to this as a submodule at some point.**
+
 ### Makefile Targets
 You should check the makefile specifically for targets, however here are the most common targets for building.
 ```
