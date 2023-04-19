@@ -96,7 +96,7 @@ local s32 _do_main_menu_options_menu(struct software_framebuffer* framebuffer, f
         if (selection_down) {
             do {
                 main_menu.currently_selected_option_choice++;
-                if (main_menu.currently_selected_option_choice >= array_count(main_menu_options)-1) {
+                if (main_menu.currently_selected_option_choice >= array_count(main_menu_options)) {
                     main_menu.currently_selected_option_choice = 0;
                 }
             } while(main_menu_option_choice_disabled[main_menu.currently_selected_option_choice]);
