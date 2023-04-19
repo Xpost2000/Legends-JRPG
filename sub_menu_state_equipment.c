@@ -132,11 +132,7 @@ local void do_entity_stat_information_panel(struct software_framebuffer* framebu
     struct font_cache* value_better_font = game_get_font(MENU_FONT_COLOR_LIME);
     struct font_cache* value_worse_font  = game_get_font(MENU_FONT_COLOR_BLOODRED);
 
-#ifdef EXPERIMENTAL_320
     f32 font_scale = 1;
-#else
-    f32 font_scale = 2;
-#endif
     f32 font_height = font_cache_text_height(label_name_font) * font_scale;
 
     draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, v2f32(x,y), 7, 6*2, UI_DEFAULT_COLOR);
@@ -224,11 +220,7 @@ local f32 Equipment_Panel_draw_entries_for_items(string* labels, f32 largest_lab
     struct font_cache* value_font        = game_get_font(MENU_FONT_COLOR_STEEL);
     struct font_cache* select_value_font = game_get_font(MENU_FONT_COLOR_ORANGE);
 
-#ifdef EXPERIMENTAL_320
     f32 font_scale = 1;
-#else
-    f32 font_scale = 2;
-#endif
     f32 font_height = font_cache_text_height(label_name_font) * font_scale;
 
     for (s32 index = start_index; index < end_index; ++index) {
@@ -284,11 +276,7 @@ local void do_entity_equipment_panel(struct software_framebuffer* framebuffer, f
     struct font_cache* value_font        = game_get_font(MENU_FONT_COLOR_STEEL);
     struct font_cache* select_value_font = game_get_font(MENU_FONT_COLOR_ORANGE);
 
-#ifdef EXPERIMENTAL_320
     f32 font_scale = 1;
-#else
-    f32 font_scale = 2;
-#endif
     f32 font_height = font_cache_text_height(label_name_font) * font_scale;
 
     draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, v2f32(x,y), 5, 7, UI_DEFAULT_COLOR);
@@ -386,11 +374,7 @@ local void do_entity_select_equipment_panel(struct software_framebuffer* framebu
 
     struct font_cache* value_font        = game_get_font(MENU_FONT_COLOR_STEEL);
     struct font_cache* select_value_font = game_get_font(MENU_FONT_COLOR_ORANGE);
-#ifdef EXPERIMENTAL_320
     f32 font_scale  = 1;
-#else
-    f32 font_scale  = 2;
-#endif
     f32 font_height = font_cache_text_height(value_font) * font_scale;
 
     f32 y_cursor = y + 15;
@@ -479,11 +463,7 @@ s32 do_equipment_menu(struct software_framebuffer* framebuffer, f32 dt) {
 
     bool allow_input = false;
 
-#ifdef EXPERIMENTAL_320
     f32 final_widget_x = 50;
-#else
-    f32 final_widget_x = 100;
-#endif
 
     switch (equipment_screen_state.phase) {
         case EQUIPMENT_SCREEN_PHASE_SLIDE_IN: {
@@ -519,11 +499,7 @@ s32 do_equipment_menu(struct software_framebuffer* framebuffer, f32 dt) {
     }
 
     equipment_screen_state.animation_timer += dt;
-#ifdef EXPERIMENTAL_320
     do_spinning_preview_of_character(x_character_spinner, 240/2, framebuffer, target_entity);
-#else
-    do_spinning_preview_of_character(x_character_spinner, 240, framebuffer, target_entity);
-#endif
 
     do_entity_stat_information_panel(framebuffer, x_ui_widget - TILE_UNIT_SIZE*14, 0, target_entity);
     do_entity_select_equipment_panel(framebuffer, x_ui_widget - TILE_UNIT_SIZE*6, 126, target_entity, allow_input);

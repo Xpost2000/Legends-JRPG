@@ -160,11 +160,7 @@ struct rich_text_state rich_text_state_default(void) {
         .delay_timer      = 0,
         .text_type_speed  = DIALOGUE_UI_CHARACTER_TYPE_TIMER,
         .font_id          = MENU_FONT_COLOR_YELLOW,
-#ifdef EXPERIMENTAL_320
         .text_scale       = 1,
-#else
-        .text_scale       = 2,
-#endif
         .type_trauma      = 0,
     };
 }

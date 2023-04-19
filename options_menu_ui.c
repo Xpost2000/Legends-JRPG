@@ -1,8 +1,5 @@
-#ifdef EXPERIMENTAL_320
 #define OPTIONS_TEXT_SCALE (1)
-#else
-#define OPTIONS_TEXT_SCALE (2)
-#endif
+
 enum options_menu_phases {
     OPTIONS_MENU_PHASE_CLOSE,
     OPTIONS_MENU_PHASE_OPEN,
@@ -61,13 +58,8 @@ s32 do_options_menu(struct software_framebuffer* framebuffer, f32 dt) {
 
     switch (options_menu_state.phase) {
         case OPTIONS_MENU_PHASE_OPEN: {
-#ifdef EXPERIMENTAL_320
             const s32          OPTIONS_BOX_WIDTH  = 35/2;
             const s32          OPTIONS_BOX_HEIGHT = 25/2;
-#else
-            const s32          OPTIONS_BOX_WIDTH  = 35;
-            const s32          OPTIONS_BOX_HEIGHT = 25;
-#endif
 
             v2f32 options_box_extents        = nine_patch_estimate_extents(ui_chunky, 1, OPTIONS_BOX_WIDTH, OPTIONS_BOX_HEIGHT);
             v2f32 options_box_start_position = v2f32((SCREEN_WIDTH/2 - options_box_extents.x/2), (SCREEN_HEIGHT/2) - options_box_extents.y/2);

@@ -49,11 +49,7 @@ local void initialize_main_menu(void) {
 
 /* NOTE: centered */
 local void _main_menu_draw_title(struct software_framebuffer* framebuffer, f32 y, f32 alpha) {
-#ifdef EXPERIMENTAL_320
     const f32          TITLE_FONT_SCALE = 2.0;
-#else
-    const f32          TITLE_FONT_SCALE = 4.0;
-#endif
     struct font_cache* font             = game_get_font(MENU_FONT_COLOR_GOLD);
     string             text             = game_title;
 
@@ -66,15 +62,9 @@ local void _main_menu_draw_title(struct software_framebuffer* framebuffer, f32 y
 local s32 _do_main_menu_options_menu(struct software_framebuffer* framebuffer, f32 open_t, bool use_options) {
     struct font_cache* font1              = game_get_font(MENU_FONT_COLOR_STEEL);
     struct font_cache* font2              = game_get_font(MENU_FONT_COLOR_GOLD);
-#ifdef EXPERIMENTAL_320
-    const f32          NORMAL_FONT_SCALE  = 2.0;
+    const f32          NORMAL_FONT_SCALE  = 1.0;
     const s32          OPTIONS_BOX_WIDTH  = 6;
     const s32          OPTIONS_BOX_HEIGHT = 6;
-#else
-    const f32          NORMAL_FONT_SCALE  = 4.0;
-    const s32          OPTIONS_BOX_WIDTH  = 12;
-    const s32          OPTIONS_BOX_HEIGHT = 12;
-#endif
 
     f32   current_box_width          = quadratic_ease_in_f32(0, OPTIONS_BOX_WIDTH,  open_t);
     f32   current_box_height         = quadratic_ease_in_f32(0, OPTIONS_BOX_HEIGHT, open_t);
@@ -126,11 +116,7 @@ local s32 _do_main_menu_options_menu(struct software_framebuffer* framebuffer, f
             flags |= COMMON_UI_BUTTON_FLAGS_DISABLED;
         }
         
-#ifdef EXPERIMENTAL_320
         bool button_result = common_ui_button(&layout, framebuffer, main_menu_options[option_index], 1, option_index, &main_menu.currently_selected_option_choice, flags);
-#else
-        bool button_result = common_ui_button(&layout, framebuffer, main_menu_options[option_index], 2, option_index, &main_menu.currently_selected_option_choice, flags);
-#endif
 
         if (button_result) {
             return option_index;

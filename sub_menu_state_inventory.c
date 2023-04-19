@@ -241,11 +241,7 @@ local void update_and_render_party_inventory_screen(struct game_state* state, st
             }
 
             do_shopping_menu(framebuffer, lerp_f32(-FINAL_SHOPPING_MENU_X - shopping_menu_dimensions.x, FINAL_SHOPPING_MENU_X, t), false, SHOPPING_MODE_VIEWING);
-#ifdef EXPERIMENTAL_320
             software_framebuffer_draw_text(framebuffer, normal_font, 1, v2f32(10, 10), string_literal("INVENTORY"), color32f32(1,1,1,t2), BLEND_MODE_ALPHA);
-#else
-            software_framebuffer_draw_text(framebuffer, normal_font, 4, v2f32(10, 10), string_literal("INVENTORY"), color32f32(1,1,1,t2), BLEND_MODE_ALPHA);
-#endif
             shopping_ui.timer += dt;
         } break;
         case INVENTORY_UI_ANIMATION_PHASE_IDLE: {
@@ -258,11 +254,7 @@ local void update_and_render_party_inventory_screen(struct game_state* state, st
             }
 
             do_shopping_menu(framebuffer, FINAL_SHOPPING_MENU_X, should_use_input, SHOPPING_MODE_VIEWING);
-#ifdef EXPERIMENTAL_320
             software_framebuffer_draw_text(framebuffer, normal_font, 1, v2f32(10, 10), string_literal("INVENTORY"), color32f32_WHITE, BLEND_MODE_ALPHA);
-#else
-            software_framebuffer_draw_text(framebuffer, normal_font, 4, v2f32(10, 10), string_literal("INVENTORY"), color32f32_WHITE, BLEND_MODE_ALPHA);
-#endif
             do_inventory_use_item_popup(framebuffer, should_use_input);
         } break;
         case INVENTORY_UI_ANIMATION_PHASE_SLIDE_OUT: {
@@ -280,11 +272,7 @@ local void update_and_render_party_inventory_screen(struct game_state* state, st
             }
 
             do_shopping_menu(framebuffer, lerp_f32(-FINAL_SHOPPING_MENU_X - shopping_menu_dimensions.x, FINAL_SHOPPING_MENU_X, (1.0 - t)), false, SHOPPING_MODE_VIEWING);
-#ifdef EXPERIMENTAL_320
             software_framebuffer_draw_text(framebuffer, normal_font, 1, v2f32(10, 10), string_literal("INVENTORY"), color32f32(1,1,1,(1.0 - t2)), BLEND_MODE_ALPHA);
-#else
-            software_framebuffer_draw_text(framebuffer, normal_font, 4, v2f32(10, 10), string_literal("INVENTORY"), color32f32(1,1,1,(1.0 - t2)), BLEND_MODE_ALPHA);
-#endif
             shopping_ui.timer += dt;
         } break;
         default: {

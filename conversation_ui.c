@@ -266,11 +266,7 @@ local void update_and_render_conversation_ui(struct game_state* state, struct so
                     }
                 }
             } else {
-#ifdef EXPERIMENTAL_320
                 draw_ui_breathing_text(framebuffer, v2f32(dialogue_box_start_position.x + 30, dialogue_box_start_position.y + dialogue_box_extents.y - 10), font2, 2, string_literal("(proceed)"), 0451, color32f32(1,1,1,1));
-#else
-                draw_ui_breathing_text(framebuffer, v2f32(dialogue_box_start_position.x + 30, dialogue_box_start_position.y + dialogue_box_extents.y - 10), font2, 1, string_literal("(proceed)"), 0451, color32f32(1,1,1,1));
-#endif
 
                 if (state->viewing_dialogue_choices) {
                     if (is_action_pressed(INPUT_ACTION_CANCEL)) {

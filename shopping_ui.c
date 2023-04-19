@@ -235,11 +235,7 @@ local void shopping_ui_finish(void) {
 
 local void do_gold_counter(struct software_framebuffer* framebuffer, f32 dt) {
     /* TODO: Consider animating */
-#ifdef EXPERIMENTAL_320
     f32 TEXT_SCALE = 2;
-#else
-    f32 TEXT_SCALE = 4;
-#endif
 
     struct shop_instance*    shop         = &game_state->active_shop;
     struct entity_inventory* inventory    = (struct entity_inventory*)(&game_state->inventory);
@@ -293,13 +289,8 @@ local void do_gold_counter(struct software_framebuffer* framebuffer, f32 dt) {
 /* There is duplicated code. Beware, and maybe try and shrink this. */
 local v2f32 estimate_shopping_menu_dimensions(void) {
     /* should put this constant elsewhere */
-#ifdef EXPERIMENTAL_320
     const s32 BOX_WIDTH  = 17;
     const s32 BOX_HEIGHT = 10;
-#else
-    const s32 BOX_WIDTH  = 35;
-    const s32 BOX_HEIGHT = 20;
-#endif
 
     return nine_patch_estimate_extents(ui_chunky, 1, BOX_WIDTH, BOX_HEIGHT);
 }
@@ -321,11 +312,7 @@ local void do_shopping_menu(struct software_framebuffer* framebuffer, f32 x, boo
     bool selection_switch_tab          = is_action_pressed(INPUT_ACTION_SWITCH_CATEGORY_FORWARDS);
     bool selection_quit                = is_action_pressed(INPUT_ACTION_CANCEL);
 
-#ifdef EXPERIMENTAL_320
     f32 text_scale = 1;
-#else
-    f32 text_scale = 2;
-#endif
 
     if (!allow_input) {
         selection_down = selection_up = selection_confirmation = selection_increment = selection_decrement = selection_switch_tab_reverse = selection_switch_tab = selection_quit = false;
@@ -334,11 +321,7 @@ local void do_shopping_menu(struct software_framebuffer* framebuffer, f32 x, boo
 #endif
     }
 
-#ifdef EXPERIMENTAL_320
     f32 y_cursor = 50;
-#else
-    f32 y_cursor = 100;
-#endif
 
     /* TODO:
 
@@ -358,11 +341,7 @@ local void do_shopping_menu(struct software_framebuffer* framebuffer, f32 x, boo
 
         /* Okay this UI could take advantage of having icons but that's a bit later. This'll pass in the act 1 demo I suppose. */
         for (s32 filter_index = 0; filter_index < PAGE_COUNT; ++filter_index) {
-#ifndef EXPERIMENTAL_320
             f32 page_tab_selector_offset_y = 32;
-#else
-            f32 page_tab_selector_offset_y = 20;
-#endif
 
             struct font_cache* painting_text = normal_font;
             if (filter_index == shopping_ui.current_shopping_page_filter) {
@@ -376,13 +355,8 @@ local void do_shopping_menu(struct software_framebuffer* framebuffer, f32 x, boo
         }
     }
 
-#ifdef EXPERIMENTAL_320
     s32 BOX_WIDTH  = 17;
     s32 BOX_HEIGHT = 10;
-#else
-    s32 BOX_WIDTH  = 35;
-    s32 BOX_HEIGHT = 20;
-#endif
 
     draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, v2f32(x, y_cursor), BOX_WIDTH, BOX_HEIGHT, ui_color);
 
@@ -439,11 +413,7 @@ local void do_shopping_menu(struct software_framebuffer* framebuffer, f32 x, boo
         /* It would be nice to have essentially matching pointers to make dereferencing easier. */
         s32 lower_limit;
         s32 upper_limit;
-#ifdef EXPERIMENTAL_320
         set_scrollable_ui_bounds(shopping_ui.shopping_item_index, &lower_limit, &upper_limit, shopping_ui.shop_filtered_array_count, 4*2, 8);
-#else
-        set_scrollable_ui_bounds(shopping_ui.shopping_item_index, &lower_limit, &upper_limit, shopping_ui.shop_filtered_array_count, 4, 8);
-#endif
 
         for (s32 item_index = lower_limit; item_index < upper_limit; ++item_index) {
             s32                lookup_index  = shopping_ui.shop_filtered_array[item_index];
@@ -514,11 +484,7 @@ local void do_shopping_menu(struct software_framebuffer* framebuffer, f32 x, boo
             f32 measurement_width = font_cache_text_width(painting_text, cart_selection_text, text_scale);
 
             software_framebuffer_draw_text(framebuffer, painting_text, text_scale, v2f32(x + ui_box_extents.x - (measurement_width), y_cursor), cart_selection_text, modulation_color, BLEND_MODE_ALPHA);
-#ifdef EXPERIMENTAL_320
             y_cursor += 16*1.2;
-#else
-            y_cursor += 16*2*1.2;
-#endif
         }
 
         if (selection_confirmation) {
@@ -692,11 +658,7 @@ local void game_display_and_update_shop_ui(struct software_framebuffer* framebuf
             }
 
             do_shopping_menu(framebuffer, lerp_f32(-FINAL_SHOPPING_MENU_X - shopping_menu_dimensions.x, FINAL_SHOPPING_MENU_X, t), false, shopping_ui.shopping_mode);
-#ifdef EXPERIMENTAL_320
             software_framebuffer_draw_text(framebuffer, normal_font, 1, v2f32(10, 10), shopping_mode_type_strings[shopping_ui.shopping_mode], color32f32(1,1,1,t2), BLEND_MODE_ALPHA);
-#else
-            software_framebuffer_draw_text(framebuffer, normal_font, 4, v2f32(10, 10), shopping_mode_type_strings[shopping_ui.shopping_mode], color32f32(1,1,1,t2), BLEND_MODE_ALPHA);
-#endif
         } break;
 
         case SHOPPING_UI_ANIMATION_PHASE_IDLE: {
@@ -705,11 +667,7 @@ local void game_display_and_update_shop_ui(struct software_framebuffer* framebuf
             
             do_gold_counter(framebuffer, dt);
             do_shopping_menu(framebuffer, FINAL_SHOPPING_MENU_X, true, shopping_ui.shopping_mode);
-#ifdef EXPERIMENTAL_320
             software_framebuffer_draw_text(framebuffer, normal_font, 1, v2f32(10, 10), shopping_mode_type_strings[shopping_ui.shopping_mode], color32f32_WHITE, BLEND_MODE_ALPHA);
-#else
-            software_framebuffer_draw_text(framebuffer, normal_font, 4, v2f32(10, 10), shopping_mode_type_strings[shopping_ui.shopping_mode], color32f32_WHITE, BLEND_MODE_ALPHA);
-#endif
         } break;
 
         case SHOPPING_UI_ANIMATION_PHASE_SLIDE_OUT_SHOPPING: {
@@ -729,11 +687,7 @@ local void game_display_and_update_shop_ui(struct software_framebuffer* framebuf
             }
 
             do_shopping_menu(framebuffer, lerp_f32(-FINAL_SHOPPING_MENU_X - shopping_menu_dimensions.x, FINAL_SHOPPING_MENU_X, (1.0 - t)), false, shopping_ui.shopping_mode);
-#ifdef EXPERIMENTAL_320
             software_framebuffer_draw_text(framebuffer, normal_font, 1, v2f32(10, 10), shopping_mode_type_strings[shopping_ui.shopping_mode], color32f32(1,1,1,(1.0 - t2)), BLEND_MODE_ALPHA);
-#else
-            software_framebuffer_draw_text(framebuffer, normal_font, 4, v2f32(10, 10), shopping_mode_type_strings[shopping_ui.shopping_mode], color32f32(1,1,1,(1.0 - t2)), BLEND_MODE_ALPHA);
-#endif
         } break;
 
         case SHOPPING_UI_ANIMATION_PHASE_PHASE_FADE_OUT: {

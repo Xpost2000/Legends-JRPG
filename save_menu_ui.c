@@ -40,13 +40,8 @@ struct save_menu_state {
 } global_save_menu_state;
 
 local f32 estimate_save_menu_height(void) {
-#ifdef EXPERIMENTAL_320
     s32 BOX_WIDTH  = 10;
     s32 BOX_HEIGHT = 4;
-#else
-    s32 BOX_WIDTH  = 20;
-    s32 BOX_HEIGHT = 8;
-#endif
 
     v2f32 nine_patch_extents = nine_patch_estimate_extents(ui_chunky, 1, BOX_WIDTH, BOX_HEIGHT);
     f32 y_cursor = 0;
@@ -137,13 +132,8 @@ local s32 _do_save_menu_core(struct software_framebuffer* framebuffer, f32 y_off
 
     f32 start_y_cursor = y_cursor;
 
-#ifdef EXPERIMENTAL_320
     s32 BOX_WIDTH  = 10;
     s32 BOX_HEIGHT = 4;
-#else
-    s32 BOX_WIDTH  = 20;
-    s32 BOX_HEIGHT = 8;
-#endif
 
     v2f32 nine_patch_extents = nine_patch_estimate_extents(ui_chunky, 1, BOX_WIDTH, BOX_HEIGHT);
 
@@ -196,28 +186,18 @@ local s32 _do_save_menu_core(struct software_framebuffer* framebuffer, f32 y_off
 
         draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, 1, v2f32(x_cursor, y_cursor + adjusted_scroll_offset), BOX_WIDTH, BOX_HEIGHT, ui_color);
 
-#ifdef EXPERIMENTAL_320
         f32 text_scale = 1;
-#else
-        f32 text_scale = 2;
-#endif
         
         draw_ui_breathing_text(framebuffer, v2f32(x_cursor + 15, y_cursor + 15 + adjusted_scroll_offset), title_font, text_scale, format_temp_s("%s (%02d)", current_slot->name, save_slot_index), save_slot_index*22, color32f32(1, 1, 1, alpha));
-
-#ifdef EXPERIMENTAL_320
-        bool EXPERIMENTAL_320_offset = false;
-#else
-        bool EXPERIMENTAL_320_offset = true;
-#endif
 
         if (current_slot->unix_timestamp != 0) {
             struct calendar_time calendar_time_info =
                 calendar_time_from(current_slot->unix_timestamp);    
-            software_framebuffer_draw_text(framebuffer, body_font, text_scale, v2f32(x_cursor + 20, y_cursor + 15+32*EXPERIMENTAL_320_offset + adjusted_scroll_offset), format_temp_s("%s-%d-%d", month_strings[calendar_time_info.month], calendar_time_info.day, calendar_time_info.year), color32f32(1, 1, 1, alpha), BLEND_MODE_ALPHA);
+            software_framebuffer_draw_text(framebuffer, body_font, text_scale, v2f32(x_cursor + 20, y_cursor + 15+32 + adjusted_scroll_offset), format_temp_s("%s-%d-%d", month_strings[calendar_time_info.month], calendar_time_info.day, calendar_time_info.year), color32f32(1, 1, 1, alpha), BLEND_MODE_ALPHA);
         }
 
         /* need to have good word wrap */
-        software_framebuffer_draw_text(framebuffer, body_font, text_scale, v2f32(x_cursor + 20, y_cursor + 24+15+32*EXPERIMENTAL_320_offset + adjusted_scroll_offset), string_from_cstring(current_slot->descriptor), color32f32(1, 1, 1, alpha), BLEND_MODE_ALPHA);
+        software_framebuffer_draw_text(framebuffer, body_font, text_scale, v2f32(x_cursor + 20, y_cursor + 24+15+32 + adjusted_scroll_offset), string_from_cstring(current_slot->descriptor), color32f32(1, 1, 1, alpha), BLEND_MODE_ALPHA);
 
         y_cursor += nine_patch_extents.y * 1.5;
     }

@@ -883,15 +883,8 @@ local void do_battle_selection_menu(struct game_state* state, struct software_fr
                 target_display_list_indices[target_list_count++] = current_id;
             }
 
-#ifdef EXPERIMENTAL_320
             s32 BOX_WIDTH  = 4;
-            /* should be dynamically sized but okay. */
             s32 BOX_HEIGHT = 6;
-#else
-            s32 BOX_WIDTH  = 8;
-            /* should be dynamically sized but okay. */
-            s32 BOX_HEIGHT = 12;
-#endif
 
             v2f32 ui_box_size     = nine_patch_estimate_extents(ui_chunky, 1, BOX_WIDTH, BOX_HEIGHT);
             v2f32 ui_box_position = v2f32(framebuffer->width*0.9-ui_box_size.x, 25);
@@ -1623,19 +1616,10 @@ local void update_and_render_battle_ui(struct game_state* state, struct software
     struct game_state_combat_state* combat_state = &state->combat_state;
 
     /* pixels */
-#ifdef EXPERIMENTAL_320
     const f32 BATTLE_SELECTIONS_WIDTH = 16 * 6;
-#else
-    const f32 BATTLE_SELECTIONS_WIDTH = 16 * 5 * 2;
-#endif
 
-#ifdef EXPERIMENTAL_320
     f32 turn_panel_y       = 50;
     f32 battle_selection_panel_y = 50;
-#else
-    f32 turn_panel_y       = 100;
-    f32 battle_selection_panel_y = 100;
-#endif
 
     switch (global_battle_ui_state.phase) {
         case BATTLE_UI_FADE_IN_DARK_END_TURN:

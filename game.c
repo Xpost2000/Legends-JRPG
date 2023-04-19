@@ -7,11 +7,8 @@
 /* Needs lots of clean up. (Man I keep saying this every time I come back here, but it doesn't seem to matter too much.) */
 /* TODO fix coordinate system <3 */
 /* virtual pixels */
-#ifdef EXPERIMENTAL_320
 #define TILE_UNIT_SIZE                      (16) /* measured with a reference of 640x480 */
-#else
-#define TILE_UNIT_SIZE                      (32) /* measured with a reference of 640x480 */
-#endif
+
 #define REFERENCE_TILE_UNIT_SIZE            (16) /* What most tiles should be */
 #define GAME_COMMAND_CONSOLE_LINE_INPUT_MAX (512)
 #include "common_ui_def.c"
@@ -2478,13 +2475,8 @@ bool game_display_and_update_messages(struct software_framebuffer* framebuffer, 
         struct font_cache* font = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_YELLOW]);
         string message_str      = string_from_cstring(current_message->message_storage);
 
-        #ifdef EXPERIMENTAL_320
         f32 scale = 1;
         f32 box_scale = 1;
-        #else
-        f32 scale = 2;
-        f32 box_scale = 2;
-        #endif
 
         f32                  message_text_height       = font_cache_calculate_height_of(font, message_str, framebuffer->width * 0.5, scale);
         struct rectangle_f32 message_region            = rectangle_f32_centered(rectangle_f32(0, 0, framebuffer->width, framebuffer->height), framebuffer->width * 0.5, message_text_height*1.15);
@@ -3762,22 +3754,14 @@ local void update_and_render_game_worldmap(struct software_framebuffer* framebuf
             }
         }
 
-        f32 scale               = game_state->world_map_explore_state.current_view_settings.scale;
-        f32 focus               = game_state->world_map_explore_state.current_view_settings.focus;
-        f32 horizon             = game_state->world_map_explore_state.current_view_settings.horizon;
-        f32 dx                  = game_state->world_map_explore_state.current_view_settings.dx;
-        f32 dy                  = game_state->world_map_explore_state.current_view_settings.dy;
+        f32 scale               = game_state->world_map_explore_state.current_view_settings.scale/2;
+        f32 focus               = game_state->world_map_explore_state.current_view_settings.focus/2;
+        f32 horizon             = game_state->world_map_explore_state.current_view_settings.horizon/2;
+        f32 dx                  = game_state->world_map_explore_state.current_view_settings.dx/2;
+        f32 dy                  = game_state->world_map_explore_state.current_view_settings.dy/2;
         f32 dw                  = game_state->world_map_explore_state.current_view_settings.dw;
         f32 dh                  = game_state->world_map_explore_state.current_view_settings.dh;
         f32 brightness_modifier = game_state->world_map_explore_state.current_view_settings.brightness_mod;
-
-#ifdef EXPERIMENTAL_320
-        scale/=2;
-        focus/=2;
-        horizon/=2;
-        dx /= 2;
-        dy /= 2;
-#endif
 
         /* cam params end */
 
@@ -4117,11 +4101,7 @@ void update_and_render_game(struct software_framebuffer* framebuffer, f32 dt) {
                 switch (submode) {
                     case GAME_SUBMODE_OVERWORLD: {
                         update_and_render_game_overworld(framebuffer, dt);
-#ifdef EXPERIMENTAL_320
                         game_postprocess_blur_ingame(framebuffer, 1, 0.62, BLEND_MODE_ALPHA);
-#else
-                        game_postprocess_blur_ingame(framebuffer, 2, 0.62, BLEND_MODE_ALPHA);
-#endif
                     } break;
                     case GAME_SUBMODE_WORLDMAP: {
                         update_and_render_game_worldmap(framebuffer, dt);

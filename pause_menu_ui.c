@@ -57,34 +57,21 @@ v2f32 party_member_card_dimensions_units(void) {
     return v2f32(16, 5);
 }
 v2f32 party_member_card_dimensions_pixels(void) {
-    f32                   ui_scale_factor = 1;
-#ifdef EXPERIMENTAL_320
-    s32 CARD_WIDTH = 8;
-    s32 CARD_HEIGHT = 3;
-#else
-    s32 CARD_WIDTH = 16;
-    s32 CARD_HEIGHT = 5;
-#endif
+    f32   ui_scale_factor      = 1;
+    s32   CARD_WIDTH           = 8;
+    s32   CARD_HEIGHT          = 3;
     v2f32 estimated_dimensions = nine_patch_estimate_extents(ui_chunky, ui_scale_factor, CARD_WIDTH, CARD_HEIGHT);
+
     return estimated_dimensions;
 }
 
 void draw_party_member_card(struct software_framebuffer* framebuffer, f32 x, f32 y, s32 member) {
     struct game_state* state           = game_state;
-#ifdef EXPERIMENTAL_320
-    s32 CARD_WIDTH = 8;
-    s32 CARD_HEIGHT = 3;
-#else
-    s32 CARD_WIDTH = 16;
-    s32 CARD_HEIGHT = 5;
-#endif
+    s32                CARD_WIDTH      = 8;
+    s32                CARD_HEIGHT     = 3;
     struct font_cache* font            = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_STEEL]);
     struct font_cache* font1           = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_GOLD]);
-#ifdef EXPERIMENTAL_320
     f32                font_scale      = 1;
-#else
-    f32                font_scale      = 2;
-#endif
     f32                ui_scale_factor = 1;
 
     draw_nine_patch_ui(&graphics_assets, framebuffer, ui_chunky, ui_scale_factor, v2f32(x, y), CARD_WIDTH, CARD_HEIGHT, UI_DEFAULT_COLOR);
@@ -116,13 +103,8 @@ local void do_party_member_edits_or_selections(struct game_state* state, struct 
     f32                   font_scale      = 2;
     f32                   ui_scale_factor = 1;
 
-#ifdef EXPERIMENTAL_320
     s32 CARD_WIDTH = 8;
     s32 CARD_HEIGHT = 3;
-#else
-    s32 CARD_WIDTH = 16;
-    s32 CARD_HEIGHT = 5;
-#endif
     v2f32 estimated_dimensions = nine_patch_estimate_extents(ui_chunky, ui_scale_factor, CARD_WIDTH, CARD_HEIGHT);
     /* NEED TO HANDLE SCROLLING LATER :) */
     f32 y_cursor = 50;
@@ -226,11 +208,7 @@ local void do_party_member_edits_or_selections(struct game_state* state, struct 
 
 local void update_and_render_pause_game_menu_ui(struct game_state* state, struct software_framebuffer* framebuffer, f32 dt) {
     /* needs a bit of cleanup */
-#ifdef EXPERIMENTAL_320
     f32 font_scale = 1;
-#else
-    f32 font_scale = 3;
-#endif
     struct ui_pause_menu* menu_state = &state->ui_pause;
     v2f32 item_positions[array_count(ui_pause_menu_strings)] = {};
 
@@ -243,19 +221,11 @@ local void update_and_render_pause_game_menu_ui(struct game_state* state, struct
     }
 
     for (unsigned index = 0; index < array_count(item_positions); ++index) {
-#ifdef EXPERIMENTAL_320
         item_positions[index].y = 18 * (index+0.75);
-#else
-        item_positions[index].y = 36 * (index+0.75);
-#endif
     }
 
     f32 offscreen_x = -240;
-#ifdef EXPERIMENTAL_320
     f32 final_x     = 20;
-#else
-    f32 final_x     = 40;
-#endif
 
     u32 blur_samples = 2;
     f32 max_blur = 1.0;
@@ -432,11 +402,7 @@ local void update_and_render_pause_game_menu_ui(struct game_state* state, struct
         for (unsigned index = 0; index < array_count(item_positions); ++index) {
             v2f32 draw_position = item_positions[index];
             draw_position.x += lerp_f32(0, 20, menu_state->shift_t[index]);
-#ifdef EXPERIMENTAL_320
             draw_position.y += 220/2;
-#else
-            draw_position.y += 220;
-#endif
             /* custom string drawing routine */
             struct font_cache* font = graphics_assets_get_font_by_id(&graphics_assets, menu_fonts[MENU_FONT_COLOR_STEEL]);
             if (index == menu_state->selection) {

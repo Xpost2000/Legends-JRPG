@@ -102,11 +102,7 @@ local void _credits_set_phase(s32 phase) {
 
 local void _draw_credits_game_title(struct software_framebuffer* framebuffer, f32 y, f32 alpha) {
     struct font_cache* heading_font  = game_get_font(MENU_FONT_COLOR_GOLD);
-#ifdef EXPERIMENTAL_320
     f32                scale         = 2;
-#else
-    f32                scale         = 4;
-#endif
     f32                content_width = font_cache_text_width(heading_font, game_title, scale);
 
     software_framebuffer_draw_text(framebuffer, heading_font, scale, v2f32(SCREEN_WIDTH/2 - content_width/2, y), game_title, color32f32(1,1,1,alpha), BLEND_MODE_ALPHA);
@@ -185,11 +181,7 @@ local string credits_categories[] = {
 
 local void _credits_draw_category_title(struct software_framebuffer* framebuffer, struct font_cache* font, f32 time_for_slide, f32 y, s32 index, f32 alpha) {
     string title         = credits_categories[index];
-#ifdef EXPERIMENTAL_320
     f32    scale         = 2;
-#else
-    f32    scale         = 4;
-#endif
     f32    content_width = font_cache_text_width(font, title, scale);
     f32    x             = lerp_f32(SCREEN_WIDTH/2 - content_width/2, -content_width*1.2, time_for_slide);
     software_framebuffer_draw_text(framebuffer, font, scale, v2f32(x, y+50), title, color32f32(1,1,1,alpha), BLEND_MODE_ALPHA);
@@ -282,11 +274,7 @@ local void update_and_render_credits_phase_main_animation(struct software_frameb
                 }
 
                 {
-                    #ifdef EXPERIMENTAL_320
                     f32 content_scale  = 2;
-                    #else
-                    f32 content_scale  = 4;
-                    #endif
                     f32 content_height = font_cache_text_height(content_font) * content_scale;
                     {
                         f32 y = SCREEN_HEIGHT/2 - content_height/2;
@@ -328,18 +316,10 @@ local void update_and_render_credits_see_you_next_time(struct software_framebuff
     const string base_string    = see_you_next_time_phase_strings[credits_state.see_you_next_time.string_index];
     bool         is_last_string = credits_state.see_you_next_time.string_index == array_count(see_you_next_time_phase_strings)-1;
     string       to_show        = string_slice(base_string, 0, credits_state.typing_characters_shown);
-    #ifdef EXPERIMENTAL_320
     f32          scale          = 2;
-    #else
-    f32          scale          = 4;
-    #endif
 
     if (is_last_string) {
-    #ifdef EXPERIMENTAL_320
         scale = 4;
-    #else
-        scale = 8;
-    #endif
     }
 
     f32 content_width  = font_cache_text_width(content_font, to_show, scale);
