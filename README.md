@@ -64,7 +64,25 @@ and most definitely might suffer lots of cutting room floor due to time constrai
 forever.)
 
 ## Media
-![Latest screenshot](./scr.png)
+Here is some screenshots of various parts of the game.
+
+I will produce animated GIFs should I have time, but this is representative of the current state of the project.
+### UI
+![Title screen](./media/title.png)
+![Options](./media/options.png)
+![Save Menu](./media/save.png)
+![Pause Menu](./media/game1pause.png)
+![Equipment](./media/gameparty.png)
+![Inventory](./media/inventory.png)
+### Exploration Mode
+![Introduction](./media/game1intro.png)
+![Gameplay1](./media/game1gameplay.png)
+![Gameplay2](./media/game2gameplay.png)
+![World Map](./media/worldmap.png)
+### Combat
+![Combat 1](./media/combat1.png)
+![Combat 2](./media/combat2.png)
+![Combat 3](./media/combat3.png)
 
 ## Development / Compiling
 
