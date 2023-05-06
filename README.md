@@ -8,6 +8,7 @@ This lists many engine features, and is not an exhaustive list.
 
 - Pure **C99** Codebase
 - **Software Rendered** optimized with **SIMD** (SSE2 only) and a **multithreaded job queue**
+- **Particle system** for flame effects, and burning enemies.
 - **Bloom Postprocessing** done through a box filter blur and alpha blending
 - **Custom scripting language implementation**
 - **Breadth-first-search** based pathfinding for combat falling back to **Bresenham** line tracing if trivial
