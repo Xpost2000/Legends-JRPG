@@ -6,7 +6,7 @@ CFLAGS=-Werror -Wno-unused -Wno-unused-but-set-variable -Wall -std=c99
 CLIBS=-Dmain=SDL_main -lmingw32 -L./dependencies/x86-64/lib/ -L./dependencies/x86-64/bin/ -I./dependencies/ -I./dependencies/x86-64/include/ -lOpenGL32 -lglew32 -lSDL2main -lSDL2 -lSDL2_mixer -msse4
 ITCHPROJECT=xpost2000/untitled-project
 
-SOURCE_FILE_MODULES= main.c
+SOURCE_FILE_MODULES= src/main.c
 EMCC=emcc
 
 .PHONY: package-all-builds package-windows-build all build-run-tree clean gen-asm gen-asm-debug cloc run run-debug run-from-runtree run-debug-from-runtree package-web web-experimental
@@ -16,26 +16,26 @@ data.bigfile: pack.exe
 	./pack $@ worldmaps areas dlg res scenes shops
 pack.exe: bigfilemaker/bigfile_packer.c bigfilemaker/bigfile_def.c
 	$(CC) bigfilemaker/bigfile_packer.c -o $@ -O2
-gamescript_metagen.exe: gamescript_metagen.c
-	$(CC) gamescript_metagen.c -g -w -o $@
+gamescript_metagen.exe: src/gamescript_metagen.c
+	$(CC) src/gamescript_metagen.c -g -w -o $@
 depack.exe: bigfilemaker/depacker.c bigfilemaker/bigfile_unpacker.c bigfilemaker/bigfile_def.c
 	$(CC) bigfilemaker/depacker.c -o $@ -O2
 game.exe: clean data.bigfile gamescript_metagen.exe $(wildcard *.c *.h)
 	./gamescript_metagen.exe
 	$(CC) $(SOURCE_FILE_MODULES) -DUSE_EDITOR  -DRELEASE -o $@ $(CFLAGS) $(CLIBS) -m64 -O2 -mwindows
-game-debug.exe: gamescript_metagen.exe $(wildcard *.c *.h)
+game-debug.exe: gamescript_metagen.exe $(wildcard src/*.c src/*.h)
 	./gamescript_metagen.exe
 	$(CC) $(SOURCE_FILE_MODULES) -DUSE_EDITOR -o $@ $(CFLAGS) $(CLIBS) -m64 -ggdb3
-gamex86.exe: metagen.exe $(wildcard *.c *.h)
+gamex86.exe: metagen.exe $(wildcard src/*.c src/*.h)
 	./gamescript_metagen.exe
 	$(CC) $(SOURCE_FILE_MODULES) -DUSE_EDITOR  -DRELEASE -o $@ $(CFLAGS) $(CLIBS) -m32 -O2 -mwindows
-gamex86-debug.exe: ./gamescript_metagen.exe $(wildcard *.c *.h)
+gamex86-debug.exe: ./gamescript_metagen.exe $(wildcard src/*.c src/*.h)
 	./gamescript_metagen.exe
 	$(CC) $(SOURCE_FILE_MODULES) -DUSE_EDITOR -o $@ $(CFLAGS) $(CLIBS) -m32 -ggdb3
-web-build/index.html: ./gamescript_metagen.exe $(wildcard *.c *.h) shell_minimal.html
+web-build/index.html: ./gamescript_metagen.exe $(wildcard src/*.c src/*.h) shell_minimal.html
 	./gamescript_metagen.exe
 	-mkdir web-build/
-	$(EMCC) main.c -O2 -lSDL2_mixer -lSDL2 -s USE_SDL_MIXER=2 -s USE_SDL=2 -s USE_WEBGL2=1 -I./dependencies/ --shell-file shell_minimal.html  -o web-build/game.html -s INITIAL_MEMORY=128MB --preload-file res --preload-file areas --preload-file shops --preload-file dlg --preload-file scenes --preload-file worldmaps
+	$(EMCC) src/main.c -O2 -lSDL2_mixer -lSDL2 -s USE_SDL_MIXER=2 -s USE_SDL=2 -s USE_WEBGL2=1 -I./dependencies/ --shell-file shell_minimal.html  -o web-build/game.html -s INITIAL_MEMORY=128MB --preload-file res --preload-file areas --preload-file shops --preload-file dlg --preload-file scenes --preload-file worldmaps
 	mv web-build/game.html web-build/index.html
 package-web: web-build/index.html
 	cd web-build && zip gamewebpackage.zip index.html game.data game.js game.wasm && butler push gamewebpackage.zip $(ITCHPROJECT):wasm
@@ -60,7 +60,7 @@ gen-asm: $(wildcard *.c *.h)
 	-mkdir asm
 	$(CC) $(SOURCE_FILE_MODULES) $(CFLAGS) $(CLIBS) -S -masm=intel -O2 -fverbose-asm -o asm/release.s
 cloc:
-	cloc --by-file *.c bigfilemaker/*.c
+	cloc --by-file src/*.c bigfilemaker/*.c
 clean:
 	-rm data.bigfile
 	-rm game.exe

@@ -1,0 +1,35 @@
+# This introduces a new construct
+# DETERMINE-START is run at the start (after load)
+# and jumps pointers,
+# it will return an absolute index to which to start from.
+(DETERMINE-START
+        (case brahminState
+              (0 1)
+              (1 3)
+              (2
+                (case brahminAnswer
+                      (1 6)
+                      (T 8)
+                ))))
+
+# 0
+"Brahman" : "Hey, can it wait?"
+"Brahman" : "I just want to walk." => (BYE)
+
+# 2
+"Brahmin" : "Ah, yes... I've been meaning to talk to you."
+"Brahmin" : "What can change the nature of a man?" =>
+(CHOICES
+          ("Love."   (DO (INCVAR brahminState) (SETVAR brahminAnswer 1) (NEXT)))
+          ("Hate."   (DO (INCVAR brahminState) (SETVAR brahminAnswer 2) (NEXT)))
+          ("Belief." (DO (INCVAR brahminState) (SETVAR brahminAnswer 3) (NEXT))))
+"Brahmin" : "It was always that obvious... Wasn't it?" => (BYE)
+
+# 5
+"Brahmin": "I will never find love..."
+"Brahmin": "It is too difficult." => (BYE)
+
+# 7
+"Brahmin": "How could hate or belief change man?" => (BYE)
+
+

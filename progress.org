@@ -1,0 +1,257 @@
+This list is getting unusually long, and it's beginning to get a little overwhelming.
+
+Thankfully it's close to content mode, since the core engine branch stuff is nearing a "basic foundations" state,
+which is good enough to do a lot of stuff with.
+
+The save format needs to be canned
+
+* Noted Bugs To Fix
+** TODO Note, a weird pathological pathfinding case.
+** TODO Fix your timestep
+** TODO Emscripten is bullshit (Weird no vsync issue, fullscreen/window changing is busted?)
+** TODO Work on the camera... (sometimes it's a little weird..)
+** TODO Ability path calculation is sometimes incorrect
+** TODO When starting game properly clean game state lol
+** DONE (workaround solution)Weird renderer issue...
+* Refactor/Clean up tasks (Sunday/Saturday?)
+** TODO Sprites should be stored in a texture atlas
+** TODO [DO TODAY?] Synopsis book. A bunch of text to refresh on information.
+** TODO Change the tilemap format to just use a rectangular array like a sane person?
+Simply because if I were to do a hardware accelerated release it would be easiest that way.
+** TODO Rendering refactoring
+** TODO [WHEN?]: Operation: UI use the render command system!
+This is mostly cause I want to do this in order to make the UI hot-reloadable.
+** TODO rename some script functions to be a bit more regular
+The game script system suffers from a lot of naming inconsistencies because of the fact that the
+language follows my C style of explicitly stating types, but that's not helpful for a scripting language.
+
+I want it to be unified so that each sub-variation of gamescript and it's dataformats share as much common "procedures",
+as possible.
+
+* Major Additions (Ordered in priority)
+** TODO Change Attack Target system to be more Disgaea like (grid-squares instead of abstract radius)
+** TODO 320x240 as default engine resolution
+A more retro style resolution. The game runs way better at the resolution,
+and also everything might actually look correct...
+
+Redesigning the UI for lower resolution is going to be very difficult and time consuming, but I need to be able to do it.
+- [X] Pause Menus
+- [X] Editor UI (maybe?) Editor should preferably be a higher resolution
+- [X] Save UI
+- [X] Main Menu
+- [X] Options Menu (partial)
+- [X] Message Boxes
+- [X] Notification messages
+- [ ] Post-Battle UI (this is being rewritten anyways...)
+- [X] Storyboard
+- [X] Equipment Screen
+- [X] Item Screen
+- [-] Dialogue UI
+  - [X] Main
+  - [ ] Choice Selection
+- [ ] Battle UI
+  - [ ] Main Part
+  - [ ] Ability Select
+  - [ ] Target Select
+** TODO [DO TODAY! : VERY IMPORTANT] Projectile Items! @today
+Projectiles have omni directional art, and can be animated if they are so wished to. But generally may not be.
+Projectiles have two types:
+ON-HIT for arrows or impact projectiles, only works by hitting entities.
+ON-PLACE can be hit on a location
+
+Projectiles can delay their effects until after a certain amount of turns (there is no visual indicator for this unless you use the LOOK command.)
+
+- This might require portrait art?
+** TODO [?] Projectiles for abilities
+** TODO [TODO] World Stack.
+It's a more robust way of solving my stupid cutscene problem.
+** TODO Item Usage redesign for multiple party members @today
+** TODO Fix World Map UI to look correcter (and also animate it)
+** TODO Allow cutscenes to work on the world map
+** TODO (minor) Move-path should have a speed.
+** TODO Proper Roof behavior! (Also add this behavior to the scriptable tile layers as well)
+Roof Tiles should hide themselves whenever an actor gets too close to them :)
+** TODO Actor Hop behavior
+For cutscene funnies
+** TODO Options menu should save options eventually
+** TODO UI button quirks
+easy fix but requires more UI work.
+** TODO Mouse UI
+Have to carefully adjust everything to be kb/mouse UI friendly (making actual widget objects...)
+- [X] Main Menu
+- [X] Options UI
+- [ ] Shopping UI
+- [ ] Dialogue UI
+- [ ] Equipment UI
+- [-] Battle UI
+  Item usage not included because that needs to be changed anyways
+  - [X] Main Part
+  - [ ] Ability Selection
+  - [ ] Target Selection
+- [ ] Save UI
+** TODO [??] Temporary allocation of certain assets and unloaded state (Okay this might not work too much.) @maybetoday
+it now occurs to me it is possible to minimize asset memory usage by also loading level assets
+along with the level.
+
+I can reduce the amount of permenant assets that need to be kept in active memory at all times, and simply load
+things on demand. This tends to be incredibly quick as there is still a decent amount of permenant assets.
+
+This requires some odd changes that a are a bit low level but it shouldn't be something that's unusually difficult.
+
+** TODO [DO TODAY!] After Battle Overhaul : XP Gain and New Item Demonstration
+This is a fancier UI that I want to do.
+** TODO Use the stat growth/xp data in game
+** TODO consider separating the editor stuff from the game executable
+Or at least allow the editor to run in super resolution mode since it needs view space...
+** TODO [DO TODAY] Sprite Objects
+Sprite objects can be animated if they so wish. A lot of these properties are mostly edited through
+script files... They are only placed through the editor and given some basic state "what they look like", the rest
+is determined through scripts.
+- [ ] Level Area
+- [ ] World Map
+** TODO Sprite Effects for special moves (Going to need some more opcodes I guess)
+These things are going to have to be hardcoded mostly since a lot of these things are pretty difficult to make into data objects...
+** TODO [NOTE?] Smoke / Fog / Obstruction Effects (Poison or what have you)
+** TODO [?] Boat Mode for the World Map
+** TODO Story Storyboard
+** TODO Sketches / Concept Art for World Map!
+** TODO Sketches / Concept Art for Characters!
+** TODO Do Some Work on the Storyline
+** TODO World Map should wrap/teleport
+** TODO Some ambience sound effects?
+** TODO Input prompts!
+** TODO [TODO] add activate mode level-transitions
+With a few prompt types (go-out, leave, etc.)
+** TODO [TODO] on-touch and on-activate for level-transitions
+These things should have some scripting capacity though for some reason they don't.
+** TODO [TODO] Essential Entity Flag
+These entities cannot die. Maybe I can use this for certain quest flags.
+** TODO [TODO] battle-routine (#current round id)
+** TODO [TODO] on-battle-hit       (entity)
+** TODO [TODO] on-battle-round-end (BATTLE_ID)
+** TODO [TODO] on-battle-finish    (BATTLE_ID), and giving battles event ids to subscribe to
+I want to be able to hook to more events in the scripting engine and having the ability to hook into
+battle completions would be incredibly useful.
+
+Also allows arbitrarily ending battles as well.
+** TODO [!!!!] Consider working on team-mate AI
+** TODO Entity Group/Team ID
+This is used to help coordinate AI efforts (for strategy settings)
+** TODO [?] animate messagebox
+Not important I suppose
+** TODO UI Related Arte!
+- [ ] World Map Compass
+- [ ] UI Item Icons!
+** TODO Show item description on the Inventory UI (will come with UI revamp)
+** TODO Reconsider the music system...
+** TODO [DO TODAY]: Hotreloading for image assets
+These are the most important things to hotreload, so they'll be the only things I allow hotreloading for.
+The other stuff I don't care too much about hot reloading for
+** TODO [DO TODAY?: IMPORTANT] Party Member Conscription!
+** TODO [DO TODAY?] Lighting Layers
+These are for "faking" baked lights, since it's easy to make these lights look good. Might be usable for "volumetric" lights
+** TODO [DO TODAY?] Status effect modification
+I want these to work in more different ways. I want them to also be able to hook into
+certain events and impact things if necessary (this is so I can use them in items as special effects sometimes)
+** TODO [DO TODAY?] World Map draw the player character! (Also identify boat mode!)
+** TODO [DO TODAY?] Scriptable tile layers in combat. (Might be sidestepped through level design)
+** TODO [DO TODAY?] Spreadsheet to calculate damage values.
+Need to make a quick Excel spreadsheet for this stuff
+** TODO [DO TODAY?] Mini Game system (this is a "branch technology")
+There are a few minigames I would like to have initiated. Some of them require special drawing procedures.
+Unlike Chrono Trigger I don't have a good script format to allow that.
+** TODO [DO TODAY?] Handle TP?
+** TODO [???] Tutorial System? (Or at least setup the primitives.)
+Thankfully this is generally pretty easy to do, and is an extension of the cutscene system.
+
+The tutorial system is heavily game specific. And might be a little weird to handle.
+
+I'll do it the disgaea way and have a lot of game script commands to handle stuff...
+
+As the tutorial is heavily game specific, I'm probably just going to hard code this without exposing it to the script system other
+than
+
+"Tutorials will tend not to work outside the level they're in, so I need to make a World Stack system to get this to work. So cutscenes can setup their ideal world system"
+(START_TUTORIAL (TUTORIALID))
+
+** TODO [DO TODAY?] Update UI visuals to look nicer and make it obvious you use items or whatever
+It's polish, but most of hte UI is highly unlikely to change since it's nice looking and utilitarian. So I can afford to polish this.
+** TODO [DO TODAY] Update the UI for the level editor save/load
+** TODO [DO TODAY: Important enough] have damage formulas to the ability format
+(STRDAMAGE *SCALE* *ADDFACTOR* *ADDFACTORMAX*)
+(AGIDAMAGE *SCALE* *ADDFACTOR* *ADDFACTORMAX*)
+(LCKDAMAGE *SCALE* *ADDFACTOR* *ADDFACTORMAX*)
+(INTDAMAGE *SCALE* *ADDFACTOR* *ADDFACTORMAX*)
+(FIXEDDAMAGE A *B*)
+
+And stuff like that. I can't support a lisp parser so this is the best I'm really allowed to do.
+** TODO [DO TODAY?] (signal "signalname") (signal-emit "signalname")
+This is a callback system for the scripting language, (it's really a function call...), but
+this is a better way to handle this.
+
+Signals can also query their amount of activations to simplify some things. If they have to.
+(It's kind of like a function actually...)
+** TODO [DO TODAY?] implement trigger signals for some more objects
+** TODO [DO TODAY?] Update save format to include status of scripted tile layers?
+** TODO [DO TODAY?] Update save format to include a character record
+The save record will always produce the "best" version of a character.
+
+Unless the level editor explicitly disallows this.
+** TODO [DO TODAY: IMPORTANT] Script functions to handle multiple party members a bit better.
+(PARTY-MEMBERS) => List of party members
+(NTH)           => Lisp nth
+(PARTY-LEADER)  => Party leader
+(IS-PARTY-MEMBER "BASENAMESTRING")
+
+stuff like that.
+** TODO [DO TODAY] Add (PARALLEL) forms to the cutscene system
+This is a block (like progn), which allows all actions within it to be executed at once,
+when awaiting, we wait for every action in the block to finish.
+
+Parallel blocks can await for other parallel blocks if they want (practically this is limited but it should be okay.)
+#+BEGIN
+(parallel
+(progn
+(move-path "miguel" (get-position "abcdefghijklmnopqrstv"))
+(hop "miguel"))
+(move-path "yoshua" (get--path "abcdefghijklmnopqrstv"))
+)
+#+END
+
+In theory this behavior should make miguel move. Then hop. Then move-path
+
+** TODO [DO TODAY?] Liquid obstacles? (Oil, Water)
+** TODO Linux port?
+** TODO Pickup/Throw (might be canned for too much complexity and danger)
+For crates / barrels primarily.
+
+Normal entities will roll to fight back when they are picked up automatically at the start of a turn. If they get out,
+they can do an attack worth 75% of their max attack, and are moved to a valid adjacent spot next to the person carrying them
+if they can.
+
+If entities are unable to dismount themselves, they will do a fixed 30% of their maximum attack.
+
+Chest / Barrels or otherwise throwable "prop" entities, are not combatants. They are basically just living props that you can
+attack.
+
+Rules:
+- If BREAK_ON_DESTRUCTION, EXPLODE_ON_DESTRUCTION
+  - Entity immediately dies when landing, and will do the aforementioned things.
+- If Normal Entity
+  - Thrown onto another Entity
+    (Act as if the thrown entity did an attack on itself and the thrown), it is an attack about
+    50% of their maximum normal attack. (so that way it is deterministic).
+
+    They will bounce off the entity they got thrown on top off.
+  - Thrown on a valid tile, they will just land there.
+** TODO Allow abilities that don't target hostiles? (and allow self-targetting for self-buffing)
+(For self spells! Not that we need those per say?)
+** TODO Allow abilities that can scale by stats (governed by abstract expressions)
+This isn't complicated but requires a lot of parsing work so this isn't happening today.
+* Minor Additions
+** TODO More parameterizable special effects?
+** BUGGY Cannot attack through obstructions! (this is buggy)
+As of right now, it is possible to "noclip" attack entities even though you probably
+shouldn't be able to. So we'll have to do another floodfill style system... again!
+* Script Functions Added
+* Removals

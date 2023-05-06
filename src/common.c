@@ -570,7 +570,7 @@ static const string truefalse[] = {string_literal("false"), string_literal("true
 #include "memory_arena.c"
 #include "allocators.c"
 
-#include "bigfilemaker/bigfile_def.c"
+#include "../bigfilemaker/bigfile_def.c"
 
 struct file_buffer {
     IAllocator allocator;

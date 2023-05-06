@@ -1,0 +1,86 @@
+# Introduction scene
+(game_disable_input)
+(camera_focus)
+(game_set_environment_colors 'midnight)
+(transition_fade
+'color
+'in
+'(0.0 0.0 0.0 255.0)
+0.0
+0.01)
+
+(wait 1.0)
+
+#(storyboard
+# '(page
+#   (wait 1.5)
+#   (line "Magic...")
+#   (wait 1.5)
+#   (spacer)
+#   (line "The very foundation")
+#   (line "of the world.")
+#   (spacer)
+#   (wait-for-continue)
+#   )
+# '(page
+#   (wait 0.3)
+#   (line "Long ago")
+#   (line "a war was wrought")
+#   (line "over the control of magic.")
+#   (wait-for-continue)
+#   )
+# '(page
+#   (wait 0.3)
+#   (line "A great being, and")
+#   (line "a great hero")
+#   (line "gave their lives,")
+#   (line "so that the war could end.")
+#   (spacer)
+#   (wait 0.3)
+#   (line "With their sacriface,")
+#   (line "came the end of magic.")
+#   (wait-for-continue)
+#   )
+# '(page
+#   (wait 0.3)
+#   (line "With an uneasy peace,")
+#   (line "the world persists whilst")
+#   (line "an unseen threat approaches.")
+#   (wait-for-continue)
+#   )
+# )
+
+(transition_fade 'color 'out '(0.0 0.0 0.0 255.0) 0.0 1.0)
+
+# normal cutscene actions in the village.
+
+#
+# Protagonist stands still.
+#
+# *sigh*
+#
+#
+# *party member appears*
+#
+
+(entity_speak '(entity player) "*sigh*")
+(wait 1.5)
+(show '(entity "griggs"))
+(entity_speak '(entity "griggs") "Yo! I got the supplies boss asked for!")
+(follow_path '(entity "griggs") (repeat 'down 3))
+(follow_path '(entity "griggs") (repeat 'left 1))
+(wait 1.0)
+(game_open_conversation "intro00")
+(entity_speak '(entity "griggs") "The inn's on the right edge of town.")
+(wait 3.5)
+(entity_speak '(entity "griggs") "Make sure to tell me when you're done!")
+(wait 3.5)
+(follow_path '(entity "griggs") (repeat 'right 6))
+(hide '(entity "griggs"))
+# NOTE(jerry): Set intro flag done!
+(entity_speak '(entity player) "Well, why don't we get started?")
+(wait 2.7)
+
+# SYNPOSIS BOOK UPDATE WHEN I GET IT IN.
+(game_enable_input)
+(end_cutscene)
