@@ -8,6 +8,7 @@ This lists many engine features, and is not an exhaustive list.
 
 - Pure **C99** Codebase
 - **Software Rendered** optimized with **SIMD** (SSE2 only) and a **multithreaded job queue**
+- **No runtime memory allocation!** The engine uses several memory arenas which avoids any runtime memory allocation (during gameplay, internal tools may be different!)
 - **Particle system** for flame effects, and burning enemies.
 - **Bloom Postprocessing** done through a box filter blur and alpha blending
 - **Custom scripting language implementation**
