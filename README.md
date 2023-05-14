@@ -1,7 +1,11 @@
 # Legends-JRPG
 Tactics JRPG in the late SNES style, "Nothing but my blade and shame."
 
-**I admit the code quality is not as good as it can be, however I am proud of the technical aspects, and besides that I am focused on game completion. Code quality was a tradeoff I was willing to make so that I would not spend forever on this!**
+## Code Samples
+As this engine is large and developed over the course of a year in my free time, some parts of the codebase are a bit
+older or are not touched frequently unless the engine is broken.
+
+For a curated sample of some of the engine's code ![click here.](./media/codesamples/README.md)
 
 ## Feature List Summary
 This lists many engine features, and is not an exhaustive list.
@@ -85,6 +89,8 @@ I will produce animated GIFs should I have time, but this is representative of t
 ![Combat 1](./media/combat1.png)
 ![Combat 2](./media/combat2.png)
 ![Combat 3](./media/combat3.png)
+### Tools
+![Level Editor](./media/leveleditor.gif)
 
 ## Development / Compiling
 
