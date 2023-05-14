@@ -50,7 +50,7 @@ void synchronize_and_finish_thread_pool(void);
 
 Here is the full implementation of the job system in legends. It's a very simple but effective job system.
 
-```
+```c
 #define MAX_POSSIBLE_THREADS (16)
 local volatile s32 global_thread_count                                     = 0;
 local SDL_Thread* global_thread_pool[MAX_POSSIBLE_THREADS]                 = {};
