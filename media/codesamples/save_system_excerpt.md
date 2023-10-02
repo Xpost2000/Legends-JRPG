@@ -79,8 +79,6 @@ void game_serialize_save(struct binary_serializer* serializer) {
       it **is** possible to future proof it by simply making it a stream of data (of varying lengths),
       as the individual record types are extremely unlikely to change (and even then, it 's way easier to
       control version variances between individual record types as opposed to the whole size of the save record,
-
-      that might be some... Uh, shit I forgot the rest of what I wanted to type, got distracted by texting on Discord.)
     */
     _debugprintf("area entry count: %d", area_entry_count);
 
